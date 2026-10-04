@@ -325,7 +325,7 @@ From the notes:
 
 Implications to keep in mind while building M1:
 - The sync interface (Y-7) and operation-log data model must already assume multiple writers with distinct identities.
-- Per-user identity (Q12) should exist in the schema from M1.
+- Per-user identity (L-8) should exist in the schema from M1.
 - Balances derived from email statements will need an "account balance checkpoint" concept that the ledger can reconcile against, so keep accounts as full entities from M1a.
 
 ## 15. Milestone 3 — placeholder
