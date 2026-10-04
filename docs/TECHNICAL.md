@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft v0.1 |
+| **Status** | Draft v0.2 — builds are local |
 | **Applies to** | Everyone who writes code here: the owner, and Claude sessions and agents |
 | **Companion docs** | [PRD](PRD.md), [message collection guide](guides/collecting-sample-messages.md) |
 
@@ -80,6 +80,7 @@ Proposed answers (the owner confirms or changes each):
 | Backend / frontend | N/A (no server) |
 | Database | SQLite via Room + SQLCipher |
 | Other infra | WorkManager; Google Drive appData and Gmail read-only via Google APIs |
+| Build | Local machine (Android Studio + Gradle), owner's Claude Pro plan |
 | Test framework | JUnit 5 + Kotest for the pure `core` modules; Robolectric where needed. Instrumented tests run locally only |
 | Coverage floor | 90% on `core` modules; no floor on thin UI code |
 | Lint/format | ktlint + detekt; pre-commit runs gitleaks |
@@ -89,7 +90,15 @@ Proposed answers (the owner confirms or changes each):
 | Doc taxonomy | Kit default under `docs/` |
 | Review/merge human | The owner. Agents never merge |
 
-**Decision needed (budget):** the kit's default runs the architect and code-reviewer on the session model and all three agents at `xhigh` effort. On a Pro plan with limited credit that is expensive. **[Proposed]** Developer on Sonnet at `high`; reviewer on Sonnet, escalating to the stronger model only for security-sensitive modules (parsers, crypto, sync, auth); architect only for non-trivial slices.
+**Model policy [Confirmed by the owner, 2026-10-04]:**
+
+| Agent | Model | Effort |
+|---|---|---|
+| architect | Opus | high |
+| senior-full-stack-dev (also does all parser/template work) | Sonnet | high |
+| code-reviewer | Sonnet | high *(the owner did not specify the reviewer; set to match the developer, to confirm)* |
+
+The kit's default (`xhigh` everywhere, reviewer on the session model) was replaced. A spawner may bump a run to Opus for a genuinely hard step (novel pattern, crypto, subtle concurrency) and must say so.
 
 ## 5. R4 — security review before every PR
 
@@ -133,15 +142,10 @@ No PR is opened until a security review of the branch diff is done and recorded.
 
 **Definition of done (per slice).** Tests written first and passing; docs updated; graph refreshed; security review recorded; PR within the size cap.
 
-## 7. Environment constraints (found on 2026-10-04)
+## 7. Build environment **[Confirmed]**
 
-| Check | Result |
-|---|---|
-| `maven.google.com`, Maven Central, `services.gradle.org` | Reachable |
-| `dl.google.com` (Android SDK packages) | **Blocked** by the cloud environment's network policy |
-
-Consequence: Android modules can't be built in the cloud session until `dl.google.com` is allowed. **Owner action:** in the cloud environment settings, set Network access to *Custom* with `dl.google.com` added under Allowed domains and the default package-manager list kept ([docs](https://code.claude.com/docs/en/cloud-environments#network-access)). Until then only the pure-JVM `core` modules can be built and tested in the cloud, which fits the architecture above. Android modules would be built locally.
+Everything is built and tested **locally on the owner's machine**; see [local setup guide](guides/local-setup.md). Cloud sessions are not used for builds. (Finding from 2026-10-04, kept for context: the cloud environment's network policy blocked `dl.google.com`, which is where the Android SDK is downloaded from. It no longer matters.) The pure-Kotlin `core` split still pays off: those modules test in seconds on a plain JVM, without an emulator, which keeps sessions short and cheap.
 
 ## 8. Token and cost discipline
 
-Budget: Claude **Pro** plan plus **$100 free cloud credit** (what exactly the credit covers is an open question, PRD Q9). Rules: one slice per session; query the graph first (R1); no broad exploration or "audit everything" prompts; no subagents unless the plan calls for them; deterministic code and tests over long debugging; write research findings into `docs/research/` once. PRD §16 has the slice plan.
+Budget: the owner's **Claude Pro plan** usage limits (building locally). Rules: one slice per session; query the graph first (R1); no broad exploration or "audit everything" prompts; no subagents unless the plan calls for them; deterministic code and tests over long debugging; write research findings into `docs/research/` once. PRD §16 has the slice plan.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft v0.3 — owner answers round 3 folded in |
+| **Status** | Draft v0.4 — decisions committed; build is local |
 | **Owner** | akashg.sde@gmail.com |
 | **Scope of this version** | Milestone 1 in detail; Milestones 2 and 3 as direction only |
 | **Source** | Handwritten milestone notes + Q&A (see [Decisions log](#12-decisions-log)) |
@@ -98,7 +98,7 @@ The app must **detect bank accounts, credit cards and loans from SMS and email a
 | AD-2 | **Unique identity.** Each entity has an identity key built from issuer + instrument type + masked identifier (e.g. last 4 digits, or a loan account fragment). SMS "A/c XX1234" and an email "account ending 1234" resolve to the **same** entity. Two phones that independently discover the same account converge on the same entity ID (deterministic ID from the identity key) instead of creating duplicates. |
 | AD-3 | **Ambiguity is surfaced, not guessed.** If a message could belong to more than one entity (e.g. two cards with the same last 4), it is attached to none until the user picks, and appears in the review inbox. |
 | AD-4 | **Credit cards** are discovered from card spend alerts and statements; limit, due date and statement amounts are captured as attributes with their source message. |
-| AD-5 | **Loans** are discovered from EMI debits and loan emails; lender, EMI amount and any principal, tenure and outstanding found are captured. Each EMI is linked to the loan (see LN-3). |
+| AD-5 | **Loans** are discovered from EMI debits (SMS) and loan emails, and from both channels land on the **same** loan entity. Lender, EMI amount and any principal, tenure and outstanding found are captured. Each EMI expense is linked to the loan (LN-1). |
 | AD-6 | Each discovered attribute (name, limit, due date, EMI) records its **provenance** (which message, parser version) and is never overwritten silently by a user-edited value. |
 | AD-7 | The user can **merge** two entities that are really one, and **split** one that was wrongly merged. Merge/split re-points transactions and is fully audited. |
 | AD-8 | Discovered entities and their attributes sync like any other data (Y-2). |
@@ -111,7 +111,7 @@ The app must **detect bank accounts, credit cards and loans from SMS and email a
 | L-2 | Categories form a two-level hierarchy (category → sub-category). Users can create, rename, recolour/re-icon, reorder and archive both. Archiving never deletes history. |
 | L-3 | Tags are free-form, user-defined, many-to-many with transactions. |
 | L-4 | Accounts represent the method/account used (bank account, credit card, cash, wallet/UPI). In M1 an account has a name, type, currency and optional identifiers used for matching (e.g. last 4 digits). Balance tracking from email is M2. |
-| L-5 | Transfers between accounts (including credit-card bill payments and EMI payments) are a first-class type and are **not** counted as income or expense. A transfer is two linked legs (out of one account, into another). **[Proposed — Q3]** |
+| L-5 | Transfers between accounts, including credit-card bill payments, are a first-class type and are **not** counted as income or expense. A transfer is two linked legs (out of one account, into another). **[Confirmed]** **EMI payments are the exception: they are expenses** (see LN-1). |
 | L-9 | **Single-entry ledger [Confirmed after confirming it supports bank-linked tracking].** Every transaction belongs to exactly one account (bank account, card, loan, cash) via `account_id`, so every transaction is linked to its bank/card and can be tracked per account now and later. A credit card or loan is a liability account; its outstanding is derived from its transactions. |
 | L-10 | **Balance observations.** Whenever a message or statement states a balance (SMS "Avl Bal", email statement), store it as an observation: account, amount, as-of time, source. M1 shows the last known balance per account. M2 compares computed balance (opening checkpoint + signed transactions) against observations to flag missing or wrong transactions. This replaces the debits-equal-credits check that double-entry would give. |
 | L-6 | A transaction's lifecycle state is visible: `unverified` (auto-logged, not yet reviewed) or `verified` (created manually or confirmed). **[Confirmed]** |
@@ -138,16 +138,17 @@ The app must **detect bank accounts, credit cards and loans from SMS and email a
 | R-4 | When an SMS/email transaction arrives that matches an upcoming recurring item (amount, payee, window), link it to that item instead of creating a duplicate. |
 | R-5 | Missed or overdue occurrences are surfaced, never silently skipped. |
 
-### 7.4 Loans
+### 7.4 Loans and EMIs
 
 **Scope for now [Confirmed]:** EMI loans owed to banks and credit-card companies. Person-to-person lending is out of scope for now.
 
 | ID | Requirement |
 |---|---|
-| LN-1 | A loan is a liability with: lender (bank / card issuer), principal, interest rate (optional), tenure, EMI amount, start date, and linked account. Outstanding and paid amounts are derived from linked transactions. |
-| LN-2 | EMI schedule feeds the recurring engine (R-1) so each instalment appears as an upcoming item. |
-| LN-3 | An incoming SMS/email EMI debit is matched to the loan's schedule (amount, lender, window) and linked, not double-counted (see R-4, X-3). |
-| LN-4 | Credit-card EMI conversions are modelled as loans against the card issuer. Tracking the card's total outstanding balance from email is M2. |
+| LN-1 | **EMIs are expenses [Confirmed].** Each EMI payment is an expense transaction (default category "Loan EMI"), counted in budgets and spending, and **linked to its loan entity**. It is never a transfer. |
+| LN-2 | A loan is one entity in the app, whether it is first seen in an SMS or in an email. It holds lender, loan account fragment, EMI amount, start date, and (when found) principal, interest rate, tenure and outstanding. Identity resolution follows AD-2 (lender + loan account fragment), so the SMS EMI debit and the email loan notice update the **same** loan. |
+| LN-3 | Paid amount and outstanding are derived from linked EMI transactions. Outstanding amounts stated in emails or statements are stored as balance observations (L-10) on the loan. |
+| LN-4 | The EMI schedule feeds the recurring engine (R-1), so upcoming EMIs appear ahead of time. An incoming EMI debit is matched to the schedule and linked, not double-counted (R-4, X-3). |
+| LN-5 | Credit-card EMI conversions are loans against the card issuer and follow the same rules. Their interaction with the original purchase is open (Q13). |
 
 ### 7.5 Goals
 
@@ -296,6 +297,11 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 19 | Sync key is passphrase-derived | 2026-10-04 |
 | 20 | Budget: Claude Pro plan + $100 free cloud credit | 2026-10-04 |
 | 21 | Engineering rules (graphify, no secrets in repo, starter kit, security review before PR) are in `docs/TECHNICAL.md` | 2026-10-04 |
+| 22 | **Building locally** on the owner's machine with their Claude Pro plan; cloud credit is not relevant | 2026-10-04 |
+| 23 | Agent models: **architect = Opus (high)**; **developer, including parser work = Sonnet (high)**; code-reviewer = Sonnet (high) *(reviewer not specified by the owner; set to match the developer, to confirm)* | 2026-10-04 |
+| 24 | Scope of the current step: commit decisions, docs and setup only; no application code | 2026-10-04 |
+| 25 | Transfers and credit-card bill payments are not income/expense; **EMIs are expenses** linked to their loan entity | 2026-10-04 |
+| 26 | Loans/EMIs found via SMS or email resolve to one loan entity | 2026-10-04 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions
@@ -304,14 +310,10 @@ Answered items are in the decisions log. Each remaining question has a proposed 
 
 | # | Question | Proposed default |
 |---|---|---|
-| Q1 | Which banks, credit cards and UPI apps do **you and your spouse** use? Send redacted samples made with `tools/redact` (guide: `docs/guides/collecting-sample-messages.md`). Blocking for the bank-specific parsers (M1b), not for M1a. | Generic parser plus overrides for your banks only |
-| Q2 | Which email senders carry alerts and statements? | Filter by a sender list you configure |
-| Q3 | Should transfers, card bill payments and EMI payments be excluded from income/expense? | Yes |
-| Q5 | "Credit-card companies" in loans: card EMI conversions only, or also the card's outstanding dues? (Dues are discovered as a card liability under AD-4 either way.) | EMI conversions as loans; card dues as the card's liability |
-| Q9 | What does the **$100 free cloud credit** cover (Claude Code on the web usage only? expiry?) and what are the Pro plan's usage limits in practice? | Treat the budget as small; plan per section 16 |
-| Q10 | Starter-kit model policy: keep the kit's default (premium plans and reviews, all at `xhigh`) or the cheaper proposal in `docs/TECHNICAL.md` §4? | Cheaper proposal |
-| Q11 | Cloud environment network: allow `dl.google.com` so Android modules can build in cloud sessions, or build Android modules locally only? | Allow `dl.google.com` |
-| Q12 | The 5th item in your technical rules list was blank. Is there another rule to add? | None |
+| Q1 | Which banks, credit cards and UPI apps do **you and your spouse** use? Send redacted samples made with `tools/redact` (guide: `docs/guides/collecting-sample-messages.md`). **Owner will share later; kept open for planning.** Blocks the bank-specific parsers (M1b), not M1a. | Generic parser plus overrides for your banks only |
+| Q2 | Which email senders carry alerts and statements? (**Owner will share later; kept open for planning.**) | Filter by a sender list you configure |
+| Q13 | A card purchase later converted to EMI: the original purchase and the EMI instalments would double count. Proposed: log the instalments as the expense and neutralise the original purchase by linking it to the loan (audited). OK? | As proposed |
+| Q12 | The 5th item in your technical rules list was blank. Still open. Is there another rule to add? | None |
 
 ## 14. Milestone 2 — direction (not yet specified)
 
@@ -330,14 +332,15 @@ Implications to keep in mind while building M1:
 
 Insights; requirements deliberately open. To be specified after M1/M2 usage shows what questions the owner actually asks of the data.
 
-## 16. Delivery constraints — token budget **[Confirmed constraint, approach Proposed]**
+## 16. Delivery constraints **[Confirmed]**
 
-The owner's budget for building this is bounded by their **Claude Pro plan limits plus a $100 free cloud credit** [Confirmed]. Engineering rules for keeping within it (graphify, model policy) are in `docs/TECHNICAL.md` §2, §4 and §8. Approach:
+The owner builds **locally on their own machine** with their **Claude Pro plan**; cloud sessions and cloud credit are not part of the plan. The binding constraint is therefore the Pro plan's usage limits. Engineering rules for staying within them (graphify, model policy) are in `docs/TECHNICAL.md` §2, §4 and §8. Approach:
 
-1. **Build in small vertical slices**, one per session, each ending with passing tests and a commit. M1a is the first target. No M1b/M1c work starts until M1a is accepted.
-2. **Keep the repo cheap to read.** A short `CLAUDE.md` holds architecture, conventions and commands, so a session needn't re-explore the codebase. Docs stay short and link instead of repeat.
-3. **Prefer deterministic, test-driven code** for parsers, matching, recurring, budget math and sync merge. Failures get caught by tests rather than long debugging.
-4. **Data-driven parsers.** Adding a bank format means adding a template and a fixture, not new code paths.
-5. **No broad "audit everything" sessions** and no unnecessary subagents. Research is done once and written into `docs/research/`.
-6. **Stop points.** Every slice has a definition of done in advance. If a slice would exceed its budget, it is cut down, not extended.
-7. Suggested slice order for M1a: **S0 adopt the starter kit and graphify** → schema + migrations + audit trail → accounts/categories/tags → transactions UI → budgets → recurring/subscriptions → loans → goals → app lock + encryption.
+1. **Small vertical slices**, one per session, each ending with passing tests and a commit. M1a first; no M1b/M1c work until M1a is accepted.
+2. **Keep the repo cheap to read.** `CLAUDE.md` holds architecture, conventions and commands; docs link instead of repeat; query the graphify graph before opening files.
+3. **Deterministic, test-driven code** for parsers, matching, recurring, budget math and sync merge.
+4. **Data-driven parsers.** A new bank format is a template plus a fixture, not a new code path.
+5. **No broad "audit everything" sessions** and no unnecessary subagents. Research is done once and written to `docs/research/`.
+6. **Stop points.** Every slice has a definition of done in advance; a slice that would overrun is cut down, not extended.
+7. **Current step (S0):** commit decisions, docs and setup only: starter kit adopted, local setup guide, rules. No application code.
+8. **Suggested slice order for M1a** after S0: schema + migrations + audit trail → accounts/categories/tags → transactions UI → budgets → recurring/subscriptions → loans/EMIs → goals → app lock + encryption.
