@@ -20,7 +20,6 @@
 | R2 | **No secrets in the repo.** They are read from the installed environment | [3](#3-r2--no-secrets-in-the-repo) |
 | R3 | Set up agents and rules with **`imagh/claude-project-starter-kit`** | [4](#4-r3--claude-project-starter-kit) |
 | R4 | **Security review before every PR** | [5](#5-r4--security-review-before-every-pr) |
-| R5 | *(the owner's list ended with an empty bullet — add further rules here)* | — |
 
 ---
 

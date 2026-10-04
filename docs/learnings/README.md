@@ -15,7 +15,7 @@ each entry short: what we learned, why it matters, and how to apply it next time
 
 ### 2026-10-04 — EMIs are expenses; transfers and card bill payments are not
 - **Learning:** an EMI payment is an expense linked to its loan entity. Transfers between own accounts and credit-card bill payments are not income/expense.
-- **Why:** counts spending once and keeps the loan's outstanding derivable from linked EMIs. Card EMI conversions can double count (PRD Q13).
+- **Why:** counts spending once and keeps the loan's outstanding derivable from linked EMIs. A card purchase converted to EMI would double count, so the original purchase is neutralised by linking it to the loan (PRD LN-5).
 
 ### 2026-10-04 — Bank SMS are untrusted input; parsing is templates only
 - **Learning:** sender headers can be spoofed and scam messages mimic bank alerts. Parsing is deterministic and on-device; auto-logged transactions are flagged unverified.

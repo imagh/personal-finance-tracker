@@ -148,7 +148,7 @@ The app must **detect bank accounts, credit cards and loans from SMS and email a
 | LN-2 | A loan is one entity in the app, whether it is first seen in an SMS or in an email. It holds lender, loan account fragment, EMI amount, start date, and (when found) principal, interest rate, tenure and outstanding. Identity resolution follows AD-2 (lender + loan account fragment), so the SMS EMI debit and the email loan notice update the **same** loan. |
 | LN-3 | Paid amount and outstanding are derived from linked EMI transactions. Outstanding amounts stated in emails or statements are stored as balance observations (L-10) on the loan. |
 | LN-4 | The EMI schedule feeds the recurring engine (R-1), so upcoming EMIs appear ahead of time. An incoming EMI debit is matched to the schedule and linked, not double-counted (R-4, X-3). |
-| LN-5 | Credit-card EMI conversions are loans against the card issuer and follow the same rules. Their interaction with the original purchase is open (Q13). |
+| LN-5 | Credit-card EMI conversions are loans against the card issuer and follow the same rules. When a card purchase is converted to EMI, the instalments are logged as the expense and the original purchase is neutralised by linking it to the loan (audited), so nothing is counted twice. **[Confirmed]** |
 
 ### 7.5 Goals
 
@@ -302,6 +302,8 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 24 | Scope of the current step: commit decisions, docs and setup only; no application code | 2026-10-04 |
 | 25 | Transfers and credit-card bill payments are not income/expense; **EMIs are expenses** linked to their loan entity | 2026-10-04 |
 | 26 | Loans/EMIs found via SMS or email resolve to one loan entity | 2026-10-04 |
+| 27 | Card purchase converted to EMI: instalments are the expense; the original purchase is neutralised by linking it to the loan | 2026-10-04 |
+| 28 | The blank fifth item in the technical rules list was a mistake; there are four rules | 2026-10-04 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions
@@ -312,8 +314,6 @@ Answered items are in the decisions log. Each remaining question has a proposed 
 |---|---|---|
 | Q1 | Which banks, credit cards and UPI apps do **you and your spouse** use? Send redacted samples made with `tools/redact` (guide: `docs/guides/collecting-sample-messages.md`). **Owner will share later; kept open for planning.** Blocks the bank-specific parsers (M1b), not M1a. | Generic parser plus overrides for your banks only |
 | Q2 | Which email senders carry alerts and statements? (**Owner will share later; kept open for planning.**) | Filter by a sender list you configure |
-| Q13 | A card purchase later converted to EMI: the original purchase and the EMI instalments would double count. Proposed: log the instalments as the expense and neutralise the original purchase by linking it to the loan (audited). OK? | As proposed |
-| Q12 | The 5th item in your technical rules list was blank. Still open. Is there another rule to add? | None |
 
 ## 14. Milestone 2 — direction (not yet specified)
 
