@@ -1,0 +1,50 @@
+# Local quality gates (CLAUDE.md §9). Install once, per clone:
+#   pre-commit install && pre-commit install --hook-type pre-push
+# Secret scanning and private-key detection enforce Rule C and must not be removed.
+# The Gradle hooks skip cleanly until the Gradle project exists (slice M1a-1).
+
+repos:
+  # --- Secret scanning (Rule C: do not remove) ---
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # --- Basic hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+
+  # --- Project gates ---
+  - repo: local
+    hooks:
+      # Lint + format on COMMIT.
+      - id: lint-format
+        name: lint & format (ktlint + detekt)
+        entry: bash -c 'if [ -x ./gradlew ]; then ./gradlew --quiet ktlintFormat detekt; else echo "no Gradle project yet, skipped"; fi'
+        language: system
+        files: \.(kt|kts)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # Full test suite on PUSH (coverage floor 90% on core modules, enforced in Gradle).
+      - id: tests-gradle
+        name: Gradle check (JUnit 5 + Kotest)
+        entry: bash -c 'if [ -x ./gradlew ]; then ./gradlew check; else echo "no Gradle project yet, skipped"; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: tests-tools
+        name: tools/redact unit tests
+        entry: python3 -m unittest discover -s tools/redact
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

@@ -1,0 +1,21 @@
+
+# Private financial data: never commit raw exports or unreviewed redaction output
+redacted-out/
+private/
+*.mbox
+*.eml
+sms-*.xml
+*.jsonl
+!fixtures/**/*.jsonl
+
+# Secrets (values come from the installed environment, never the repo)
+.env
+.env.*
+!.env.example
+local.properties
+*.jks
+*.keystore
+secrets/
+credentials/
+google-services.json
+client_secret*.json
