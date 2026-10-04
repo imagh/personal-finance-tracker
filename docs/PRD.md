@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft v0.2 — owner answers round 2 folded in |
+| **Status** | Draft v0.3 — owner answers round 3 folded in |
 | **Owner** | akashg.sde@gmail.com |
 | **Scope of this version** | Milestone 1 in detail; Milestones 2 and 3 as direction only |
 | **Source** | Handwritten milestone notes + Q&A (see [Decisions log](#12-decisions-log)) |
@@ -88,6 +88,21 @@ M1 is large. Delivering it in three increments gives a usable app early and de-r
 
 ## 7. Milestone 1 — Functional requirements
 
+### 7.0 Automatic discovery of accounts, cards and loans **[Confirmed]**
+
+The app must **detect bank accounts, credit cards and loans from SMS and email and maintain each one uniquely**, instead of waiting for the user to add them.
+
+| ID | Requirement |
+|---|---|
+| AD-1 | When a parsed message references an account, card or loan the app doesn't know, it creates the entity automatically with status `discovered` (unconfirmed) and attaches the transaction to it immediately. The user can confirm, rename or correct it later. |
+| AD-2 | **Unique identity.** Each entity has an identity key built from issuer + instrument type + masked identifier (e.g. last 4 digits, or a loan account fragment). SMS "A/c XX1234" and an email "account ending 1234" resolve to the **same** entity. Two phones that independently discover the same account converge on the same entity ID (deterministic ID from the identity key) instead of creating duplicates. |
+| AD-3 | **Ambiguity is surfaced, not guessed.** If a message could belong to more than one entity (e.g. two cards with the same last 4), it is attached to none until the user picks, and appears in the review inbox. |
+| AD-4 | **Credit cards** are discovered from card spend alerts and statements; limit, due date and statement amounts are captured as attributes with their source message. |
+| AD-5 | **Loans** are discovered from EMI debits and loan emails; lender, EMI amount and any principal, tenure and outstanding found are captured. Each EMI is linked to the loan (see LN-3). |
+| AD-6 | Each discovered attribute (name, limit, due date, EMI) records its **provenance** (which message, parser version) and is never overwritten silently by a user-edited value. |
+| AD-7 | The user can **merge** two entities that are really one, and **split** one that was wrongly merged. Merge/split re-points transactions and is fully audited. |
+| AD-8 | Discovered entities and their attributes sync like any other data (Y-2). |
+
 ### 7.1 Core ledger
 
 | ID | Requirement |
@@ -96,7 +111,9 @@ M1 is large. Delivering it in three increments gives a usable app early and de-r
 | L-2 | Categories form a two-level hierarchy (category → sub-category). Users can create, rename, recolour/re-icon, reorder and archive both. Archiving never deletes history. |
 | L-3 | Tags are free-form, user-defined, many-to-many with transactions. |
 | L-4 | Accounts represent the method/account used (bank account, credit card, cash, wallet/UPI). In M1 an account has a name, type, currency and optional identifiers used for matching (e.g. last 4 digits). Balance tracking from email is M2. |
-| L-5 | Transfers between accounts (including credit-card bill payments) are a first-class type and are **not** counted as income or expense. **[Proposed — Q7]** |
+| L-5 | Transfers between accounts (including credit-card bill payments and EMI payments) are a first-class type and are **not** counted as income or expense. A transfer is two linked legs (out of one account, into another). **[Proposed — Q3]** |
+| L-9 | **Single-entry ledger [Confirmed after confirming it supports bank-linked tracking].** Every transaction belongs to exactly one account (bank account, card, loan, cash) via `account_id`, so every transaction is linked to its bank/card and can be tracked per account now and later. A credit card or loan is a liability account; its outstanding is derived from its transactions. |
+| L-10 | **Balance observations.** Whenever a message or statement states a balance (SMS "Avl Bal", email statement), store it as an observation: account, amount, as-of time, source. M1 shows the last known balance per account. M2 compares computed balance (opening checkpoint + signed transactions) against observations to flag missing or wrong transactions. This replaces the debits-equal-credits check that double-entry would give. |
 | L-6 | A transaction's lifecycle state is visible: `unverified` (auto-logged, not yet reviewed) or `verified` (created manually or confirmed). **[Confirmed]** |
 | L-7 | Full-text search and filtering by date range, account, category, tag, amount, state. |
 | L-8 | Every transaction records who created it (user profile) and on which device. In M1 both users share one Google account, so the user profile is chosen per device on first run. **[Confirmed]** |
@@ -154,7 +171,7 @@ M1 is large. Delivering it in three increments gives a usable app early and de-r
 | S-8 | Reading existing historical SMS (backfill) is user-initiated and idempotent. |
 | S-9 | OTP and other non-financial messages are never stored. |
 | S-10 | **Read-only.** The app only reads SMS and email. It never deletes, edits, sends or marks them. **[Confirmed]** |
-| S-11 | **Parse log.** When a message can't be parsed, or the user flags a transaction as wrongly parsed ("Report parse error"), the app keeps an entry with the source message text and parser version, in the encrypted local DB, never synced. Messages that parse successfully are not stored: only the message ID and parsed fields are kept, and they can be re-read from the phone or mailbox if re-parsing is needed. **[Confirmed; extraction of this log is a later feature]** |
+| S-11 | **Parse log.** When a message can't be parsed, or the user flags a transaction as wrongly parsed ("Report parse error"), the app keeps an entry with the source message text and parser version, in the encrypted local DB, never synced. Messages that parse successfully are not stored: only the message ID and parsed fields are kept, and they can be re-read from the phone or mailbox if re-parsing is needed. **[Confirmed, including encrypted-local-only storage; extraction of this log is a later feature. Tooling to share redacted samples: `tools/redact`]** |
 | S-12 | **Messages are untrusted input.** Sender headers can be spoofed and scam messages mimic bank alerts. Reject messages containing links or phishing wording, require a plausible sender header, and rely on the `unverified` flag so a forged alert is never treated as fact. **[Proposed]** |
 | S-13 | Sender matching strips the operator prefix (e.g. `VM-`, `AD-`) and suffix (e.g. `-S`) and matches the remaining header against an alias registry per bank. See `docs/research/indian-bank-sms.md`. |
 
@@ -162,6 +179,7 @@ M1 is large. Delivering it in three increments gives a usable app early and de-r
 
 | ID | Requirement |
 |---|---|
+| E-0 | **Two Google identities per device [Confirmed].** The shared account (sync/backup, Drive only) and the user's **personal** account (Gmail read-only). A person's email is read **only on their own device**; the resulting transactions reach the other person through sync. The shared mailbox is never read for transactions. |
 | E-1 | Read transaction alerts/statements from Gmail using the **read-only Gmail API scope** (`gmail.readonly`) via OAuth. No send/modify/delete scope. **[Confirmed]** |
 | E-2 | Only messages from configured senders / matching configured filters are fetched and parsed; the app does not index the whole mailbox. **[Proposed]** |
 | E-3 | Parsing is on-device and deterministic (same rules as S-2), producing `unverified` transactions with the same notification flow. |
@@ -187,9 +205,9 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 
 | ID | Requirement |
 |---|---|
-| Y-1 | Devices sync through a hidden app-data folder in Google Drive using the non-sensitive `drive.appdata` scope. |
+| Y-1 | Devices sync through a hidden app-data folder in Google Drive using the non-sensitive `drive.appdata` scope, signed in with the **shared household Google account**, which is used only for sync and backup. **[Confirmed]** |
 | Y-2 | Sync is **operation-log based**: each device appends immutable change records (create/update/delete-as-tombstone) with a device ID and a hybrid logical timestamp. Devices merge logs deterministically. **[Proposed]** |
-| Y-3 | Sync payloads are **encrypted client-side** before upload, using a key that never leaves the user's devices. Google can't read the ledger. **[Confirmed]** How devices obtain the shared key is open (Q8). |
+| Y-3 | Sync payloads are **encrypted client-side** before upload, using a key that never leaves the user's devices. Google can't read the ledger. **[Confirmed]** The key is derived from a **passphrase entered on each device** (Argon2id), so it is recoverable and never stored in Google. **[Confirmed]** |
 | Y-4 | **Raw SMS/email text is never synced**; only parsed transaction data and the source references needed for de-duplication (X-2). **[Proposed]** |
 | Y-5 | Conflicts on the same field are resolved deterministically and visibly (e.g. last-writer-wins by logical clock, with the losing value retained in history). No silent data loss. |
 | Y-6 | Sync works offline-first: the app is fully usable without a network and converges when connectivity returns. |
@@ -271,6 +289,13 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 12 | Per-user attribution (created by user and device) in M1 | 2026-10-04 |
 | 13 | SQLCipher, app lock, client-side-encrypted sync, and the M1a/b/c phasing are approved | 2026-10-04 |
 | 14 | Build effort must stay within the owner's Claude token limit (see section 16) | 2026-10-04 |
+| 15 | App must auto-detect accounts, cards and loans from SMS/email and keep them unique (§7.0) | 2026-10-04 |
+| 16 | Single-entry ledger with per-account linking, first-class transfers and balance observations | 2026-10-04 |
+| 17 | Parse log is encrypted and local-only; masking when exported is a later feature | 2026-10-04 |
+| 18 | Shared Google account is for Drive sync/backup only; email is read on each person's own device from their personal mailbox | 2026-10-04 |
+| 19 | Sync key is passphrase-derived | 2026-10-04 |
+| 20 | Budget: Claude Pro plan + $100 free cloud credit | 2026-10-04 |
+| 21 | Engineering rules (graphify, no secrets in repo, starter kit, security review before PR) are in `docs/TECHNICAL.md` | 2026-10-04 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions
@@ -279,15 +304,14 @@ Answered items are in the decisions log. Each remaining question has a proposed 
 
 | # | Question | Proposed default |
 |---|---|---|
-| Q1 | Which banks, credit cards and UPI apps do **you and your spouse** actually use? A parser for every Indian bank isn't feasible or needed (see `docs/research/indian-bank-sms.md`). The templates are built for these first. Redacted sample SMS/emails for each would speed this up. | Generic parser plus overrides for your banks only |
-| Q2 | Which email senders carry alerts and statements for those accounts? | Filter by a sender list you configure |
-| Q3 | Do transfers and credit-card bill payments need to be first-class (excluded from income/expense)? | Yes |
-| Q4 | Single-entry (Cashew-style) or double-entry bookkeeping? | Single-entry with first-class transfers; revisit before M2 balances |
-| Q5 | "Credit-card companies" in loans: do you mean card EMI conversions, or the card's outstanding dues as a loan? | EMI conversions only; card dues are M2 |
-| Q6 | The parse log (S-11) holds raw failed messages, which contain account numbers and balances. Is encrypted-local-only OK, with the option to mask digits when extracted later? | Yes |
-| Q7 | Which email account is read in M1: the shared Google account, or each person's own? M2 says each user uses their own. | Each device reads its own configured mailbox; ingestion is idempotent (X-2) |
-| Q8 | How should two devices share the sync encryption key? Options: passphrase entered on each device (recoverable), or QR pairing from the first device. | Passphrase-derived key (Argon2id) |
-| Q9 | What is your actual Claude token limit (plan, per-window or monthly)? It decides how many work sessions M1a can use. | Assume a small budget; plan M1a in compact, test-first slices (section 16) |
+| Q1 | Which banks, credit cards and UPI apps do **you and your spouse** use? Send redacted samples made with `tools/redact` (guide: `docs/guides/collecting-sample-messages.md`). Blocking for the bank-specific parsers (M1b), not for M1a. | Generic parser plus overrides for your banks only |
+| Q2 | Which email senders carry alerts and statements? | Filter by a sender list you configure |
+| Q3 | Should transfers, card bill payments and EMI payments be excluded from income/expense? | Yes |
+| Q5 | "Credit-card companies" in loans: card EMI conversions only, or also the card's outstanding dues? (Dues are discovered as a card liability under AD-4 either way.) | EMI conversions as loans; card dues as the card's liability |
+| Q9 | What does the **$100 free cloud credit** cover (Claude Code on the web usage only? expiry?) and what are the Pro plan's usage limits in practice? | Treat the budget as small; plan per section 16 |
+| Q10 | Starter-kit model policy: keep the kit's default (premium plans and reviews, all at `xhigh`) or the cheaper proposal in `docs/TECHNICAL.md` §4? | Cheaper proposal |
+| Q11 | Cloud environment network: allow `dl.google.com` so Android modules can build in cloud sessions, or build Android modules locally only? | Allow `dl.google.com` |
+| Q12 | The 5th item in your technical rules list was blank. Is there another rule to add? | None |
 
 ## 14. Milestone 2 — direction (not yet specified)
 
@@ -308,7 +332,7 @@ Insights; requirements deliberately open. To be specified after M1/M2 usage show
 
 ## 16. Delivery constraints — token budget **[Confirmed constraint, approach Proposed]**
 
-The owner's budget for building this is bounded by their Claude token limit. Approach:
+The owner's budget for building this is bounded by their **Claude Pro plan limits plus a $100 free cloud credit** [Confirmed]. Engineering rules for keeping within it (graphify, model policy) are in `docs/TECHNICAL.md` §2, §4 and §8. Approach:
 
 1. **Build in small vertical slices**, one per session, each ending with passing tests and a commit. M1a is the first target. No M1b/M1c work starts until M1a is accepted.
 2. **Keep the repo cheap to read.** A short `CLAUDE.md` holds architecture, conventions and commands, so a session needn't re-explore the codebase. Docs stay short and link instead of repeat.
@@ -316,4 +340,4 @@ The owner's budget for building this is bounded by their Claude token limit. App
 4. **Data-driven parsers.** Adding a bank format means adding a template and a fixture, not new code paths.
 5. **No broad "audit everything" sessions** and no unnecessary subagents. Research is done once and written into `docs/research/`.
 6. **Stop points.** Every slice has a definition of done in advance. If a slice would exceed its budget, it is cut down, not extended.
-7. Suggested slice order for M1a: schema + migrations + audit trail → accounts/categories/tags → transactions UI → budgets → recurring/subscriptions → loans → goals → app lock + encryption.
+7. Suggested slice order for M1a: **S0 adopt the starter kit and graphify** → schema + migrations + audit trail → accounts/categories/tags → transactions UI → budgets → recurring/subscriptions → loans → goals → app lock + encryption.
