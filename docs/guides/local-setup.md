@@ -105,13 +105,14 @@ Debug builds need none of these. The `.gitignore` and the agents' deny-list alre
 
 ## 6. graphify (token saver, docs/TECHNICAL.md §2)
 
-Do this once the first code exists; an empty repo has nothing to graph. Commands are from upstream's README as of 2026-10-04, so check them again.
+The repo already carries the graph (`graphify-out/graph.json`, `GRAPH_REPORT.md`), the `CLAUDE.md` section and the PreToolUse hook in `.claude/settings.json`. Each machine only needs the tool:
 
-1. **Vet first.** The PyPI name is `graphifyy` (temporary). Confirm the PyPI page links to the upstream GitHub repo, pick a version, and **pin it**.
-2. `uv tool install graphifyy==<pinned version>`
-3. In the repo: `graphify install --project`, then `graphify claude install`. This edits `CLAUDE.md` and adds a hook. **Merge, don't overwrite**, and read the hook before accepting it.
-4. Build the graph in code-only mode (no LLM tokens), then `graphify hook install` to keep it fresh.
-5. Commit `graphify-out/graph.json` and `GRAPH_REPORT.md`; keep `graph.html` local.
+1. `uv tool install graphifyy==0.9.97` (pinned and vetted in TECHNICAL.md §2). It must land in `~/.local/bin`, which is where the committed hook calls it.
+2. Check: `~/.local/bin/graphify --version` prints `graphifyy v0.9.97`.
+3. Optional, once Kotlin code exists: `graphify hook install` adds post-commit/checkout/merge/rewrite hooks that rebuild the code graph. They sit beside the pre-commit hooks without replacing them.
+4. After `git pull`, `graphify update .` refreshes code nodes for free. Doc nodes need `/graphify . --update` in Claude, which costs tokens; run it when docs change materially.
+
+To upgrade: vet the new version, re-read the hook, then update the pin here and in TECHNICAL.md §2.
 
 ## 7. Using the agents
 

@@ -27,22 +27,24 @@
 
 Graphify turns the repo into a queryable knowledge graph so a session reads the relevant subgraph instead of re-reading files. **[Owner rule]**
 
-Commands below are from the project's README as of 2026-10-04 **[Verify]**: repo `safishamsi/graphify` (now under the Graphify-Labs org).
+**Pinned: `graphifyy==0.9.97`** (Apache-2.0; PyPI links the upstream repo `Graphify-Labs/graphify`). Vetted 2026-10-28: the PreToolUse hook (`graphify hook-guard search|read`) only prints a hint to query the graph first, never blocks a tool call, and does nothing on any error. This version was one day old when pinned, against the usual two-week minimum: it is a local dev tool, not a build or app dependency, and it is the version whose hook was read.
 
 ```bash
-uv tool install graphifyy          # PyPI name is temporarily "graphifyy" (double y)
+uv tool install graphifyy==0.9.97  # PyPI name is temporarily "graphifyy" (double y)
 graphify install --project         # register the skill for this project only
 graphify claude install            # writes a CLAUDE.md section + a PreToolUse hook
-graphify hook install              # rebuild on commit / branch checkout
+graphify hook install              # optional: post-commit/checkout/merge/rewrite rebuild (AST only)
 ```
 
+The committed `.claude/settings.json` calls `$HOME/.local/bin/graphify` (uv's default tool path), so both machines need graphify installed there.
+
 Rules:
-1. **Vet before installing.** The PyPI name is a stopgap, which is typosquat territory. Confirm the PyPI page links to the upstream GitHub repo, then **pin an exact version** and re-vet on every upgrade. Install it in the cloud environment's setup script, not per session.
-2. **Code-only mode by default** (`--code-only` / default AST mode): parsed locally with tree-sitter, zero LLM tokens. Never use `--mode deep` without the owner's approval. Docs, PDFs and images are sent to the model for extraction, which costs tokens and exposes content.
+1. **Vet before installing.** The PyPI name is a stopgap, which is typosquat territory. Confirm the PyPI page links to the upstream GitHub repo, then **pin an exact version** and re-vet on every upgrade, including re-reading the hook.
+2. **Code-only mode by default** (`--code-only` / default AST mode): parsed locally with tree-sitter, zero LLM tokens. Never use `--mode deep` without the owner's approval. Docs, PDFs and images are sent to the model for extraction, which costs tokens and exposes content. The repo's own docs are an exception: the owner chose to include them (the first build cost about 165k input tokens). Refresh their nodes with `/graphify . --update` only when docs change materially.
 3. **Keep personal data out of the graph's reach.** Real exports and unreviewed redaction output live outside the repo tree (and are git-ignored). Only reviewed fixtures live in `fixtures/`.
 4. **Query before reading.** In any session: `/graphify query`, `explain` or `path` first, then open only the files the graph points to. Use Grep for exact strings. Don't `cat` whole directories to "get oriented".
-5. **Keep the graph fresh.** `graphify hook install` rebuilds on commit; after `git pull`, run `graphify update .`. Stale graphs are worse than none, so a PR that restructures modules regenerates the graph in the same PR.
-6. **Commit** `graphify-out/graph.json` and `GRAPH_REPORT.md` so fresh cloud clones start with a graph; `graph.html` stays local. **[Proposed]** Reviewers skim generated diffs. Revisit if `graph.json` gets large or noisy.
+5. **Keep the graph fresh.** `graphify hook install` rebuilds code nodes on commit; after `git pull`, run `graphify update .`. Neither refreshes doc nodes; that needs `/graphify . --update`. Stale graphs are worse than none, so a PR that restructures modules regenerates the graph in the same PR.
+6. **Commit** `graphify-out/graph.json` and `GRAPH_REPORT.md` so fresh clones start with a graph; `.gitignore` keeps everything else in `graphify-out/` local (cache, `graph.html`, the manifest with its absolute paths). Reviewers skim generated diffs. Revisit if `graph.json` gets large or noisy.
 7. **Merge, don't clobber.** `graphify claude install` edits `CLAUDE.md` and adds a hook. Merge it into the starter kit's `CLAUDE.md` and `.claude/settings.json`, and read the hook before accepting it. Hooks execute commands.
 
 ## 3. R2 — no secrets in the repo
