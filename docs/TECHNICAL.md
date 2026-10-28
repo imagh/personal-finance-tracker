@@ -145,6 +145,27 @@ No PR is opened until a security review of the branch diff is done and recorded.
 
 Everything is built and tested **locally on the owner's machine**; see [local setup guide](guides/local-setup.md). Cloud sessions are not used for builds. (Finding from 2026-10-04, kept for context: the cloud environment's network policy blocked `dl.google.com`, which is where the Android SDK is downloaded from. It no longer matters.) The pure-Kotlin `core` split still pays off: those modules test in seconds on a plain JVM, without an emulator, which keeps sessions short and cheap.
 
+### 7.1 Pinned toolchain and core libraries (decided 2026-10-28)
+
+**Rule:** pin a mature, stable toolchain about two years old (late 2024) for better support. Bend the rule only for security: the JDK takes the latest patch of its line, SQLCipher was picked newer, and any library the vulnerability scan flags moves up to the nearest fixed version. Upgrades are deliberate, never on a schedule; re-check the compatibility tables below when bumping.
+
+| Item | Pin | Released | Why / compatibility |
+|---|---|---|---|
+| JDK | Eclipse Temurin **17**, latest 17.0.x patch | rolling | AGP 8.x requires JDK 17 ([JDKs](https://developer.android.com/build/jdks)). Selected per project through Gradle daemon JVM criteria (`gradle/gradle-daemon-jvm.properties`, `toolchainVersion=17`), so Studio and the terminal use the same JDK. |
+| Android Gradle plugin (AGP) | **8.7.3** | 2024-12-02 | Needs Gradle 8.9 or newer and JDK 17; supports up to API 35 ([AGP 8.7 notes](https://developer.android.com/build/releases/past-releases/agp-8-7-0-release-notes)). |
+| Gradle | **8.10.2** | 2024-09-23 | Wrapper pinned with `distributionSha256Sum=31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26`. |
+| Kotlin | **2.1.0** | 2024-11-27 | Kotlin Gradle plugin 2.1.0 is tested with AGP up to 8.7 and Gradle up to 8.10 ([Kotlin–Gradle–AGP table](https://kotlinlang.org/docs/gradle-configure-project.html)). |
+| Compose compiler | plugin `org.jetbrains.kotlin.plugin.compose` **2.1.0** | with Kotlin | Ships with Kotlin since 2.0, so it is versioned with Kotlin. |
+| Compose BOM | **2024.10.01** | Oct 2024 | Compose UI 1.7.5, Material 3 1.3.0 ([BOM mapping](https://developer.android.com/develop/ui/compose/bom/bom-mapping)). |
+| KSP | **2.1.0-1.0.29** | 2024-11-27 | Matches Kotlin 2.1.0; used by Room. |
+| Room | **2.7.1** | 2025-04-23 | Owner chose the newer line over 2.6.1. Requires compileSdk 34 or newer; uses `androidx.sqlite` 2.5.0. |
+| SQLCipher | `net.zetetic:sqlcipher-android` **4.7.2** | 2025-03-31 | Encryption layer that bundles its own SQLite, so it was picked newer for security fixes. Needs `androidx.sqlite` 2.2.0 or newer. Move up if the scan flags a SQLite CVE. |
+| SDK levels | minSdk **33** (Android 13), targetSdk **35**, compileSdk **35** | — | AGP 8.7 cannot compile against API 36. The app is sideloaded, so Google Play's targetSdk deadlines do not apply. |
+| SDK packages | `platform-tools`, `platforms;android-35`, `build-tools;34.0.0` | — | build-tools 34.0.0 is AGP 8.7's default. Nothing else: no NDK, CMake, emulator or system images unless a task needs them. |
+| Android Studio | current stable (not pinned) | — | A development tool, not part of the build. A newer Studio opens an AGP 8.7 project, and older versions miss security fixes. Ignore its prompts to upgrade AGP. |
+
+Room 2.7.1 with SQLCipher 4.7.2 has not been exercised together yet; the first M1a test that opens an encrypted database confirms the pairing.
+
 ## 8. Token and cost discipline
 
 Budget: the owner's **Claude Pro plan** usage limits (building locally). Rules: one slice per session; query the graph first (R1); no broad exploration or "audit everything" prompts; no subagents unless the plan calls for them; deterministic code and tests over long debugging; write research findings into `docs/research/` once. PRD §16 has the slice plan.
