@@ -23,3 +23,9 @@ client_secret*.json
 # Python bytecode (regenerated on every test run)
 __pycache__/
 *.pyc
+
+# graphify: commit only the graph and its report (docs/TECHNICAL.md §2); the rest is
+# per-machine cache, absolute paths and backups.
+graphify-out/*
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md
