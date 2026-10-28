@@ -19,8 +19,11 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # graphify-out/ is generated output, rewritten whole on every build.
       - id: end-of-file-fixer
+        exclude: ^graphify-out/
       - id: trailing-whitespace
+        exclude: ^graphify-out/
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-added-large-files

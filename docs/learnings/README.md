@@ -13,6 +13,11 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-10-28 — graphify: commit the graph, not the machine
+- **Learning:** `graphify claude install` writes the hook with an absolute path to one user's home and leaves a `settings.json.graphify-bak`. `graphify-out/` also holds a manifest with absolute paths, a cache and backups. `graphify update .` refreshes only code nodes, never docs.
+- **Why:** a committed absolute path breaks the hook on the second machine, and committing the rest of `graphify-out/` leaks local paths and churns diffs.
+- **How to apply:** hooks call `$HOME/.local/bin/graphify`; `.gitignore` lets through only `graph.json` and `GRAPH_REPORT.md`. Re-read the hook on every graphify upgrade. Use `/graphify . --update` when docs change.
+
 ### 2026-10-28 — Develop on the emulator; the primary phone never gets USB debugging
 - **Learning:** the owner's phone runs payment apps, which often refuse to work with Developer options or USB debugging on. The emulator is the development device, and it can receive fake SMS (`adb emu sms send`), which suits M1b. On Apple Silicon, API 35 images fall back to software rendering unless started with `-gpu host`.
 - **Why:** a sideloaded app can only be updated with the same signing key, and uninstalling wipes the encrypted database.
