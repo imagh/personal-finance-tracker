@@ -5,10 +5,15 @@
 
 repos:
   # --- Secret scanning (Rule C: do not remove) ---
+  # gitleaks-system runs the locally installed gitleaks (brew install gitleaks, pinned
+  # to the rev below) instead of building it from source, which would pull a Go
+  # toolchain into the pre-commit cache. Fails closed if gitleaks is not installed.
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.1
     hooks:
-      - id: gitleaks
+      - id: gitleaks-system
+        # Upstream omits this for the system variant; gitleaks scans the staged diff itself.
+        pass_filenames: false
 
   # --- Basic hygiene ---
   - repo: https://github.com/pre-commit/pre-commit-hooks
