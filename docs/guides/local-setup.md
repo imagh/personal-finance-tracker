@@ -8,9 +8,9 @@ All builds, tests and Claude sessions run locally. This is slice **S0**: tooling
 |---|---|---|
 | Git | version control | |
 | JDK | Gradle and Android builds | Eclipse Temurin 17, latest 17.0.x patch. AGP 8.7 needs JDK 17. See §2. |
-| Android SDK | compile, install | Command-line tools plus exactly three packages: `platform-tools`, `platforms;android-35`, `build-tools;34.0.0`. Lives in `~/Library/Android/sdk`. See §2. |
+| Android SDK | compile, install | Command-line tools plus exactly three packages: `platform-tools`, `platforms;android-35`, `build-tools;34.0.0`, and the emulator with one system image (§3). Lives in `~/Library/Android/sdk`. See §2. |
 | Android Studio | optional: Compose previews, profiler, emulator | Current stable; not pinned (it is a tool, not part of the build). Point it at the same SDK and JDK as the terminal. See §2. |
-| `adb` | install the APK, optional SMS export | From the SDK's `platform-tools` |
+| `adb` | drive the emulator, fake SMS, optional SMS export | From the SDK's `platform-tools`. Never enabled on the primary phone (see §3). |
 | Python 3.9+ | `tools/redact` | Standard library only |
 | `pre-commit` and `gitleaks` | local gates and secret scan | `brew install pre-commit gitleaks` (or `pip install pre-commit` and gitleaks from its release page) |
 | `uv` | installs graphify in isolation | |
@@ -18,7 +18,7 @@ All builds, tests and Claude sessions run locally. This is slice **S0**: tooling
 
 Pinned versions (AGP, Gradle, Kotlin, Compose, Room, SQLCipher, SDK levels) and the reasons for them are in `docs/TECHNICAL.md` §7.1. The rule is about two years old for support, newer only for security.
 
-**Do not install** the NDK, CMake, extra platforms or build-tools, `sources`, system images, Google Play images, or the emulator (unless you have no physical phone), and no second JDK manager such as SDKMAN.
+**Do not install** the NDK, CMake, extra platforms or build-tools, `sources`, Google Play images, or any system image beyond the one in §3, and no second JDK manager such as SDKMAN.
 
 ## 2. Android toolchain (macOS)
 
@@ -27,9 +27,10 @@ Pinned versions (AGP, Gradle, Kotlin, Compose, Room, SQLCipher, SDK levels) and 
    ```bash
    export JAVA_HOME="$(/usr/libexec/java_home -v 17)"
    export ANDROID_HOME="$HOME/Library/Android/sdk"
-   export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+   export PATH="$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+   setopt interactivecomments   # zsh: lets you paste commands that end in "# comment"
    ```
-   `ANDROID_SDK_ROOT` is deprecated; `ANDROID_HOME` is enough.
+   `ANDROID_SDK_ROOT` is deprecated; `ANDROID_HOME` is enough. Without `interactivecomments`, zsh passes a trailing `# ...` to the command as arguments (e.g. `adb` just prints its usage).
 3. **Get `sdkmanager`** (one of):
    - **Android Studio:** Settings → Languages & Frameworks → Android SDK. Set the location to `~/Library/Android/sdk`, then on the SDK Tools tab tick only *Android SDK Command-line Tools (latest)* and *Android SDK Platform-Tools*. Untick Emulator, NDK and CMake.
    - **Official zip:** download *Command line tools only* for Mac from <https://developer.android.com/studio>, check `shasum -a 256` against the value on that page, then:
@@ -56,7 +57,32 @@ Pinned versions (AGP, Gradle, Kotlin, Compose, Room, SQLCipher, SDK levels) and 
    - Ignore prompts to upgrade AGP; upgrades are deliberate (TECHNICAL.md §7.1).
 7. **Verify.** `java -version` shows 17.0.x Temurin, `sdkmanager --version` and `adb version` run. Once the Gradle project exists, `./gradlew --version` shows Gradle 8.10.2 on JVM 17, matching the JDK in Studio's Build window.
 
-## 3. Clone and install the git hooks
+## 3. Emulator and phone
+
+The primary phone runs payment apps, so it **never** gets Developer options or USB debugging (many payment apps refuse to run with them on). Development and testing use the emulator; the phone only gets sideloaded release builds.
+
+**Emulator** (one image only):
+
+```bash
+sdkmanager "emulator" "system-images;android-35;google_apis;arm64-v8a"
+avdmanager create avd -n pft35 -k "system-images;android-35;google_apis;arm64-v8a" -d pixel_7
+emulator -avd pft35 -gpu host > /tmp/pft35-emulator.log 2>&1 &
+adb devices                      # expect: emulator-5554  device (may say offline while booting)
+adb emu sms send 12345 "Test"    # appears in the emulator's Messages app
+```
+
+- `-gpu host` renders on the Mac's GPU; without it API 35 falls back to slow software rendering. Drop the flag if the screen glitches.
+- Answer **no** if `avdmanager` asks about a custom hardware profile; `-d pixel_7` avoids the question.
+- Use the Google APIs image, not a Google Play image. To check the minSdk floor later, add `system-images;android-33;google_apis;arm64-v8a`.
+- `adb emu sms send <sender> "<text>"` is how SMS capture (M1b) is tested end to end. Send only reviewed, redacted text from `fixtures/`, never raw messages.
+
+**Primary phone** (no USB, no Developer options):
+
+1. Install only **release** builds signed with the release keystore (§5). Android accepts an update only if it is signed with the same key; changing keys means uninstalling, which deletes the encrypted database. So never put a debug build on the phone, and create the keystore before the first install.
+2. Copy the APK to the phone (Google Drive or file transfer), open it in Files, allow *Install unknown apps* for Files once, install, then turn that permission off again.
+3. Android 13+ can block sensitive permissions for sideloaded apps ("restricted settings"). If a permission is greyed out, use App info → ⋮ → *Allow restricted settings*. Whether this covers SMS permissions on the phone's Android version is **unverified**; check it when M1b starts.
+
+## 4. Clone and install the git hooks
 
 ```bash
 git clone https://github.com/imagh/personal-finance-tracker && cd personal-finance-tracker
@@ -66,7 +92,7 @@ python3 -m unittest discover -s tools/redact      # sanity check, should pass
 
 Never commit with `--no-verify`. The Gradle hooks skip themselves until the Gradle project exists.
 
-## 4. Secrets: environment only (docs/TECHNICAL.md §3)
+## 5. Secrets: environment only (docs/TECHNICAL.md §3)
 
 Nothing secret goes in the repo. Put values in your shell profile or `~/.gradle/gradle.properties`:
 
@@ -77,7 +103,7 @@ Nothing secret goes in the repo. Put values in your shell profile or `~/.gradle/
 
 Debug builds need none of these. The `.gitignore` and the agents' deny-list already block `.env*`, `local.properties`, keystores and your private exports.
 
-## 5. graphify (token saver, docs/TECHNICAL.md §2)
+## 6. graphify (token saver, docs/TECHNICAL.md §2)
 
 Do this once the first code exists; an empty repo has nothing to graph. Commands are from upstream's README as of 2026-10-04, so check them again.
 
@@ -87,7 +113,7 @@ Do this once the first code exists; an empty repo has nothing to graph. Commands
 4. Build the graph in code-only mode (no LLM tokens), then `graphify hook install` to keep it fresh.
 5. Commit `graphify-out/graph.json` and `GRAPH_REPORT.md`; keep `graph.html` local.
 
-## 6. Using the agents
+## 7. Using the agents
 
 | Command | Does | Model |
 |---|---|---|
@@ -97,6 +123,6 @@ Do this once the first code exists; an empty repo has nothing to graph. Commands
 
 Before every PR also run `/security-review` (docs/TECHNICAL.md §5). Agents open PRs; **you** merge.
 
-## 7. Sample messages (when you are ready)
+## 8. Sample messages (when you are ready)
 
 See [collecting-sample-messages.md](collecting-sample-messages.md). Your bank list and redacted samples are still open for planning and are needed before M1b.
