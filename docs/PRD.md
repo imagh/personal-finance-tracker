@@ -306,6 +306,7 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 28 | The blank fifth item in the technical rules list was a mistake; there are four rules | 2026-10-04 |
 | 29 | Toolchain pinned about two years old (late 2024) for better support: AGP 8.7.3, Gradle 8.10.2, Kotlin 2.1.0, Compose BOM 2024.10.01, JDK Temurin 17 (latest patch); **minSdk 33 (Android 13)**, target/compileSdk 35; minimal SDK packages only. Details in `docs/TECHNICAL.md` §7.1 | 2026-10-28 |
 | 30 | Database libraries: **Room 2.7.1** and **SQLCipher (`sqlcipher-android`) 4.7.2**, the newer options, chosen over the older 2.6.1 / 4.6.1 | 2026-10-28 |
+| 31 | **No USB debugging on the primary phone** (it runs payment apps). Development and testing use the emulator, with fake SMS via `adb emu sms send`; the phone gets only sideloaded, release-signed builds | 2026-10-28 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions

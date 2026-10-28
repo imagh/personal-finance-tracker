@@ -161,7 +161,7 @@ Everything is built and tested **locally on the owner's machine**; see [local se
 | Room | **2.7.1** | 2025-04-23 | Owner chose the newer line over 2.6.1. Requires compileSdk 34 or newer; uses `androidx.sqlite` 2.5.0. |
 | SQLCipher | `net.zetetic:sqlcipher-android` **4.7.2** | 2025-03-31 | Encryption layer that bundles its own SQLite, so it was picked newer for security fixes. Needs `androidx.sqlite` 2.2.0 or newer. Move up if the scan flags a SQLite CVE. |
 | SDK levels | minSdk **33** (Android 13), targetSdk **35**, compileSdk **35** | — | AGP 8.7 cannot compile against API 36. The app is sideloaded, so Google Play's targetSdk deadlines do not apply. |
-| SDK packages | `platform-tools`, `platforms;android-35`, `build-tools;34.0.0` | — | build-tools 34.0.0 is AGP 8.7's default. Nothing else: no NDK, CMake, emulator or system images unless a task needs them. |
+| SDK packages | `platform-tools`, `platforms;android-35`, `build-tools;34.0.0`, `emulator`, `system-images;android-35;google_apis;arm64-v8a` | — | build-tools 34.0.0 is AGP 8.7's default. The emulator and one Google APIs image are the development device (the primary phone never gets USB debugging). Nothing else: no NDK, CMake, Google Play or extra system images unless a task needs them. |
 | Android Studio | current stable (not pinned) | — | A development tool, not part of the build. A newer Studio opens an AGP 8.7 project, and older versions miss security fixes. Ignore its prompts to upgrade AGP. |
 
 Room 2.7.1 with SQLCipher 4.7.2 has not been exercised together yet; the first M1a test that opens an encrypted database confirms the pairing.
