@@ -19,3 +19,7 @@ secrets/
 credentials/
 google-services.json
 client_secret*.json
+
+# Python bytecode (regenerated on every test run)
+__pycache__/
+*.pyc
