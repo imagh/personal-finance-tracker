@@ -1,14 +1,19 @@
 package dev.imagh.pft.app
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.PftTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,7 +22,7 @@ import org.robolectric.annotation.Config
 
 /** The debug design catalogue (debug source set only): `DevContent()` shows the token sheet. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "w393dp-h851dp-xxhdpi")
 class DesignCatalogTest {
     @get:Rule
     val compose = HostedComposeRule()
@@ -49,5 +54,65 @@ class DesignCatalogTest {
         compose.onNodeWithText("Dark").assertIsSelected()
         compose.onNodeWithText("Same as text").performClick()
         compose.onNodeWithText("Same as text").assertIsSelected()
+    }
+
+    @Test
+    fun `the Motion section shows the press target and a Play button for each spring`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Motion").performClick()
+        compose.onNodeWithText("Motion").assertIsSelected()
+        compose.onNodeWithText("Press me", substring = true).assertIsDisplayed()
+        listOf("snappy", "smooth", "gentle", "bouncy").forEach { name ->
+            compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag("spring-$name"))
+            compose.onNodeWithTag("spring-$name").assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun `playing a spring moves its dot and playing again moves it back`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Motion").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag("spring-smooth"))
+        val start =
+            compose
+                .onNodeWithTag("dot-smooth", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        compose.onNodeWithTag("spring-smooth").performClick()
+        compose.waitForIdle()
+        val end =
+            compose
+                .onNodeWithTag("dot-smooth", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        assertTrue("dot moved from $start to $end", end > start + 50f)
+        compose.onNodeWithTag("spring-smooth").performClick()
+        compose.waitForIdle()
+        assertEquals(
+            start,
+            compose
+                .onNodeWithTag("dot-smooth", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot.left,
+            1f,
+        )
+    }
+
+    @Test
+    fun `the header sections show the real scaffold in each style`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Standard header").performClick()
+        compose.onNodeWithText("Budgets").assertIsDisplayed()
+        compose.onNodeWithText("Dashboard header").performClick()
+        compose.onNodeWithText("October 2026").assertIsDisplayed()
+        compose.onNodeWithText("spent this month").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the Bottom bar section shows the action bar variants`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Bottom bar").performClick()
+        compose.onNodeWithText("Cancel").assertIsDisplayed()
+        compose.onNodeWithText("Continue").assertIsNotEnabled()
     }
 }
