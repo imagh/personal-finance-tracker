@@ -670,7 +670,10 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 - **`canScroll` also stays true while the header is partly collapsed**, so a list that fits only when collapsed can still be pulled back open.
 - **Screenshot set:** Standard and Dashboard, expanded and collapsed, light and dark (8 PNGs), plus `BottomActionBar` light and dark (2), 10 in total, 89 to 108 KB each. Font scale 2.0 is not captured for these.
 - **detekt `LongParameterList` is ignored for `@Composable` functions** (Compose slots are defaulted parameters); the rule still applies to everything else.
-- **Not verified under Robolectric:** window insets and the IME (Robolectric does not simulate them), and the §11 jank check. Both are emulator checks; the jank check is deferred to C4, where scrolling a real list first makes the number meaningful.
+- **Review fixes (2026-10-29).** `bottomBar` is nullable: M3's `Scaffold` pads the list and FAB by the bottom inset only when the bottom-bar slot emits no placeables, and the always-present `imePadding` wrapper had defeated that (found in review, confirmed against `Scaffold.kt` 1.3.1; the new inset test failed first with the last row under a 48dp bar). A `period` or caption without a `hero` is inert (no stepper, no swipe). `LongParameterList` is relaxed with `ignoreDefaultParameters` rather than for every `@Composable`.
+- **§7 font scale 2.0 for the header: met** for the Dashboard header with a subtitle on 393x851dp (gap 67dp, asserted). Not yet covered: a long hero that must shrink to fit (DS5 `MoneyText`) and a short expandable window at 2.0x.
+- **Below 560dp the Dashboard hero is hidden** (the header is always collapsed), as §3.4 specifies; recorded in `design-system.md` so screens plan for it.
+- **Not verified:** the §11 jank check (deferred to C4, where scrolling a real list first makes the number meaningful) and status-bar/cutout insets on a device. Navigation-bar and IME insets are tested under Robolectric.
 
 **DS5: content primitives** (needs A2 merged: `:app` gains `implementation(project(":core:money"))`)
 - **Red:**

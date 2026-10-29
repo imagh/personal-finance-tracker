@@ -156,14 +156,28 @@ primary action.
   ("Previous period" / "Next period" for TalkBack) and makes a horizontal swipe of more than 48dp on
   the *expanded* header step the period: toward the end of the line is previous. Vertical drags stay
   with the scroll. C4's `PeriodSwitcher` adds the directional slide on top of this.
-- **Insets.** Edge-to-edge with `WindowInsets.safeDrawing`. `bottomBar` sits in `imePadding()`, and
-  `BottomActionBar` pads by `safeDrawing` at the bottom and sides, so Save rides above the keyboard.
+- **Insets.** Edge-to-edge with `WindowInsets.safeDrawing`. `bottomBar` (nullable) sits in
+  `imePadding()` and `BottomActionBar` pads by `safeDrawing` at the bottom and sides, so Save rides
+  above the keyboard. With **no** bottom bar the list and the FAB are padded by the bottom inset:
+  M3's `Scaffold` does that only when the bottom-bar slot emits nothing, so the slot is left empty,
+  not filled with a wrapper. The scaffold reads raw `safeDrawing`: use **one per screen, at the
+  root**, never under another Scaffold or layout that consumes insets.
+- **Dashboard slots go together.** `hero`, `heroCaption` and `period` make up the lower band; without
+  a `hero` the caption and stepper are not drawn and the swipe is inert. Below 560dp of window height
+  (landscape, split screen) the header is always collapsed, so the Dashboard hero is **hidden** there,
+  per the plan; the screen's figure must also be reachable in the list if it matters in landscape.
 - **`BottomActionBar`.** One full-width primary `Button`, or an outlined secondary plus the primary
   on the end side. At least 56dp tall (the touch-target floor is 48dp). Built from `BottomBarAction(label, enabled, onClick)`.
-- **Known limits.** At very large font scales on a short window the hero can approach the title;
-  the 24dp gap is tested on the 393x851dp reference window at 1.0x, and the catalogue is where to
-  check larger scales (DS5's shrink-to-fit hero helps). Insets and the keyboard are not simulated under
-  Robolectric, so edge-to-edge and IME behaviour are an emulator check.
+- **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
+  subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
+  about 56dp). A long hero does not shrink to fit yet (DS5's `MoneyText`); the catalogue's font-scale
+  toggle is where to look. On a short expandable window (about 560dp) at 2.0x the gap is not
+  asserted.
+- **Tests and insets.** Robolectric does express insets: the tests dispatch navigation-bar and IME
+  insets to the Compose host with `ViewCompat.dispatchApplyWindowInsets` (`CollapsingHeaderScaffoldTest`).
+  Status-bar and cutout behaviour on a real device is still an emulator check. The scaffold tests
+  run on native graphics (`@GraphicsMode(NATIVE)`): the legacy mode measures every glyph about a
+  pixel wide, which hides text wrapping.
 
 ## Previews, the token sheet and screenshot goldens
 
