@@ -1,17 +1,17 @@
 # Graph Report - personal-finance-tracker  (2026-10-29)
 
 ## Corpus Check
-- 85 files · ~74,538 words
+- 85 files · ~75,640 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 28 file(s) not represented in the graph (top: .xml 10, .lockfile 7, (none) 4)
 
 ## Summary
-- 1081 nodes · 2261 edges · 79 communities (43 shown, 36 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 238 edges (avg confidence: 0.92)
+- 1095 nodes · 2313 edges · 76 communities (45 shown, 31 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 242 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7caec2b8`
+- Built from commit: `a196cea0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,7 +34,7 @@
 - WindowThemeTest.kt
 - Catalog.kt
 - detekt.yml
-- PftThemeModeTest
+- PftShapesTest.kt
 - CollapsingHeaderScaffoldTest.kt
 - Sync via Google Drive app-data (Y-1..Y-8)
 - HostedComposeRule
@@ -43,13 +43,13 @@
 - Automatic capture from Email (E-0..E-5)
 - Security, privacy and integrity requirements (SEC/INT)
 - ColorSchemeTestSupport.kt
-- MotionSection.kt
+- TokenSheetSections.kt
 - Architect Plan Template
 - PftTypographyTest
 - BottomActionBar
-- 6.1 Design-system slice: PRs into `feat/m1a-foundation`
+- PftTypography.kt
 - CLAUDE.md Development Constitution
-- architect Agent
+- MotionSection.kt
 - Project README
 - Definition of Done
 - Research: Indian Bank SMS Formats
@@ -58,19 +58,19 @@
 - CollapsingHeaderScaffold.kt
 - NavTransitionTest.kt
 - BottomActionBarTest.kt
-- HeaderScreenshotTest
+- PftTheme.kt
 - DesignCatalog.kt
 - CollapsingHeaderScaffold
+- PftMotion.kt
 - assertequals
 - BottomActionBar.kt
 - HeaderPolicy
-- modifier
-- PftTheme.kt
+- TokenSheetPage.kt
+- dp
 - ThemePrefs
 - Personal Finance Tracker PRD
-- PftMotion
+- Rule B: Mandatory Documentation
 - expandedHeaderHeight
-- HeaderSamples.kt
 - redact_text
 - Plan: M1a — Core ledger (manual-entry household tracker)
 - 6. Implementation steps (TDD-ordered)
@@ -83,16 +83,15 @@
 - _Text
 - HeaderPhase
 - main
-- DevContent
 
 ## God Nodes (most connected - your core abstractions)
-1. `CollapsingHeaderScaffoldTest` - 53 edges
-2. `ThemePrefs` - 33 edges
+1. `CollapsingHeaderScaffoldTest` - 64 edges
+2. `ThemePrefs` - 34 edges
 3. `6.1 Design-system slice: PRs into `feat/m1a-foundation`` - 30 edges
 4. `HostedComposeRule` - 29 edges
 5. `PftTypographyTest` - 26 edges
-6. `HeaderScreenshotTest` - 22 edges
-7. `CollapsingHeaderScaffold()` - 21 edges
+6. `CollapsingHeaderScaffold()` - 22 edges
+7. `HeaderScreenshotTest` - 22 edges
 8. `ManifestHardeningTest` - 20 edges
 9. `BottomActionBarTest` - 19 edges
 10. `ColorContrastTest` - 19 edges
@@ -121,7 +120,7 @@
 - **Secrets handling across constitution, technical rules and setup guide** — docs_technical_r2_no_secrets, docs_guides_local_setup_secrets_env [INFERRED 0.85]
 - **Untrusted message handling (templates, unverified flag, read-only)** — docs_prd_deterministic_parsing, docs_prd_untrusted_messages, docs_prd_unverified_state, docs_prd_read_only_messages [INFERRED 0.85]
 
-## Communities (79 total, 36 thin omitted)
+## Communities (76 total, 31 thin omitted)
 
 ### Community 0 - "redact.py"
 Cohesion: 0.14
@@ -148,8 +147,8 @@ Cohesion: 0.14
 Nodes (13): always_run, entry, exclude, files, id, language, name, pass_filenames (+5 more)
 
 ### Community 8 - "3. Design & decision"
-Cohesion: 0.22
-Nodes (8): PftSpacing, 3.1 Visual direction: "Cashew, but premium", 3.2 Theming architecture (no new abstraction), 3.3 Tokens, 3.5 Fonts: bundling, licensing, custom import, 3.6 Icons and emoji (UI-6), 3.8 New dependencies (pinned, locked, checksum-verified; follow `build-logic/README.md` "Refreshing pins"), 3. Design & decision
+Cohesion: 0.16
+Nodes (11): `ui/theme` (design-system tokens, DS1, DS2, DS4), PftSpacing, Principles, 3.1 Visual direction: "Cashew, but premium", 3.2 Theming architecture (no new abstraction), 3.3 Tokens, 3.4 One-hand layout (UI-7): `CollapsingHeaderScaffold`, 3.5 Fonts: bundling, licensing, custom import (+3 more)
 
 ### Community 9 - "ThemeResolutionTest.kt"
 Cohesion: 0.11
@@ -169,23 +168,23 @@ Nodes (4): ColorContrastTest, Theme, DARK, LIGHT
 
 ### Community 18 - "detekt.yml"
 Cohesion: 0.20
-Nodes (9): complexity, LongParameterList, ignoreAnnotated, ignoreAnnotated, excludes, naming, FunctionNaming, style (+1 more)
+Nodes (9): complexity, LongParameterList, ignoreAnnotated, ignoreDefaultParameters, excludes, naming, FunctionNaming, style (+1 more)
 
 ### Community 28 - "Sync via Google Drive app-data (Y-1..Y-8)"
 Cohesion: 0.40
 Nodes (4): Client-side encrypted sync with passphrase-derived key (Y-3), Operation-log based sync (Y-2), Sync via Google Drive app-data (Y-1..Y-8), Sync behind an interface (Y-7)
 
 ### Community 29 - "HostedComposeRule"
-Cohesion: 0.10
-Nodes (5): HostedComposeRule, RegisterHostActivity, Statement, PftSpacingTest, TokenSheetScreenshotTest
+Cohesion: 0.12
+Nodes (4): HostedComposeRule, RegisterHostActivity, Statement, PftSpacingTest
 
 ### Community 30 - "Paise"
 Cohesion: 0.06
 Nodes (26): Configuration, `:core:money` — integer-paise money, Data it owns, Dependencies, Formatting and the sign (decision), Parsing grammar, Public interface, Purpose (+18 more)
 
 ### Community 31 - "PaiseParserTest.kt"
-Cohesion: 0.14
-Nodes (5): How to run and test, PaiseFormatTest, PaiseParserTest, PaiseTest, 7. Test plan
+Cohesion: 0.13
+Nodes (6): How to run and test, PaiseFormatTest, PaiseParserTest, PaiseTest, 7. Test plan, Slice A — Foundation (`feat/m1a-foundation`)
 
 ### Community 32 - "Automatic capture from Email (E-0..E-5)"
 Cohesion: 0.29
@@ -195,41 +194,33 @@ Nodes (7): Automatic capture from Email (E-0..E-5), Unverified Gmail OAuth clien
 Cohesion: 0.40
 Nodes (6): Audit trail (INT-2), Client-Generated Time-Sortable IDs (UUIDv7/ULID), Money as integer paise, Security, privacy and integrity requirements (SEC/INT), SQLCipher encryption at rest and app lock, Platform and technology decisions (Kotlin, Compose, Room, SQLCipher, paise, UUIDv7)
 
-### Community 35 - "MotionSection.kt"
-Cohesion: 0.08
-Nodes (14): MotionSection(), SpringTrack(), TokenSheetPage, TokenSheetPageFrame(), AmountStylesSection(), MoneyContainers(), MoneyOnSurface(), MoneyTokensSection() (+6 more)
+### Community 35 - "TokenSheetSections.kt"
+Cohesion: 0.30
+Nodes (9): AmountStylesSection(), MoneyContainers(), MoneyOnSurface(), MoneyTokensSection(), SectionTitle(), ShapesAndSpacing(), ShapesSection(), SpacingSection() (+1 more)
 
 ### Community 36 - "Architect Plan Template"
 Cohesion: 0.50
 Nodes (3): Architect Plan Template, Required Documentation Updates Section, TDD-Ordered Implementation Steps
 
-### Community 37 - "PftTypographyTest"
-Cohesion: 0.09
-Nodes (5): displayFamily(), pftMaterialTypography(), pftType(), PftTypographyTest, Resolved
-
 ### Community 38 - "BottomActionBar"
-Cohesion: 0.12
-Nodes (15): BottomActionBar(), BottomBarAction, Adding a token, Build-time trust decisions, Colour, Design system, Motion (UI-10), One-hand layout (UI-7) (+7 more)
+Cohesion: 0.13
+Nodes (13): MoneyColors, Adding a token, Build-time trust decisions, Colour, Design system, Motion (UI-10), One-hand layout (UI-7), Shapes (+5 more)
 
-### Community 39 - "6.1 Design-system slice: PRs into `feat/m1a-foundation`"
-Cohesion: 0.20
-Nodes (7): MoneyColors, pressScale(), PftShapes, PftTypography, Theming, 3.7 Component inventory (UI-9), 6.1 Design-system slice: PRs into `feat/m1a-foundation`
+### Community 39 - "PftTypography.kt"
+Cohesion: 0.17
+Nodes (4): displayFamily(), pftMaterialTypography(), pftType(), PftTypography
 
 ### Community 40 - "CLAUDE.md Development Constitution"
-Cohesion: 0.19
-Nodes (10): code-reviewer Agent, Compact Review Report (approve/minor/changes requested), senior-full-stack-dev Agent, /dev Command (implement then auto-review), CLAUDE.md Development Constitution, >=90% Coverage Floor on core, Documentation Taxonomy, Milestones M1a/M1b/M1c, M2, M3 (+2 more)
-
-### Community 41 - "architect Agent"
-Cohesion: 0.31
-Nodes (9): architect Agent, Architect Plan (docs/plans/YYYY-MM-DD-slug.md), /architect Command, /review-changes Command, Pull Request Template, PR Checklist (TDD, Docs, Security, Architecture, Sizing), PR Security Review Section (TECHNICAL.md §5), Development Workflow (Plan, Implement, Document, Review, Learn, PR) (+1 more)
+Cohesion: 0.22
+Nodes (15): architect Agent, code-reviewer Agent, Compact Review Report (approve/minor/changes requested), senior-full-stack-dev Agent, /architect Command, /dev Command (implement then auto-review), /review-changes Command, Pull Request Template (+7 more)
 
 ### Community 42 - "Project README"
-Cohesion: 0.20
-Nodes (6): app/ Thin Android Layer, core/<module> (money, ledger, parsing, discovery, matching, recurring, budget, sync), Code Structure Map, core/shared Shared Packages, Project README, Planned Layout (app, core, tools/redact, fixtures)
+Cohesion: 0.40
+Nodes (3): app/ Thin Android Layer, core/<module> (money, ledger, parsing, discovery, matching, recurring, budget, sync), Planned Layout (app, core, tools/redact, fixtures)
 
 ### Community 43 - "Definition of Done"
-Cohesion: 0.18
-Nodes (8): Android Surface and Multi-user Restrictions, Immutable Audit Trail, Definition of Done, Money as Integer Paise, Untrusted Input Validation (SMS/email/LLM output), Agent Slash Commands, R4 - Security review before every PR, App-specific Security Checklist
+Cohesion: 0.12
+Nodes (11): Architect Plan (docs/plans/YYYY-MM-DD-slug.md), PR Checklist (TDD, Docs, Security, Architecture, Sizing), Android Surface and Multi-user Restrictions, Immutable Audit Trail, >=90% Coverage Floor on core, Definition of Done, Money as Integer Paise, Untrusted Input Validation (SMS/email/LLM output) (+3 more)
 
 ### Community 44 - "Research: Indian Bank SMS Formats"
 Cohesion: 0.29
@@ -239,17 +230,37 @@ Nodes (7): Parse log (S-11), Research: Indian Bank SMS Formats, Generic Bank-Agn
 Cohesion: 0.43
 Nodes (6): Collecting and Redacting Sample Messages Guide, Email Export (.eml / Google Takeout mbox), fixtures/ Reviewed Redacted Samples, Local Redaction Procedure, SMS Export (SMS Backup & Restore / adb), Per-Bank Template Overrides
 
-### Community 50 - "HeaderScreenshotTest"
-Cohesion: 0.33
-Nodes (5): DashboardHeaderSample(), sampleRows(), StandardHeaderSample(), HeaderScreenshotTest, Previews, the token sheet and screenshot goldens
+### Community 46 - "CollapsingHeaderScaffoldTest"
+Cohesion: 0.15
+Nodes (3): BottomBarAction, CollapsingHeaderScaffoldTest, Steps
+
+### Community 48 - "NavTransitionTest.kt"
+Cohesion: 0.11
+Nodes (3): DevContent(), NavTransitionTest, PftThemeModeTest
+
+### Community 50 - "PftTheme.kt"
+Cohesion: 0.06
+Nodes (8): DashboardHeaderPreview(), DashboardHeaderSample(), sampleRows(), StandardHeaderSample(), resolveColorScheme(), HeaderScreenshotTest, TokenSheetScreenshotTest, Previews, the token sheet and screenshot goldens
 
 ### Community 51 - "DesignCatalog.kt"
-Cohesion: 0.16
-Nodes (9): CatalogSection, BOTTOM_BAR, DASHBOARD_HEADER, MOTION, STANDARD_HEADER, TOKENS, ChoiceRow(), DesignCatalog() (+1 more)
+Cohesion: 0.15
+Nodes (10): CatalogSection, BOTTOM_BAR, DASHBOARD_HEADER, MOTION, STANDARD_HEADER, TOKENS, ChoiceRow(), DesignCatalog() (+2 more)
 
 ### Community 52 - "CollapsingHeaderScaffold"
 Cohesion: 0.25
 Nodes (13): CollapsingHeader(), CollapsingHeaderScaffold(), HeaderChildren(), HeaderContent, HeaderPeriod, headerSizes(), HeaderStyle, Dashboard (+5 more)
+
+### Community 53 - "PftMotion.kt"
+Cohesion: 0.10
+Nodes (7): PftMotion, pressScale(), 3.7 Component inventory (UI-9), 6.1 Design-system slice: PRs into `feat/m1a-foundation`, 6.3 Amendments to M1a steps (consumption; this plan edits M1a when approved), 6. Implementation steps (TDD-ordered), PR breakdown (incremental — required)
+
+### Community 54 - "assertequals"
+Cohesion: 0.24
+Nodes (3): iosSpring(), PftMotionTest, 7. Test plan
+
+### Community 55 - "BottomActionBar.kt"
+Cohesion: 0.20
+Nodes (3): BottomActionBar(), BottomActionBarPreview(), BottomActionBarSamples()
 
 ### Community 59 - "ThemePrefs"
 Cohesion: 0.24
@@ -259,25 +270,21 @@ Nodes (9): DisplayFont, BUNDLED_SERIF, SYSTEM_SERIF, TEXT, ThemeMode, DARK, LIGH
 Cohesion: 0.22
 Nodes (10): Personal Finance Tracker PRD, Cashew (existing expense app), Delivery constraints (small vertical slices, Claude Pro limits), M1 Phasing (M1a/M1b/M1c), M1b SMS capture, M1c Email capture and sync, Milestone 3 (insights), Non-functional requirements (+2 more)
 
-### Community 61 - "PftMotion"
-Cohesion: 0.24
-Nodes (6): `ui/theme` (design-system tokens, DS1, DS2, DS4), PftMotion, Principles, 6.3 Amendments to M1a steps (consumption; this plan edits M1a when approved), 6. Implementation steps (TDD-ordered), PR breakdown (incremental — required)
-
 ### Community 65 - "redact_text"
 Cohesion: 0.27
 Nodes (6): mask_run(), process(), redact_text(), amt(), hold(), review_flags()
 
 ### Community 66 - "Plan: M1a — Core ledger (manual-entry household tracker)"
-Cohesion: 0.22
+Cohesion: 0.18
 Nodes (9): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 4. Data model & schema, 8. Security considerations, 9. Documentation updates (all required surfaces) (+1 more)
 
 ### Community 67 - "6. Implementation steps (TDD-ordered)"
-Cohesion: 0.22
-Nodes (9): 6. Implementation steps (TDD-ordered), Slice A — Foundation (`feat/m1a-foundation`), Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`), Slice C — Transactions (`feat/m1a-transactions`), Slice D — Budgets (`feat/m1a-budgets`), Slice E — Recurring and subscriptions (`feat/m1a-recurring`), Slice F — Loans and EMIs (`feat/m1a-loans`), Slice G — Goals (`feat/m1a-goals`) (+1 more)
+Cohesion: 0.25
+Nodes (8): 6. Implementation steps (TDD-ordered), Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`), Slice C — Transactions (`feat/m1a-transactions`), Slice D — Budgets (`feat/m1a-budgets`), Slice E — Recurring and subscriptions (`feat/m1a-recurring`), Slice F — Loans and EMIs (`feat/m1a-loans`), Slice G — Goals (`feat/m1a-goals`), Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)
 
 ### Community 68 - "Architecture overview"
-Cohesion: 0.25
-Nodes (7): Architecture overview, Build and quality gates, Call flow, Security posture of the shell, Shape, The core/app boundary, UI layer
+Cohesion: 0.15
+Nodes (10): Code Structure Map, core/shared Shared Packages, Architecture overview, Build and quality gates, Call flow, Security posture of the shell, Shape, The core/app boundary (+2 more)
 
 ### Community 69 - "HeaderSlot"
 Cohesion: 0.29
@@ -297,22 +304,22 @@ Nodes (3): PR breakdown (incremental — required), 6.2 Appearance slice: base `
 
 ## Knowledge Gaps
 - **57 isolated node(s):** `TOKENS`, `MOTION`, `BOTTOM_BAR`, `STANDARD_HEADER`, `DASHBOARD_HEADER` (+52 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 318 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **36 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 322 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Architecture overview`, `CLAUDE.md Development Constitution`, ``build-logic` — convention plugins`, `Research: Indian Bank SMS Formats`, `Collecting and Redacting Sample Messages Guide`, `Definition of Done`, `Personal Finance Tracker PRD`?**
-  _High betweenness centrality (0.205) - this node is a cross-community bridge._
-- **Are the 4 inferred relationships involving `CollapsingHeaderScaffoldTest` (e.g. with `How to run and test` and `Previews, the token sheet and screenshot goldens`) actually correct?**
-  _`CollapsingHeaderScaffoldTest` has 4 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Project README` connect `Architecture overview` to `docs/TECHNICAL.md`, `CLAUDE.md Development Constitution`, `Project README`, ``build-logic` — convention plugins`, `Research: Indian Bank SMS Formats`, `Collecting and Redacting Sample Messages Guide`, `Definition of Done`, `Personal Finance Tracker PRD`?**
+  _High betweenness centrality (0.209) - this node is a cross-community bridge._
+- **Are the 5 inferred relationships involving `CollapsingHeaderScaffoldTest` (e.g. with `How to run and test` and `One-hand layout (UI-7)`) actually correct?**
+  _`CollapsingHeaderScaffoldTest` has 5 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `TOKENS`, `MOTION`, `BOTTOM_BAR` to the rest of the system?**
   _57 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `redact.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1422924901185771 - nodes in this community are weakly interconnected._
-- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `6.1 Design-system slice: PRs into `feat/m1a-foundation`` to `ManifestHardeningTest`, `ThemeResolutionTest.kt`, `How to run and test`, `WindowThemeTest.kt`, `PftThemeModeTest`, `CollapsingHeaderScaffoldTest.kt`, `HostedComposeRule`, `Paise`, `MotionSection.kt`, `PftTypographyTest`, `BottomActionBar`, `CollapsingHeaderScaffoldTest`, `BottomActionBarTest.kt`, `DesignCatalog.kt`, `CollapsingHeaderScaffold`, `assertequals`, `ThemePrefs`, `PftMotion`, `TokenSheet`, `BrandColors`, `main`?**
-  _High betweenness centrality (0.197) - this node is a cross-community bridge._
+- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `PftMotion.kt` to `ManifestHardeningTest`, `ThemeResolutionTest.kt`, `How to run and test`, `WindowThemeTest.kt`, `PftShapesTest.kt`, `CollapsingHeaderScaffoldTest.kt`, `HostedComposeRule`, `Paise`, `PftTypographyTest`, `BottomActionBar`, `PftTypography.kt`, `CollapsingHeaderScaffoldTest`, `NavTransitionTest.kt`, `BottomActionBarTest.kt`, `PftTheme.kt`, `DesignCatalog.kt`, `CollapsingHeaderScaffold`, `assertequals`, `BottomActionBar.kt`, `dp`, `ThemePrefs`, `TokenSheet`, `BrandColors`, `main`?**
+  _High betweenness centrality (0.195) - this node is a cross-community bridge._
 - **Are the 11 inferred relationships involving `ThemePrefs` (e.g. with `Configuration` and `TokenSheetPreview()`) actually correct?**
   _`ThemePrefs` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **Should `hooks` be split into smaller, more focused modules?**
