@@ -13,6 +13,11 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-10-29 — Design direction: premium Cashew, calm money colours
+- **Learning:** the owner wants Cashew's look made more premium: one-hand layout (content from mid-screen), iOS-like springs, system sans-serif for daily screens and Newsreader serif (set looser than M3's defaults) for dashboards. Green and red are kept for meaning, not decoration: expense rows and positive balances are neutral, while totals, over-budget and negative balances carry colour. The accent comes from the system, with indigo `#4A55B8` as the fallback.
+- **Why:** colour everywhere reads as noise. The light green and red are nearly equal in lightness, so colour alone can't carry meaning for colour-blind users.
+- **How to apply:** build every screen from the design-system plan's components (`docs/plans/2026-10-29-m1a-design-system.md`). Give every amount a sign or word, not only a colour. No font or emoji downloads: the app has no network.
+
 ### 2026-10-29 — Gate the scan on what ships; report the tooling
 - **Learning:** the first full scan found 64 CVEs at CVSS ≥ 7, but none were in code that ships. About 58 were grpc/netty/protobuf inside AGP's `_internal-unified-test-platform-*` configurations (emulator test tooling). One Kotlin compiler CVE (CVE-2026-53914, build-cache deserialization) was CPE-matched onto every Kotlin jar, including the shipped `kotlin-stdlib`. One was an Apache Ant task under JaCoCo.
 - **Why:** gating on every configuration keeps the scan permanently red on a pinned, two-year-old toolchain, and a gate that's always red gets ignored.
