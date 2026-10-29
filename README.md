@@ -18,7 +18,7 @@ A private, offline-first Android app for tracking a household's expenses, budget
 | Path | What |
 |---|---|
 | `app/` | Thin Android layer (Compose, later Room/SQLCipher, Keystore). See [app/README.md](app/README.md) |
-| `core/money/` | Pure Kotlin integer-paise money (empty until slice A2). See [core/money/README.md](core/money/README.md) |
+| `core/money/` | Pure Kotlin integer-paise money: `Paise`, strict `PaiseParser`, Indian-grouping `PaiseFormat`. See [core/money/README.md](core/money/README.md) |
 | `core/<module>/` | Further pure-Kotlin modules (ledger, budget, recurring) are added by their slices |
 | `build-logic/` | Convention plugins `pft.kotlin-core` and `pft.lint`. See [build-logic/README.md](build-logic/README.md) |
 | `tools/redact/` | Local redaction tool (Python) |
