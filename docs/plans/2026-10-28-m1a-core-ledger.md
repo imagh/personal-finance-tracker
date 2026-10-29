@@ -79,7 +79,7 @@ Late-2024 line per `docs/TECHNICAL.md` §7.1; exact patch **[Verify]** at instal
 | androidx.lifecycle viewmodel-compose / runtime-compose / process | 2.8.7 | ViewModels, `collectAsStateWithLifecycle`, foreground detection for lock and catch-up |
 | androidx.navigation-compose | 2.8.4 | screen navigation |
 | androidx.biometric | 1.1.0 | app lock (SEC-2) |
-| Compose BOM ui-test-junit4 / ui-test-manifest | via BOM 2024.10.01 | a few UI flow tests |
+| Compose BOM ui-test-junit4 | via BOM 2024.10.01 | a few UI flow tests. `ui-test-manifest` is **not** used (DS1: it adds an exported activity); see the note below |
 | ktlint Gradle plugin (`org.jlleitschuh.gradle.ktlint`) | 12.1.2 | provides `ktlintFormat` that the hook calls |
 | detekt plugin | 1.23.7 | lint (plain `detekt` task; no type resolution) |
 | OWASP dependency-check plugin | 11.1.1 | vulnerability scan; `NVD_API_KEY` from env, never committed |
@@ -87,6 +87,8 @@ Late-2024 line per `docs/TECHNICAL.md` §7.1; exact patch **[Verify]** at instal
 Rejected: Paging, WorkManager, Hilt, kotlinx-serialization, Turbine, androidx.security-crypto (deprecated), Kover (built-in JaCoCo suffices), material-icons-extended (large). Icons are curated Material Symbols drawables instead, and `material-icons-core` is banned too (design-system plan §3.6).
 
 Note (2026-10-29): Material 3 resolves to **1.3.1** through the Compose BOM, not 1.3.0. The design-system plan adds Roborazzi 1.36.0 for screenshot tests (its §3.8).
+
+Note (DS1, 2026-10-29): `ui-test-manifest` is dropped because it adds an exported `ComponentActivity` to the debug manifest, which `ManifestHardeningTest` forbids. **A5 and every later Compose JVM test use `HostedComposeRule`** (`app/src/test/kotlin/dev/imagh/pft/app/ui/HostedComposeRule.kt`), which registers the host activity with Robolectric, and never `createComposeRule()` (it fails on the release unit-test task). Instrumented tests (A4b) need their own answer.
 
 ### 3.4 Reuse by layer (owner decision, 2026-10-28)
 

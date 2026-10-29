@@ -129,7 +129,7 @@ This is the Compose-idiomatic "extended theme" mechanism. It is not an interface
 
 **Colour: brand fallback scheme** (used when dynamic colour is off, and always in screenshot tests so goldens are deterministic).
 - **Seed:** "ink indigo" `#4A55B8`. Its hue is chosen to be far from money green (~150°) and red (~25°), so the accent can never read as income or expense.
-- **Generation:** generated once, offline, with Material Theme Builder ("tonal spot"). All light and dark roles are committed as constants in `ui/theme/BrandColors.kt`, with a header comment recording the seed, tool and date. No runtime library is used.
+- **Generation:** generated once, offline, with the Material Color Utilities "tonal spot" scheme (as built, `@material/material-color-utilities` 0.3.0 with the newer surface roles filled by hand; see "DS1 deviations" in §6.1). All light and dark roles are committed as constants in `ui/theme/BrandColors.kt`, with a header comment recording the seed, tool and date. No runtime library is used.
 - **Checked (§7):** primary on surface is 6.08:1 (light) and 10.88:1 (dark). onPrimary on primary is 6.40:1 and 7.85:1.
 
 **Colour: money tokens** (`MoneyColors`, the same in dynamic and brand schemes, **never derived from the accent**).
@@ -152,7 +152,7 @@ This is the Compose-idiomatic "extended theme" mechanism. It is not an interface
 | `warning` on surfaces | 7.44 → 5.60 | 11.50 → 6.88 |
 | on-container on container | 8.63–8.95 | 9.51–10.86 |
 
-So every money text token clears 4.5:1 on every surface either scheme can produce. `ColorContrastTest` (DS1) pins this.
+So every money text token clears 4.5:1 on every surface either scheme can produce, except `surfaceVariant`, which money text must not use (see "DS1 deviations" in §6.1). `ColorContrastTest` (DS1) pins this.
 
 **Colour is never the only cue (WCAG 1.4.1).** The light positive and negative tokens are almost equal in luminance: their ratio to each other is 1.04:1, and 1.27:1 in dark. A red/green colour-blind user cannot tell them apart by lightness. So:
 - every signed amount carries a sign glyph (`+`, or a true minus `−` U+2212);
@@ -337,7 +337,7 @@ Each shared component has at least two named consumers (M1a §3.4). "Built in" i
 |---|---|---|---|
 | `androidx.compose.ui:ui-tooling-preview` | via BOM 2024.10.01 | `implementation` (annotations only, tiny) | `@Preview`, `@PreviewLightDark` |
 | `androidx.compose.ui:ui-tooling` | via BOM | `debugImplementation` | Studio preview rendering, never in release |
-| `androidx.compose.ui:ui-test-junit4` / `ui-test-manifest` | via BOM | `testImplementation` / `debugImplementation` | Compose tests (M1a already lists them for A5; they arrive in DS1 instead) |
+| `androidx.compose.ui:ui-test-junit4` | via BOM | `testImplementation` | Compose tests (M1a already lists it for A5; it arrives in DS1 instead). `ui-test-manifest` is **not** used: see "DS1 deviations" in §6.1 |
 | `io.github.takahirom.roborazzi` `roborazzi`, `roborazzi-compose`, `roborazzi-junit-rule` and Gradle plugin | **1.36.0** (2024-12-09) | `testImplementation` and plugin | JVM screenshot tests on the Robolectric we already use. 1.36.0 is the release built against **Robolectric 4.14.1 and Compose 1.7.5**, our exact pins [Verify it compiles under Kotlin 2.1.0 and AGP 8.7.3] |
 | Robolectric native graphics runtime | via Robolectric 4.14.1 | test | `@GraphicsMode(NATIVE)` for pixel rendering [Verify that it resolves through Gradle (checksummed), not a runtime download] |
 | Bundled asset: Newsreader | upstream file, sha256 above | `res/font` | §3.5 |
@@ -518,7 +518,7 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 **DS1: colour tokens, `PftTheme`, window themes**
 - **Red:**
   - `ui/theme/ColorContrastTest` (JUnit 5, no Robolectric; contrast via `Color.luminance()`). For light and dark:
-    - `positive`, `negative` and `warning` are at least 4.5:1 against every brand surface role and against greys at the M3 surface tone limits (light tones 87–100, dark 4–24).
+    - `positive`, `negative` and `warning` are at least 4.5:1 against the brand surface roles (not `surfaceVariant`, see "DS1 deviations") and against greys at the M3 surface tone limits (light tones 87–100, dark 4–24).
     - Every on-container/container pair is at least 4.5:1.
     - Brand `onPrimary`/`primary` and `onSurfaceVariant`/`surface` are at least 4.5:1, and `primary`/`surface` is at least 3:1.
     - It fails today because no tokens exist.
@@ -528,12 +528,19 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
   - `PftThemeModeTest` (Robolectric Compose): with the `+night` qualifier, `ThemeMode.SYSTEM` yields the dark `surface`, and `LIGHT` overrides it to light; the reverse also holds.
   - `WindowThemeTest` (Robolectric): with `+night`, the launched `MainActivity`'s window background colour is the dark surface (no light flash). The status and navigation bars are transparent (edge-to-edge). `FLAG_SECURE` is still set.
 - **Green:**
-  - Add `ui-test-junit4` and `ui-test-manifest` to the catalog and `app/build.gradle.kts`, then refresh the locks and verification metadata.
+  - Add `ui-test-junit4` to the catalog and `app/build.gradle.kts`, then refresh the locks and verification metadata. (`ui-test-manifest` was dropped; see "DS1 deviations" below.)
   - `ui/theme/{BrandColors,MoneyColors,ThemePrefs,PftTheme}.kt`.
   - `res/values/themes.xml`: keep the parent and add `windowBackground`, `statusBarColor`/`navigationBarColor` transparent, and `windowSplashScreenBackground`. Add `res/values-night/themes.xml` with parent `@android:style/Theme.Material.NoActionBar`.
   - `MainActivity`: `enableEdgeToEdge()` after the `FLAG_SECURE` line, and `PftTheme { Surface { DevContent() } }`.
   - Add the `DevContent` debug/release pair, which is empty until DS2.
 - **Refactor:** KDoc on every public token. `app/README.md` (public interface: `ui/theme`).
+
+**DS1 deviations (2026-10-29)** (all accepted in code review):
+- **`ui-test-manifest` dropped.** As `debugImplementation` it adds an exported `androidx.activity.ComponentActivity` to the merged debug manifest, so `ManifestHardeningTest` ("only the launcher activity is exported") went red on debug. It is also absent from the release unit-test task, where `createComposeRule()` then cannot resolve its host activity. Replaced by a test-only `HostedComposeRule` that registers `ComponentActivity` with Robolectric's package manager; every later Compose JVM test in `:app` uses it. Instrumented tests (A4b) need their own answer.
+- **Money-text contrast sweep excludes `surfaceVariant`.** §3.3 says "every brand surface role", but dark `negative` on `surfaceVariant` is 4.23:1. `surfaceVariant` is a tone-30 fill (dark) for input tracks and outlines, outside the stated dark surface range of tones 4-24, and its text colour is `onSurfaceVariant` (tested). The sweep covers `background`, `surface`, `surfaceDim`/`surfaceBright`, the five `surfaceContainer*` steps and greys at light tones 87-100 and dark tones 4-24. The rule for authors, written in the `MoneyColors` KDoc and `app/README.md`: never draw money text on `surfaceVariant`.
+- **Brand scheme tool.** Generated with `@material/material-color-utilities` 0.3.0 (the engine behind Material Theme Builder, run once offline from a scratch directory; not a project dependency). That version emits the older surface roles, so `surfaceDim`, `surfaceBright` and `surfaceContainer*` were filled by hand from the same neutral palette at the current M3 1.3 tone ladder. Provenance is in the `BrandColors` KDoc.
+- **MagicNumber** is excluded for `**/ui/theme/**` in `config/detekt/detekt.yml` (design tokens are named literals).
+- **Edge-to-edge** is verified through bar icon appearance only: `setDecorFitsSystemWindows` has no getter under Robolectric and the cutout mode is not applied on API 30+. Layout behind the bars is an emulator check.
 
 **DS2: type, shape, spacing, bundled serif, screenshot harness, catalogue**
 - **Red:**
@@ -625,6 +632,7 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 ### 6.2 Appearance slice: base `feat/m1a-appearance` off `main`, after A-final (Q4)
 
 **AP1: appearance settings and licences**
+- **Known limitation from DS1, AP1 must address:** plain `enableEdgeToEdge()`, the window theme and the splash follow the *system* night mode. When the user forces `DARK` on a light system (or the reverse), the bar icons and the pre-Compose window colour would be wrong. AP1 handles this with `UiModeManager.setApplicationNightMode` (§5.1) and/or explicit `SystemBarStyle`s, and `AppearanceFlowTest` should cover a forced mode against the opposite system mode.
 - **Red:**
   - `AppearanceSettingsTest` (Robolectric, real in-memory Room via M1a's `TestDatabase`, through `SettingsService`):
     - Unset keys read as `ThemePrefs.Default`.

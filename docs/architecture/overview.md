@@ -1,6 +1,6 @@
 # Architecture overview
 
-How Personal Finance Tracker is put together. Status: **M1a, slice A1** (Gradle skeleton). This
+How Personal Finance Tracker is put together. Status: **M1a, slice DS1** (colour tokens and `PftTheme` on the A1 skeleton). This
 file is refined as each slice lands (next: A3 adds the ledger contracts). Rules live in
 `CLAUDE.md` §3 and `docs/TECHNICAL.md` §6; the M1a plan is
 `docs/plans/2026-10-28-m1a-core-ledger.md`.
@@ -51,6 +51,15 @@ abstraction bar). Their concrete list is added in A3.
 | Supply chain | `gradle.lockfile` per project (root, `app`, each core module, `build-logic`) plus `buildscript-gradle.lockfile` (dependency locking), `gradle/verification-metadata.xml` (sha256), OWASP dependency-check on demand (`dependencyCheckAggregate`, not in `check`) |
 | On commit | `./gradlew --quiet ktlintFormat detekt` (pre-commit); covers module sources, the root/settings/module build scripts and `build-logic` |
 | On push | `./gradlew check`: unit and Robolectric tests, Android lint, ktlint, detekt, and the **JaCoCo 90% line-coverage floor on every core module** |
+
+## UI layer
+
+All UI is Compose in `:app` and is wrapped in `PftTheme` (`ui/theme`): light/dark resolution,
+dynamic or brand colour, and fixed money colours, provided through Compose CompositionLocals (no
+new interfaces). Shared components live in `ui/common`. The design system (tokens, one-hand
+layout, motion, icons) is specified in `docs/plans/2026-10-29-m1a-design-system.md`;
+`docs/architecture/design-system.md` is written with DS2. Slice DS1 delivered the colour tokens,
+`PftTheme`, the day/night window themes and edge-to-edge.
 
 ## Security posture of the shell
 
