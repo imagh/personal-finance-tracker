@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        M1a requests no permissions at all (no INTERNET, nothing else): the strongest form of
+        "nothing leaves the device". androidx.core adds a signature-level permission for
+        ContextCompat.registerReceiver on API < 33; with minSdk 33 the platform handles
+        RECEIVER_NOT_EXPORTED natively, so it is stripped from the merged manifest.
+        ManifestHardeningTest fails if a library re-introduces a permission.
+    -->
+    <permission
+        android:name="${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        tools:node="remove" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Pft"
+        android:usesCleartextTraffic="false">
+
+        <!-- Exported by the profileinstaller library for adb-triggered profile installs. This
+             sideloaded app has no use for it, and only the launcher activity may be exported. -->
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:ignore="MissingClass"
+            tools:node="remove" />
+
+        <activity
+            android:name=".app.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
