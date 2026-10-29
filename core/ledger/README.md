@@ -80,8 +80,11 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
 - **Audit trail:** every create, edit, delete, restore, archive and setting change appends an
   `AuditEntry` in the **same transaction** as the change. `changes` is `field -> (old, new)` as
   text. CREATE has null olds, DELETE a snapshot with null news, RESTORE the fields with null
-  olds, ARCHIVE/UNARCHIVE empty changes. Because the diff reads `auditFields()`, a persisted
-  field missing from it would be treated as "no change" (documented on `AuditedWriter`).
+  olds, ARCHIVE/UNARCHIVE empty changes. The diff reads `auditFields()`, so **every persisted
+  business field must be listed there**. `AuditedWriter.update` enforces it where it can: an edit
+  that changes the entity but no listed field throws `IllegalStateException` (nothing written),
+  never a silent drop. An edit that changes a listed and an unlisted field together cannot be
+  detected, so the unlisted one would go unaudited: check `auditFields()` in review.
 - **Soft delete only (INT-3):** `delete` sets `deletedAt`; there is no hard delete. `restore` is
   audited. Lifecycle calls are idempotent: repeating one is a no-op that audits nothing.
 - **The writer owns the meta:** id, timestamps, attribution and lifecycle state are set by

@@ -26,7 +26,9 @@ import java.time.Instant
  *   changes nothing, returns the current entity and writes no row and no audit entry.
  *
  * Because the diff comes from [LedgerEntity.auditFields], **every persisted business field must be
- * listed there**; a change to a field that is not would be treated as no change.
+ * listed there**. [update] enforces it: if the entity changed but no listed field did, it throws
+ * `IllegalStateException` rather than drop the edit or write it unaudited. (A change that touches
+ * both a listed and an unlisted field cannot be detected, so the rule stays a review item.)
  *
  * Nests inside an outer [TransactionRunner] block, so a service that writes several entities (a
  * transfer's two legs) wraps them in one `runner.inTransaction`.
@@ -61,9 +63,13 @@ class AuditedWriter(
 
     /**
      * Applies [change] to the live entity with [id] and audits an UPDATE with the changed fields.
-     * If [change] leaves every audited field as it was, nothing is written.
+     * If [change] leaves the entity exactly as it was, nothing is written.
      *
      * @return the updated entity, or the unchanged one for a no-op.
+     * @throws IllegalStateException if [change] altered the entity but no field listed in
+     *   [LedgerEntity.auditFields] changed. That is a programming error (a persisted field missing
+     *   from `auditFields()`): writing would skip the audit entry and not writing would drop the
+     *   edit silently, so the call fails closed and nothing is written (CLAUDE.md §3.8).
      * @throws LedgerError.NotFound if there is no such entity.
      * @throws LedgerError.Deleted if it is deleted.
      */
@@ -79,6 +85,10 @@ class AuditedWriter(
             val new = change(old).withMeta(old.meta.copy(updatedAt = clock.instant()))
             val changes = AuditDiff.diff(old, new)
             if (changes.isEmpty()) {
+                // Same audited fields. Anything else that differs is a field auditFields() forgot.
+                check(new.withMeta(old.meta) == old) {
+                    "${old.auditType} changed in a field that auditFields() does not list"
+                }
                 old
             } else {
                 repository.update(new)

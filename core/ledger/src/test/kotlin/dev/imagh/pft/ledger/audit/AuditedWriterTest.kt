@@ -35,6 +35,19 @@ private data class Note(
     override fun withMeta(meta: EntityMeta<NoteId>) = copy(meta = meta)
 }
 
+/** A broken entity: `secret` is persisted but (wrongly) not listed in auditFields. */
+private data class Leaky(
+    override val meta: EntityMeta<NoteId>,
+    val title: String,
+    val secret: String,
+) : LedgerEntity<NoteId, Leaky> {
+    override val auditType = "leaky"
+
+    override fun auditFields(): Map<String, String?> = mapOf("title" to title)
+
+    override fun withMeta(meta: EntityMeta<NoteId>) = copy(meta = meta)
+}
+
 private class Fixture {
     val kit = LedgerTestKit()
     val notes = InMemoryEntityRepository<Note, NoteId>(kit.store)
@@ -154,6 +167,30 @@ class AuditedWriterTest :
                     }
                 updated.meta.createdByUserId shouldBe created.meta.createdByUserId
                 updated.meta.isDeleted shouldBe false
+            }
+
+            test("a change to a field missing from auditFields fails closed instead of being dropped silently") {
+                val f = Fixture()
+                f.kit.initialise()
+                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store)
+                f.writer.create(leaky, f.id) { Leaky(it, "Rent", secret = "a") }
+                val trailSize = f.trail.size
+
+                shouldThrow<IllegalStateException> {
+                    f.writer.update(leaky, f.id) { it.copy(secret = "b") }
+                }
+
+                leaky.get(f.id)?.secret shouldBe "a"
+                f.trail shouldHaveSize trailSize
+            }
+
+            test("an update that changes an audited field is still fine for an entity with an unaudited one") {
+                val f = Fixture()
+                f.kit.initialise()
+                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store)
+                f.writer.create(leaky, f.id) { Leaky(it, "Rent", secret = "a") }
+                f.writer.update(leaky, f.id) { it.copy(title = "Rent 2", secret = "b") }
+                leaky.get(f.id)?.title shouldBe "Rent 2"
             }
 
             test("updating a missing or deleted entity is refused") {
