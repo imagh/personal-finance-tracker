@@ -131,6 +131,25 @@ private data class WrongValue(
     override fun withMeta(meta: EntityMeta<WidgetId>) = copy(meta = meta)
 }
 
+/** Two boxed fields (`Paise?`, and an id held as its interface) whose audit values are swapped/mis-mapped. */
+private data class MisMapped(
+    override val meta: EntityMeta<WidgetId>,
+    val limitAmount: Paise?,
+    val floorAmount: Paise?,
+    val parent: EntityId?,
+) : LedgerEntity<WidgetId, MisMapped> {
+    override val auditType = "mismapped"
+
+    override fun auditFields(): Map<String, String?> =
+        mapOf(
+            "limit_amount" to floorAmount?.value?.toString(),
+            "floor_amount" to floorAmount?.value?.toString(),
+            "parent" to "someone-else",
+        )
+
+    override fun withMeta(meta: EntityMeta<WidgetId>) = copy(meta = meta)
+}
+
 /** A field that is "not persisted" is still not allowed: derive it in a getter instead. */
 private data class HasScratch(
     override val meta: EntityMeta<WidgetId>,
@@ -223,6 +242,29 @@ class AuditFieldsCheckTest :
                 error.message shouldContain "amount"
                 error.message shouldNotContain "101"
                 AuditFieldsCheck.problems(WrongValue(meta, Paise(100), "x")).size shouldBe 1
+            }
+            test("boxed money and ids are value-checked too, so a mis-mapped Paise? or id fails") {
+                val entity = MisMapped(meta, Paise(100), Paise(200), WidgetId("p-1"))
+                val problems = AuditFieldsCheck.problems(entity)
+                problems.size shouldBe 2
+                problems.any { it.contains("limitAmount") } shouldBe true
+                problems.any { it.contains("'parent'") } shouldBe true
+            }
+            test("a correctly mapped boxed Paise? and id pass, set or null") {
+                data class Ok(
+                    override val meta: EntityMeta<WidgetId>,
+                    val limitAmount: Paise?,
+                    val parent: EntityId?,
+                ) : LedgerEntity<WidgetId, Ok> {
+                    override val auditType = "ok"
+
+                    override fun auditFields(): Map<String, String?> =
+                        mapOf("limit_amount" to limitAmount?.value?.toString(), "parent" to parent?.value)
+
+                    override fun withMeta(meta: EntityMeta<WidgetId>) = copy(meta = meta)
+                }
+                Ok(meta, Paise(100), WidgetId("p-1")).shouldHaveCompleteAuditFields()
+                Ok(meta, null, null).shouldHaveCompleteAuditFields()
             }
             test("a field that is not persisted is not allowed on an entity") {
                 val error = shouldThrow<AssertionError> { HasScratch(meta, "a").shouldHaveCompleteAuditFields() }

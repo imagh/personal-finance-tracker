@@ -1,6 +1,8 @@
 package dev.imagh.pft.ledger.matchers
 
 import dev.imagh.pft.ledger.entity.LedgerEntity
+import dev.imagh.pft.ledger.ids.EntityId
+import dev.imagh.pft.money.Paise
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.should
@@ -27,14 +29,16 @@ import java.time.LocalDateTime
  * 2. Every `auditFields()` key matches such a field. A misspelt or extra key fails, so the two
  *    cannot drift apart in either direction.
  * 3. For text, whole numbers, booleans, enums (by name), `Instant`, `LocalDate` and
- *    `LocalDateTime` (ISO text) the audited value must equal the field's value. Other types
- *    (for example a boxed value class such as `Paise?`) are checked by name only.
+ *    `LocalDateTime` (ISO text), `Paise` (paise as text) and any `EntityId` (its `value`), the
+ *    audited value must equal the field's value. Other types, such as collections or composite
+ *    values, are checked by name only: flatten them to text in `auditFields()`.
  *
  * **Not checked:** `meta` (the shared columns; the writer audits `archived_at` itself), and
  * `auditType`/`auditId` (interface members, not persisted). A field that is *not* persisted is not
  * allowed on an entity: compute such a value in a getter (`val x get() = ...`), which has no
  * backing field. Typed ids and `Paise` need no special case: a Kotlin value-class property keeps
- * its property name and is stored in the field as its underlying `String`/`Long`.
+ * its property name and is stored in the field as its underlying `String`/`Long` (or, when nullable
+ * over a `Long`, boxed, which rule 3 also covers).
  */
 object AuditFieldsCheck {
     private val EXEMPT_FIELDS = setOf("meta", "auditType", "auditId")
@@ -87,6 +91,8 @@ object AuditFieldsCheck {
         return when {
             value == null -> audited == null
             value is Enum<*> -> audited == value.name
+            value is Paise -> audited == value.value.toString()
+            value is EntityId -> audited == value.value
             value is String ||
                 value is Number ||
                 value is Boolean ||
