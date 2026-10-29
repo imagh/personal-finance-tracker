@@ -288,6 +288,14 @@ class AuditFieldsCheckTest :
 
                 repo.get(WidgetId("w-1")) shouldBe stored
             }
+            test("an entity whose auditType differs from the repository's entityType is refused on insert and update") {
+                val repo = InMemoryEntityRepository<Complete, WidgetId>(InMemoryLedgerStore(), "gadget")
+                val insertError = shouldThrow<AssertionError> { repo.insert(complete) }
+                insertError.message shouldContain "widget"
+                insertError.message shouldContain "gadget"
+                shouldThrow<AssertionError> { repo.update(complete) }
+                repo.all() shouldBe emptyList()
+            }
             test("complete entities insert and update normally") {
                 val repo = InMemoryEntityRepository<Complete, WidgetId>(InMemoryLedgerStore(), "widget")
                 repo.insert(complete)

@@ -4,12 +4,13 @@ import dev.imagh.pft.ledger.entity.EntityRepository
 import dev.imagh.pft.ledger.entity.LedgerEntity
 import dev.imagh.pft.ledger.ids.EntityId
 import dev.imagh.pft.ledger.matchers.shouldHaveCompleteAuditFields
+import io.kotest.assertions.fail
 
 /**
  * The in-memory [EntityRepository]: the base every fake entity repository extends with its own
  * queries (plan §3.4), backed by an [InMemoryEntityStore] that takes part in [ledger]'s
- * transactions. [entityType] is the entity's `auditType`. Use it directly when an entity has no
- * queries of its own.
+ * transactions. [entityType] is the entity's `auditType` (checked on every write). Use it directly
+ * when an entity has no queries of its own.
  *
  * Every [insert] and [update] first checks that the entity's `auditFields()` is complete (see
  * [dev.imagh.pft.ledger.matchers.AuditFieldsCheck]), so a service test that writes an entity with
@@ -40,6 +41,11 @@ open class InMemoryEntityRepository<T : LedgerEntity<Id, T>, Id : EntityId>(
     }
 
     private fun verify(entity: T) {
+        // Names only (never values): the repository and the entity must agree on the audit type, or
+        // NotFound errors and audit rows would name the wrong kind.
+        if (entity.auditType != entityType) {
+            fail("repository entityType \"$entityType\" differs from the entity's auditType \"${entity.auditType}\"")
+        }
         entity.shouldHaveCompleteAuditFields()
     }
 }
