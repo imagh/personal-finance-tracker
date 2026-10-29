@@ -602,6 +602,17 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
   - Record the goldens with `./gradlew :app:recordRoborazziDebug` and review the PNGs in the PR.
 - **Refactor:** create `docs/architecture/design-system.md` (principles, tokens, theming, third-party assets table). Learnings: the Roborazzi and native-graphics setup.
 
+**DS2 deviations (2026-10-29):**
+- **`ui-tooling` adds an exported `PreviewActivity`** to the debug manifest, which `ManifestHardeningTest` rejected (the same trap as DS1's `ui-test-manifest`). `src/debug/AndroidManifest.xml` removes it with `tools:node="remove"`. Studio's "run preview on device" no longer works; static previews and the screenshot tests do not need it.
+- **`ThemePrefs` gains only `displayFont`** (`DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }`). `textFont` and `DisplayFont.CUSTOM` need a loaded `FontFamily` and arrive with custom-font import (AP2), so there is no field that cannot be exercised yet (YAGNI). `PftTheme` passes `FontFamily.Default` as the text family.
+- **Type token class is `PftTypography`** (not `PftType`: detekt `MatchingDeclarationName` wants the file name). `PftTheme.type` returns it. `PftTheme.shapes` returns the `PftShapes` object (`glyph`; the M3 `Shapes` are `PftShapes.material`, applied to `MaterialTheme`). `LocalPftSpacing` has a default but no provider, since the scale is a fixed grid.
+- **Newsreader optical size.** Plan text says "opsz axis auto"; Compose has no automatic mapping, so the hero is pinned to weight 400 and `FontVariation.opticalSizing(48.sp)` (the display cut). The DS5 shrink steps (40, 34, 28sp) keep the 48sp cut; revisit in DS5 if it looks off.
+- **Token sheet is split into pages** (`TokenSheetPages`, five pages) and each page is a golden, captured by node bounds: a single sheet does not fit one 393x851dp screen at 200% font scale. That gives 20 PNGs (5 pages x light/dark x 1.0/2.0, 43 to 111 KB each, 1.5 MB total), all under the 500 KB large-file hook. The sheet's hero and large samples are short ("₹82,450") so they do not wrap at 200%; the shrink-to-fit behaviour is DS5's.
+- **Extra tests beyond §6.1:** `PftShapesTest`, `PftSpacingTest` (the radii and the scale read back through the real theme) and `DesignCatalogTest` in a `src/testDebug` source set (the catalogue exists only in debug). `BundledFontTest` also pins the font's size and SHA-256, which is the "hash-check" for provenance.
+- **Lock refresh.** Roborazzi's Gradle plugin runtime brings `junit:junit:4.13.2` and `hamcrest-core:1.3` into `buildscript-gradle.lockfile` (both already checksum-verified for the app's tests). `--write-verification-metadata` alone failed the lock check for them on a fresh `GRADLE_USER_HOME`, so they were added with `--update-locks`, and the plugin artifacts were verified first with `--dependency-verification=lenient` plus `--write-verification-metadata`. See `docs/learnings/README.md`.
+- **Not done in this slice:** tuning the hero's letter spacing and line height on the owner's phone (§3.3 "Display spacing"; the values are named constants in `PftTypography.kt`), and the emulator walk-through of §11. Re-record the goldens after any tuning.
+- **`TokenSheet` lives in `main`** (as §6.1 says), so it is compiled into release but unreferenced there; the debug `DesignCatalog` that shows it does not ship.
+
 **DS3: icons, palette, `CategoryGlyph`, emoji policy** (can run in parallel with DS4)
 - **Red:**
   - `PftSymbolTest` (Robolectric):
