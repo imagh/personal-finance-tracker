@@ -1,5 +1,7 @@
 package dev.imagh.pft.ledger.ids
 
+import dev.imagh.pft.ledger.fakes.TestClock
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeSorted
 import io.kotest.matchers.shouldBe
@@ -7,21 +9,11 @@ import io.kotest.matchers.string.shouldMatch
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
-import java.time.Clock
+import java.time.Duration
 import java.time.Instant
-import java.time.ZoneOffset
 import java.util.Random
 
-/** A clock the test moves by hand. */
-private class StepClock(
-    var millis: Long,
-) : Clock() {
-    override fun getZone() = ZoneOffset.UTC
-
-    override fun withZone(zone: java.time.ZoneId?) = this
-
-    override fun instant(): Instant = Instant.ofEpochMilli(millis)
-}
+private fun clockAt(millis: Long) = TestClock(Instant.ofEpochMilli(millis))
 
 /** The 48-bit millisecond timestamp encoded in the first 12 hex digits of a UUIDv7. */
 private fun timestampOf(uuid: String): Long = uuid.replace("-", "").substring(0, 12).toLong(16)
@@ -29,13 +21,13 @@ private fun timestampOf(uuid: String): Long = uuid.replace("-", "").substring(0,
 class Uuid7Test :
     FunSpec({
         test("has the 8-4-4-4-12 text form, lower-case hex, 36 chars") {
-            val id = Uuid7(StepClock(1_700_000_000_000)).next()
+            val id = Uuid7(clockAt(1_700_000_000_000)).next()
             id.length shouldBe 36
             id shouldMatch Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
         }
 
         test("version nibble is 7 and the variant bits are 0b10") {
-            val ids = Uuid7(StepClock(1_700_000_000_000))
+            val ids = Uuid7(clockAt(1_700_000_000_000))
             repeat(1_000) {
                 val id = ids.next()
                 id[14] shouldBe '7'
@@ -45,15 +37,15 @@ class Uuid7Test :
 
         test("encodes the clock's milliseconds in the leading 48 bits") {
             val millis = 1_700_000_123_456
-            timestampOf(Uuid7(StepClock(millis)).next()) shouldBe millis
+            timestampOf(Uuid7(clockAt(millis)).next()) shouldBe millis
         }
 
         test("IDs from increasing milliseconds sort lexicographically") {
-            val clock = StepClock(1_700_000_000_000)
+            val clock = clockAt(1_700_000_000_000)
             val ids = Uuid7(clock)
             val generated =
                 List(500) {
-                    clock.millis += 1
+                    clock.advance(Duration.ofMillis(1))
                     ids.next()
                 }
             generated.shouldBeSorted()
@@ -62,21 +54,21 @@ class Uuid7Test :
 
         test("IDs from the same millisecond still sort in creation order") {
             // More than the 12-bit counter can hold in one millisecond, so the rollover is covered.
-            val ids = Uuid7(StepClock(1_700_000_000_000))
+            val ids = Uuid7(clockAt(1_700_000_000_000))
             val generated = List(10_000) { ids.next() }
             generated.shouldBeSorted()
         }
 
         test("10,000 IDs are unique") {
-            val ids = Uuid7(StepClock(1_700_000_000_000))
+            val ids = Uuid7(clockAt(1_700_000_000_000))
             List(10_000) { ids.next() }.toSet().size shouldBe 10_000
         }
 
         test("a clock that goes backwards never produces a smaller ID") {
-            val clock = StepClock(1_700_000_000_000)
+            val clock = clockAt(1_700_000_000_000)
             val ids = Uuid7(clock)
             val before = ids.next()
-            clock.millis -= 5_000
+            clock.advance(Duration.ofSeconds(-5))
             val after = ids.next()
             (after > before) shouldBe true
         }
@@ -89,7 +81,7 @@ class Uuid7Test :
         }
 
         test("two generators with different randomness do not collide") {
-            val clock = StepClock(1_700_000_000_000)
+            val clock = clockAt(1_700_000_000_000)
             val a = Uuid7(clock, Random(1)).next()
             val b = Uuid7(clock, Random(2)).next()
             (a == b) shouldBe false
@@ -97,7 +89,7 @@ class Uuid7Test :
 
         test("any representable timestamp keeps version and variant (property)") {
             checkAll(Arb.long(0L..0xFFFF_FFFF_FFFEL)) { millis ->
-                val id = Uuid7(StepClock(millis)).next()
+                val id = Uuid7(clockAt(millis)).next()
                 id[14] shouldBe '7'
                 (id[19] in "89ab") shouldBe true
                 timestampOf(id) shouldBe millis
@@ -105,11 +97,11 @@ class Uuid7Test :
         }
 
         test("rejects a clock outside the 48-bit range") {
-            io.kotest.assertions.throwables.shouldThrow<IllegalArgumentException> {
-                Uuid7(StepClock(-1)).next()
+            shouldThrow<IllegalArgumentException> {
+                Uuid7(clockAt(-1)).next()
             }
-            io.kotest.assertions.throwables.shouldThrow<IllegalArgumentException> {
-                Uuid7(StepClock(0x1_0000_0000_0000L)).next()
+            shouldThrow<IllegalArgumentException> {
+                Uuid7(clockAt(0x1_0000_0000_0000L)).next()
             }
         }
     })
