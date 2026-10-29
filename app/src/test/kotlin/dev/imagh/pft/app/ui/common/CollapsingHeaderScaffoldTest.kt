@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -57,12 +58,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * `CollapsingHeaderScaffold` through real nested scroll on a 393x851dp window (plan §3.4, §5.3,
- * UI-3, UI-7), with the clock stepped by hand. Geometry is read from semantics bounds in dp.
+ * UI-3, UI-7), with the clock stepped by hand. Geometry is read from semantics bounds in dp. Native
+ * graphics (`@GraphicsMode(NATIVE)`) gives text its real width: with the legacy mode every glyph is
+ * about a pixel wide, which would hide wrapping at large font scales.
  */
 @RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w393dp-h851dp-xxhdpi")
 class CollapsingHeaderScaffoldTest {
     @get:Rule
@@ -100,22 +105,25 @@ class CollapsingHeaderScaffoldTest {
         hero: (@Composable () -> Unit)? = null,
         period: HeaderPeriod? = null,
         captioned: Boolean = true,
+        fontScale: Float = 1f,
         actions: @Composable RowScope.() -> Unit = {},
     ) {
         compose.setContent {
             density = LocalDensity.current
-            PftTheme(ThemePrefs(dynamicColor = false)) {
-                CollapsingHeaderScaffold(
-                    title = "Budgets",
-                    style = style,
-                    subtitle = subtitle,
-                    hero = hero,
-                    heroCaption = if (hero != null && captioned) "spent this month" else null,
-                    period = period,
-                    actions = actions,
-                ) {
-                    items(itemCount) { index ->
-                        Box(Modifier.fillMaxWidth().height(56.dp).testTag("item-$index")) { Text("Row $index") }
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                PftTheme(ThemePrefs(dynamicColor = false)) {
+                    CollapsingHeaderScaffold(
+                        title = "Budgets",
+                        style = style,
+                        subtitle = subtitle,
+                        hero = hero,
+                        heroCaption = if (hero != null && captioned) "spent this month" else null,
+                        period = period,
+                        actions = actions,
+                    ) {
+                        items(itemCount) { index ->
+                            Box(Modifier.fillMaxWidth().height(56.dp).testTag("item-$index")) { Text("Row $index") }
+                        }
                     }
                 }
             }
@@ -273,7 +281,7 @@ class CollapsingHeaderScaffoldTest {
     }
 
     @Test
-    fun `a Dashboard title is titleLarge and a Standard title is headlineLarge`() {
+    fun `a Dashboard title is titleLarge`() {
         show(style = HeaderStyle.Dashboard)
         assertEquals(22f, tag(HeaderTags.TITLE_LARGE).fontSizeSp(), 0f)
     }
@@ -282,6 +290,23 @@ class CollapsingHeaderScaffoldTest {
     fun `a Standard title is headlineLarge`() {
         show(style = HeaderStyle.Standard)
         assertEquals(32f, tag(HeaderTags.TITLE_LARGE).fontSizeSp(), 0f)
+    }
+
+    @Test
+    fun `every title and the subtitle use the sans text family, never the serif (Q10)`() {
+        show(style = HeaderStyle.Standard, subtitle = "October - 3 days left")
+        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_LARGE).textStyleFamily())
+        assertEquals(FontFamily.Default, tag(HeaderTags.SUBTITLE).textStyleFamily())
+        swipeListUp()
+        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_BAR).textStyleFamily())
+        assertEquals(22f, tag(HeaderTags.TITLE_BAR).fontSizeSp(), 0f)
+    }
+
+    @Test
+    fun `the collapsed bar title is sans on a Dashboard header too`() {
+        show(style = HeaderStyle.Dashboard, hero = sampleHero)
+        swipeListUp()
+        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_BAR).textStyleFamily())
     }
 
     // --- header layout rule (Q10) ---------------------------------------------------------
@@ -320,6 +345,20 @@ class CollapsingHeaderScaffoldTest {
         show(style = HeaderStyle.Dashboard, hero = sampleHero, period = HeaderPeriod({}, {}))
         val gap = tag(HeaderTags.HERO).bounds().top - tag(HeaderTags.TITLE_LARGE).bounds().bottom
         assertTrue("gap was $gap", gap >= 24f)
+    }
+
+    @Test
+    fun `Dashboard expanded at 200 percent font scale with a subtitle, the title still ends 24dp above the hero`() {
+        show(
+            style = HeaderStyle.Dashboard,
+            subtitle = "October - 3 days left",
+            hero = sampleHero,
+            period = HeaderPeriod({}, {}),
+            fontScale = 2f,
+        )
+        val gap = tag(HeaderTags.HERO).bounds().top - tag(HeaderTags.SUBTITLE).bounds().bottom
+        assertTrue("gap was $gap", gap >= 24f)
+        assertTrue(tag(HeaderTags.HERO).bounds().top - tag(HeaderTags.TITLE_LARGE).bounds().bottom >= 24f)
     }
 
     @Test
