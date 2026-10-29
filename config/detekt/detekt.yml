@@ -10,9 +10,9 @@ style:
 
 complexity:
   LongParameterList:
-    # A Compose component takes one defaulted parameter per slot (the Compose API guidelines); the
-    # shared screen frame has more than six by design.
-    ignoreAnnotated: ['Composable']
+    # A Compose component takes one defaulted parameter per slot (the Compose API guidelines), so
+    # parameters with defaults do not count. Required parameters still do.
+    ignoreDefaultParameters: true
 
 naming:
   FunctionNaming:

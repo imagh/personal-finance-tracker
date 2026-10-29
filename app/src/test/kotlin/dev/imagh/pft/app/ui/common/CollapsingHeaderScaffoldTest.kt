@@ -97,7 +97,6 @@ class CollapsingHeaderScaffoldTest {
 
     private fun headerHeight() = tag(HeaderTags.HEADER).bounds().height
 
-    @Suppress("LongParameterList") // a test fixture: each parameter is one optional slot
     private fun show(
         style: HeaderStyle = HeaderStyle.Standard,
         itemCount: Int = 60,
