@@ -51,5 +51,9 @@ class NameBasedIdTest :
             io.kotest.assertions.throwables.shouldThrow<IllegalArgumentException> {
                 NameBasedId.uuid5("not-a-uuid", "x")
             }
+            // Right length, wrong characters.
+            io.kotest.assertions.throwables.shouldThrow<IllegalArgumentException> {
+                NameBasedId.uuid5("zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz", "x")
+            }
         }
     })
