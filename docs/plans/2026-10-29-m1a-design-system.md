@@ -4,7 +4,7 @@
 |-------------|-------|
 | Date        | 2026-10-29 |
 | Author      | architect |
-| Status      | Approved 2026-10-29 (decisions in §12); §6.3 applied to the M1a plan |
+| Status      | Approved 2026-10-29 (decisions in §12); §6.3 applied to the M1a plan. Amended 2026-10-29 after the owner's mockup review: serif for hero numbers only, header title layout, Budgets list + detail (§12 Q10–Q11) |
 | Related ACs | Owner UI requirements UI-1..UI-10 (defined in §1); PRD L-2 (recolour/re-icon), L-6 (state visible), B-2 (threshold flag), B-3 (unverified visibly marked), SEC-2 (`FLAG_SECURE`), SEC-3 (no permissions), SEC-5 (no sensitive logs), NFR responsiveness |
 | Plan owner  | akashg (repo owner) |
 
@@ -24,7 +24,7 @@ Mockups for the owner to react to are in §5.5 (wireframes), and a styled HTML m
 |---|---|
 | UI-1 | The look is like Cashew, but more premium, clean and sleek. |
 | UI-2 | The system default font, plus an option to load a custom font. There is no `INTERNET` permission, so no downloadable fonts. |
-| UI-3 | A modern serif for dashboards and reports; sans-serif for everyday screens. |
+| UI-3 | A modern serif for dashboards and reports; sans-serif for everyday screens. Refined at the mockup review (Q10): the serif sets only the dashboard and report **figures** (the hero number); every title, on every screen, is sans. |
 | UI-4 | Light and dark mode. |
 | UI-5 | Green and red money colours (income/expense, under/over budget, positive/negative balance), accessible in both themes. |
 | UI-6 | Emoji and icons for categories, sub-categories and descriptions, without `material-icons-extended`. |
@@ -164,21 +164,22 @@ So every money text token clears 4.5:1 on every surface either scheme can produc
 - **Storage:** the **key** is what is stored in the DB (§4), not a hex value. That lets each theme render its own accessible tones.
 
 **Typography (UI-2, UI-3).** There are two font slots:
-- **Display:** serif, for dashboards and reports.
-- **Text:** sans, for everything else.
+- **Display:** serif, for dashboard and report **figures** only (`amountHero`).
+- **Text:** sans, for everything else, including every title (Q10).
 
 | Role | Family | Size / line (sp) | Weight | Features | Used for |
 |---|---|---|---|---|---|
-| `PftTheme.type.amountHero` | display (Newsreader, opsz axis auto) | 48/60, shrinks in steps of 48 → 40 → 34 → 28 to fit | 400 | `tnum`, `lnum` | Home month total, budget overview, account and loan totals |
-| M3 `displayLarge/Medium/Small` | display | 57/72, 45/58, 36/48 (looser than M3's 64/52/44) | 400 | | dashboard header titles ("October", "Budgets") |
-| M3 `headline*` | text | M3 defaults | 600 for `headlineLarge` | | everyday screen header titles |
-| M3 `title*`, `body*`, `label*` | text | M3 defaults | M3 | | everything else |
+| `PftTheme.type.amountHero` | display (Newsreader, opsz axis auto) | 48/60, shrinks in steps of 48 → 40 → 34 → 28 to fit | 400 | `tnum`, `lnum` | Home month total, budget detail, account and loan totals; M3 report figures |
+| M3 `headlineLarge` | text | 32/40 | 600 | | the large title of a `Standard` header ("Budgets", "Accounts", form titles) |
+| M3 `titleLarge` | text | 22/28 | 500 | | the title of a `Dashboard` header ("October 2026", "🛒 Groceries") and of the collapsed 64dp bar |
+| M3 `display*`, other `headline*`, `title*`, `body*`, `label*` | text | M3 defaults | M3 | | everything else (no header uses `display*`) |
 | `PftTheme.type.amountLarge` | text | 32/40 | 500 | `tnum`, `lnum` | amount on add/edit and detail |
 | `PftTheme.type.amountRow` | text | 16/24 | 500 | `tnum` | list rows |
 
-- **Display spacing (owner, Q1).** Newsreader is set looser than M3's defaults: line height about 1.25–1.33× the size (the table above), and letter spacing **+0.01em on `amountHero`** and **+0.02em on `display*`**. These are named tokens (`DisplaySpacing`), so DS2 tunes the final values on the debug catalogue screen, on the owner's phone, before goldens are recorded. Sans roles keep M3 spacing.
+- **Display spacing (owner, Q1).** Newsreader is set looser than its defaults: `amountHero` line height 1.25× the size (the table above) and letter spacing **+0.01em**. These are named tokens (`DisplaySpacing`), so DS2 tunes the final values on the debug catalogue screen, on the owner's phone, before goldens are recorded. Sans roles keep M3 spacing.
+- **Why titles are sans (owner, Q10).** In the mockups a serif title stacked on a serif number was too heavy, and a sans title directly above a serif number clashed. Keeping the serif to the number alone, with the title in sans and well separated from it (§3.4), reads cleanest.
 - **Text font:** defaults to `FontFamily.Default`, which is the device's system font: Roboto or Google Sans on Pixel, and the One UI font on Samsung [Verify on the owner's phone that the One UI font setting reaches `FontFamily.Default`]. It can be set to a custom file (AP2).
-- **Display font:** defaults to the **bundled Newsreader**. Other options are System serif (`FontFamily.Serif`), "Same as text" and a custom file.
+- **Display font** (sets `amountHero` only)**:** defaults to the **bundled Newsreader**. Other options are System serif (`FontFamily.Serif`), "Same as text" and a custom file.
 - **Why Newsreader.** It is the only candidate checked that has all four things a money font needs. These were verified from the font files during planning:
 
 | Font | Licence | Tabular figures | ₹ U+20B9 | − U+2212 | Variable | Size |
@@ -245,11 +246,15 @@ Sizes:
   - If the window is shorter than 560dp (landscape, split screen), the header starts and stays collapsed.
 - **Mechanics:** it reuses M3's `TopAppBarState` and `exitUntilCollapsedScrollBehavior(snapAnimationSpec = PftTheme.motion.smooth)`. The scaffold only sets `state.heightOffsetLimit` and lays out by `collapsedFraction`. No custom nested-scroll code is needed, and M3 already provides snap-to-nearest and fling.
   - If the content cannot scroll, the header stays expanded (One UI behaviour, M3 `canScroll`).
+- **Header layout rule (owner, Q10).** The expanded header has two bands:
+  - **Upper band: the title.** It is read-only, so it may sit out of thumb reach. It is sans, horizontally **centred**, with an optional one-line `subtitle` caption under it. It never sits directly on top of the hero number: there is clear space between them.
+  - **Lower band (thumb zone): the hero and everything tappable.** The serif hero number, its caption, and the `period` control (‹ › stepper on the end of the caption row) sit at the bottom of the header, just above the content.
+  - The only things in the top row are secondary `actions` (back, search, filter, overflow).
 - **Two styles:**
-  - `HeaderStyle.Dashboard`: serif `displaySmall` title plus a `hero` slot (for example the month total). Used by Home, Budgets, and later loan and goal overviews.
-  - `HeaderStyle.Standard`: sans `headlineLarge` title, for lists, settings and forms.
-  - Either way, the large title sits at the bottom-start of the expanded area. While collapsing, it cross-fades and scales into the 64dp bar's small title.
-- **Slots:** `title`, `hero` (optional), `actions` (secondary only: search, filter, overflow), `bottomBar` (`NavigationBar` or `BottomActionBar`), `floatingActionButton`, `content` (`LazyListScope`).
+  - `HeaderStyle.Dashboard`: sans `titleLarge` title (with optional `subtitle`) high in the upper band, about 12% of the expanded height from its top, plus a `hero` slot and an optional `period` slot in the lower band. Swiping the header horizontally also steps the period. Used by Home, Budget detail, and later account, loan and goal overviews.
+  - `HeaderStyle.Standard`: sans `headlineLarge` title (with optional `subtitle`, for example "October · 3 days left · 4 active") centred in the middle of the expanded area. No hero. Used by lists (including the Budgets tab), settings and forms.
+  - **Collapse:** the title cross-fades and scales into the 64dp bar's title, so the screen name stays visible; the hero, caption and `period` fade out with the lower band.
+- **Slots:** `title`, `subtitle` (optional), `hero` (optional, Dashboard only), `period` (optional, Dashboard only: the `PeriodSwitcher`), `actions` (secondary only: back, search, filter, overflow), `bottomBar` (`NavigationBar` or `BottomActionBar`), `floatingActionButton`, `content` (`LazyListScope`). Add actions go in the FAB, not in the header.
 - **Insets:** edge-to-edge, with `WindowInsets.safeDrawing`. The bottom bar is `imePadding()`-aware, so the Save button rides above the keyboard.
 - **`BottomActionBar`:** one primary button (full width) or a primary plus a secondary button side by side, inside the thumb zone. Used by every form (Save), setup (Continue) and detail (Edit/Delete).
 - **Pickers** (account, category, tag, date) open as bottom sheets (`PftBottomSheet`, built in B2), never as top dropdowns.
@@ -316,7 +321,7 @@ Each shared component has at least two named consumers (M1a §3.4). "Built in" i
 | `PftBottomSheet` | `ui/common` | the one `ModalBottomSheet` opt-in, sheet shape and motion | `AccountPicker` (B2), `CategoryPicker` (B4), `TagPicker` (B5), `DateField` (C4) | B2 |
 | `EmojiInputValidator` | `ui/categories` | one-emoji validation | B4 only, so it stays local | B4 |
 | `TransactionRow` | `ui/common` | glyph, title, subtitle, `MoneyText`, `StatusChip` | C4 list, C5 search, D4 budget detail, F3 loan EMIs | C4 |
-| `PeriodSwitcher` | `ui/common` | ‹ October 2026 › with directional slide | C4 month, D4 budget history | C4 |
+| `PeriodSwitcher` | `ui/common` | the Dashboard `period` slot: ‹ › stepper beside the caption plus a horizontal swipe on the header, with a directional slide of the title and hero | C4 month, D4 budget detail (past periods) | C4 |
 | `AmountKeypad` | `ui/transactions` | big-key numeric pad producing text for `Paise.parse` | C4 only, so it stays local | C4 |
 | `SharedElements` (keys and the `SharedTransitionLayout` opt-in) | `ui/nav` | FAB → add, row → detail continuity | C4, C5 | C4 |
 | `ProgressMeter` | `ui/common` | verified fill + **hatched** unverified segment (B-3, not colour alone) + threshold tick + tone | D4, F3, G2 | D4 |
@@ -396,8 +401,9 @@ Release footprint: about 450 KB of font, about 90 KB of icons, and no new runtim
 ### 5.3 Collapsing header
 1. The user drags the content.
 2. M3's nested-scroll connection consumes the delta into `heightOffset` until the header is collapsed.
-3. The scaffold lays out the title and hero by `collapsedFraction`.
+3. The scaffold lays out the title and hero by `collapsedFraction`: the centred title moves into the 64dp bar, and the lower band (hero, caption, `period`) fades out.
 4. On release, the M3 snap spec (`PftMotion.smooth`) settles to the nearer end.
+5. A horizontal swipe on an expanded Dashboard header that has a `period` steps to the previous or next period, the same as ‹ ›. Vertical drags stay with step 2.
 
 ### 5.4 Custom font import (AP2)
 1. Settings › Appearance › Text font › "Import font…" opens the SAF picker.
@@ -413,10 +419,11 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 ```
 ┌──────────────────────────────────────┐
 │ 9:41                        ▾ ⌕  ⋮   │  secondary actions only
+│             October 2026             │  title: sans titleLarge, centred, read-only
+│                                      │  clear space
 │                                      │
-│  ‹  October 2026  ›                  │  PeriodSwitcher (label, sans)
-│  ₹48,250.40         [serif hero]     │  MoneyText hero, negative tone
-│  spent this month                    │
+│  −₹48,250.40        [serif hero]     │  MoneyText hero, negative tone
+│  spent this month          (‹) (›)   │  caption + PeriodSwitcher (also swipe)
 │  ( + ₹1,20,000 in ) ( net +₹71,749 ) │  positive containers
 ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤  ← content starts ~38%
 │ Today · Wed 29          −₹1,040.00   │
@@ -457,25 +464,59 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 └──────────────────────────────────────┘
 ```
 
-**Budgets (dashboard, D4)**
+**Budgets tab: list (standard, D4).** One card per active budget; tap a card for its detail.
 ```
 ┌──────────────────────────────────────┐
-│ 9:41                            +  ⋮ │
+│ 9:41                               ⋮ │
 │                                      │
-│  Budgets              [serif title]  │
-│  ₹48,250 of ₹60,000   [serif hero]   │
-│  October · 3 days left               │
-│  ████████████████▒▒▒░░░░│ 80%        │  ProgressMeter: verified, ▒ unverified, │ threshold
+│               Budgets                │  title: sans headlineLarge, centred
+│   October · 3 days left · 4 active   │  subtitle
+│                                      │
 ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
 │ ╭──────────────────────────────────╮ │
-│ │ (🛒) Groceries      ₹6,500/₹8,000│ │
-│ │ ████████████████▒░░│░  [81% ⚠]  │ │  warning tone + label
-│ │ (🍽) Dining out     ₹4,200/₹3,000│ │
-│ │ ██████████████████████ [Over]   │ │  negative tone + "Over"
-│ │ (🚕) Transport        ₹900/₹2,500│ │
-│ │ ███████░░░░░░░░░░░░░░ [₹1,600 left]│ │  positive tone
+│ │ (Σ) All spending ₹48,250/₹60,000›│ │  BudgetCard
+│ │     Monthly · resets 1 Nov       │ │
+│ │ ████████████████▒▒▒│░░░░         │ │  ProgressMeter: verified, ▒ unverified, │ threshold
+│ │ [80% · alert]  ₹11,750 left      │ │  warning tone + label
+│ │ (🛒) Groceries    ₹6,500/₹8,000 ›│ │
+│ │ ████████████████▒░░│░  [81% ⚠]   │ │
+│ │ (🍽) Dining out   ₹4,200/₹3,000 ›│ │
+│ │ ██████████████████████ [Over]    │ │  negative tone + "Over by ₹1,200"
+│ │ (🚕) Transport      ₹900/₹2,500 ›│ │
+│ │ ███████░░░░░░░░│░░░ [₹1,600 left]│ │  positive tone
 │ ╰──────────────────────────────────╯ │
+│                               ( + )  │  FAB → new budget
 │  ⌂ Home   ◔ Budgets   ↻ Upcoming  ⋯  │
+└──────────────────────────────────────┘
+```
+
+**Budget detail (dashboard, D4).** ‹ › (or a swipe on the header) steps through past periods.
+```
+┌──────────────────────────────────────┐
+│ ←                                  ⋮ │
+│             (🛒) Groceries           │  title: sans titleLarge, centred
+│                October               │  subtitle: the period shown
+│                                      │
+│  ₹6,500 of ₹8,000   [serif hero]     │  MoneyText hero
+│  spent · ₹1,500 left        (‹) (›)  │  caption + PeriodSwitcher
+│  ████████████████▒░░│░               │  ProgressMeter
+│  [81% · alert]  ▒ ₹560 unverified    │
+├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+│ ╭──────────────────────────────────╮ │
+│ │ Period      Monthly, from the 1st│ │  GroupedSection: facts
+│ │ Covers     (🛒) Groceries, (🥦) …│ │
+│ │ Daily pace          ₹500/day left│ │  remaining ÷ days left (core)
+│ ╰──────────────────────────────────╯ │
+│  Past months                         │
+│ ╭──────────────────────────────────╮ │
+│ │ September        ▬▬▬▬▬▬▬   ₹7,200│ │  spent vs limit per period
+│ │ August           ▬▬▬▬▬▬▬▬  ₹8,600│ │  over: negative tone
+│ ╰──────────────────────────────────╯ │
+│  This month · 14 transactions        │
+│ ╭──────────────────────────────────╮ │
+│ │ (🛒) BigBasket         −₹1,240.00│ │  TransactionRow → transaction detail
+│ ╰──────────────────────────────────╯ │
+│ [ Archive ]       [  Edit budget   ] │  BottomActionBar
 └──────────────────────────────────────┘
 ```
 
@@ -545,8 +586,8 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 **DS2: type, shape, spacing, bundled serif, screenshot harness, catalogue**
 - **Red:**
   - `PftTypographyTest` (Robolectric Compose):
-    - With the defaults, M3 `display*` use the Newsreader family and `body*`, `label*` and `headline*` use `FontFamily.Default`.
-    - `ThemePrefs(displayFont = TEXT)` makes `display*` use the text family.
+    - With the defaults, `amountHero` uses the Newsreader family and every M3 role (`display*`, `headline*`, `title*`, `body*`, `label*`) uses `FontFamily.Default` (Q10: titles are sans).
+    - `ThemePrefs(displayFont = TEXT)` makes `amountHero` use the text family.
     - `amountHero`, `amountLarge` and `amountRow` all carry `tnum`.
   - `BundledFontTest` (Robolectric):
     - `resources.getFont(R.font.newsreader)` loads.
@@ -597,7 +638,9 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
     - Dragging 30% of the collapse range and releasing settles back to expanded. Dragging 70% settles collapsed (snap).
     - Content shorter than the viewport keeps the header expanded after a swipe.
     - At 393×500dp the header starts collapsed.
-    - With `HeaderStyle.Dashboard` the title uses the display family.
+    - With `HeaderStyle.Dashboard` the hero uses the display family and the title uses the text family.
+    - Header layout (Q10), expanded, both styles: the title is horizontally centred (its centre within 1dp of the window centre) and has no click action. Dashboard: the title's bottom is above the hero's top with at least 24dp between them, and the `period` stepper's bottom is in the lower half of the header. Collapsed: the bar shows the title, and the hero is not displayed.
+    - A horizontal swipe on a Dashboard header with a `period` invokes `onPrevious`/`onNext` once; a vertical drag does not.
   - `BottomActionBarTest`:
     - The primary button's bottom is within 120dp of the window bottom, and its height is at least 48dp.
     - With two actions, the primary is on the end (right) side.
@@ -642,7 +685,7 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
   - `AppearanceFlowTest` (Robolectric Compose, through the nav host):
     - Settings › Appearance › Dark makes the surface dark.
     - Turning dynamic colour off makes `primary` equal the brand primary.
-    - Display font "Same as text" makes `display*` use the text family.
+    - Display font "Same as text" makes `amountHero` use the text family.
     - Licences › Newsreader shows the OFL text.
 - **Green:**
   - `app/.../settings/AppearanceSettings.kt`: typed keys over `SettingsService`, with `prefs: StateFlow<ThemePrefs?>`.
@@ -673,9 +716,9 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 | **B2** | `EntityListScreen` = `CollapsingHeaderScaffold` + M3 `ListItem` + `EmptyState`. `MoneyText` comes from DS5. **New here:** `PftBottomSheet` (first consumer `AccountPicker`). The account type badge is a `CategoryGlyph` with a symbol. |
 | **B3** | `CategoryColour` enum and `CategoryIcon` (§4) in core, with validation tests in `CategoryServiceTest`. `DefaultCategories` assigns symbols and colours. |
 | **B4** | Category edit has a symbol grid (`PftSymbol`), an emoji tab (quick-pick plus keyboard, `EmojiInputValidator` + `EmojiInputValidatorTest`: one grapheme, ZWJ family OK, flag OK, two emoji rejected, letter rejected, zero-width space rejected) and palette swatches. `CategoryPicker` is a `PftBottomSheet` grid of `CategoryGlyph`. A shared `CategoryIcon → GlyphSource` mapper goes in `ui/common` (consumers: C4, D4, E4). |
-| **C4** | Home uses `HeaderStyle.Dashboard` with a hero `MoneyText(animate = true)`. **New here:** `PeriodSwitcher` and `TransactionRow` (shared), plus `AmountKeypad` (local). The FAB → add container transform via `SharedElements` (`gentle`), `Modifier.animateItem()` on insert and delete, and the `StatusChip` Unverified. |
+| **C4** | Home uses `HeaderStyle.Dashboard`: the month ("October 2026") as the centred sans title, a hero `MoneyText(animate = true)`, and the `PeriodSwitcher` in the `period` slot. **New here:** `PeriodSwitcher` and `TransactionRow` (shared), plus `AmountKeypad` (local). The FAB → add container transform via `SharedElements` (`gentle`), `Modifier.animateItem()` on insert and delete, and the `StatusChip` Unverified. |
 | **C5** | List → detail shared elements (glyph and amount). The detail is on `GroupedSection` + `AuditHistoryList` + `BottomActionBar(Edit, Delete)`. |
-| **D4** | **New here:** `ProgressMeter` (shared). Its test asserts that the unverified segment is drawn with a distinct pattern (screenshot) and labelled in semantics (B-3). The budgets screen is Dashboard style. |
+| **D4** | **New here:** `ProgressMeter` (shared). Its test asserts that the unverified segment is drawn with a distinct pattern (screenshot) and labelled in semantics (B-3). **Two screens (Q11):** the Budgets tab is a `Standard` list of budget cards (spent of limit, `ProgressMeter`, status pill; FAB → new budget), and `BudgetDetailScreen` is `Dashboard` style (title = budget, subtitle = period, hero = spent of limit, `PeriodSwitcher` through past periods; facts, daily pace, past periods and this period's `TransactionRow`s; `BottomActionBar(Edit, Archive)`). |
 | **E4 / F3 / G2** | E4 uses `StatusChip` for Overdue/Paused/Cancelled. F3 and G2 use `ProgressMeter`. G2 completion uses `bouncy`, which reduced motion skips. |
 | **H1 / H3** | H1: the lock screen uses `PftTheme`, and the timeout row joins AP1's `SettingsScreen`. H3: motion is judged on a minified release build (§11), and jank numbers go in learnings. |
 
@@ -739,7 +782,7 @@ No mocks. The only fakes are Robolectric's platform shadows and a test `Activity
 |---|---|
 | UI-1 | Screenshot goldens (owner reviews them in the DS PRs), `docs/architecture/design-system.md` principles, manual pass |
 | UI-2 | `PftTypographyTest` (default family), `CustomFontStoreTest`, `CustomFontFlowTest`, `FontFileCheckTest` |
-| UI-3 | `PftTypographyTest` (display = serif, others = text), `CollapsingHeaderScaffoldTest` (Dashboard style uses display) |
+| UI-3 | `PftTypographyTest` (`amountHero` = serif, every M3 role = text), `CollapsingHeaderScaffoldTest` (Dashboard hero uses display, title uses text; title centred and separated from the hero) |
 | UI-4 | `PftThemeModeTest`, `WindowThemeTest`, `AppearanceSettingsTest` (UiModeManager), light/dark goldens |
 | UI-5 | `ColorContrastTest`, `MoneyToneTest`, `MoneyTextTest` (sign and semantics), `StatusChipTest`, D4 `ProgressMeter` test |
 | UI-6 | `PftSymbolTest`, `CategoryGlyphTest`, `CategoryPaletteContrastTest`, B4 `EmojiInputValidatorTest`, `ManifestHardeningTest` (EmojiCompat) |
@@ -849,3 +892,5 @@ The owner's phone gets only release-signed builds (PRD decision 31). The first o
 | Q7 | "Emoji for descriptions": category glyph on each row plus free emoji typed in titles (no schema change), or a per-transaction icon override (adds a column in C1)? | Category glyph + typed emoji |
 | Q8 | Remove the EmojiCompat initializer, so emoji come from the system font only and nothing asks Play services for a font? | Remove |
 | Q9 | The brief says A1 is merged, but `feat/m1a-foundation` is still at `8bde3b6` without A1. Merge the A1 PR into the base before DS1 branches? | Done: PR #9 merged into `feat/m1a-foundation` (2026-10-29) |
+| Q10 | (Mockup review, 2026-10-29.) Serif titles, sans titles, or a mix? Where does the title sit relative to the serif hero? | Serif for the hero number only; **all titles sans**. The read-only title is centred in the upper band with clear space above the hero; the hero, caption and the ‹ › period stepper (plus a header swipe) sit low in the thumb zone (§3.4 "Header layout rule"). |
+| Q11 | (Mockup review, 2026-10-29.) Budgets as one dashboard, or a list plus a detail page? | **List + detail.** The Budgets tab lists budgets (Standard header); a budget detail page shows everything about one budget (Dashboard header). Add stays in the FAB. M1a D2/D4 amended. |

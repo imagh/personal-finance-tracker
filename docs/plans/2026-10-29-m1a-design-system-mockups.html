@@ -12,16 +12,16 @@
 <style>
   :root { --serif: "Newsreader", Georgia, serif; --sans: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif; }
   .light {
-    --surface:#FBF8FF; --sc-low:#F5F2FA; --sc:#EFEDF4; --sc-high:#E9E7EF; --on:#1B1B21; --on-var:#46464F; --outline-var:#C6C5D0;
-    --primary:#4A55B8; --on-primary:#FFFFFF; --primary-c:#DFE0FF; --on-primary-c:#1A2478;
+    --surface:#FCF8FD; --sc-low:#F6F2F7; --sc:#F0EDF1; --sc-high:#EAE7EC; --on:#1B1B1F; --on-var:#46464F; --outline-var:#C7C5D0;
+    --primary:#4954B7; --on-primary:#FFFFFF; --primary-c:#DFE0FF; --on-primary-c:#000866;
     --pos:#13653C; --neg:#A3261D; --warn:#734900;
     --pos-c:#DDF4E5; --on-pos-c:#0B4A2A; --neg-c:#FCE3E0; --on-neg-c:#7A1B14; --warn-c:#FCEFD2; --on-warn-c:#5C3A00;
     --amber-c:#FDE7C2; --amber:#5E4200; --emerald-c:#CDEFDD; --emerald:#0F5132; --rose-c:#FFD9E0; --rose:#7A1F35;
     --sky-c:#D3E8FB; --sky:#0E4A6E; --slate-c:#DEE3EA; --slate:#37414D; --coral-c:#FFDBD0; --coral:#7A2E14; --violet-c:#E8DDFF; --violet:#4A2C8A;
   }
   .dark {
-    --surface:#131318; --sc-low:#1B1B21; --sc:#1F1F25; --sc-high:#2A292F; --on:#E4E1E9; --on-var:#C6C5D0; --outline-var:#46464F;
-    --primary:#BCC2FF; --on-primary:#1A2478; --primary-c:#323D9F; --on-primary-c:#DFE0FF;
+    --surface:#131316; --sc-low:#1B1B1F; --sc:#1F1F23; --sc-high:#2A2A2D; --on:#E4E1E6; --on-var:#C7C5D0; --outline-var:#46464F;
+    --primary:#BDC2FF; --on-primary:#152187; --primary-c:#303B9E; --on-primary-c:#DFE0FF;
     --pos:#6FD99E; --neg:#FF8F85; --warn:#F2C14E;
     --pos-c:#123C27; --on-pos-c:#B5EFCB; --neg-c:#4A1712; --on-neg-c:#FFD3CD; --warn-c:#3F2E05; --on-warn-c:#F8DFA2;
     --amber-c:#5E4200; --amber:#FDE7C2; --emerald-c:#0F5132; --emerald:#CDEFDD; --rose-c:#7A1F35; --rose:#FFD9E0;
@@ -43,11 +43,8 @@
   .hdr .acts { position:absolute; top:6px; right:14px; display:flex; gap:18px; color:var(--on-var); font-size:18px; }
   .hdr .acts.left { left:16px; right:auto; }
   .label { font-size:13px; color:var(--on-var); letter-spacing:.2px; }
-  .switcher { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--on-var); margin-bottom:6px; }
-  .switcher b { color:var(--on); font-weight:500; }
-  .hero { font: 400 48px/1.1 var(--serif); font-variant-numeric: tabular-nums lining-nums; letter-spacing:-.5px; }
+  .hero { font: 400 48px/1.25 var(--serif); font-variant-numeric: tabular-nums lining-nums; letter-spacing:.01em; }
   .hero small { font-size:26px; }
-  .dtitle { font: 400 36px/1.15 var(--serif); }
   .chips { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
   .chip { font-size:12.5px; padding:6px 10px; border-radius:10px; font-variant-numeric: tabular-nums; }
   .chip.pos { background:var(--pos-c); color:var(--on-pos-c); }
@@ -87,7 +84,6 @@
   .meter i { position:absolute; top:0; bottom:0; left:0; border-radius:5px; }
   .meter .u { background: repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 6px); opacity:.55; }
   .meter .tick { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--on); opacity:.7; }
-  .bud .top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
   .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:6px 14px 0; }
   .key { height:52px; border-radius:16px; background:var(--sc-low); display:grid; place-items:center; font:400 24px var(--sans); }
   .seg { display:flex; background:var(--sc-high); border-radius:20px; padding:3px; margin:0 auto; width:max-content; font-size:13.5px; }
@@ -104,13 +100,29 @@
   .reach { position:absolute; left:0; right:0; top:290px; border-top:1px dashed var(--primary); opacity:.0; pointer-events:none; }
   body.show-reach .reach { opacity:.5; }
   .reach::after { content:"content starts ≈38% (thumb zone below)"; position:absolute; right:10px; top:-16px; font-size:10px; color:var(--primary); }
+  /* list title, budget cards */
+  .ltitle { font: 600 32px/1.25 var(--sans); }
+  .bcard { padding:14px 16px; }
+  .bcard .top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .bcard .sub { font-size:12.5px; color:var(--on-var); margin-top:2px; }
+  .mini { height:6px; border-radius:3px; background:var(--sc-high); position:relative; overflow:hidden; width:90px; }
+  .mini i { position:absolute; left:0; top:0; bottom:0; border-radius:3px; }
+  .chev { color:var(--on-var); margin-left:4px; }
+  /* read-only title centred in the upper band; tappable period stepper beside the caption */
+  .midtitle { position:absolute; left:0; right:0; top:84px; text-align:center; }
+  .midtitle .tt { font: 500 22px/1.3 var(--sans); }
+  .midtitle .tt.big { font: 600 32px/1.25 var(--sans); }
+  .midtitle .cap { font-size:13px; color:var(--on-var); margin-top:4px; }
+  .capline { display:flex; justify-content:space-between; align-items:center; }
+  .stepper { display:flex; gap:6px; }
+  .stepper span { width:34px; height:34px; border-radius:17px; background:var(--sc-high); display:grid; place-items:center; color:var(--on); font-size:16px; }
 </style>
 </head>
 <body>
 <header class="page">
   <h1>Personal Finance Tracker: M1a visual direction (rough mockups)</h1>
-  <p>For reaction, not pixel-final. "Cashew, but premium": quiet tonal surfaces, a single accent (dynamic in the app; ink indigo <code>#4A55B8</code> here), serif numerals on dashboards, sans everywhere else, inset grouped islands, and everything you tap sits in the lower part of the screen. The money colours are the plan's exact tokens. Every amount carries a sign or a label, so colour is never the only cue. All data is fake.</p>
-  <p>Open questions shown here: rows show expenses in neutral text with "−" and totals in red (Q2); bottom navigation is Home · Budgets · Upcoming · More (Q6).</p>
+  <p>For reaction, not pixel-final. "Cashew, but premium": quiet tonal surfaces, a single accent (dynamic in the app; ink indigo <code>#4A55B8</code> here), inset grouped islands, and everything you tap sits in the lower part of the screen. The money colours are the plan's exact tokens. Every amount carries a sign or a label, so colour is never the only cue. All data is fake.</p>
+  <p><b>Header rule (owner, 2026-10-29):</b> titles are sans, read-only and centred in the upper band of the header. The serif is used only for the dashboard hero number. The hero, its caption and anything tappable (‹ › period stepper) sit low, in the thumb zone. Expense rows are neutral with "−"; bottom navigation is Home · Budgets · Upcoming · More.</p>
   <button onclick="toggleTheme()">Toggle light / dark</button>
   <button onclick="document.body.classList.toggle('show-reach')">Toggle reach line</button>
 </header>
@@ -122,9 +134,9 @@
   <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
   <div class="hdr">
     <div class="acts"><span>⌕</span><span>⚲</span><span>⋮</span></div>
-    <div class="switcher"><span>‹</span><b>October 2026</b><span>›</span></div>
+    <div class="midtitle" style="top:40px;"><div class="tt">October 2026</div></div>
     <div class="hero neg">−₹48,250<small>.40</small></div>
-    <div class="label">spent this month</div>
+    <div class="capline"><div class="label">spent this month</div><div class="stepper"><span>‹</span><span>›</span></div></div>
     <div class="chips"><span class="chip pos">+₹1,20,000 in</span><span class="chip neutral">net +₹71,749.60</span></div>
   </div>
   <div class="reach"></div>
@@ -142,7 +154,7 @@
   </div>
   <div class="fab">+</div>
   <div class="nav"><div class="on"><span class="ic">⌂</span>Home</div><div><span class="ic">◔</span>Budgets</div><div><span class="ic">↻</span>Upcoming</div><div><span class="ic">⋯</span>More</div></div>
-</div><figcaption><b>Home / month list</b>: a dashboard header (serif hero, rolling digits). The header collapses to a 64dp bar on scroll and snaps. The FAB grows into the add screen.</figcaption></figure>
+</div><figcaption><b>Home / month list</b>: a dashboard header (serif hero, rolling digits). The read-only title is centred in the upper band; the ‹ › stepper (or a swipe on the header) changes the month. On scroll the header collapses to a 64dp bar holding the title, and snaps. The FAB grows into the add screen.</figcaption></figure>
 
 <!-- ADD -->
 <figure><div class="phone light">
@@ -171,35 +183,66 @@
   <div class="bab"><div class="btn p">Save ₹250.00</div></div>
 </div><figcaption><b>Add transaction</b>: everyday screen (sans). Amount on top, and every control (chips that open bottom-sheet pickers, keypad, Save) in the thumb zone.</figcaption></figure>
 
-<!-- BUDGETS -->
+<!-- BUDGETS LIST -->
 <figure><div class="phone light">
   <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
   <div class="hdr">
-    <div class="acts"><span>+</span><span>⋮</span></div>
-    <div class="dtitle">Budgets</div>
-    <div class="hero" style="font-size:34px; margin-top:6px;">₹48,250 <span style="font-size:20px; color:var(--on-var)">of ₹60,000</span></div>
-    <div class="label">October · 3 days left</div>
-    <div class="meter" style="color:var(--warn)"><i style="width:72%; background:var(--warn)"></i><i class="u" style="left:72%; width:8%"></i><span class="tick" style="left:80%"></span></div>
-    <div class="t2" style="margin-top:8px;"><span class="pill th">80% · alert</span><span>▒ includes ₹4,800 unverified</span></div>
+    <div class="acts"><span>⋮</span></div>
+    <div class="midtitle"><div class="tt big">Budgets</div><div class="cap">October · 3 days left · 4 active</div></div>
   </div>
   <div class="reach"></div>
-  <div class="content" style="padding-top:10px;">
+  <div class="content">
     <div class="island">
-      <div class="item bud" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g emerald">🛒</div><div class="t1">Groceries</div></div><div class="amt">₹6,500 <span style="color:var(--on-var);font-weight:400">/ ₹8,000</span></div></div>
+      <div class="item bcard" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g slate sym">Σ</div><div><div class="t1">All spending</div><div class="sub">Monthly · resets 1 Nov</div></div></div><div class="amt">₹48,250 <span style="color:var(--on-var);font-weight:400">/ ₹60,000</span><span class="chev">›</span></div></div>
+        <div class="meter" style="color:var(--warn)"><i style="width:72%; background:var(--warn)"></i><i class="u" style="left:72%; width:8%"></i><span class="tick" style="left:80%"></span></div>
+        <div class="t2" style="margin-top:6px;"><span class="pill th">80% · alert</span><span>₹11,750 left</span></div></div>
+      <div class="item bcard" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g emerald">🛒</div><div><div class="t1">Groceries</div><div class="sub">Monthly · 2 categories</div></div></div><div class="amt">₹6,500 <span style="color:var(--on-var);font-weight:400">/ ₹8,000</span><span class="chev">›</span></div></div>
         <div class="meter" style="color:var(--warn)"><i style="width:74%; background:var(--warn)"></i><i class="u" style="left:74%; width:7%"></i><span class="tick" style="left:80%"></span></div>
         <div class="t2" style="margin-top:6px;"><span class="pill th">81% ⚠</span><span>₹1,500 left</span></div></div>
-      <div class="item bud" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g coral">🍽️</div><div class="t1">Dining out</div></div><div class="amt neg">₹4,200 <span style="color:var(--on-var);font-weight:400">/ ₹3,000</span></div></div>
+      <div class="item bcard" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g coral">🍽️</div><div><div class="t1">Dining out</div><div class="sub">Monthly · #eatout</div></div></div><div class="amt neg">₹4,200 <span style="color:var(--on-var);font-weight:400">/ ₹3,000</span><span class="chev">›</span></div></div>
         <div class="meter"><i style="width:100%; background:var(--neg)"></i></div>
         <div class="t2" style="margin-top:6px;"><span class="pill over">Over by ₹1,200</span></div></div>
-      <div class="item bud" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g amber">🚕</div><div class="t1">Transport</div></div><div class="amt">₹900 <span style="color:var(--on-var);font-weight:400">/ ₹2,500</span></div></div>
+      <div class="item bcard" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g amber">🚕</div><div><div class="t1">Transport</div><div class="sub">Weekly · Mon–Sun</div></div></div><div class="amt">₹900 <span style="color:var(--on-var);font-weight:400">/ ₹2,500</span><span class="chev">›</span></div></div>
         <div class="meter"><i style="width:36%; background:var(--pos)"></i><span class="tick" style="left:80%"></span></div>
         <div class="t2" style="margin-top:6px;"><span class="pill ok">₹1,600 left</span></div></div>
     </div>
   </div>
+  <div class="fab">+</div>
   <div class="nav"><div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◔</span>Budgets</div><div><span class="ic">↻</span>Upcoming</div><div><span class="ic">⋯</span>More</div></div>
-</div><figcaption><b>Budgets</b>: dashboard (serif). Each ProgressMeter shows the verified fill, a <i>hatched</i> unverified segment (B-3, not colour alone) and a threshold tick. Status is spelled out in pills.</figcaption></figure>
+</div><figcaption><b>Budgets tab (list)</b>: an everyday screen. A large sans title collapses on scroll. Each card shows spent of limit, the meter (hatched = unverified, tick = alert threshold) and a status pill. Tap a card for the detail; the FAB creates a budget.</figcaption></figure>
 
-<!-- DETAIL -->
+<!-- BUDGET DETAIL -->
+<figure><div class="phone light">
+  <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
+  <div class="hdr" style="height:268px;">
+    <div class="acts left"><span>←</span></div><div class="acts"><span>⋮</span></div>
+    <div class="midtitle" style="top:30px;"><div class="tt">🛒 Groceries</div><div class="cap">October</div></div>
+    <div class="hero">₹6,500<small style="color:var(--on-var)"> of ₹8,000</small></div>
+    <div class="capline"><div class="label">spent · ₹1,500 left · 3 days left</div><div class="stepper"><span>‹</span><span>›</span></div></div>
+    <div class="meter" style="color:var(--warn)"><i style="width:74%; background:var(--warn)"></i><i class="u" style="left:74%; width:7%"></i><span class="tick" style="left:80%"></span></div>
+    <div class="t2" style="margin-top:8px;"><span class="pill th">81% · alert at 80%</span><span>▒ ₹560 unverified</span></div>
+  </div>
+  <div class="reach"></div>
+  <div class="content" style="overflow:hidden;">
+    <div class="island" style="padding:2px 0;">
+      <div class="item kv"><span>Period</span><span>Monthly, from the 1st</span></div>
+      <div class="item kv"><span>Covers</span><span>🛒 Groceries, 🥦 Vegetables</span></div>
+      <div class="item kv"><span>Daily pace</span><span>₹500/day left</span></div>
+    </div>
+    <div class="sect">Past months</div>
+    <div class="island" style="padding:2px 0;">
+      <div class="item kv"><span>September</span><span style="display:flex;gap:10px;align-items:center;"><span class="mini"><i style="width:90%;background:var(--warn)"></i></span>₹7,200</span></div>
+      <div class="item kv"><span>August</span><span style="display:flex;gap:10px;align-items:center;"><span class="mini"><i style="width:100%;background:var(--neg)"></i></span><span class="neg">₹8,600</span></span></div>
+    </div>
+    <div class="sect">This month · 14 transactions</div>
+    <div class="island">
+      <div class="item"><div class="g emerald">🛒</div><div class="t"><div class="t1">BigBasket</div><div class="t2">Today · HDFC</div></div><div class="amt">−₹1,240.00</div></div>
+    </div>
+  </div>
+  <div class="bab"><div class="btn s" style="color:var(--on);">Archive</div><div class="btn p">Edit budget</div></div>
+</div><figcaption><b>Budget detail</b>: dashboard (serif hero). ‹ › steps through past periods. It shows the limit, threshold, what the budget covers, daily pace, past months against the limit, and this period's transactions. Edit and Archive are in reach.</figcaption></figure>
+
+<!-- TRANSACTION DETAIL -->
 <figure><div class="phone light">
   <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
   <div class="hdr" style="align-items:center; text-align:center;">
