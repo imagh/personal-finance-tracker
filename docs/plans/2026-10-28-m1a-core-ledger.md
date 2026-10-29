@@ -343,6 +343,7 @@ Adds `:core:recurring`.
 - **Red:** a `./gradlew assembleRelease` without the signing env vars **fails** with a clear message (fail closed; checked by running it, documented in the PR). `ReleaseSmokeTest` (instrumented, on a release-like `benchmark`/minified build if feasible, otherwise a manual checklist): the app launches, the encrypted DB opens and the R8 keep rules for SQLCipher hold.
 - **Green:** `app/build.gradle.kts` `signingConfigs.release` from `ANDROID_KEYSTORE_*`; R8 rules (`-keep class net.zetetic.database.** { *; }`); `local.properties.example` lists names only.
 - **Refactor:** run the 50k-row responsiveness check on the emulator (§11) and record the numbers in learnings.
+- **Amendment (2026-10-30, owner decision):** R8 (`isMinifyEnabled`, `isShrinkResources`, `proguard-rules.pro`) was brought forward and is already on, so sample and preview code (`TokenSheet`, DS4's `HeaderSamples`) does not ship in release; it is guarded by `:app:verifyReleaseShrink` in `check`. H3 keeps the release `signingConfigs`, the SQLCipher/Room keep rule (added when those dependencies reach the runtime classpath) and `ReleaseSmokeTest`.
 
 ### PR breakdown (incremental — required)
 

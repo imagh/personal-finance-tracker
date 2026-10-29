@@ -880,7 +880,7 @@ No mocks. The only fakes are Robolectric's platform shadows and a test `Activity
    - TalkBack: amounts are announced with their direction.
 
 **Motion check (DS4, then C4/C5):**
-1. Build a minified variant (`assembleRelease` with the debug signing config locally, or a `benchmark` build type if A5 introduces one) and install it on `pft35`.
+1. Build a minified variant and install it on `pft35`. `assembleRelease` is now minified directly (R8 was enabled early on 2026-10-30; M1a H3 amendment), so no separate variant is needed. Its APK is unsigned: sign a copy with the debug keystore for a one-off local install (recipe in learnings, 2026-10-30), never in the build.
 2. Exercise header collapse, list scroll and (from C4) FAB → add and row → detail.
 3. Read `adb shell dumpsys gfxinfo dev.imagh.pft framestats`, aiming for under 1% janky frames on the emulator, and record the numbers in learnings.
 

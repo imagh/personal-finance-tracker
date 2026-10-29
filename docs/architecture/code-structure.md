@@ -12,6 +12,7 @@ gradle/                 # libs.versions.toml (all pins), wrapper, daemon JVM, ve
 config/detekt/          # detekt rule overrides (ktlint rules live in the root .editorconfig)
 build-logic/            # included build: pft.kotlin-core + pft.lint convention plugins
 app/                    # thin Android layer (Compose, Room/SQLCipher impls, Keystore, ...)
+  proguard-rules.pro                     # R8 keep rules for release (none yet; each rule must say why)
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors, PftTypography, PftShapes,
                                          # PftSpacing (design-system tokens); TokenSheet* (token sheet: preview, catalogue, goldens)

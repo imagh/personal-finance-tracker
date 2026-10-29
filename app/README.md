@@ -96,7 +96,7 @@ shows `DesignCatalog`: the token sheet with toggles for light/dark, hero font an
 to check tokens on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
 twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
 (`ui/theme`) so the screenshot tests can render it on both unit-test variants; it is unreferenced by
-release code and R8 will drop it once minification is on.
+release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 
 ## Data it owns
 
@@ -129,7 +129,26 @@ No network, analytics or crash SDKs.
 ./gradlew :app:lint                   # Android lint (also part of `check`)
 ./gradlew :app:recordRoborazziDebug   # re-record the screenshot goldens (deliberate visual changes only)
 ./gradlew :app:verifyRoborazziDebug   # compare against the goldens (what `check` does via the unit tests)
+./gradlew :app:assembleRelease        # minified (R8) release APK, UNSIGNED: no release signing until H3
+./gradlew :app:verifyReleaseShrink    # R8 guard (part of `check`): MainActivity kept, preview code removed
 ```
+
+**Release build (R8).** `buildTypes.release` has `isMinifyEnabled` and `isShrinkResources` on
+(owner decision 2026-10-30, so sample and preview code does not ship), with
+`proguard-android-optimize.txt` plus `app/proguard-rules.pro`. That file has no keep rules yet: the
+release runtime classpath is Compose and activity-compose, which carry their own consumer rules,
+and AGP keeps the manifest's `MainActivity`. Add a rule only for something R8 reports or a smoke
+test shows broken, with a comment saying why; the SQLCipher/Room rules come with those
+dependencies (A4a, H3). There is deliberately **no release `signingConfig`** (H3 adds it from
+`ANDROID_KEYSTORE_*` and must fail closed), so `assembleRelease` yields `app-release-unsigned.apk`.
+The release APK is about 1.4 MB with R8 (18.3 MB without).
+
+`verifyReleaseShrink` (registered in `app/build.gradle.kts`, wired into `check`) runs
+`assembleRelease`, reads `build/outputs/mapping/release/mapping.txt` and fails with a clear message
+if minification is off, `dev.imagh.pft.app.MainActivity` is gone, or any
+`dev.imagh.pft.app.ui.theme.TokenSheet*` class is still present. When a slice adds preview or sample
+code, add its compiled class prefix to `mustBeRemoved`. To smoke-test a release build on `pft35`,
+sign a copy of the APK with the debug keystore, outside the build (recipe in `docs/learnings`).
 
 **Screenshot goldens.** `TokenSheetScreenshotTest` (Roborazzi, `@GraphicsMode(NATIVE)`, qualifiers
 `w393dp-h851dp-xxhdpi`, light and `+night`, font scale 1.0 and 2.0, brand colours) renders the token
