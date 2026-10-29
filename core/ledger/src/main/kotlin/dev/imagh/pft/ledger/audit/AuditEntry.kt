@@ -50,7 +50,8 @@ enum class AuditSource {
  * @param entityType the kind of record, see [dev.imagh.pft.ledger.entity.Auditable.auditType].
  * @param entityId the record's id as text.
  * @param action what happened.
- * @param changes the changed fields. Empty for a lifecycle change with no field changes (archive).
+ * @param changes the changed fields, values as text (instants as ISO-8601). ARCHIVE and UNARCHIVE
+ *   carry `archived_at`; every other lifecycle action carries a field snapshot (see [AuditedWriter]).
  * @param userId who did it.
  * @param deviceId on which device.
  * @param source what caused it.

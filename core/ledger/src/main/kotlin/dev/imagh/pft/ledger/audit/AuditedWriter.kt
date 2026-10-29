@@ -127,7 +127,8 @@ class AuditedWriter(
         }
 
     /**
-     * Archives the entity (hidden from pickers, kept in history) and audits an ARCHIVE.
+     * Archives the entity (hidden from pickers, kept in history) and audits an ARCHIVE whose changes
+     * are `archived_at: null -> <instant as ISO text>`.
      * Already archived: a no-op.
      *
      * @throws LedgerError.NotFound if there is no such entity.
@@ -139,11 +140,16 @@ class AuditedWriter(
         source: AuditSource = AuditSource.MANUAL,
     ): T =
         lifecycle(repository, id, source, AuditAction.ARCHIVE) { old, now ->
-            if (old.requireNotDeleted().meta.isArchived) null else old.meta.copy(archivedAt = now) to emptyMap()
+            if (old.requireNotDeleted().meta.isArchived) {
+                null
+            } else {
+                old.meta.copy(archivedAt = now) to mapOf(ARCHIVED_AT to FieldChange(old = null, new = now.toString()))
+            }
         }
 
     /**
-     * Makes an archived entity active again and audits an UNARCHIVE. Not archived: a no-op.
+     * Makes an archived entity active again and audits an UNARCHIVE whose changes are
+     * `archived_at: <instant> -> null`. Not archived: a no-op.
      *
      * @throws LedgerError.NotFound if there is no such entity.
      * @throws LedgerError.Deleted if it is deleted.
@@ -154,7 +160,13 @@ class AuditedWriter(
         source: AuditSource = AuditSource.MANUAL,
     ): T =
         lifecycle(repository, id, source, AuditAction.UNARCHIVE) { old, _ ->
-            if (!old.requireNotDeleted().meta.isArchived) null else old.meta.copy(archivedAt = null) to emptyMap()
+            val archivedAt = old.requireNotDeleted().meta.archivedAt
+            if (archivedAt == null) {
+                null
+            } else {
+                old.meta.copy(archivedAt = null) to
+                    mapOf(ARCHIVED_AT to FieldChange(old = archivedAt.toString(), new = null))
+            }
         }
 
     /**
@@ -196,5 +208,10 @@ class AuditedWriter(
     private fun <T : LedgerEntity<*, *>> T.requireNotDeleted(): T {
         if (meta.isDeleted) throw LedgerError.Deleted(auditType)
         return this
+    }
+
+    private companion object {
+        /** The audit key for the archive state: the only meta column that is audited as a field. */
+        const val ARCHIVED_AT = "archived_at"
     }
 }

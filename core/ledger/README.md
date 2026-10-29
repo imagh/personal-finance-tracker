@@ -80,7 +80,7 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
 - **Audit trail:** every create, edit, delete, restore, archive and setting change appends an
   `AuditEntry` in the **same transaction** as the change. `changes` is `field -> (old, new)` as
   text. CREATE has null olds, DELETE a snapshot with null news, RESTORE the fields with null
-  olds, ARCHIVE/UNARCHIVE empty changes. The diff reads `auditFields()`, so **every persisted
+  olds, ARCHIVE `archived_at: null -> <ISO instant>`, UNARCHIVE the reverse. The diff reads `auditFields()`, so **every persisted
   business field must be listed there**. `AuditedWriter.update` enforces it where it can: an edit
   that changes the entity but no listed field throws `IllegalStateException` (nothing written),
   never a silent drop. An edit that changes a listed and an unlisted field together cannot be

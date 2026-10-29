@@ -281,7 +281,7 @@ class AuditedWriterTest :
         }
 
         context("archive and unarchive") {
-            test("archive keeps the entity live but not active, and audits an ARCHIVE with no field changes") {
+            test("archive keeps the entity live but not active, and audits the archived_at change") {
                 val f = Fixture()
                 f.kit.initialise()
                 f.createNote()
@@ -292,19 +292,40 @@ class AuditedWriterTest :
                 archived.meta.archivedAt shouldBe f.kit.clock.instant()
                 archived.meta.isActive shouldBe false
                 f.notes.getLive(f.id) shouldBe archived
-                f.trail.shouldHaveAudited("note", "note-1", AuditAction.ARCHIVE, changes = emptyMap())
+                f.trail.shouldHaveAudited(
+                    "note",
+                    "note-1",
+                    AuditAction.ARCHIVE,
+                    changes =
+                        mapOf(
+                            "archived_at" to
+                                FieldChange(
+                                    null,
+                                    f.kit.clock
+                                        .instant()
+                                        .toString(),
+                                ),
+                        ),
+                )
             }
 
-            test("unarchive makes it active again and audits an UNARCHIVE") {
+            test("unarchive makes it active again and audits the archived_at change back to null") {
                 val f = Fixture()
                 f.kit.initialise()
                 f.createNote()
+                val archivedAt = f.kit.clock.instant()
                 f.writer.archive(f.notes, f.id)
+                f.kit.clock.advance(Duration.ofHours(3))
 
                 val unarchived = f.writer.unarchive(f.notes, f.id)
 
                 unarchived.meta.isActive shouldBe true
-                f.trail.shouldHaveAudited("note", "note-1", AuditAction.UNARCHIVE, changes = emptyMap())
+                f.trail.shouldHaveAudited(
+                    "note",
+                    "note-1",
+                    AuditAction.UNARCHIVE,
+                    changes = mapOf("archived_at" to FieldChange(archivedAt.toString(), null)),
+                )
             }
 
             test("archiving an archived entity, or unarchiving an active one, is a no-op") {
