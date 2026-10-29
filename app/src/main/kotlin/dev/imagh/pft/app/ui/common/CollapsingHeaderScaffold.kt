@@ -147,13 +147,23 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * collapse the title cross-fades and scales into the bar's title and the lower band fades out.
  *
  * **Insets.** Edge-to-edge with `WindowInsets.safeDrawing`; the [bottomBar] is `imePadding()`-aware
- * so a Save button rides above the keyboard. Nothing waits for an animation to end.
+ * so a Save button rides above the keyboard, and without a bar the list and the FAB are padded by
+ * the bottom inset. Nothing waits for an animation to end.
+ *
+ * **Use one per screen, at the root.** It reads the raw `safeDrawing` insets, so do not nest it
+ * under another Scaffold or layout that consumes insets (the header would be padded twice or not
+ * at all), and do not put one inside another.
+ *
+ * **Dashboard slots.** [hero], [heroCaption] and [period] go together: the lower band exists only
+ * when a [hero] is given, and without one the caption and the stepper are not drawn and the
+ * sideways swipe does nothing. A window shorter than 560dp has no expanded state, so there the
+ * Dashboard hero is hidden too (landscape, split screen), as the plan specifies.
  *
  * @param title the screen name (a sans title; one line, ellipsised).
  * @param style how the expanded header is laid out.
  * @param subtitle an optional one-line caption under the title (for example "October - 3 days left").
  * @param hero Dashboard only: the figure, set in the hero style (display font), for example a
- *   `MoneyText`. Ignored for [HeaderStyle.Standard].
+ *   `MoneyText`. Ignored for [HeaderStyle.Standard]. Required for the caption and period to show.
  * @param heroCaption Dashboard only: the caption under the hero ("spent this month").
  * @param period Dashboard only: the period control; see [HeaderPeriod].
  * @param actions secondary actions in the top row (back, search, filter, overflow), laid out left
@@ -288,7 +298,11 @@ private fun CollapsingHeader(
         }
     }
     val swipe =
-        if (content.dashboard && phase == HeaderPhase.Expanded) Modifier.periodSwipe(content.period) else Modifier
+        if (content.dashboard && content.hero != null && phase == HeaderPhase.Expanded) {
+            Modifier.periodSwipe(content.period)
+        } else {
+            Modifier
+        }
     val policy =
         remember(state, sizes, content.dashboard) {
             HeaderPolicy(

@@ -464,6 +464,16 @@ class CollapsingHeaderScaffoldTest {
     }
 
     @Test
+    fun `a period without a hero draws no stepper and a swipe does not step it`() {
+        val steps = Steps()
+        show(style = HeaderStyle.Dashboard, period = steps.period)
+        tag(HeaderTags.PERIOD_STEPPER).assertDoesNotExist()
+        tag(HeaderTags.HEADER).performTouchInput { swipeLeft() }
+        frames(2)
+        assertEquals(0, steps.next)
+    }
+
+    @Test
     fun `the stepper buttons step the period`() {
         val steps = Steps()
         show(style = HeaderStyle.Dashboard, hero = sampleHero, period = steps.period)
