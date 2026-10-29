@@ -39,7 +39,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 | Module | Owns | Responsibility |
 |--------|------|----------------|
 | `:app` | `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); later: UI, Room entities/DAOs, Keystore, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
-| `:core:money` | (empty until A2) `Paise`, parsing, formatting | Integer-paise money; planned in A2 |
+| `:core:money` | `Paise`, `PaiseParser`, `PaiseFormat` (package `dev.imagh.pft.money`) | Integer-paise money: exact arithmetic, strict parsing of amount text, sign-free Indian-grouped formatting |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |
 
 Planned (added by the slice that needs them): `:core:ledger` (A3), `:core:budget` (D1),
