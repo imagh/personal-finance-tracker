@@ -130,7 +130,7 @@ Every screen is built on the design system in [`2026-10-29-m1a-design-system.md`
 | **B4** | Category edit has a symbol grid (`PftSymbol`), an emoji tab (quick-pick plus keyboard, with `EmojiInputValidator` and its test) and palette swatches. `CategoryPicker` is a `PftBottomSheet` grid of `CategoryGlyph`. A shared `CategoryIcon → GlyphSource` mapper goes in `ui/common` (consumers: C4, D4, E4). |
 | **C4** | Home uses `HeaderStyle.Dashboard` with a hero `MoneyText(animate = true)`. **New here:** `PeriodSwitcher` and `TransactionRow` (shared), plus `AmountKeypad` (local). FAB → add uses a container transform via `SharedElements`; list insert and delete animate; unverified rows show the `StatusChip`. |
 | **C5** | List → detail shared elements (glyph and amount). The detail is built on `GroupedSection` + `AuditHistoryList` + `BottomActionBar(Edit, Delete)`. |
-| **D4** | **New here:** `ProgressMeter` (shared). Its test asserts that unverified spend is drawn with a distinct pattern (screenshot) and labelled in semantics (B-3). The budgets screen uses the Dashboard header. |
+| **D4** | **New here:** `ProgressMeter` (shared). Its test asserts that unverified spend is drawn with a distinct pattern (screenshot) and labelled in semantics (B-3). **Two screens** (design plan §12 Q11): the Budgets tab is a `Standard`-header list of budget cards, and the budget detail page uses the `Dashboard` header (step D4). |
 | **E4 / F3 / G2** | E4 uses `StatusChip` for Overdue/Paused/Cancelled. F3 and G2 use `ProgressMeter`. G2 completion uses the `bouncy` spring, which reduced motion skips. |
 | **H1 / H3** | H1: the lock screen uses `PftTheme`, and the timeout row joins AP1's `SettingsScreen`. H3: motion is judged on a minified release build, and jank numbers go in learnings. |
 
@@ -262,15 +262,23 @@ Adds `:core:budget` to settings.
 
 **D2 — Scope matching, progress, service**
 - **Red:** `BudgetCalculatorTest`: an overall budget counts all EXPENSE rows (including Loan EMI, LN-1) and no transfers or income. A category scope includes its sub-categories. A tag scope matches any tag. A mixed scope is the union (an OR, documented). `spent` splits into verified and unverified (B-3). Remaining can be negative. Percentage is integer maths (basis points; no float). `overThreshold` fires at ≥ the threshold. `BudgetServiceTest`: create/edit/archive are audited; editing the limit adds a revision effective from the current period start, so last month's history keeps the old limit (B-4); `history(n)` returns per-period progress.
-- **Green:** `core/budget/.../{Budget,BudgetScope,BudgetRevision,BudgetCalculator,BudgetProgress,BudgetRepository,BudgetService}.kt`; consumes `TransactionQueries.spendingBetween` and the category tree from `:core:ledger`.
+  - **For the budget detail page (design plan Q11):**
+    - `DailyPaceTest` (pure): pace = remaining ÷ days left in the period, counting today, in integer paise rounded **down** (it never suggests more than is left). On the last day it equals remaining. Remaining ≤ 0 gives no pace (the UI shows "Over"). A past period gives no pace. Day counts use the period's local dates, so a DST change does not shift them.
+    - `BudgetServiceTest`: `transactions(budgetId, period)` returns exactly the rows the calculator counts (same scope and type rules), newest first, so their sum equals `spent` for that period, for current and past periods alike.
+- **Green:** `core/budget/.../{Budget,BudgetScope,BudgetRevision,BudgetCalculator,BudgetProgress,DailyPace,BudgetRepository,BudgetService}.kt`; consumes `TransactionQueries.spendingBetween` and the category tree from `:core:ledger`. `DailyPace` is a plain function next to `BudgetCalculator`, and `BudgetProgress` carries its result.
 
 **D3 — Room (v6)**
 - **Red:** `RoomBudgetIntegrationTest`: create a budget and add expenses through `TransactionService`; `progress()` reflects them, and a deleted transaction drops out. `migrate5To6`.
 - **Green:** `app/.../data/budget/*`, `MIGRATION_5_6`.
 
-**D4 — Budgets UI**
-- **Red:** `BudgetsFlowTest`: create "Groceries ₹8,000 monthly"; adding a ₹6,500 groceries expense shows 81% with a threshold warning at 80%, and unverified spend is shown with a distinct marker; history shows prior periods.
-- **Green:** `ui/budgets/*`.
+**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11)
+- **Red:** `BudgetsFlowTest` (through the nav host, real in-memory Room):
+  - **List:** create "Groceries ₹8,000 monthly"; adding a ₹6,500 groceries expense shows the Groceries card at 81% with a threshold warning at 80%, and unverified spend is shown with a distinct marker. Each active budget has one card; an archived budget is not listed. The FAB opens the create form.
+  - **List → detail:** tapping the card opens the budget detail, whose title is the budget name and whose subtitle is the current period.
+  - **Detail:** the hero shows spent of limit; the facts show the period, what it covers and the daily pace; this period's transactions are listed (the ₹6,500 expense, and a tap opens its transaction detail).
+  - **Previous period:** ‹ (and a horizontal header swipe) moves to the previous period, which shows that period's spent, limit (B-4: the old limit after an edit) and transactions; › returns to the current one, and › is disabled on the current period.
+  - **Edit and archive:** Edit from the detail changes the limit, and the detail and list show the new limit for the current period only. Archive removes the card from the list and keeps the budget's history (audited, per B2's archive pattern).
+- **Green:** `ui/budgets/{BudgetsListScreen,BudgetCard,BudgetDetailScreen,BudgetEditScreen,BudgetsViewModel,BudgetDetailViewModel}.kt`. `BudgetCard` stays local (one consumer).
 
 ### Slice E — Recurring and subscriptions (`feat/m1a-recurring`)
 
@@ -377,7 +385,7 @@ About 32 slice PRs and 8 integration PRs, each sized for one session (TECHNICAL.
 | L-8 | `IdentityServiceTest`, `SetupFlowTest`, attribution asserts in `TransactionServiceTest` |
 | L-9 | schema (account_id NOT NULL), `accountBalance` tests |
 | X-1 (manual) | `TransactionServiceTest.storesBankRefAndSource`, `TransactionDetailTest` |
-| B-1..B-4 | `PeriodCalculatorTest`, `BudgetCalculatorTest`, `BudgetServiceTest`, `BudgetsFlowTest` |
+| B-1..B-4 | `PeriodCalculatorTest`, `BudgetCalculatorTest`, `DailyPaceTest`, `BudgetServiceTest`, `BudgetsFlowTest` (list, detail, past periods, edit, archive) |
 | R-1, R-2, R-3, R-5 | `OccurrenceEngineTest`, `RecurringServiceTest`, `RecurringFlowTest` |
 | LN-1..LN-5 (manual) | `LoanServiceTest`, `RoomLoanIntegrationTest`, `LoansFlowTest` |
 | G-1, G-2 | `GoalServiceTest`, `GoalsFlowTest` |
@@ -424,7 +432,7 @@ About 32 slice PRs and 8 integration PRs, each sized for one session (TECHNICAL.
 | `docs/features/first-run-and-profiles.md` | A5 |
 | `docs/features/accounts.md`, `categories-and-tags.md` (includes the default category list) | B2, B4/B5 |
 | `docs/features/transactions.md` (expense/income/transfer, states, search, history) | C4/C5 |
-| `docs/features/budgets.md` (periods, anchor, scope union rule, unverified marker, history) | D4 |
+| `docs/features/budgets.md` (periods, anchor, scope union rule, unverified marker, history, the list and detail screens, daily pace) | D4 |
 | `docs/features/recurring-and-subscriptions.md` (AUTO vs CONFIRM, catch-up-on-open, overdue) | E4 |
 | `docs/features/loans-and-emis.md`, `goals.md` | F3, G2 |
 | `docs/features/security-and-app-lock.md`, `diagnostics.md` | H1, H2 |
