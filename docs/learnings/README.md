@@ -13,6 +13,11 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-10-29 — Each session works in its own git worktree
+- **Learning:** two Claude sessions shared the root checkout. One switched it to the A2 branch one second after the other created the DS2 branch, so DS2's six commits landed on top of A2 and had to be cherry-picked back out before PR #14. Owner rule: every session works in its own worktree.
+- **Why:** a checkout has one HEAD; any session that switches branches there silently moves every other session's next commit onto the wrong branch.
+- **How to apply:** before any branch work, `git worktree add <unique-parent>/personal-finance-tracker <branch>` and run every git, Gradle and file command there. Keep the folder name `personal-finance-tracker`: graphify titles `GRAPH_REPORT.md` after the checkout folder, and a DS2 refresh in a folder named `ds2-wt` committed that as the title. Give spawned agents the worktree path and forbid them from touching the root checkout. Never check out, reset or commit in the root checkout, run `git branch --show-current` before committing, and `git worktree remove` once the branch is pushed.
+
 ### 2026-10-29 — Money text: sign-free formatter, null-on-reject parser, one amount limit
 - **Learning:** `PaiseFormat.format` never emits a sign (a negative `Paise` formats as its magnitude, computed from the decimal string so `Long.MIN_VALUE` is safe); the caller (DS5 `MoneyText`) prepends U+2212 or `+`. `PaiseParser.parse` returns `null` for any rejected text (never throws), accepts a leading `₹` so `parse(format(x)) == x` holds, and rejects over-limit values and input over 32 chars. `Paise.MAX_AMOUNT` (Rs 1e11 = 1e13 paise) lives in `:core:money` because the parser needs a bound and cannot depend on `:core:ledger`; `LedgerLimits` should reuse it. A value class's generated boxed getter is never called from Kotlin, so a module of only one value class sits under the 90% JaCoCo line floor.
 - **Why:** one sign owner avoids double signs and lets a signed balance reach the formatter; a bounded hand-written scan keeps untrusted amount text safe from regex backtracking and `Long` overflow.
