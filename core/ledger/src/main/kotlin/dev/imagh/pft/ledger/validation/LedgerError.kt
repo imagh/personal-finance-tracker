@@ -46,4 +46,16 @@ sealed class LedgerError(
     class Archived(
         val what: String,
     ) : LedgerError("This $what is archived")
+
+    /** First-run setup was attempted on a device that already has an identity. */
+    class AlreadyInitialised : LedgerError("This device is already set up")
+
+    /** An operation needs the current user and device, and first-run setup has not happened. */
+    class NotInitialised : LedgerError("This device is not set up yet")
+
+    /**
+     * The stored identity is inconsistent (the current device or its user is missing). The app
+     * fails closed rather than treating the device as new and creating a second identity.
+     */
+    class IdentityCorrupt : LedgerError("The stored identity is inconsistent")
 }
