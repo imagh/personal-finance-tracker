@@ -159,6 +159,18 @@ private data class HasDerived(
     override fun withMeta(meta: EntityMeta<WidgetId>) = copy(meta = meta)
 }
 
+/**
+ * A repository whose writes can bypass the check (by writing `rows` directly), so a test can seed a row
+ * that the real fake would refuse. Private to the test: the published fixture has no opt-out.
+ */
+private class UncheckedOmitsRepository : InMemoryEntityRepository<Omits, WidgetId>(InMemoryLedgerStore(), "omits") {
+    var enforce = false
+
+    override suspend fun insert(entity: Omits) = if (enforce) super.insert(entity) else rows.insert(entity)
+
+    override suspend fun update(entity: Omits) = if (enforce) super.update(entity) else rows.update(entity)
+}
+
 class AuditFieldsCheckTest :
     FunSpec({
         context("column names") {
@@ -225,11 +237,10 @@ class AuditFieldsCheckTest :
                 repo.all() shouldBe emptyList()
             }
             test("update of an incomplete entity fails and keeps the stored one") {
-                val repo = InMemoryEntityRepository<Omits, WidgetId>(InMemoryLedgerStore(), "omits")
+                val repo = UncheckedOmitsRepository()
                 val stored = Omits(meta, "a", "b")
-                repo.checkAuditFields = false
-                repo.insert(stored)
-                repo.checkAuditFields = true
+                repo.insert(stored) // seeded past the check, as a pre-existing row
+                repo.enforce = true
 
                 shouldThrow<AssertionError> { repo.update(stored.copy(forgotten = "changed")) }
 
@@ -240,12 +251,6 @@ class AuditFieldsCheckTest :
                 repo.insert(complete)
                 repo.update(complete.copy(name = "Changed"))
                 repo.get(WidgetId("w-1"))?.name shouldBe "Changed"
-            }
-            test("the check can be switched off, only to test the writer's own guard") {
-                val repo = InMemoryEntityRepository<Omits, WidgetId>(InMemoryLedgerStore(), "omits")
-                repo.checkAuditFields = false
-                repo.insert(Omits(meta, "a", "b"))
-                repo.all().size shouldBe 1
             }
         }
     })

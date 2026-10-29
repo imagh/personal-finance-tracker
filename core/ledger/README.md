@@ -58,7 +58,7 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 | `InMemoryAuditLog`, `InMemoryIdentityRepository`, `InMemoryAppSettingsRepository` | the fakes for this module's boundaries |
 | `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `initialise()`; `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
 | `TestClock` | a hand-moved `java.time.Clock` |
-| `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write (`checkAuditFields`, on by default) |
+| `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write, with no opt-out |
 | `shouldHaveAudited` / `shouldNotHaveAudited` | Kotest matchers over an audit trail: `kit.store.auditLog.entries.shouldHaveAudited("account", id, AuditAction.CREATE, userId = ...)` |
 
 ### How an entity step composes the blocks

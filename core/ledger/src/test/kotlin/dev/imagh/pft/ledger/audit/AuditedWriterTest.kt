@@ -3,6 +3,7 @@ package dev.imagh.pft.ledger.audit
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.entity.LedgerEntity
 import dev.imagh.pft.ledger.fakes.InMemoryEntityRepository
+import dev.imagh.pft.ledger.fakes.InMemoryLedgerStore
 import dev.imagh.pft.ledger.fakes.LedgerTestKit
 import dev.imagh.pft.ledger.ids.EntityId
 import dev.imagh.pft.ledger.ids.UserId
@@ -49,9 +50,19 @@ private data class Leaky(
     override fun withMeta(meta: EntityMeta<NoteId>) = copy(meta = meta)
 }
 
-/** The fake repository normally rejects an incomplete auditFields(); switch that off to reach the writer's guard. */
-private fun leakyRepository(f: Fixture) =
-    InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky").also { it.checkAuditFields = false }
+/**
+ * The fake repository rejects an incomplete auditFields(); this one writes `rows` directly so a test can
+ * reach the writer's own runtime guard. Private to the test: the published fixture has no opt-out.
+ */
+private class LeakyRepository(
+    ledger: InMemoryLedgerStore,
+) : InMemoryEntityRepository<Leaky, NoteId>(ledger, "leaky") {
+    override suspend fun insert(entity: Leaky) = rows.insert(entity)
+
+    override suspend fun update(entity: Leaky) = rows.update(entity)
+}
+
+private fun leakyRepository(f: Fixture) = LeakyRepository(f.kit.store)
 
 private class Fixture {
     val kit = LedgerTestKit()

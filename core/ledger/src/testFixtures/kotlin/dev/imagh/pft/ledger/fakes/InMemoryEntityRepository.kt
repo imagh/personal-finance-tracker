@@ -19,12 +19,6 @@ open class InMemoryEntityRepository<T : LedgerEntity<Id, T>, Id : EntityId>(
     ledger: InMemoryLedgerStore,
     override val entityType: String,
 ) : EntityRepository<T, Id> {
-    /**
-     * Whether writes check `auditFields()` completeness. Leave it `true`; switch it off only to
-     * test `AuditedWriter`'s own runtime guard against an incomplete entity.
-     */
-    var checkAuditFields: Boolean = true
-
     /** The table; subclasses read it to implement their own queries. */
     protected val rows = ledger.newStore<T, Id> { it.meta.id }
 
@@ -46,6 +40,6 @@ open class InMemoryEntityRepository<T : LedgerEntity<Id, T>, Id : EntityId>(
     }
 
     private fun verify(entity: T) {
-        if (checkAuditFields) entity.shouldHaveCompleteAuditFields()
+        entity.shouldHaveCompleteAuditFields()
     }
 }
