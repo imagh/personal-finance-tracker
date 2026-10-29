@@ -118,6 +118,17 @@ Code is abstract *at its own layer* so it is reused, not copied: one shared buil
 
 From B1 on, each entity step **composes** `EntityMeta`, `AuditedWriter`, `EntityRepository`/`RoomEntityRepository`, `EntityListScreen` and `EditFormScaffold`, so the step contains only that entity's own rules.
 
+**As built (A3, 2026-10-29).** A4a and B1 build on these details, which the step text above did not fix:
+- **`LedgerEntity<Id, Self>`** (`entity/`, F-bounded: `meta` + `withMeta`) is what an entity implements, on top of `Auditable` (`auditType`, `auditId`, `auditFields()`). `AuditedWriter` needs it to stamp the meta (id, timestamps, attribution, deleted/archived state) itself, so a caller cannot forge them. `UserProfile`, `Device` and `AppSetting` are `Auditable` only (no `EntityMeta`).
+- **`EntityRepository<T, Id>`** also declares `val entityType: String` (the entity's `auditType`), used to name the kind in `LedgerError.NotFound`. A4a's `RoomEntityRepository` must supply it.
+- **`AuditRecorder`** (`audit/`, not in the step text) builds and appends one audit entry (id, time, attribution). `AuditedWriter`, `IdentityService` and `SettingsService` share it, which also breaks the writer/identity construction cycle.
+- **`AuditedWriter`:** `create(repo, id) { meta -> entity }`, `update(repo, id) { old -> new }`, `delete`, `restore`, `archive`, `unarchive`. Lifecycle calls are idempotent (repeating one is a no-op that audits nothing). A no-op update writes nothing. **Every persisted business field must be in `auditFields()`:** if an update changes the entity but no listed field, it throws `IllegalStateException` and writes nothing (never a silent drop, §3.8).
+- **`IdentityService`** also has `initialiseForExistingUser(userId, deviceLabel)` and `requireIdentity()`. A `current_device_id` setting whose device or user is missing throws `LedgerError.IdentityCorrupt` (fail closed, never "uninitialised"). `SettingsService` refuses the reserved `current_device_id` key; setting values go into the audit trail in clear text, so it is for non-sensitive values only.
+- **`NameBasedId.of(kind, vararg parts)`** is UUIDv5 over `"<utf8 length>:<text>"` for the kind and each part, in a fixed app namespace. Its output is pinned by tests, so the encoding must never change. `Uuid7` takes a `java.time.Clock` and is strictly increasing within a process.
+- **Typed ids:** only `UserId`, `DeviceId` and `AuditEntryId` exist, all implementing `EntityId`. Each slice adds its own.
+- **Test fixtures:** `InMemoryLedgerStore` (the fake runner: a failure at any nesting depth restores the whole outermost block, like Room), `InMemoryEntityStore`, `InMemoryEntityRepository(ledger, entityType)`, `LedgerTestKit`, `TestClock`, `shouldHaveAudited`/`shouldNotHaveAudited`.
+- **No coroutines library yet.** The `suspend` contracts need only the language feature; add `kotlinx-coroutines` with the first `Flow`-returning query (slice C), not before.
+
 ### 3.5 Design system (owner decision, 2026-10-29)
 
 Every screen is built on the design system in [`2026-10-29-m1a-design-system.md`](2026-10-29-m1a-design-system.md): `PftTheme` tokens (colour, type, shape, spacing, motion), the one-hand `CollapsingHeaderScaffold` and `BottomActionBar`, `MoneyText`/`MoneyTone`, `CategoryGlyph` and the other shared components. Its PRs DS1–DS5 land in `feat/m1a-foundation` before A5. Appearance settings and custom-font import (AP1, AP2) get their own slice after A-final. How each M1a step consumes it is listed below (the design plan's §6.3, applied here):

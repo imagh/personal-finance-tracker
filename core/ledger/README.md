@@ -124,6 +124,9 @@ Per CLAUDE.md §3.5, chosen by how the value varies:
   audited: for example the budget alert threshold, upcoming-lookahead days and auto-lock timeout.
   Keys are lower-case identifiers (`[a-z][a-z0-9_]*`); `current_device_id` is reserved for
   first-run setup and cannot be written through `SettingsService`.
+  **Values are written, in clear text, into the audit trail** (old and new). Use `SettingsService`
+  only for non-sensitive tuning values. A future sensitive setting (a PIN, a token, anything
+  secret) must not go through it; give it its own store with its own handling.
 - Environment config: none.
 
 ## Dependencies

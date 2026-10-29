@@ -15,8 +15,9 @@ import java.time.Clock
  *
  * These values live in the database rather than in config (CLAUDE.md §3.5) because they vary per
  * user at runtime, so every change is audited with who made it. Values are text; the feature that
- * owns a key parses and range-checks it. A write that does not change the value is a no-op and
- * writes no audit row.
+ * owns a key parses and range-checks it. **Values are recorded in the audit trail as plain text, so
+ * this service is for non-sensitive values only**; never store a secret through it. A write that
+ * does not change the value is a no-op and writes no audit row.
  */
 class SettingsService(
     private val runner: TransactionRunner,
