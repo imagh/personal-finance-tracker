@@ -57,9 +57,10 @@ abstraction bar). Their concrete list is added in A3.
 All UI is Compose in `:app` and is wrapped in `PftTheme` (`ui/theme`): light/dark resolution,
 dynamic or brand colour, and fixed money colours, provided through Compose CompositionLocals (no
 new interfaces). Shared components live in `ui/common`. The design system (tokens, one-hand
-layout, motion, icons) is specified in `docs/plans/2026-10-29-m1a-design-system.md`;
-`docs/architecture/design-system.md` is written with DS2. Slice DS1 delivered the colour tokens,
-`PftTheme`, the day/night window themes and edge-to-edge.
+layout, motion, icons) is specified in `docs/plans/2026-10-29-m1a-design-system.md`; what is built
+is documented in `docs/architecture/design-system.md`. Slice DS1 delivered the colour tokens,
+`PftTheme`, the day/night window themes and edge-to-edge; DS2 the type, shape and spacing tokens, the
+bundled Newsreader serif, the Roborazzi screenshot harness and the debug design catalogue.
 
 ## Security posture of the shell
 

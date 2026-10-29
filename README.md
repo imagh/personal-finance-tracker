@@ -30,6 +30,7 @@ A private, offline-first Android app for tracking a household's expenses, budget
 ./gradlew ktlintFormat detekt     # format + lint (pre-commit hook)
 ./gradlew check                   # tests, Android lint, ktlint, detekt, 90% coverage floor on core (pre-push hook)
 ./gradlew :app:assembleDebug      # debug APK
+./gradlew :app:recordRoborazziDebug  # re-record screenshot goldens after a deliberate visual change (`check` verifies them)
 ./gradlew dependencyCheckAggregate  # vulnerability gate on shipped code; needs NVD_API_KEY, OSSINDEX_USERNAME, OSSINDEX_TOKEN (PR security step)
 ./gradlew dependencyCheckAggregate -PscanAll  # report-only scan of all build/test tooling (PR security step)
 ```

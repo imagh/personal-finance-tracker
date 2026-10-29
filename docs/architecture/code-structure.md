@@ -13,11 +13,16 @@ config/detekt/          # detekt rule overrides (ktlint rules live in the root .
 build-logic/            # included build: pft.kotlin-core + pft.lint convention plugins
 app/                    # thin Android layer (Compose, Room/SQLCipher impls, Keystore, ...)
   src/main/kotlin/dev/imagh/pft/app/     # production code
-    ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors (design-system tokens)
+    ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors, PftTypography, PftShapes,
+                                         # PftSpacing (design-system tokens); TokenSheet* (token sheet: preview, catalogue, goldens)
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
-  src/debug/kotlin/...                   # debug-only DevContent (design catalogue from DS2)
+  src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
+  src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL)
+  src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet + toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens)
+  src/test/screenshots/                  # committed Roborazzi goldens (fake data only), verified by `check`
+  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest)
 core/
   <module>/             # pure Kotlin/JVM, no Android imports
     README.md           # module doc (Purpose · Boundaries · Interface · Data · Config · Deps · Run/test)
@@ -55,6 +60,8 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | build | `pft.kotlin-core` convention plugin | every `core/*` module | A1 |
 | build | `pft.lint` convention plugin (ktlint + detekt) | `pft.kotlin-core`, `:app`, root project (lints `build-logic` and build scripts) | A1 |
 | app UI (`ui/theme`) | `PftTheme`, `ThemePrefs`/`ThemeMode`, `BrandColors`, `MoneyColors` (colour tokens, CompositionLocals) | every screen | DS1 |
+| app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont` | every screen | DS2 |
+| app UI (`ui/theme`) | `TokenSheet` / `TokenSheetPages` (one sheet of every token) | Studio preview, debug `DesignCatalog`, `TokenSheetScreenshotTest` goldens | DS2 |
 
 The core, app-data and app-UI building blocks (`EntityMeta`, `AuditedWriter`,
 `RoomEntityRepository`, `EntityListScreen`, ...) are added to this table by A3, A4a, A5, B2 and C5.

@@ -45,6 +45,7 @@ diff is doing more than one thing, split it before requesting review.
 - [ ] Architecture docs updated where a component/boundary changed (`docs/architecture/`).
 - [ ] Code-structure updated for any new/moved module (`docs/architecture/code-structure.md`).
 - [ ] Learnings appended (`docs/learnings/README.md`).
+- [ ] Screenshot goldens (if any changed) contain fake data only, and the visual diffs were reviewed.
 
 ### Security
 - [ ] No secrets/keys/tokens hardcoded, committed, or logged; loaded from typed settings.
