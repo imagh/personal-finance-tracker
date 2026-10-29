@@ -1,0 +1,51 @@
+# Single source of truth for every pinned version (docs/TECHNICAL.md §7.1, plan §3.3).
+# Exact pins only; never a range or "+". Locked in gradle.lockfile and checksum-verified in
+# gradle/verification-metadata.xml. Later slices add their libraries here as they need them.
+
+[versions]
+agp = "8.7.3"
+kotlin = "2.1.0"
+composeBom = "2024.10.01"
+activityCompose = "1.9.3"
+junitBom = "5.11.3"
+junit4 = "4.13.2"
+kotest = "5.9.1"
+robolectric = "4.14.1"
+androidxTestCore = "1.6.1"
+ktlintPlugin = "12.1.2"
+ktlintEngine = "1.4.1"
+detekt = "1.23.7"
+jacoco = "0.8.12"
+owasp = "11.1.1"
+
+[libraries]
+# Build-logic plugin artifacts (compileOnly there; the root build supplies them at runtime).
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+ktlint-gradle-plugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintPlugin" }
+detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+
+# Compose (versions come from the BOM).
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+# Tests.
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junitBom" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp" }

@@ -1,7 +1,9 @@
 # Local quality gates (CLAUDE.md §9). Install once, per clone:
 #   pre-commit install && pre-commit install --hook-type pre-push
 # Secret scanning and private-key detection enforce Rule C and must not be removed.
-# The Gradle hooks skip cleanly until the Gradle project exists (slice M1a-1).
+# The Gradle project exists since slice A1 (M1a-1): the commit hook runs ktlintFormat + detekt and
+# the push hook runs `check` (tests, coverage floor, lint). The skip branches below only matter
+# on a checkout without ./gradlew.
 
 repos:
   # --- Secret scanning (Rule C: do not remove) ---

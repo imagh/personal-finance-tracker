@@ -1,6 +1,6 @@
 # Local setup (your machine)
 
-All builds, tests and Claude sessions run locally. This is slice **S0**: tooling only, no application code yet. Do these once per machine.
+All builds, tests and Claude sessions run locally. Do these once per machine. The Gradle project exists since slice **A1**; §9 shows the day-to-day commands.
 
 ## 1. Tools
 
@@ -90,7 +90,7 @@ pre-commit install && pre-commit install --hook-type pre-push
 python3 -m unittest discover -s tools/redact      # sanity check, should pass
 ```
 
-Never commit with `--no-verify`. The Gradle hooks skip themselves until the Gradle project exists.
+Never commit with `--no-verify`. The commit hook runs `./gradlew --quiet ktlintFormat detekt`, the push hook runs `./gradlew check` (tests, coverage floor, lint); the first run downloads Gradle 8.10.2 and the dependencies, so allow a few minutes. Both hooks configure `:app`, so the shell that runs `git commit` and `git push` needs `ANDROID_HOME` set (§2).
 
 ## 5. Secrets: environment only (docs/TECHNICAL.md §3)
 
@@ -100,6 +100,8 @@ Nothing secret goes in the repo. Put values in your shell profile or `~/.gradle/
 |---|---|
 | `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | Release signing (keystore lives outside the repo, e.g. `~/.android/`) |
 | `GOOGLE_OAUTH_CLIENT_ID` | Google sign-in for Gmail read-only and Drive appData |
+| `NVD_API_KEY` | OWASP dependency-check (`./gradlew dependencyCheckAggregate`). Request a free key at <https://nvd.nist.gov/developers/request-an-api-key> and export it in your shell profile. The scan refuses to start without it. It is not needed for `check` |
+| `OSSINDEX_USERNAME`, `OSSINDEX_TOKEN` | Sonatype OSS Index analyzer in the same scan (anonymous access was withdrawn). Create a free account at <https://ossindex.sonatype.org>, take the API token from your account settings, and export both in your shell profile; keep the token in the Keychain (`security add-generic-password -a "$USER" -s OSSINDEX_TOKEN -w`, read back with `security find-generic-password -a "$USER" -s OSSINDEX_TOKEN -w`). The scan refuses to start without them |
 
 Debug builds need none of these. The `.gitignore` and the agents' deny-list already block `.env*`, `local.properties`, keystores and your private exports.
 
@@ -127,3 +129,29 @@ Before every PR also run `/security-review` (docs/TECHNICAL.md §5). Agents open
 ## 8. Sample messages (when you are ready)
 
 See [collecting-sample-messages.md](collecting-sample-messages.md). Your bank list and redacted samples are still open for planning and are needed before M1b.
+
+## 9. Build, test and the emulator
+
+With `JAVA_HOME` and `ANDROID_HOME` set (§2), from the repo root:
+
+```bash
+./gradlew ktlintFormat detekt         # format and lint (what the commit hook runs)
+./gradlew check                       # everything the push hook runs: JVM + Robolectric tests, lint, 90% coverage floor on core
+./gradlew :app:testDebugUnitTest      # just the Robolectric tests
+./gradlew :app:assembleDebug          # debug APK in app/build/outputs/apk/debug/
+./gradlew dependencyCheckAggregate    # PR security step; needs NVD_API_KEY + OSSINDEX_* (§5), slow on first run
+./gradlew dependencyCheckAggregate -PscanAll  # same, report-only over build/test tooling
+```
+
+Robolectric downloads its Android 15 (`android-all`) jar from Maven Central the first time the app
+tests run and caches it under `~/.m2`; later runs are offline-capable.
+
+**Emulator (`pft35`, from §3).** Unit and Robolectric tests need no device. Instrumented tests
+(`./gradlew connectedDebugAndroidTest`, added with slice A4b for SQLCipher and Keystore) need the
+emulator running first (`adb devices` shows `emulator-5554  device`). To try the app by hand:
+`./gradlew :app:installDebug`, then launch "Personal Finance Tracker". It shows a blank window for
+now (slice A1), and screenshots are deliberately blocked by `FLAG_SECURE`.
+
+**Changing dependencies.** Versions are pinned in `gradle/libs.versions.toml` and checked against
+lockfiles and `gradle/verification-metadata.xml`, so a new or upgraded dependency fails the build
+until you refresh them deliberately. The exact commands are in `build-logic/README.md`.

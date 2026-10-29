@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OWASP dependency-check suppressions (Rule C). Every entry needs:
+    - a <notes> reason saying why the finding does not apply or is accepted, and who decided;
+    - an `until` expiry date, so the suppression lapses and the finding comes back for review.
+  Never suppress by broad regex across unrelated libraries, and never without an expiry.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress until="2027-01-31Z">
+        <notes><![CDATA[
+        CVE-2026-53914: "JetBrains Kotlin before 2.4.20, code execution via unsafe deserialization in
+        the build cache metadata". The vulnerable code is in the compiler's build-cache handling, which
+        runs on the build machine; the scanner matches the shared Kotlin CPE onto kotlin-stdlib, which
+        ships in the APK but does not contain that code. Exposure on the build machine needs write access
+        to the local Gradle cache. Mitigation until Kotlin >= 2.4.20: no remote or shared Gradle build
+        cache. Owner accepted 2026-10-29; revisit with the toolchain bump (follow-up plan).
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib(-jdk7|-jdk8)?@.*$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+</suppressions>
