@@ -81,17 +81,34 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
 - **Audit trail:** every create, edit, delete, restore, archive and setting change appends an
   `AuditEntry` in the **same transaction** as the change. `changes` is `field -> (old, new)` as
   text. CREATE has null olds, DELETE a snapshot with null news, RESTORE the fields with null
-  olds, ARCHIVE `archived_at: null -> <ISO instant>`, UNARCHIVE the reverse. The diff reads `auditFields()`, so **every persisted
+  olds, ARCHIVE `archived_at: null -> <ISO instant>`, UNARCHIVE the reverse.
+- **`auditFields()` must be complete.** The diff reads `auditFields()`, so **every persisted
   business field must be listed there, under its snake_case name** (`openingBalance` ->
-  `opening_balance`), and nothing else. This is enforced twice: in tests,
-  `InMemoryEntityRepository` runs `AuditFieldsCheck` on every insert and update (plain Java
-  reflection over the entity's declared fields; names must match both ways, and text, numbers,
-  booleans, enums and dates must also hold the audited value), so any service test fails if an
-  entity's `auditFields()` is incomplete or misspelt; call `entity.shouldHaveCompleteAuditFields()`
-  for a direct check. At runtime, `AuditedWriter.update` throws `IllegalStateException` (nothing
-  written) when the entity changed but no listed field did. A field that is not persisted is not
-  allowed on an entity: derive it in a getter (`val x get() = ...`), which has no backing field.
-  Typed ids and `Paise` need nothing special.
+  `opening_balance`), and nothing else. It is enforced twice:
+  - *In tests:* `InMemoryEntityRepository` runs `AuditFieldsCheck` on every insert and update, with
+    no opt-out. It uses plain Java reflection over the entity's `declaredFields`; names must match
+    both ways, and the audited value must equal the field's value for text, whole numbers,
+    booleans, enums, dates, `Paise` and ids. A misspelt or missing key fails any service test that
+    writes the entity. It also fails if the repository's `entityType` differs from the entity's
+    `auditType`.
+  - *At runtime:* `AuditedWriter.update` throws `IllegalStateException` (nothing written) when the
+    entity changed but no listed field did.
+
+  Rules that follow from how the check works:
+  - **Reserved names.** `meta`, `auditType` and `auditId` are exempt, so they cannot be business
+    properties of an entity.
+  - **Final data classes only.** Only the concrete class's `declaredFields` are read, so an entity
+    must be a final data class. A delegated or lazy property (`by lazy`) creates a hidden field and
+    is flagged.
+  - **No non-persisted fields.** Derive such a value in a getter (`val x get() = ...`), which has
+    no backing field. If a field ever needs redacted auditing, add a per-field exemption to the
+    check (named, reviewed, documented here); never an opt-out for a whole entity or repository.
+  - **Collections and composite values are checked by name only.** Flatten them to text in
+    `auditFields()` (for example the sorted tag ids joined with `,`).
+  - **Call the matcher in each entity's own test**, on a fully populated instance (every optional
+    field set): `entity.shouldHaveCompleteAuditFields()`. A fake write only checks the instance it
+    is given, and a null field is trivially consistent.
+  - Typed ids and `Paise` need nothing special.
 - **Soft delete only (INT-3):** `delete` sets `deletedAt`; there is no hard delete. `restore` is
   audited. Lifecycle calls are idempotent: repeating one is a no-op that audits nothing.
 - **The writer owns the meta:** id, timestamps, attribution and lifecycle state are set by
