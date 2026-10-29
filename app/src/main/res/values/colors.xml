@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The colour of the window before Compose draws the first frame. Must equal BrandColors.light.surface;
+         WindowThemeTest fails if the two drift. -->
+    <color name="pft_window_background">#FCF8FD</color>
+</resources>
