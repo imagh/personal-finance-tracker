@@ -39,3 +39,4 @@ rootProject.name = "personal-finance-tracker"
 // Other core modules are added in the slice that needs them (plan §3.1).
 include(":app")
 include(":core:money")
+include(":core:ledger")
