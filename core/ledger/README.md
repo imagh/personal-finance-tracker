@@ -36,7 +36,7 @@ entity step composes instead of re-implementing:
 | `EntityMeta<Id>` | `entity` | id, `createdAt`/`updatedAt`, `createdByUserId`/`createdOnDeviceId`, `deletedAt` (tombstone), `archivedAt`; `isDeleted`/`isArchived`/`isActive`. Composed as `meta` into every model |
 | `LedgerEntity<Id, Self>` | `entity` | `meta` + `withMeta(...)`; implemented by each entity data class so `AuditedWriter` can stamp it |
 | `Auditable` | `entity` | `auditType`, `auditId`, `auditFields(): Map<String, String?>`; the diff works on it, no reflection |
-| `EntityRepository<T, Id>` | `entity` | `get` (tombstones included), `getLive` (tombstones excluded; archived included), `insert`, `update`; each entity's repository extends it with its own queries |
+| `EntityRepository<T, Id>` | `entity` | `entityType` (the entity's `auditType`, used to name it in `NotFound`), `get` (tombstones included), `getLive` (tombstones excluded; archived included), `insert`, `update`; each entity's repository extends it with its own queries |
 | `AuditedWriter` | `audit` | `create`, `update`, `delete`, `restore`, `archive`, `unarchive`: one transaction, attribution from the current identity, the diff and the audit entry; a no-op writes nothing |
 | `AuditDiff`, `AuditEntry`, `FieldChange`, `AuditAction`, `AuditSource`, `AuditLog`, `AuditRecorder` | `audit` | the immutable trail: `diff(old, new)` of field text, the entry model, the insert-only `AuditLog` boundary, and the single place an entry is built |
 | `TransactionRunner` | `tx` | `inTransaction { ... }`: atomic, nestable; Room's `withTransaction` in `app` |

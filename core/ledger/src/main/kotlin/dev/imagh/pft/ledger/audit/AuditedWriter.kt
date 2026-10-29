@@ -186,7 +186,7 @@ class AuditedWriter(
     private suspend fun <Id : EntityId, T : LedgerEntity<Id, T>> found(
         repository: EntityRepository<T, Id>,
         id: Id,
-    ): T = repository.get(id) ?: throw LedgerError.NotFound("record ${id.value}")
+    ): T = repository.get(id) ?: throw LedgerError.NotFound(repository.entityType)
 
     private suspend fun <Id : EntityId, T : LedgerEntity<Id, T>> notDeleted(
         repository: EntityRepository<T, Id>,

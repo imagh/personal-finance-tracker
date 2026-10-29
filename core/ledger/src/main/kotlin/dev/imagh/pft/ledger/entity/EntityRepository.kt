@@ -10,6 +10,13 @@ import dev.imagh.pft.ledger.ids.EntityId
  * inside a [dev.imagh.pft.ledger.tx.TransactionRunner] block.
  */
 interface EntityRepository<T : LedgerEntity<Id, T>, Id : EntityId> {
+    /**
+     * The kind of entity this repository holds: the same text as its entities' `auditType`
+     * (`"account"`). Used to name the kind in errors when no instance exists, such as
+     * [dev.imagh.pft.ledger.validation.LedgerError.NotFound]. Never user content.
+     */
+    val entityType: String
+
     /** The entity with [id], **including a tombstoned one** (needed to restore it), or null. */
     suspend fun get(id: Id): T?
 

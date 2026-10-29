@@ -50,7 +50,7 @@ private data class Leaky(
 
 private class Fixture {
     val kit = LedgerTestKit()
-    val notes = InMemoryEntityRepository<Note, NoteId>(kit.store)
+    val notes = InMemoryEntityRepository<Note, NoteId>(kit.store, "note")
     val writer get() = kit.writer
     val trail get() = kit.store.auditLog.entries
     val id = NoteId("note-1")
@@ -172,7 +172,7 @@ class AuditedWriterTest :
             test("a change to a field missing from auditFields fails closed instead of being dropped silently") {
                 val f = Fixture()
                 f.kit.initialise()
-                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store)
+                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky")
                 f.writer.create(leaky, f.id) { Leaky(it, "Rent", secret = "a") }
                 val trailSize = f.trail.size
 
@@ -187,7 +187,7 @@ class AuditedWriterTest :
             test("an update that changes an audited field is still fine for an entity with an unaudited one") {
                 val f = Fixture()
                 f.kit.initialise()
-                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store)
+                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky")
                 f.writer.create(leaky, f.id) { Leaky(it, "Rent", secret = "a") }
                 f.writer.update(leaky, f.id) { it.copy(title = "Rent 2", secret = "b") }
                 leaky.get(f.id)?.title shouldBe "Rent 2"
@@ -197,6 +197,7 @@ class AuditedWriterTest :
                 val f = Fixture()
                 f.kit.initialise()
                 shouldThrow<LedgerError.NotFound> { f.writer.update(f.notes, f.id) { it.copy(title = "x") } }
+                    .what shouldBe "note"
                 f.createNote()
                 f.writer.delete(f.notes, f.id)
                 shouldThrow<LedgerError.Deleted> { f.writer.update(f.notes, f.id) { it.copy(title = "x") } }
@@ -273,8 +274,9 @@ class AuditedWriterTest :
             test("deleting or restoring a missing entity is refused") {
                 val f = Fixture()
                 f.kit.initialise()
-                shouldThrow<LedgerError.NotFound> { f.writer.delete(f.notes, f.id) }
-                shouldThrow<LedgerError.NotFound> { f.writer.restore(f.notes, f.id) }
+                shouldThrow<LedgerError.NotFound> { f.writer.delete(f.notes, f.id) }.what shouldBe "note"
+                shouldThrow<LedgerError.NotFound> { f.writer.restore(f.notes, f.id) }.what shouldBe "note"
+                shouldThrow<LedgerError.NotFound> { f.writer.archive(f.notes, f.id) }.what shouldBe "note"
             }
         }
 

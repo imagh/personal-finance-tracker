@@ -7,10 +7,11 @@ import dev.imagh.pft.ledger.ids.EntityId
 /**
  * The in-memory [EntityRepository]: the base every fake entity repository extends with its own
  * queries (plan §3.4), backed by an [InMemoryEntityStore] that takes part in [ledger]'s
- * transactions. Use it directly when an entity has no queries of its own.
+ * transactions. [entityType] is the entity's `auditType`. Use it directly when an entity has no queries of its own.
  */
 open class InMemoryEntityRepository<T : LedgerEntity<Id, T>, Id : EntityId>(
     ledger: InMemoryLedgerStore,
+    override val entityType: String,
 ) : EntityRepository<T, Id> {
     /** The table; subclasses read it to implement their own queries. */
     protected val rows = ledger.newStore<T, Id> { it.meta.id }

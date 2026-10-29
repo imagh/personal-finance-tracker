@@ -65,7 +65,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | core (`:core:ledger`) | `EntityMeta<Id>` + `LedgerEntity<Id, Self>` (id, timestamps, user/device attribution, tombstone and archive state), composed into every model | every entity (account, category, tag, transaction, budget, recurring rule, loan, goal) | A3 |
 | core | `Auditable` (`auditFields()`) + `AuditDiff` (generic field diff, no reflection) + `AuditEntry`/`AuditLog` | about 10 models, identity, settings | A3 |
 | core | `AuditedWriter` (create, update, delete, restore, archive; one transaction, attribution, diff, audit append; a no-op writes nothing) + `AuditRecorder` | every service | A3 |
-| core | `EntityRepository<T, Id>` (get, getLive, insert, update) | every repository | A3 |
+| core | `EntityRepository<T, Id>` (entityType, get, getLive, insert, update) | every repository | A3 |
 | core | `LedgerError` + `Validation` (`requireName`, `requireAmount`, `requireLive`) + `LedgerLimits` | every service | A3 |
 | core | `Uuid7` (time-sortable ids) and `NameBasedId` (deterministic UUIDv5 ids) | every entity; recurring-generated transactions | A3 |
 | core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `LedgerTestKit`, `TestClock`, and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
