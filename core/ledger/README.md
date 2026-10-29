@@ -58,6 +58,7 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 | `InMemoryAuditLog`, `InMemoryIdentityRepository`, `InMemoryAppSettingsRepository` | the fakes for this module's boundaries |
 | `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `initialise()`; `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
 | `TestClock` | a hand-moved `java.time.Clock` |
+| `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write (`checkAuditFields`, on by default) |
 | `shouldHaveAudited` / `shouldNotHaveAudited` | Kotest matchers over an audit trail: `kit.store.auditLog.entries.shouldHaveAudited("account", id, AuditAction.CREATE, userId = ...)` |
 
 ### How an entity step composes the blocks
@@ -81,10 +82,16 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
   `AuditEntry` in the **same transaction** as the change. `changes` is `field -> (old, new)` as
   text. CREATE has null olds, DELETE a snapshot with null news, RESTORE the fields with null
   olds, ARCHIVE `archived_at: null -> <ISO instant>`, UNARCHIVE the reverse. The diff reads `auditFields()`, so **every persisted
-  business field must be listed there**. `AuditedWriter.update` enforces it where it can: an edit
-  that changes the entity but no listed field throws `IllegalStateException` (nothing written),
-  never a silent drop. An edit that changes a listed and an unlisted field together cannot be
-  detected, so the unlisted one would go unaudited: check `auditFields()` in review.
+  business field must be listed there, under its snake_case name** (`openingBalance` ->
+  `opening_balance`), and nothing else. This is enforced twice: in tests,
+  `InMemoryEntityRepository` runs `AuditFieldsCheck` on every insert and update (plain Java
+  reflection over the entity's declared fields; names must match both ways, and text, numbers,
+  booleans, enums and dates must also hold the audited value), so any service test fails if an
+  entity's `auditFields()` is incomplete or misspelt; call `entity.shouldHaveCompleteAuditFields()`
+  for a direct check. At runtime, `AuditedWriter.update` throws `IllegalStateException` (nothing
+  written) when the entity changed but no listed field did. A field that is not persisted is not
+  allowed on an entity: derive it in a getter (`val x get() = ...`), which has no backing field.
+  Typed ids and `Paise` need nothing special.
 - **Soft delete only (INT-3):** `delete` sets `deletedAt`; there is no hard delete. `restore` is
   audited. Lifecycle calls are idempotent: repeating one is a no-op that audits nothing.
 - **The writer owns the meta:** id, timestamps, attribution and lifecycle state are set by

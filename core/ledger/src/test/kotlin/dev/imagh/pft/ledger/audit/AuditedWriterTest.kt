@@ -15,6 +15,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import java.time.Duration
 
 @JvmInline
@@ -47,6 +48,10 @@ private data class Leaky(
 
     override fun withMeta(meta: EntityMeta<NoteId>) = copy(meta = meta)
 }
+
+/** The fake repository normally rejects an incomplete auditFields(); switch that off to reach the writer's guard. */
+private fun leakyRepository(f: Fixture) =
+    InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky").also { it.checkAuditFields = false }
 
 private class Fixture {
     val kit = LedgerTestKit()
@@ -172,7 +177,7 @@ class AuditedWriterTest :
             test("a change to a field missing from auditFields fails closed instead of being dropped silently") {
                 val f = Fixture()
                 f.kit.initialise()
-                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky")
+                val leaky = leakyRepository(f)
                 f.writer.create(leaky, f.id) { Leaky(it, "Rent", secret = "a") }
                 val trailSize = f.trail.size
 
@@ -184,10 +189,19 @@ class AuditedWriterTest :
                 f.trail shouldHaveSize trailSize
             }
 
+            test("through a normal fake repository, an incomplete auditFields() fails the test that writes it") {
+                val f = Fixture()
+                f.kit.initialise()
+                val strict = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky")
+                val error = shouldThrow<AssertionError> { f.writer.create(strict, f.id) { Leaky(it, "Rent", "a") } }
+                error.message shouldContain "secret"
+                strict.all().shouldBeEmpty()
+            }
+
             test("an update that changes an audited field is still fine for an entity with an unaudited one") {
                 val f = Fixture()
                 f.kit.initialise()
-                val leaky = InMemoryEntityRepository<Leaky, NoteId>(f.kit.store, "leaky")
+                val leaky = leakyRepository(f)
                 f.writer.create(leaky, f.id) { Leaky(it, "Rent", secret = "a") }
                 f.writer.update(leaky, f.id) { it.copy(title = "Rent 2", secret = "b") }
                 leaky.get(f.id)?.title shouldBe "Rent 2"

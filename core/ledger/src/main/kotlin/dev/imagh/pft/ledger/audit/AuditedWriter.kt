@@ -26,9 +26,10 @@ import java.time.Instant
  *   changes nothing, returns the current entity and writes no row and no audit entry.
  *
  * Because the diff comes from [LedgerEntity.auditFields], **every persisted business field must be
- * listed there**. [update] enforces it: if the entity changed but no listed field did, it throws
- * `IllegalStateException` rather than drop the edit or write it unaudited. (A change that touches
- * both a listed and an unlisted field cannot be detected, so the rule stays a review item.)
+ * listed there**, under its snake_case name. Two guards back that rule: test-time, the fake
+ * repositories reject an entity whose `auditFields()` is incomplete (`AuditFieldsCheck`, run on every
+ * insert and update in tests); at runtime, [update] throws `IllegalStateException` if the entity
+ * changed but no listed field did, rather than drop the edit or write it unaudited.
  *
  * Nests inside an outer [TransactionRunner] block, so a service that writes several entities (a
  * transfer's two legs) wraps them in one `runner.inTransaction`.

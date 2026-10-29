@@ -68,7 +68,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | core | `EntityRepository<T, Id>` (entityType, get, getLive, insert, update) | every repository | A3 |
 | core | `LedgerError` + `Validation` (`requireName`, `requireAmount`, `requireLive`) + `LedgerLimits` | every service | A3 |
 | core | `Uuid7` (time-sortable ids) and `NameBasedId` (deterministic UUIDv5 ids) | every entity; recurring-generated transactions | A3 |
-| core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `LedgerTestKit`, `TestClock`, and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
+| core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `LedgerTestKit`, `TestClock`, `AuditFieldsCheck` (every entity's `auditFields()` is complete, checked on each fake write), and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
 | app UI (`ui/theme`) | `TokenSheet` / `TokenSheetPages` (one sheet of every token) | Studio preview, debug `DesignCatalog`, `TokenSheetScreenshotTest` goldens | DS2 |
 
 The app-data and remaining app-UI building blocks (`RoomEntityRepository`, `EntityListScreen`, ...)
