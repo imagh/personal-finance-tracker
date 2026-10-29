@@ -1,17 +1,17 @@
 # Graph Report - personal-finance-tracker  (2026-10-30)
 
 ## Corpus Check
-- 118 files · ~82,142 words
+- 118 files · ~83,072 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 29 file(s) not represented in the graph (top: .xml 10, .lockfile 8, (none) 4)
+- Unclassified: 30 file(s) not represented in the graph (top: .xml 10, .lockfile 8, (none) 4)
 
 ## Summary
-- 1074 nodes · 2298 edges · 77 communities (48 shown, 29 thin omitted)
-- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 330 edges (avg confidence: 0.94)
+- 1074 nodes · 2300 edges · 77 communities (47 shown, 30 thin omitted)
+- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 332 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0b4765d3`
+- Built from commit: `1f40ca28`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -40,28 +40,27 @@
 - Paise
 - Uuid7Test.kt
 - Automatic capture from Email (E-0..E-5)
-- Personal Finance Tracker PRD
+- Security, privacy and integrity requirements (SEC/INT)
 - ColorSchemeTestSupport.kt
 - TokenSheetSections.kt
-- Delivery constraints (small vertical slices, Claude Pro limits)
+- Architect Plan Template
 - PftTypographyTest
-- UserId
+- AuditSource
 - HostedComposeRule
-- Public interface
+- IdentityService
 - Project README
-- Auditable
+- UserId
 - Research: Indian Bank SMS Formats
-- AuditedWriter
+- 3.4 Reuse by layer (owner decision, 2026-10-28)
 - PftTypography.kt
 - CLAUDE.md Development Constitution
 - Auditable
 - ManifestHardeningTest
 - LedgerError
 - DesignCatalogTest.kt
-- Note
-- Domain Safety Invariants
+- Leaky
+- Definition of Done
 - WidgetId
-- MainActivity
 - AuditFieldsCheckTest.kt
 - 3. Design & decision
 - Personal Finance Tracker PRD
@@ -71,7 +70,7 @@
 - Architecture overview
 - 6. Implementation steps (TDD-ordered)
 - Pseudo
-- How to run and test
+- MainActivity
 - EntityMeta
 - Collecting and Redacting Sample Messages Guide
 - 6.1 Design-system slice: PRs into `feat/m1a-foundation`
@@ -97,14 +96,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `3.5 Design system (owner decision, 2026-10-29)` --references--> `MainActivity`  [INFERRED]
   docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
+- `5. Flows` --references--> `MainActivity`  [INFERRED]
+  docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
 - `3.2 Theming architecture (no new abstraction)` --references--> `ThemePrefs`  [INFERRED]
   docs/plans/2026-10-29-m1a-design-system.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/ThemePrefs.kt
 - `9. Documentation updates (all required surfaces)` --references--> `ThemePrefs`  [INFERRED]
   docs/plans/2026-10-29-m1a-design-system.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/ThemePrefs.kt
-- `Security posture of the shell` --references--> `ManifestHardeningTest`  [INFERRED]
-  docs/architecture/overview.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
-- `3.6 Icons and emoji (UI-6)` --references--> `ManifestHardeningTest`  [INFERRED]
-  docs/plans/2026-10-29-m1a-design-system.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
+- `Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)` --references--> `TokenSheet()`  [INFERRED]
+  docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/TokenSheet.kt
 
 ## Import Cycles
 - None detected.
@@ -118,7 +117,7 @@
 - **Secrets handling across constitution, technical rules and setup guide** — docs_technical_r2_no_secrets, docs_guides_local_setup_secrets_env [INFERRED 0.85]
 - **Untrusted message handling (templates, unverified flag, read-only)** — docs_prd_deterministic_parsing, docs_prd_untrusted_messages, docs_prd_unverified_state, docs_prd_read_only_messages [INFERRED 0.85]
 
-## Communities (77 total, 29 thin omitted)
+## Communities (77 total, 30 thin omitted)
 
 ### Community 0 - "redact.py"
 Cohesion: 0.14
@@ -153,8 +152,8 @@ Cohesion: 0.06
 Nodes (5): resolveColorScheme(), BundledFontTest, `dynamic dark resolves to the system dynamic dark scheme`(), `dynamic light resolves to the system dynamic light scheme`(), NameBasedId
 
 ### Community 10 - "Plan: M1a — Core ledger (manual-entry household tracker)"
-Cohesion: 0.18
-Nodes (9): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 4. Data model & schema, 8. Security considerations, 9. Documentation updates (all required surfaces) (+1 more)
+Cohesion: 0.17
+Nodes (10): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 4. Data model & schema, 5. Flows, 8. Security considerations (+2 more)
 
 ### Community 11 - "`build-logic` — convention plugins"
 Cohesion: 0.15
@@ -192,7 +191,7 @@ Nodes (19): Configuration, `:core:ledger` — the ledger foundations, Data it ow
 Cohesion: 0.29
 Nodes (7): Automatic capture from Email (E-0..E-5), Unverified Gmail OAuth client risk (E-5), Gmail API gmail.readonly scope, Idempotent ingestion (X-2), Transaction reference and reconciliation (X-1..X-6), Risks and dependencies, Two Google identities per device (shared sync account, personal Gmail)
 
-### Community 33 - "Personal Finance Tracker PRD"
+### Community 33 - "Security, privacy and integrity requirements (SEC/INT)"
 Cohesion: 0.40
 Nodes (6): Audit trail (INT-2), Client-Generated Time-Sortable IDs (UUIDv7/ULID), Money as integer paise, Security, privacy and integrity requirements (SEC/INT), SQLCipher encryption at rest and app lock, Platform and technology decisions (Kotlin, Compose, Room, SQLCipher, paise, UUIDv7)
 
@@ -200,11 +199,11 @@ Nodes (6): Audit trail (INT-2), Client-Generated Time-Sortable IDs (UUIDv7/ULID)
 Cohesion: 0.05
 Nodes (28): ChoiceRow(), DesignCatalog(), DevContent(), PftShapes, DisplayFont, BUNDLED_SERIF, SYSTEM_SERIF, TEXT (+20 more)
 
-### Community 36 - "Delivery constraints (small vertical slices, Claude Pro limits)"
+### Community 36 - "Architect Plan Template"
 Cohesion: 0.50
 Nodes (3): Architect Plan Template, Required Documentation Updates Section, TDD-Ordered Implementation Steps
 
-### Community 38 - "UserId"
+### Community 38 - "AuditSource"
 Cohesion: 0.12
 Nodes (21): FieldChange, AuditAction, ARCHIVE, CREATE, DELETE, RESTORE, UNARCHIVE, UPDATE (+13 more)
 
@@ -212,7 +211,7 @@ Nodes (21): FieldChange, AuditAction, ARCHIVE, CREATE, DELETE, RESTORE, UNARCHIV
 Cohesion: 0.07
 Nodes (11): HostedComposeRule, RegisterHostActivity, Statement, PftShapesTest, PftSpacingTest, Adding a token, Build-time trust decisions, Design system (+3 more)
 
-### Community 40 - "Public interface"
+### Community 40 - "IdentityService"
 Cohesion: 0.13
 Nodes (14): Responsibilities & boundaries, Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...), AuditLog, AuditRecorder, IdentityService, Uuid7, SettingsService, TransactionRunner (+6 more)
 
@@ -220,7 +219,7 @@ Nodes (14): Responsibilities & boundaries, Test fixtures (`java-test-fixtures`, 
 Cohesion: 0.22
 Nodes (6): app/ Thin Android Layer, core/<module> (money, ledger, parsing, discovery, matching, recurring, budget, sync), Code Structure Map, core/shared Shared Packages, Project README, Planned Layout (app, core, tools/redact, fixtures)
 
-### Community 43 - "Auditable"
+### Community 43 - "UserId"
 Cohesion: 0.12
 Nodes (8): Device, IdentityRepository, UserProfile, DeviceId, EntityId, UserId, ValidationTest, InMemoryIdentityRepository
 
@@ -228,7 +227,7 @@ Nodes (8): Device, IdentityRepository, UserProfile, DeviceId, EntityId, UserId, 
 Cohesion: 0.29
 Nodes (7): Parse log (S-11), Research: Indian Bank SMS Formats, Generic Bank-Agnostic Parser, Public Bank SMS Header Registry (gist, Dec 2022), Open-Source Indian SMS Parsers (hisab-kitab, FinTrack, ...), Indian SMS Sender Header Format (prefix-HEADER-S), SMS Spoofing and Phishing
 
-### Community 45 - "AuditedWriter"
+### Community 45 - "3.4 Reuse by layer (owner decision, 2026-10-28)"
 Cohesion: 0.23
 Nodes (8): Behaviours worth knowing, AuditDiff, AuditedWriter, EntityRepository, IdentityCorrupt, 3.4 Reuse by layer (owner decision, 2026-10-28), Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`), Slice C — Transactions (`feat/m1a-transactions`)
 
@@ -248,21 +247,17 @@ Nodes (7): Auditable, AppSetting, AppSettingsRepository, SettingKeys, AuditDiffT
 Cohesion: 0.14
 Nodes (13): AlreadyInitialised, AmountNotPositive, Archived, BlankName, Deleted, InvalidSettingKey, LedgerError, NameTooLong (+5 more)
 
-### Community 52 - "Note"
+### Community 52 - "Leaky"
 Cohesion: 0.24
 Nodes (5): Fixture, Leaky, LeakyRepository, Note, NoteId
 
-### Community 53 - "Domain Safety Invariants"
+### Community 53 - "Definition of Done"
 Cohesion: 0.15
 Nodes (10): Architect Plan (docs/plans/YYYY-MM-DD-slug.md), PR Checklist (TDD, Docs, Security, Architecture, Sizing), Android Surface and Multi-user Restrictions, Immutable Audit Trail, Definition of Done, Money as Integer Paise, Untrusted Input Validation (SMS/email/LLM output), Agent Slash Commands (+2 more)
 
 ### Community 54 - "WidgetId"
 Cohesion: 0.17
 Nodes (5): HasDerived, HasScratch, MisMapped, Misspelt, WidgetId
-
-### Community 55 - "MainActivity"
-Cohesion: 0.24
-Nodes (6): Debug and release source sets, Public interface, Window theme, MainActivity, 5. Flows, 6.3 Amendments to M1a steps (consumption; this plan edits M1a when approved)
 
 ### Community 56 - "AuditFieldsCheckTest.kt"
 Cohesion: 0.22
@@ -288,9 +283,9 @@ Nodes (6): Architecture overview, Build and quality gates, Call flow, Security p
 Cohesion: 0.29
 Nodes (7): 6. Implementation steps (TDD-ordered), PR breakdown (incremental — required), Slice D — Budgets (`feat/m1a-budgets`), Slice E — Recurring and subscriptions (`feat/m1a-recurring`), Slice F — Loans and EMIs (`feat/m1a-loans`), Slice G — Goals (`feat/m1a-goals`), Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)
 
-### Community 65 - "How to run and test"
-Cohesion: 0.33
-Nodes (6): `:app` — Android application, Configuration, Data it owns, Dependencies, How to run and test, Purpose
+### Community 65 - "MainActivity"
+Cohesion: 0.25
+Nodes (11): `:app` — Android application, Configuration, Data it owns, Debug and release source sets, Dependencies, How to run and test, Public interface, Purpose (+3 more)
 
 ### Community 66 - "EntityMeta"
 Cohesion: 0.22
@@ -314,21 +309,21 @@ Nodes (4): 3.1 Modules (Gradle), 3.3 New dependencies (all pinned, vetted, recor
 
 ## Knowledge Gaps
 - **54 isolated node(s):** `SYSTEM`, `LIGHT`, `DARK`, `BUNDLED_SERIF`, `SYSTEM_SERIF` (+49 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 313 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 312 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Collecting and Redacting Sample Messages Guide`, ``build-logic` — convention plugins`, `Research: Indian Bank SMS Formats`, `CLAUDE.md Development Constitution`, `Domain Safety Invariants`, `Paise`, `Personal Finance Tracker PRD`, `Architecture overview`, `Uuid7Test.kt`?**
-  _High betweenness centrality (0.215) - this node is a cross-community bridge._
+- **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Collecting and Redacting Sample Messages Guide`, ``build-logic` — convention plugins`, `Research: Indian Bank SMS Formats`, `CLAUDE.md Development Constitution`, `Definition of Done`, `Paise`, `Personal Finance Tracker PRD`, `Architecture overview`, `Uuid7Test.kt`?**
+  _High betweenness centrality (0.217) - this node is a cross-community bridge._
 - **Are the 40 inferred relationships involving `Public interface` (e.g. with `AuditDiff` and `FieldChange`) actually correct?**
   _`Public interface` has 40 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `SYSTEM`, `LIGHT`, `DARK` to the rest of the system?**
   _54 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `redact.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1422924901185771 - nodes in this community are weakly interconnected._
-- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `6.1 Design-system slice: PRs into `feat/m1a-foundation`` to `TokenSheetSections.kt`, `PftTypographyTest`, `WindowThemeTest.kt`, `HostedComposeRule`, `Public interface`, `PftTheme.kt`, `PftTypography.kt`, `MoneyColors`, `ManifestHardeningTest`, `DesignCatalogTest.kt`, `MainActivity`, `TokenSheetScreenshotTest.kt`, `Paise`?**
+- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `6.1 Design-system slice: PRs into `feat/m1a-foundation`` to `MainActivity`, `TokenSheetSections.kt`, `PftTypographyTest`, `WindowThemeTest.kt`, `HostedComposeRule`, `IdentityService`, `PftTheme.kt`, `PftTypography.kt`, `MoneyColors`, `ManifestHardeningTest`, `DesignCatalogTest.kt`, `TokenSheetScreenshotTest.kt`, `Paise`?**
   _High betweenness centrality (0.179) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `EntityMeta` (e.g. with `Data it owns` and `Responsibilities & boundaries`) actually correct?**
   _`EntityMeta` has 4 INFERRED edges - model-reasoned connections that need verification._
