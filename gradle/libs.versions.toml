@@ -28,6 +28,10 @@ detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plu
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
+# Compose tests (design-system plan §3.8). ui-test-manifest is deliberately NOT used: it adds an
+# exported ComponentActivity to the debug manifest (ManifestHardeningTest forbids that); the JVM
+# tests register the host activity with Robolectric instead (HostedComposeRule).
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
 # Tests.
