@@ -43,7 +43,7 @@ fun resolveColorScheme(
  *
  * The M3 type scale is the sans text family throughout; only `PftTheme.type.amountHero` takes the
  * display font ([ThemePrefs.displayFont]). Shapes come from [PftShapes]; the spacing scale is
- * [PftSpacing] (a fixed grid, so a plain constant, not a CompositionLocal). Motion joins in DS4.
+ * [PftSpacing] (a fixed grid, so a plain constant, not a CompositionLocal), and so is [PftMotion].
  */
 @Composable
 fun PftTheme(
@@ -97,4 +97,8 @@ object PftTheme {
     /** The spacing scale: a fixed 4dp grid, the same in every theme. */
     val spacing: PftSpacing
         get() = Spacing
+
+    /** The motion tokens (springs, navigation transitions, press scale): the same in every theme. */
+    val motion: PftMotion
+        get() = PftMotion
 }
