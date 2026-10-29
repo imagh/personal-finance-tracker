@@ -113,6 +113,16 @@ Screenshot rules:
 - Record deliberately: `./gradlew :app:recordRoborazziDebug`, then review every changed PNG in the
   PR. Re-record whenever a token changes on purpose; a failing verify with no intended change is a
   regression.
+- **Compare threshold:** none is configured, so Roborazzi 1.36.0's defaults apply. A pixel counts as
+  changed only if its colour distance exceeds `maxDistance = 0.007` (differ's `SimpleImageComparator`,
+  `RoborazziOptions.CompareOptions.DefaultImageComparator`), and the result must have **zero**
+  changed pixels (`ThresholdValidator(0F)`, i.e. a `changeThreshold` of 0%). Source:
+  `include-build/roborazzi-core/src/commonJvmMain/kotlin/com/github/takahirom/roborazzi/RoborazziOptions.kt`
+  and `ThresholdValidator.kt` at tag 1.36.0. The plan's risk row (§10) asked for a small non-zero
+  threshold; it was not needed on this machine (goldens verified identically on the debug and
+  release variants), so it is left strict. If goldens flake across machines, pass
+  `RoborazziOptions(compareOptions = CompareOptions(changeThreshold = 0.01f))` to `captureRoboImage`
+  (1% of pixels) rather than re-recording blindly.
 - Goldens use **fake data only**; reviewers reject real names, amounts or account numbers.
 - Goldens are a review aid. Correctness is carried by the behaviour tests (`PftTypographyTest`,
   `PftShapesTest`, `PftSpacingTest`, `ColorContrastTest`), not by pixels. Native-graphics output
@@ -132,6 +142,17 @@ No Reserved Font Name is declared, so subsetting is allowed later if APK size ma
 done, so provenance stays checkable by hash. To update the font, download from google/fonts into a
 scratch directory, verify, and change the commit, size and hash here and in `BundledFontTest`
 together.
+
+## Build-time trust decisions
+
+The Roborazzi Gradle plugin (1.36.0) puts a set of artifacts on the **buildscript classpath** that
+nothing else in the build uses: `org.webjars:material-design-icons`, `org.webjars:materializecss`
+and `org.webjars:webjars-locator-lite` (for its HTML report), `org.jspecify:jspecify`,
+`kotlinx-serialization` (core and json), `kotlinx-io` (core and bytestring), `com.dropbox.differ`,
+plus `junit` and `hamcrest-core`. They are locked in `buildscript-gradle.lockfile` and sha256-verified
+in `gradle/verification-metadata.xml` (trust on first use), and they run only in the build, never in
+the APK. Accepting them is a conscious decision made with the Roborazzi addition; the verification
+file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 
 ## Adding a token
 
