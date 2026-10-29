@@ -1,4 +1,4 @@
-# Graph Report - ds2-wt  (2026-10-29)
+# Graph Report - personal-finance-tracker  (2026-10-29)
 
 ## Corpus Check
 - 66 files · ~61,332 words
