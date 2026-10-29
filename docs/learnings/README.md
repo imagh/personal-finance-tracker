@@ -13,6 +13,21 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-10-28 — Slice branches can't nest under the base branch name
+- **Learning:** git refuses `feat/m1a-foundation/a1-…` while `feat/m1a-foundation` exists, because a ref can't be both a file and a directory.
+- **Why:** the `feat/<feature>/<slice>` topology in CLAUDE.md §6 cannot be created as written.
+- **How to apply:** name slice branches `feat/<feature>-<slice>` (for example `feat/m1a-foundation-a1-gradle-skeleton`) and open their PRs into `feat/<feature>`.
+
+### 2026-10-28 — App ID is permanent; build full export/import before ever changing it
+- **Learning:** the applicationId `dev.imagh.pft` and the release signing key define the installed app. A sideloaded build with a different ID or key installs as a new app with an empty database.
+- **Why:** changing either one without a migration path loses every transaction, the audit trail and the identities.
+- **How to apply:** before changing the ID or rotating the key, first build and verify a full, encrypted export/import of all data (every table, including audit, settings and tombstones), with a round-trip equality test. Export, import, verify, and only then retire the old app. Rule recorded in `docs/plans/2026-10-28-m1a-core-ledger.md` Q4.
+
+### 2026-10-28 — Reuse by layer: shared once two named consumers exist
+- **Learning:** the owner wants code abstract at its own layer and reused, but no unnecessary abstraction. The M1a plan's §3.4 lists the shared building blocks per layer (`EntityMeta`, `AuditedWriter`, `EntityRepository`/`RoomEntityRepository`, `EntityListScreen`, `AmountField`, `AuditHistoryList`, …).
+- **Why:** 8+ entities share the same lifecycle, columns, audit flow and screens. Copying that code per entity breaks the shared-code rule, but a generic framework breaks the abstraction bar.
+- **How to apply:** extract a piece when the plan names two concrete consumers; prefer composition, with at most one level of generic base class and no generic service. In review, both re-implementing a shared block and adding a single-consumer abstraction block the PR.
+
 ### 2026-10-28 — graphify: commit the graph, not the machine
 - **Learning:** `graphify claude install` writes the hook with an absolute path to one user's home and leaves a `settings.json.graphify-bak`. `graphify-out/` also holds a manifest with absolute paths, a cache and backups. `graphify update .` refreshes only code nodes, never docs.
 - **Why:** a committed absolute path breaks the hook on the second machine, and committing the rest of `graphify-out/` leaks local paths and churns diffs.
