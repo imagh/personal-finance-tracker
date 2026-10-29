@@ -3,8 +3,10 @@
 
 style:
   MagicNumber:
-    # Tests use literal amounts and dates on purpose.
-    excludes: ['**/test/**', '**/androidTest/**', '**/testFixtures/**', '**/*.kts']
+    # Tests use literal amounts and dates on purpose. The design tokens in ui/theme (colours now;
+    # type, spacing and motion later) are named literals by definition, and `ui/theme` is the only
+    # place raw design values are allowed (design plan §3.2).
+    excludes: ['**/test/**', '**/androidTest/**', '**/testFixtures/**', '**/*.kts', '**/ui/theme/**']
 
 naming:
   FunctionNaming:
