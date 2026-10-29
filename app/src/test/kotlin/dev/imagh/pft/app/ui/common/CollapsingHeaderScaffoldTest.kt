@@ -1,5 +1,6 @@
 package dev.imagh.pft.app.ui.common
 
+import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
@@ -28,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
@@ -40,6 +43,9 @@ import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.ResourceFont
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.PftTheme
@@ -461,5 +467,88 @@ class CollapsingHeaderScaffoldTest {
         tag("fab").assertIsDisplayed()
         tag("row-c").assertIsDisplayed()
         assertTrue(tag("row-c").bounds().bottom <= compose.onNodeWithText("Save").bounds().top)
+    }
+
+    // --- window insets (R1) ---------------------------------------------------------------
+
+    private lateinit var hostView: View
+
+    /** Dispatches [dp] of bottom inset of the given [type] to the Compose host, as the system would. */
+    private fun dispatchBottomInset(
+        type: Int,
+        dp: Float,
+    ) {
+        val px = (dp * density.density).toInt()
+        val insets =
+            WindowInsetsCompat
+                .Builder()
+                .setInsets(
+                    type,
+                    androidx.core.graphics.Insets
+                        .of(0, 0, 0, px),
+                ).setVisible(type, true)
+                .build()
+        compose.runOnUiThread {
+            androidx.core.view.ViewCompat
+                .dispatchApplyWindowInsets(hostView, insets)
+        }
+        compose.waitForIdle()
+    }
+
+    private fun showWithInsetsHost(
+        bottomBar: (@Composable () -> Unit)?,
+        fab: Boolean = false,
+    ) {
+        compose.setContent {
+            density = LocalDensity.current
+            hostView = LocalView.current
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                CollapsingHeaderScaffold(
+                    title = "Budgets",
+                    bottomBar = bottomBar,
+                    floatingActionButton = { if (fab) Text("FAB", Modifier.testTag("fab")) },
+                ) {
+                    items(
+                        60,
+                    ) { index ->
+                        Box(
+                            Modifier.fillMaxWidth().height(56.dp).testTag("item-$index"),
+                        ) { Text("Row $index") }
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun `with no bottom bar the navigation bar inset keeps the last row and the FAB clear of the bar`() {
+        showWithInsetsHost(bottomBar = null, fab = true)
+        dispatchBottomInset(
+            WindowInsetsCompat.Type
+                .navigationBars(),
+            dp = 48f,
+        )
+
+        tag(HeaderTags.LIST).performScrollToIndex(59)
+        compose.waitForIdle()
+        assertTrue(
+            "last row bottom ${tag("item-59").bounds().bottom}",
+            tag("item-59").bounds().bottom <= windowHeight - 48f + 0.5f,
+        )
+        assertTrue("FAB bottom ${tag("fab").bounds().bottom}", tag("fab").bounds().bottom <= windowHeight - 48f + 0.5f)
+    }
+
+    @Test
+    fun `a bottom bar rides above the keyboard`() {
+        showWithInsetsHost(bottomBar = { BottomActionBar(primary = BottomBarAction("Save") {}) })
+        dispatchBottomInset(
+            WindowInsetsCompat.Type
+                .ime(),
+            dp = 300f,
+        )
+
+        val save = compose.onNodeWithText("Save").bounds()
+        assertTrue("Save bottom ${save.bottom}", save.bottom <= windowHeight - 300f + 0.5f)
     }
 }

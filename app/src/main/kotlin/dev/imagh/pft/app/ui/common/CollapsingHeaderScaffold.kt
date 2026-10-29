@@ -159,7 +159,8 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * @param actions secondary actions in the top row (back, search, filter, overflow), laid out left
  *   to right across the full width; use a weighted `Spacer` to push some to the end. Add actions
  *   belong in [floatingActionButton], not here.
- * @param bottomBar a `NavigationBar` or a [BottomActionBar].
+ * @param bottomBar a `NavigationBar` or a [BottomActionBar], or null for none. With none, the list
+ *   and the FAB are padded by the `safeDrawing` bottom inset instead, so they clear the navigation bar.
  * @param floatingActionButton the add action.
  * @param content the scrolling list.
  */
@@ -173,7 +174,7 @@ fun CollapsingHeaderScaffold(
     heroCaption: String? = null,
     period: HeaderPeriod? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    bottomBar: @Composable () -> Unit = {},
+    bottomBar: (@Composable () -> Unit)? = null,
     floatingActionButton: @Composable () -> Unit = {},
     content: LazyListScope.() -> Unit,
 ) {
@@ -208,7 +209,9 @@ fun CollapsingHeaderScaffold(
         topBar = {
             CollapsingHeader(barState, sizes, HeaderContent(title, style, subtitle, hero, heroCaption, period, actions))
         },
-        bottomBar = { Box(Modifier.imePadding()) { bottomBar() } },
+        // M3's Scaffold pads the list and the FAB by the bottom inset only when this slot emits
+        // nothing, so with no bar it must emit nothing (not an empty wrapper).
+        bottomBar = { if (bottomBar != null) Box(Modifier.imePadding()) { bottomBar() } },
         floatingActionButton = floatingActionButton,
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets.safeDrawing,
