@@ -32,22 +32,22 @@ class Uuid7(
      * The next identifier, e.g. `01934f5e-7c3a-7b21-9d4e-5a6f8c1b2d3e`.
      *
      * @throws IllegalArgumentException if the clock is outside the 48-bit range (before 1970 or
-     *   after year 10889), which would silently corrupt the timestamp.
+     *   after year 10889), or if 4096 IDs in the last representable millisecond would need a
+     *   millisecond past it. Either would silently corrupt the timestamp.
      */
     @Synchronized
     fun next(): String {
         var millis = maxOf(clock.millis(), lastMillis)
-        require(millis in 0..MAX_MILLIS) { "Clock is outside the 48-bit UUIDv7 range" }
-        if (millis == lastMillis) {
-            counter++
-            if (counter > MAX_COUNTER) {
-                // 4096 IDs in one millisecond: borrow the next millisecond rather than repeat.
-                millis++
-                counter = freshCounter()
-            }
-        } else {
-            counter = freshCounter()
+        require(millis in 0..MAX_MILLIS) { RANGE_MESSAGE }
+        var nextCounter = if (millis == lastMillis) counter + 1 else freshCounter()
+        if (nextCounter > MAX_COUNTER) {
+            // 4096 IDs in one millisecond: borrow the next millisecond rather than repeat it,
+            // unless that would leave the 48-bit range (fail closed; state is left untouched).
+            millis++
+            require(millis <= MAX_MILLIS) { RANGE_MESSAGE }
+            nextCounter = freshCounter()
         }
+        counter = nextCounter
         lastMillis = millis
 
         val high = (millis shl TIMESTAMP_SHIFT) or VERSION_7 or counter.toLong()
@@ -59,6 +59,7 @@ class Uuid7(
     private fun freshCounter(): Int = random.nextInt(COUNTER_SEED_BOUND)
 
     private companion object {
+        const val RANGE_MESSAGE = "Clock is outside the 48-bit UUIDv7 range"
         const val MAX_MILLIS = 0xFFFF_FFFF_FFFFL
         const val TIMESTAMP_SHIFT = 16
         const val VERSION_7 = 0x7000L

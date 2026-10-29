@@ -96,6 +96,15 @@ class Uuid7Test :
             }
         }
 
+        test("borrowing a millisecond on counter overflow cannot run past the 48-bit range") {
+            val ids = Uuid7(clockAt(0xFFFF_FFFF_FFFFL))
+            val generated = mutableListOf<String>()
+            shouldThrow<IllegalArgumentException> { repeat(10_000) { generated += ids.next() } }
+            // Every ID produced before the refusal is valid and in order.
+            generated.forEach { timestampOf(it) shouldBe 0xFFFF_FFFF_FFFFL }
+            generated.shouldBeSorted()
+        }
+
         test("rejects a clock outside the 48-bit range") {
             shouldThrow<IllegalArgumentException> {
                 Uuid7(clockAt(-1)).next()
