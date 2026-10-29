@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Pft" parent="@android:style/Theme.Material.Light.NoActionBar" />
+    <!-- Light window. values-night/themes.xml has the dark twin; both share the items below, which
+         paint the surface colour behind the first frame (no light flash on a dark launch), keep
+         the system bars transparent for edge-to-edge, and colour the launch splash. -->
+    <style name="Theme.Pft" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/pft_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/pft_window_background</item>
+    </style>
 </resources>

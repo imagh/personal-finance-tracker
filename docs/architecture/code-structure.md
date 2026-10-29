@@ -13,7 +13,11 @@ config/detekt/          # detekt rule overrides (ktlint rules live in the root .
 build-logic/            # included build: pft.kotlin-core + pft.lint convention plugins
 app/                    # thin Android layer (Compose, Room/SQLCipher impls, Keystore, ...)
   src/main/kotlin/dev/imagh/pft/app/     # production code
-  src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests
+    ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors (design-system tokens)
+  src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
+  src/debug/kotlin/...                   # debug-only DevContent (design catalogue from DS2)
+  src/release/kotlin/...                 # release twin of DevContent (empty surface)
+  src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens)
 core/
   <module>/             # pure Kotlin/JVM, no Android imports
     README.md           # module doc (Purpose · Boundaries · Interface · Data · Config · Deps · Run/test)
@@ -29,7 +33,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 
 | Module | Owns | Responsibility |
 |--------|------|----------------|
-| `:app` | `MainActivity`, manifest, data-extraction rules; later: UI, Room entities/DAOs, Keystore, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
+| `:app` | `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); later: UI, Room entities/DAOs, Keystore, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
 | `:core:money` | (empty until A2) `Paise`, parsing, formatting | Integer-paise money; planned in A2 |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |
 
@@ -50,6 +54,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 |-------|----------------|-----------|----------|
 | build | `pft.kotlin-core` convention plugin | every `core/*` module | A1 |
 | build | `pft.lint` convention plugin (ktlint + detekt) | `pft.kotlin-core`, `:app`, root project (lints `build-logic` and build scripts) | A1 |
+| app UI (`ui/theme`) | `PftTheme`, `ThemePrefs`/`ThemeMode`, `BrandColors`, `MoneyColors` (colour tokens, CompositionLocals) | every screen | DS1 |
 
 The core, app-data and app-UI building blocks (`EntityMeta`, `AuditedWriter`,
 `RoomEntityRepository`, `EntityListScreen`, ...) are added to this table by A3, A4a, A5, B2 and C5.

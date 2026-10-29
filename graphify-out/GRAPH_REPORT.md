@@ -1,61 +1,74 @@
 # Graph Report - personal-finance-tracker  (2026-10-29)
 
 ## Corpus Check
-- 39 files · ~34,844 words
+- 52 files · ~52,085 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 22 file(s) not represented in the graph (top: .lockfile 7, .xml 6, (none) 3)
+- Unclassified: 25 file(s) not represented in the graph (top: .xml 9, .lockfile 7, (none) 3)
 
 ## Summary
-- 366 nodes · 511 edges · 24 communities (10 shown, 14 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 33 edges (avg confidence: 0.89)
+- 525 nodes · 818 edges · 37 communities (21 shown, 16 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 73 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e7dc6f2a`
+- Built from commit: `1a1d30dd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Redaction Tool Imports
 - Agent Workflow & PR Process
-- PRD & Plan Template
-- Architecture, Stack & graphify
-- Learnings & Toolchain
+- Loans and EMIs (LN-1..LN-5)
+- Personal Finance Tracker Learnings
+- Automatic capture from SMS (S-1..S-13)
 - ManifestHardeningTest.kt
 - Pre-commit Hook Config
 - Redaction Tests
-- Pseudonymisation
+- Plan: M1a design system and visual direction (lands before A5)
+- ThemeResolutionTest.kt
 - Plan: M1a — Core ledger (manual-entry household tracker)
 - Project README
 - Data portability (D-1..D-3)
+- ColorContrastTest
 - PftKotlinCorePlugin.kt
-- `build-logic` — convention plugins
+- WindowThemeTest.kt
 - Catalog.kt
 - detekt.yml
+- PftThemeModeTest
+- HostedComposeRule.kt
+- Personal Finance Tracker PRD
+- MainActivity
+- Research: Indian Bank SMS Formats
+- Collecting and Redacting Sample Messages Guide
+- Automatic capture from Email (E-0..E-5)
+- Security, privacy and integrity requirements (SEC/INT)
+- ColorSchemeTestSupport.kt
+- Sync via Google Drive app-data (Y-1..Y-8)
+- Architect Plan Template
 
 ## God Nodes (most connected - your core abstractions)
-1. `CLAUDE.md Development Constitution` - 17 edges
-2. `Personal Finance Tracker PRD` - 17 edges
-3. `ManifestHardeningTest` - 14 edges
-4. `Plan: M1a — Core ledger (manual-entry household tracker)` - 13 edges
-5. `Project README` - 13 edges
-6. `RedactTests` - 12 edges
-7. `code-reviewer Agent` - 11 edges
-8. `hooks` - 10 edges
-9. `6. Implementation steps (TDD-ordered)` - 10 edges
-10. `Local Setup Guide` - 10 edges
+1. `ManifestHardeningTest` - 20 edges
+2. `PftThemeModeTest` - 17 edges
+3. `CLAUDE.md Development Constitution` - 17 edges
+4. `Personal Finance Tracker PRD` - 17 edges
+5. `ColorContrastTest` - 16 edges
+6. `MainActivity` - 15 edges
+7. `WindowThemeTest` - 15 edges
+8. `Plan: M1a — Core ledger (manual-entry household tracker)` - 13 edges
+9. `Plan: M1a design system and visual direction (lands before A5)` - 13 edges
+10. `Project README` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Security posture of the shell` --references--> `ManifestHardeningTest`  [INFERRED]
-  docs/architecture/overview.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
-- `PR breakdown (incremental — required)` --references--> `main()`  [INFERRED]
-  docs/plans/2026-10-28-m1a-core-ledger.md → tools/redact/redact.py
+- `3.5 Design system (owner decision, 2026-10-29)` --references--> `MainActivity`  [INFERRED]
+  docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
 - `5. Flows` --references--> `MainActivity`  [INFERRED]
   docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
 - `Slice A — Foundation (`feat/m1a-foundation`)` --references--> `MainActivity`  [INFERRED]
   docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
-- `7. Test plan` --references--> `ManifestHardeningTest`  [INFERRED]
-  docs/plans/2026-10-28-m1a-core-ledger.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
+- `5.2 Rendering an amount` --references--> `MoneyColors`  [INFERRED]
+  docs/plans/2026-10-29-m1a-design-system.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/MoneyColors.kt
+- `Security posture of the shell` --references--> `ManifestHardeningTest`  [INFERRED]
+  docs/architecture/overview.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
 
 ## Import Cycles
 - None detected.
@@ -69,67 +82,111 @@
 - **Secrets handling across constitution, technical rules and setup guide** — docs_technical_r2_no_secrets, docs_guides_local_setup_secrets_env [INFERRED 0.85]
 - **Untrusted message handling (templates, unverified flag, read-only)** — docs_prd_deterministic_parsing, docs_prd_untrusted_messages, docs_prd_unverified_state, docs_prd_read_only_messages [INFERRED 0.85]
 
-## Communities (24 total, 14 thin omitted)
+## Communities (37 total, 16 thin omitted)
 
 ### Community 0 - "Redaction Tool Imports"
-Cohesion: 0.07
-Nodes (17): _day(), _email_record(), html_to_text(), main(), mask_run(), process(), read_adb(), read_any() (+9 more)
+Cohesion: 0.06
+Nodes (18): _day(), _email_record(), html_to_text(), main(), mask_run(), process(), Pseudo, read_adb() (+10 more)
 
 ### Community 1 - "Agent Workflow & PR Process"
-Cohesion: 0.11
-Nodes (23): architect Agent, Architect Plan (docs/plans/YYYY-MM-DD-slug.md), code-reviewer Agent, Compact Review Report (approve/minor/changes requested), senior-full-stack-dev Agent, /architect Command, /dev Command (implement then auto-review), /review-changes Command (+15 more)
-
-### Community 2 - "PRD & Plan Template"
 Cohesion: 0.07
-Nodes (38): Personal Finance Tracker PRD, Audit trail (INT-2), Automatic discovery of accounts, cards and loans (AD-1..AD-8), Balance observations (L-10), Cashew (existing expense app), Client-Generated Time-Sortable IDs (UUIDv7/ULID), Client-side encrypted sync with passphrase-derived key (Y-3), Core ledger (L-1..L-10) (+30 more)
+Nodes (41): architect Agent, Architect Plan (docs/plans/YYYY-MM-DD-slug.md), code-reviewer Agent, Compact Review Report (approve/minor/changes requested), senior-full-stack-dev Agent, /architect Command, /dev Command (implement then auto-review), /review-changes Command (+33 more)
 
-### Community 3 - "Architecture, Stack & graphify"
-Cohesion: 0.07
-Nodes (26): PR Security Review Section (TECHNICAL.md §5), graphify Usage Rules, Tech Stack (Kotlin, Compose, Room+SQLCipher, Gradle), Local Setup Guide, Agent Slash Commands, Android Toolchain Setup (macOS), Emulator and Primary Phone Policy, Pre-commit Git Hooks Install (+18 more)
+### Community 2 - "Loans and EMIs (LN-1..LN-5)"
+Cohesion: 0.23
+Nodes (11): Automatic discovery of accounts, cards and loans (AD-1..AD-8), Balance observations (L-10), Core ledger (L-1..L-10), Cross-source de-duplication (X-3, X-4), Entity merge and split (AD-7), Goals (G-1..G-3), Entity identity key (issuer + type + masked id, deterministic ID), Loans and EMIs (LN-1..LN-5) (+3 more)
 
-### Community 4 - "Learnings & Toolchain"
-Cohesion: 0.11
-Nodes (18): Collecting and Redacting Sample Messages Guide, Email Export (.eml / Google Takeout mbox), fixtures/ Reviewed Redacted Samples, Local Redaction Procedure, SMS Export (SMS Backup & Restore / adb), Budgets (B-1..B-5), Parse log (S-11), Read-only SMS and email access (S-10) (+10 more)
+### Community 3 - "Personal Finance Tracker Learnings"
+Cohesion: 0.20
+Nodes (5): Personal Finance Tracker Learnings, graphify tool, Room 2.7.1 and sqlcipher-android 4.7.2, Decisions log, Transfers (two linked legs, not income/expense)
+
+### Community 4 - "Automatic capture from SMS (S-1..S-13)"
+Cohesion: 0.32
+Nodes (5): Budgets (B-1..B-5), Read-only SMS and email access (S-10), Sender alias registry (S-13), Automatic capture from SMS (S-1..S-13), Unverified vs verified transaction state
+
+### Community 5 - "ManifestHardeningTest.kt"
+Cohesion: 0.06
+Nodes (18): Manifest security posture (SEC-2, SEC-3, SEC-6), Responsibilities and boundaries, ManifestHardeningTest, 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state (+10 more)
 
 ### Community 6 - "Pre-commit Hook Config"
 Cohesion: 0.14
 Nodes (13): always_run, entry, exclude, files, id, language, name, pass_filenames (+5 more)
 
+### Community 8 - "Plan: M1a design system and visual direction (lands before A5)"
+Cohesion: 0.06
+Nodes (33): `:app` — Android application, Configuration, Data it owns, Debug and release source sets, Dependencies, How to run and test, Public interface, Purpose (+25 more)
+
+### Community 9 - "ThemeResolutionTest.kt"
+Cohesion: 0.12
+Nodes (3): resolveColorScheme(), `dynamic dark resolves to the system dynamic dark scheme`(), `dynamic light resolves to the system dynamic light scheme`()
+
 ### Community 10 - "Plan: M1a — Core ledger (manual-entry household tracker)"
-Cohesion: 0.05
-Nodes (35): `:app` — Android application, Configuration, Data it owns, Dependencies, How to run and test, Manifest security posture (SEC-2, SEC-3, SEC-6), Public interface, Purpose (+27 more)
+Cohesion: 0.08
+Nodes (26): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 3.1 Modules (Gradle), 3.2 Key decisions, 3.4 Reuse by layer (owner decision, 2026-10-28) (+18 more)
 
 ### Community 11 - "Project README"
-Cohesion: 0.10
-Nodes (15): app/ Thin Android Layer, core/<module> (money, ledger, parsing, discovery, matching, recurring, budget, sync), `:core:money` — money (stub), How to run and test, Purpose, Code Structure Map, core/shared Shared Packages, Architecture overview (+7 more)
+Cohesion: 0.06
+Nodes (28): `build-logic` — convention plugins, Configuration, Data it owns, Dependencies, How the build scripts and build-logic are linted, How to run and test, Public interface, Purpose (+20 more)
 
-### Community 16 - "`build-logic` — convention plugins"
-Cohesion: 0.15
-Nodes (12): `build-logic` — convention plugins, Configuration, Data it owns, Dependencies, How the build scripts and build-logic are linted, How to run and test, Public interface, Purpose (+4 more)
+### Community 14 - "ColorContrastTest"
+Cohesion: 0.21
+Nodes (4): ColorContrastTest, Theme, DARK, LIGHT
 
 ### Community 18 - "detekt.yml"
 Cohesion: 0.29
 Nodes (6): ignoreAnnotated, excludes, naming, FunctionNaming, style, MagicNumber
 
+### Community 27 - "HostedComposeRule.kt"
+Cohesion: 0.17
+Nodes (4): HostedComposeRule, RegisterHostActivity, Statement, 3.3 New dependencies (all pinned, vetted, recorded in `gradle/verification-metadata.xml`)
+
+### Community 28 - "Personal Finance Tracker PRD"
+Cohesion: 0.22
+Nodes (10): Personal Finance Tracker PRD, Cashew (existing expense app), Delivery constraints (small vertical slices, Claude Pro limits), M1 Phasing (M1a/M1b/M1c), M1b SMS capture, M1c Email capture and sync, Milestone 3 (insights), Non-functional requirements (+2 more)
+
+### Community 30 - "Research: Indian Bank SMS Formats"
+Cohesion: 0.29
+Nodes (7): Parse log (S-11), Research: Indian Bank SMS Formats, Generic Bank-Agnostic Parser, Public Bank SMS Header Registry (gist, Dec 2022), Open-Source Indian SMS Parsers (hisab-kitab, FinTrack, ...), Indian SMS Sender Header Format (prefix-HEADER-S), SMS Spoofing and Phishing
+
+### Community 31 - "Collecting and Redacting Sample Messages Guide"
+Cohesion: 0.43
+Nodes (6): Collecting and Redacting Sample Messages Guide, Email Export (.eml / Google Takeout mbox), fixtures/ Reviewed Redacted Samples, Local Redaction Procedure, SMS Export (SMS Backup & Restore / adb), Per-Bank Template Overrides
+
+### Community 32 - "Automatic capture from Email (E-0..E-5)"
+Cohesion: 0.29
+Nodes (7): Automatic capture from Email (E-0..E-5), Unverified Gmail OAuth client risk (E-5), Gmail API gmail.readonly scope, Idempotent ingestion (X-2), Transaction reference and reconciliation (X-1..X-6), Risks and dependencies, Two Google identities per device (shared sync account, personal Gmail)
+
+### Community 33 - "Security, privacy and integrity requirements (SEC/INT)"
+Cohesion: 0.40
+Nodes (6): Audit trail (INT-2), Client-Generated Time-Sortable IDs (UUIDv7/ULID), Money as integer paise, Security, privacy and integrity requirements (SEC/INT), SQLCipher encryption at rest and app lock, Platform and technology decisions (Kotlin, Compose, Room, SQLCipher, paise, UUIDv7)
+
+### Community 35 - "Sync via Google Drive app-data (Y-1..Y-8)"
+Cohesion: 0.40
+Nodes (4): Client-side encrypted sync with passphrase-derived key (Y-3), Operation-log based sync (Y-2), Sync via Google Drive app-data (Y-1..Y-8), Sync behind an interface (Y-7)
+
+### Community 36 - "Architect Plan Template"
+Cohesion: 0.50
+Nodes (3): Architect Plan Template, Required Documentation Updates Section, TDD-Ordered Implementation Steps
+
 ## Knowledge Gaps
-- **33 isolated node(s):** `Compact Review Report (approve/minor/changes requested)`, `Android Surface and Multi-user Restrictions`, `>=90% Coverage Floor on core`, `Documentation Taxonomy`, `Base Feature Branch Topology` (+28 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 167 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **38 isolated node(s):** `SYSTEM`, `LIGHT`, `DARK`, `LIGHT`, `DARK` (+33 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 203 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Project README` connect `Project README` to `Agent Workflow & PR Process`, `PRD & Plan Template`, `Architecture, Stack & graphify`, `Learnings & Toolchain`, ``build-logic` — convention plugins`?**
-  _High betweenness centrality (0.352) - this node is a cross-community bridge._
-- **Are the 4 inferred relationships involving `ManifestHardeningTest` (e.g. with `Manifest security posture (SEC-2, SEC-3, SEC-6)` and `Responsibilities and boundaries`) actually correct?**
-  _`ManifestHardeningTest` has 4 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Compact Review Report (approve/minor/changes requested)`, `Android Surface and Multi-user Restrictions`, `>=90% Coverage Floor on core` to the rest of the system?**
-  _33 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `Project README` connect `Project README` to `Agent Workflow & PR Process`, `Personal Finance Tracker PRD`, `Research: Indian Bank SMS Formats`, `Collecting and Redacting Sample Messages Guide`?**
+  _High betweenness centrality (0.317) - this node is a cross-community bridge._
+- **Are the 10 inferred relationships involving `ManifestHardeningTest` (e.g. with `Manifest security posture (SEC-2, SEC-3, SEC-6)` and `Responsibilities and boundaries`) actually correct?**
+  _`ManifestHardeningTest` has 10 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `SYSTEM`, `LIGHT`, `DARK` to the rest of the system?**
+  _38 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Redaction Tool Imports` be split into smaller, more focused modules?**
-  _Cohesion score 0.07246376811594203 - nodes in this community are weakly interconnected._
-- **Why does `Collecting and Redacting Sample Messages Guide` connect `Learnings & Toolchain` to `Project README`, `PRD & Plan Template`, `Architecture, Stack & graphify`?**
-  _High betweenness centrality (0.208) - this node is a cross-community bridge._
+  _Cohesion score 0.06095791001451379 - nodes in this community are weakly interconnected._
+- **Why does ``:app` — Android application` connect `Plan: M1a design system and visual direction (lands before A5)` to `Project README`, `ManifestHardeningTest.kt`?**
+  _High betweenness centrality (0.227) - this node is a cross-community bridge._
+- **Are the 3 inferred relationships involving `PftThemeModeTest` (e.g. with `How to run and test` and `6.1 Design-system slice: PRs into `feat/m1a-foundation``) actually correct?**
+  _`PftThemeModeTest` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Agent Workflow & PR Process` be split into smaller, more focused modules?**
-  _Cohesion score 0.10588235294117647 - nodes in this community are weakly interconnected._
-- **Why does `ManifestHardeningTest` connect `ManifestHardeningTest.kt` to `Plan: M1a — Core ledger (manual-entry household tracker)`, `Project README`?**
-  _High betweenness centrality (0.206) - this node is a cross-community bridge._
+  _Cohesion score 0.06599326599326599 - nodes in this community are weakly interconnected._
