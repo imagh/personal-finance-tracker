@@ -2,7 +2,7 @@
 
 A private, offline-first Android app for tracking a household's expenses, budgets, loans (EMIs) and goals. It logs transactions automatically from SMS and email, parsed on-device, with local encrypted SQLite storage. Personal use for two people; accuracy, integrity, privacy and security come first.
 
-**Status:** Gradle skeleton and quality gates in place (M1a slice A1); no features yet. Current milestone: M1a (core ledger).
+**Status:** Gradle skeleton and quality gates in place (M1a slice A1), `core/money` and the `core/ledger` foundations (A3) built; no user-visible features yet. Current milestone: M1a (core ledger).
 
 | Read | For |
 |---|---|
@@ -19,7 +19,8 @@ A private, offline-first Android app for tracking a household's expenses, budget
 |---|---|
 | `app/` | Thin Android layer (Compose, later Room/SQLCipher, Keystore). See [app/README.md](app/README.md) |
 | `core/money/` | Pure Kotlin integer-paise money: `Paise`, strict `PaiseParser`, Indian-grouping `PaiseFormat`. See [core/money/README.md](core/money/README.md) |
-| `core/<module>/` | Further pure-Kotlin modules (ledger, budget, recurring) are added by their slices |
+| `core/ledger/` | Pure Kotlin ledger foundations: UUIDv7 ids, identity, the audit trail and `AuditedWriter`, `TransactionRunner`, validation, runtime settings, plus shared test fixtures. See [core/ledger/README.md](core/ledger/README.md) |
+| `core/<module>/` | Further pure-Kotlin modules (budget, recurring) are added by their slices |
 | `build-logic/` | Convention plugins `pft.kotlin-core` and `pft.lint`. See [build-logic/README.md](build-logic/README.md) |
 | `tools/redact/` | Local redaction tool (Python) |
 | `fixtures/` | Reviewed, redacted samples only (planned) |
