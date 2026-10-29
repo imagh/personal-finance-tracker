@@ -104,11 +104,14 @@ val verifyReleaseShrink by tasks.registering {
     val mustBeKept = listOf("dev.imagh.pft.app.MainActivity")
     // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
     // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.
+    // HeaderSamplesKt holds DS4's fake-data header samples and their @PreviewLightDark previews.
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
             "dev.imagh.pft.app.ui.theme.TokenSheet",
             "dev.imagh.pft.app.ui.theme.ComposableSingletons\$TokenSheet",
+            "dev.imagh.pft.app.ui.common.HeaderSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$HeaderSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile
