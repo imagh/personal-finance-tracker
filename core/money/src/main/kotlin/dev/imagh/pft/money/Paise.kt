@@ -28,8 +28,10 @@ value class Paise(
         /**
          * The largest amount the app accepts from text input: Rs 1e11 (10,000,00,00,000), i.e. 1e13
          * paise (plan §3.2 decision 8). The parser rejects anything above it; the ledger's own
-         * `LedgerLimits` reuse it for transaction amounts. Far below `Long.MAX_VALUE`, so sums of
-         * many limit-sized amounts cannot overflow in practice.
+         * `LedgerLimits` reuse it for transaction amounts. It is far below
+         * `Long.MAX_VALUE`: about 922,337 limit-sized amounts (`Long.MAX_VALUE / 1e13`) fit in a `Long`
+         * before a sum overflows. [plus] and [minus] use `addExact`/`subtractExact`, which are the real
+         * guard: an overflow throws and never wraps, whatever the headroom.
          */
         val MAX_AMOUNT: Paise = Paise(10_000_000_000_000L)
     }

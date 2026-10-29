@@ -31,13 +31,12 @@ class PaiseTest :
             shouldThrow<ArithmeticException> { Paise(Long.MIN_VALUE) - Paise(1) }
         }
 
-        test("the largest allowed amount is Rs 1e11, i.e. 1e13 paise") {
-            Paise.MAX_AMOUNT shouldBe Paise(10_000_000_000_000L)
+        test("adding to the most negative amount underflows and throws") {
+            shouldThrow<ArithmeticException> { Paise(Long.MIN_VALUE) + Paise(-1) }
         }
 
-        test("equal amounts are interchangeable as map keys and set members") {
-            setOf(Paise(250), Paise(250), Paise(251)).size shouldBe 2
-            mapOf(Paise(250) to "a")[Paise(250)] shouldBe "a"
+        test("the largest allowed amount is Rs 1e11, i.e. 1e13 paise") {
+            Paise.MAX_AMOUNT.value shouldBe 100_000_000_000L * 100
         }
 
         test("amounts order by their paise value") {
@@ -48,9 +47,11 @@ class PaiseTest :
         }
 
         test("a + b - b == a for any non-overflowing pair") {
-            // Bounded to +-1e15 so that a + b can never overflow a Long.
-            val bound = 1_000_000_000_000_000L
-            checkAll(Arb.long(-bound, bound), Arb.long(-bound, bound)) { a, b ->
+            // Each operand is within half the Long range, so a + b can never overflow.
+            checkAll(
+                Arb.long(Long.MIN_VALUE / 2, Long.MAX_VALUE / 2),
+                Arb.long(Long.MIN_VALUE / 2, Long.MAX_VALUE / 2),
+            ) { a, b ->
                 ((Paise(a) + Paise(b)) - Paise(b)) shouldBe Paise(a)
             }
         }

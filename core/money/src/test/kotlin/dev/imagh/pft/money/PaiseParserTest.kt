@@ -4,8 +4,10 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
+import io.kotest.property.arbitrary.choice
+import io.kotest.property.arbitrary.element
+import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.long
-import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
 
 class PaiseParserTest :
@@ -30,6 +32,15 @@ class PaiseParserTest :
             }
             test("zero") {
                 accepted("0") shouldBe Paise.ZERO
+            }
+            test("a decimal after grouped thousands") {
+                accepted("1,000.5") shouldBe Paise(100_050)
+            }
+            test("the rupee sign with an ungrouped decimal amount") {
+                accepted("₹12.34") shouldBe Paise(1_234)
+            }
+            test("a number that is valid both ways") {
+                accepted("12,345") shouldBe Paise(1_234_500)
             }
             test("Western grouping") {
                 accepted("123,456.78") shouldBe Paise(12_345_678)
@@ -106,6 +117,9 @@ class PaiseParserTest :
                 accepted("100000000000.01").shouldBeNull()
                 accepted("1,00,00,00,00,001").shouldBeNull()
             }
+            test("a number with far more digits than a Long holds is rejected without overflow") {
+                accepted("99999999999999999999.5").shouldBeNull()
+            }
             test("a far-too-large number is rejected, not overflowed") {
                 accepted("9".repeat(PaiseParser.MAX_INPUT_LENGTH)).shouldBeNull()
             }
@@ -130,13 +144,22 @@ class PaiseParserTest :
                 listOf(0L, 1L, 99L, 100L, 99_999L, 100_000L, Paise.MAX_AMOUNT.value - 1, Paise.MAX_AMOUNT.value)
                     .forEach { PaiseParser.parse(PaiseFormat.format(Paise(it))) shouldBe Paise(it) }
             }
-            test("arbitrary text never throws and any result is within 0..limit") {
-                checkAll(Arb.string(0..40)) { text ->
-                    val result = PaiseParser.parse(text)
+            test("text over the parser's own alphabet never throws; accepted results are in range and round-trip") {
+                val alphabet = Arb.element("0123456789,.₹-+ e".map { it.toString() })
+                // Skewed towards digits so that valid amounts actually occur (checked below).
+                val digits = Arb.element("0123456789".map { it.toString() })
+                val chars = Arb.choice(digits, digits, alphabet)
+                var accepted = 0
+                checkAll(Arb.list(chars, 0..24)) { parts ->
+                    val result = PaiseParser.parse(parts.joinToString(""))
                     if (result != null) {
+                        accepted++
                         (result >= Paise.ZERO && result <= Paise.MAX_AMOUNT) shouldBe true
+                        PaiseParser.parse(PaiseFormat.format(result)) shouldBe result
                     }
                 }
+                // Guard against the property going vacuous again.
+                (accepted > 100) shouldBe true
             }
             test("plain digit strings parse to exactly their value times 100 or reject over the limit") {
                 checkAll(Arb.long(0L, Long.MAX_VALUE / 100)) { rupees ->
