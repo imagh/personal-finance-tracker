@@ -1,8 +1,9 @@
 # Design system
 
-Status: **DS1 (colour, `PftTheme`, window themes) and DS2 (type, shape, spacing, bundled serif,
-screenshot harness, debug catalogue) are built.** Motion and the one-hand layout (DS4), icons and
-the category palette (DS3) and the content primitives (DS5) are specified in
+Status: **DS1 (colour, `PftTheme`, window themes), DS2 (type, shape, spacing, bundled serif,
+screenshot harness, debug catalogue) and DS4 (motion tokens, `CollapsingHeaderScaffold`,
+`BottomActionBar`) are built.** Icons and the category palette (DS3) and the content primitives
+(DS5) are specified in
 `docs/plans/2026-10-29-m1a-design-system.md` and are added to this page by their slices.
 
 The plan is the spec; this page records what is built and how to extend it.
@@ -16,8 +17,8 @@ The plan is the spec; this page records what is built and how to extend it.
 | Quiet surfaces, one accent | Neutral tonal surfaces. The dynamic accent colours interactive chrome only; money is never drawn in the accent |
 | Type carries hierarchy, not boxes | Large figures, generous whitespace, inset grouped "islands" instead of shadowed cards |
 | Colour where it signals | Money green/red only on amounts, meters and status, always with a sign or a word |
-| Reach first | Content starts about 38% down; primary actions at the bottom (DS4) |
-| Continuity | Springs and shared-element transitions (DS4) |
+| Reach first | Content starts about 38% down; primary actions at the bottom (`CollapsingHeaderScaffold`, `BottomActionBar`) |
+| Continuity | One spring vocabulary (`PftMotion`); shared-element transitions arrive with C4 |
 
 Rules, enforced in review (detekt has no type resolution, so it cannot check them):
 
@@ -44,6 +45,7 @@ object:
 | `PftTheme.type` | `PftTypography` | the three amount styles |
 | `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge) |
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
+| `PftTheme.motion` | `PftMotion` | four springs, navigation transitions, press scale; a constant, the same in every theme |
 
 `ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `displayFont`). Until the appearance
 settings (AP1) the app always passes the defaults. Tokens are static code constants; per-user
@@ -89,6 +91,94 @@ digits; that is accepted.
 See `BrandColors` and `MoneyColors` (KDoc) and plan §3.3. `ColorContrastTest` pins every pair at
 WCAG 4.5:1. Never draw money text on `surfaceVariant`.
 
+### Motion (UI-10)
+
+Springs are defined the SwiftUI way, as a perceptual `(duration, bounce)` pair, and converted
+exactly to Compose by `iosSpring(durationMillis, bounce)` (mass 1):
+`stiffness = (2π / duration in seconds)²`, `dampingRatio = 1 − bounce`. It rejects a bounce
+outside `[0, 1)` (NaN included) and a duration of 0 or less with `IllegalArgumentException`.
+
+| Token (`PftTheme.motion.*`) | (duration, bounce) | Stiffness, ζ | Used for |
+|---|---|---|---|
+| `snappy` | 0.30 s, 0.10 | ≈ 438.6, 0.90 | press feedback, chips, keypad digits, toggles |
+| `smooth` | 0.45 s, 0 | ≈ 194.9, 1.00 | screen transitions, header snap, progress fill, rolling digits |
+| `gentle` | 0.60 s, 0 | ≈ 109.7, 1.00 | container transforms (FAB to add screen, row to detail) |
+| `bouncy` | 0.50 s, 0.25 | ≈ 157.9, 0.75 | rare celebration only (goal reached) |
+
+- The tokens are `SpringSpec<Float>`: that fits `animate*AsState`, `graphicsLayer` and M3's snap spec.
+  For another type, build the same spring with `iosSpring<T>(duration, bounce)`.
+- **Navigation transitions** (`navEnter`, `navExit`, `navPopEnter`, `navPopExit`) are plain
+  `EnterTransition`/`ExitTransition` values: a push slides the incoming screen in from the end by
+  25% of the width with a fade, and the outgoing one out toward the start; a pop is the reverse. A5
+  wires them into the NavHost; predictive back is verified there.
+- **Press feedback:** `Modifier.pressScale()` scales to 0.97 (`PftMotion.PRESSED_SCALE`) with `snappy`
+  while a pointer is down, and back on release or cancel. Put it before `clickable` on rows, cards,
+  glyph tiles and keypad keys; it only observes pointers, so the ripple and the tap are untouched
+  and a drag that turns into a scroll releases the press.
+- **Reduced motion:** Compose honours the system animator-duration scale, so animations jump to
+  their end state. Rule: no logic waits on an animation to finish (a delete commits on the state
+  change, not at the end of a collapse).
+- **Judging motion:** only on a release-like build. Debug Compose builds are much slower, so a debug
+  jank verdict is meaningless (plan §10, §11).
+
+### One-hand layout (UI-7)
+
+`CollapsingHeaderScaffold` (`ui/common`) is the frame for every screen: a header that collapses to a
+64dp bar so content starts about 38% down, within thumb reach, plus `BottomActionBar` for the
+primary action.
+
+- **Heights.** Expanded is `clamp(0.38 x window height, 200dp, 360dp)`; collapsed is a 64dp bar
+  (both plus the status-bar inset). A window shorter than 560dp (landscape, split screen) has no
+  expanded state: the header starts and stays collapsed. A list that fits keeps it expanded.
+- **Mechanics.** M3's `TopAppBarState` and `exitUntilCollapsedScrollBehavior(snapAnimationSpec =
+  PftTheme.motion.smooth)`; the scaffold sets `heightOffsetLimit` and lays out by
+  `collapsedFraction`. There is no custom nested-scroll code. Snap-to-nearer-end on release and
+  fling come from M3. The scaffold owns the `LazyColumn` (it needs its scroll state for `canScroll`).
+  Layout reads the scroll state in the layout phase and only the presence of parts (large title,
+  bar title, lower band) is composition state, so a scroll frame does no recomposition of the header itself. (M3's `Scaffold` still hands the list a
+  new content padding as the header height changes, as in every M3 collapsing bar; whether that costs
+  frames is for the release-build jank check, deferred to C4.)
+- **Header layout rule (owner decision Q10).** All titles are sans; the serif is the hero number
+  only. The title is read-only (no click action), horizontally centred, in the upper band, with an
+  optional one-line subtitle under it.
+
+  | Style | Title | Lower band (thumb zone) |
+  |---|---|---|
+  | `Dashboard` | `titleLarge`, top edge about 12% down the expanded header; at least 24dp clear above the hero | the hero (display font), its caption, and the ‹ › period stepper at the end of the caption row |
+  | `Standard` | `headlineLarge`, centred in the middle of the expanded area | none (a hero is ignored) |
+
+  The top row holds only secondary `actions` (back, search, filter, overflow); add actions go in the
+  FAB. On collapse the title cross-fades and scales into the 64dp bar's `titleLarge` title, and the
+  subtitle and lower band fade out (three times faster than the collapse). While fully expanded
+  only the large title exists in the tree, and while fully collapsed only the bar title, so
+  assistive technology never reads the title twice.
+- **Period.** `period: HeaderPeriod(onPrevious, onNext)` (Dashboard only) draws the ‹ › stepper
+  ("Previous period" / "Next period" for TalkBack) and makes a horizontal swipe of more than 48dp on
+  the *expanded* header step the period: toward the end of the line is previous. Vertical drags stay
+  with the scroll. C4's `PeriodSwitcher` adds the directional slide on top of this.
+- **Insets.** Edge-to-edge with `WindowInsets.safeDrawing`. `bottomBar` (nullable) sits in
+  `imePadding()` and `BottomActionBar` pads by `safeDrawing` at the bottom and sides, so Save rides
+  above the keyboard. With **no** bottom bar the list and the FAB are padded by the bottom inset:
+  M3's `Scaffold` does that only when the bottom-bar slot emits nothing, so the slot is left empty,
+  not filled with a wrapper. The scaffold reads raw `safeDrawing`: use **one per screen, at the
+  root**, never under another Scaffold or layout that consumes insets.
+- **Dashboard slots go together.** `hero`, `heroCaption` and `period` make up the lower band; without
+  a `hero` the caption and stepper are not drawn and the swipe is inert. Below 560dp of window height
+  (landscape, split screen) the header is always collapsed, so the Dashboard hero is **hidden** there,
+  per the plan; the screen's figure must also be reachable in the list if it matters in landscape.
+- **`BottomActionBar`.** One full-width primary `Button`, or an outlined secondary plus the primary
+  on the end side. At least 56dp tall (the touch-target floor is 48dp). Built from `BottomBarAction(label, enabled, onClick)`.
+- **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
+  subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
+  about 56dp). A long hero does not shrink to fit yet (DS5's `MoneyText`); the catalogue's font-scale
+  toggle is where to look. On a short expandable window (about 560dp) at 2.0x the gap is not
+  asserted.
+- **Tests and insets.** Robolectric does express insets: the tests dispatch navigation-bar and IME
+  insets to the Compose host with `ViewCompat.dispatchApplyWindowInsets` (`CollapsingHeaderScaffoldTest`).
+  Status-bar and cutout behaviour on a real device is still an emulator check. The scaffold tests
+  run on native graphics (`@GraphicsMode(NATIVE)`): the legacy mode measures every glyph about a
+  pixel wide, which hides text wrapping.
+
 ## Previews, the token sheet and screenshot goldens
 
 `ui/theme/TokenSheet.kt` shows every token on one sheet (type scale, amount styles, shapes,
@@ -99,6 +189,12 @@ three consumers, so they cannot drift:
 - the debug-only design catalogue (`src/debug/.../DesignCatalog.kt`, shown by `DevContent()`),
   which adds toggles for light/dark, hero font and font scale,
 - the Roborazzi goldens (`TokenSheetScreenshotTest`).
+
+Component goldens (DS4) come from `HeaderScreenshotTest`, using the same `StandardHeaderSample`,
+`DashboardHeaderSample` and `BottomActionBarSamples` as the previews and the catalogue:
+`header-<standard|dashboard>-<expanded|collapsed>-<light|dark>.png` and
+`bottom-action-bar-<light|dark>.png`, full-screen 393x851dp (about 90 to 110 KB each; the collapsed
+ones are captured after a real swipe). The debug catalogue has a page for each, plus a motion page.
 
 The sheet is split into `TokenSheetPages`, each short enough for one 393x851dp screen at 200% font
 scale, so each page is one golden. Goldens are in `app/src/test/screenshots/`:
@@ -125,7 +221,8 @@ Screenshot rules:
   (1% of pixels) rather than re-recording blindly.
 - Goldens use **fake data only**; reviewers reject real names, amounts or account numbers.
 - Goldens are a review aid. Correctness is carried by the behaviour tests (`PftTypographyTest`,
-  `PftShapesTest`, `PftSpacingTest`, `ColorContrastTest`), not by pixels. Native-graphics output
+  `PftShapesTest`, `PftSpacingTest`, `ColorContrastTest`, `CollapsingHeaderScaffoldTest`,
+  `BottomActionBarTest`), not by pixels. Native-graphics output
   can differ across OS or Robolectric versions; record on one machine and re-record on upgrades.
 
 ## Third-party assets

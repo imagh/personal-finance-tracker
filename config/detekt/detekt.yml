@@ -8,6 +8,12 @@ style:
     # place raw design values are allowed (design plan §3.2).
     excludes: ['**/test/**', '**/androidTest/**', '**/testFixtures/**', '**/*.kts', '**/ui/theme/**']
 
+complexity:
+  LongParameterList:
+    # A Compose component takes one defaulted parameter per slot (the Compose API guidelines), so
+    # parameters with defaults do not count. Required parameters still do.
+    ignoreDefaultParameters: true
+
 naming:
   FunctionNaming:
     # Composable functions are PascalCase by convention.

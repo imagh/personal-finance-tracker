@@ -661,6 +661,20 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
 - **Green:** `ui/theme/PftMotion.kt` (tokens, `iosSpring`, nav transition specs, `pressScale`), and `ui/common/{CollapsingHeaderScaffold,BottomActionBar}.kt`. Add both to the catalogue.
 - **Refactor:** `design-system.md` motion and one-hand sections. `code-structure.md` shared-blocks rows.
 
+**DS4 deviations (2026-10-29):**
+- **`heroCaption` and `HeaderPeriod` added to the slot list.** §3.4 lists `hero` and a `period` slot (the `PeriodSwitcher`, built in C4) but the Q10 rule also needs a caption row with the stepper at its end, and the test spec needs `onPrevious`/`onNext` on the scaffold. So the scaffold takes `heroCaption: String?` and `period: HeaderPeriod(onPrevious, onNext)`, draws the ‹ › stepper itself (text glyphs until DS3's icons) and handles the swipe. C4's `PeriodSwitcher` builds on that (the directional slide) rather than replacing it.
+- **`BottomActionBar` takes `BottomBarAction(label, enabled, onClick)` values** (primary, optional secondary) instead of loose label/callback pairs.
+- **Motion is a plain constant, not a CompositionLocal.** `PftTheme.motion` returns the `PftMotion` object, like `spacing` and `shapes`: the tokens never vary, so `LocalMotion` (§3.2) would be single-value indirection. The springs are `SpringSpec<Float>`; other types use `iosSpring<T>`.
+- **`pressScale()` is a `composed` modifier** (a modifier-factory `@Composable` trips Compose lint), drives an `Animatable` from the pointer coroutine, and never consumes events. A composed block does not recompose on state it reads, so the press state is not read there.
+- **The scaffold owns the `LazyColumn`** (`content: LazyListScope.() -> Unit`, as §3.4 says) because `canScroll` needs its scroll state; it passes `Scaffold`'s padding as `contentPadding`, so rows scroll under the opaque header.
+- **`canScroll` also stays true while the header is partly collapsed**, so a list that fits only when collapsed can still be pulled back open.
+- **Screenshot set:** Standard and Dashboard, expanded and collapsed, light and dark (8 PNGs), plus `BottomActionBar` light and dark (2), 10 in total, 89 to 108 KB each. Font scale 2.0 is not captured for these.
+- **detekt `LongParameterList` is ignored for `@Composable` functions** (Compose slots are defaulted parameters); the rule still applies to everything else.
+- **Review fixes (2026-10-29).** `bottomBar` is nullable: M3's `Scaffold` pads the list and FAB by the bottom inset only when the bottom-bar slot emits no placeables, and the always-present `imePadding` wrapper had defeated that (found in review, confirmed against `Scaffold.kt` 1.3.1; the new inset test failed first with the last row under a 48dp bar). A `period` or caption without a `hero` is inert (no stepper, no swipe). `LongParameterList` is relaxed with `ignoreDefaultParameters` rather than for every `@Composable`.
+- **§7 font scale 2.0 for the header: met** for the Dashboard header with a subtitle on 393x851dp (gap 67dp, asserted). Not yet covered: a long hero that must shrink to fit (DS5 `MoneyText`) and a short expandable window at 2.0x.
+- **Below 560dp the Dashboard hero is hidden** (the header is always collapsed), as §3.4 specifies; recorded in `design-system.md` so screens plan for it.
+- **Not verified:** the §11 jank check (deferred to C4, where scrolling a real list first makes the number meaningful) and status-bar/cutout insets on a device. Navigation-bar and IME insets are tested under Robolectric.
+
 **DS5: content primitives** (needs A2 merged: `:app` gains `implementation(project(":core:money"))`)
 - **Red:**
   - `MoneyToneTest` (JUnit 5, pure):
