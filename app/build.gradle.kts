@@ -29,6 +29,17 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    buildTypes {
+        release {
+            // R8 shrinks, optimises and obfuscates the release build, which also drops sample and
+            // preview code nothing references (owner decision 2026-10-30). No signingConfig on
+            // purpose: release signing arrives with H3 and must fail closed until then.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -74,3 +85,69 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
 }
+
+// Guard for the release R8 switch (owner decision 2026-10-30, plan 2026-10-28 H3). Preview and
+// sample code (TokenSheet and friends) must not ship in the release APK, and R8 must keep the
+// launcher activity. It reads R8's mapping.txt, so it fails fast if minification is switched off
+// or a keep rule drops MainActivity. Wired into `check`, so the pre-push hook catches R8 errors
+// long before a release is cut.
+//
+// mapping.txt also lists classes R8 merged or inlined, with the target `R8$$REMOVED$$CLASS$$N`.
+// They are not in the APK, so they count as removed, never as kept.
+val verifyReleaseShrink by tasks.registering {
+    group = "verification"
+    description = "Asserts the release R8 mapping keeps MainActivity and drops preview-only code."
+    dependsOn("assembleRelease")
+    val mappingFile = layout.buildDirectory.file("outputs/mapping/release/mapping.txt")
+    val preShrinkClasses = layout.buildDirectory.dir("tmp/kotlin-classes/release")
+    // Kept, and unobfuscated (the manifest references it), so it must map to its own name.
+    val mustBeKept = listOf("dev.imagh.pft.app.MainActivity")
+    // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
+    // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.
+    // HeaderSamplesKt holds DS4's fake-data header samples and their @PreviewLightDark previews.
+    // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
+    val mustBeRemoved =
+        listOf(
+            "dev.imagh.pft.app.ui.theme.TokenSheet",
+            "dev.imagh.pft.app.ui.theme.ComposableSingletons\$TokenSheet",
+            "dev.imagh.pft.app.ui.common.HeaderSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$HeaderSamples",
+        )
+    doLast {
+        val classesDir = preShrinkClasses.get().asFile
+        val compiled =
+            classesDir
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "class" }
+                .map {
+                    it
+                        .relativeTo(classesDir)
+                        .path
+                        .removeSuffix(".class")
+                        .replace('/', '.')
+                }.toList()
+        mustBeRemoved.forEach { prefix ->
+            check(compiled.any { it.startsWith(prefix) }) {
+                "stale guard entry: $prefix matches no compiled class, update mustBeRemoved"
+            }
+        }
+
+        val file = mappingFile.get().asFile
+        check(file.exists()) {
+            "No R8 mapping at $file: release minification is off (buildTypes.release.isMinifyEnabled)."
+        }
+        // Class entries are the unindented lines: "<original name> -> <target name>:".
+        val targets =
+            file
+                .readLines()
+                .filter { !it.startsWith("#") && !it.startsWith(" ") && it.contains(" -> ") }
+                .associate { it.substringBefore(" -> ") to it.substringAfter(" -> ").removeSuffix(":") }
+        val shipped = targets.filterValues { !it.startsWith("R8\$\$REMOVED\$\$CLASS\$\$") }
+        val notKept = mustBeKept.filter { shipped[it] != it }
+        val leaked = shipped.keys.filter { name -> mustBeRemoved.any { name.startsWith(it) } }
+        check(notKept.isEmpty()) { "R8 removed or renamed classes that must be kept as they are: $notKept" }
+        check(leaked.isEmpty()) { "Preview/sample code survived into the release build: $leaked" }
+    }
+}
+
+tasks.named("check") { dependsOn(verifyReleaseShrink) }

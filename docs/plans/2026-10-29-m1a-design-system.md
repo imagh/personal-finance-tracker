@@ -660,6 +660,7 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
   - Screenshots: Standard and Dashboard styles, expanded and collapsed, light and dark.
 - **Green:** `ui/theme/PftMotion.kt` (tokens, `iosSpring`, nav transition specs, `pressScale`), and `ui/common/{CollapsingHeaderScaffold,BottomActionBar}.kt`. Add both to the catalogue.
 - **Refactor:** `design-system.md` motion and one-hand sections. `code-structure.md` shared-blocks rows.
+- **Release guard (added 2026-10-30):** any `@Preview` or sample code DS4 adds (`ui/common/HeaderSamples`) is added to `mustBeRemoved` in `:app:verifyReleaseShrink` (`app/build.gradle.kts`), so R8 is shown to drop it.
 
 **DS4 deviations (2026-10-29):**
 - **`heroCaption` and `HeaderPeriod` added to the slot list.** §3.4 lists `hero` and a `period` slot (the `PeriodSwitcher`, built in C4) but the Q10 rule also needs a caption row with the stepper at its end, and the test spec needs `onPrevious`/`onNext` on the scaffold. So the scaffold takes `heroCaption: String?` and `period: HeaderPeriod(onPrevious, onNext)`, draws the ‹ › stepper itself (text glyphs until DS3's icons) and handles the swipe. C4's `PeriodSwitcher` builds on that (the directional slide) rather than replacing it.
@@ -894,7 +895,7 @@ No mocks. The only fakes are Robolectric's platform shadows and a test `Activity
    - TalkBack: amounts are announced with their direction.
 
 **Motion check (DS4, then C4/C5):**
-1. Build a minified variant (`assembleRelease` with the debug signing config locally, or a `benchmark` build type if A5 introduces one) and install it on `pft35`.
+1. Build a minified variant and install it on `pft35`. `assembleRelease` is now minified directly (R8 was enabled early on 2026-10-30; M1a H3 amendment), so no separate variant is needed. Its APK is unsigned: sign a copy with the debug keystore for a one-off local install (recipe in learnings, 2026-10-30), never in the build.
 2. Exercise header collapse, list scroll and (from C4) FAB → add and row → detail.
 3. Read `adb shell dumpsys gfxinfo dev.imagh.pft framestats`, aiming for under 1% janky frames on the emulator, and record the numbers in learnings.
 

@@ -1,17 +1,17 @@
 # Graph Report - personal-finance-tracker  (2026-10-30)
 
 ## Corpus Check
-- 131 files · ~93,214 words
+- 131 files · ~94,500 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 29 file(s) not represented in the graph (top: .xml 10, .lockfile 8, (none) 4)
+- Unclassified: 30 file(s) not represented in the graph (top: .xml 10, .lockfile 8, (none) 4)
 
 ## Summary
-- 1411 nodes · 3284 edges · 86 communities (53 shown, 33 thin omitted)
-- Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 425 edges (avg confidence: 0.93)
+- 1411 nodes · 3286 edges · 86 communities (54 shown, 32 thin omitted)
+- Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 427 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eaac19f7`
+- Built from commit: `ee537070`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -106,16 +106,16 @@
 10. `DeviceId` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `5. Flows` --references--> `MainActivity`  [INFERRED]
+  docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
 - `9. Documentation updates (all required surfaces)` --references--> `ThemePrefs`  [INFERRED]
   docs/plans/2026-10-29-m1a-design-system.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/ThemePrefs.kt
+- `Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)` --references--> `TokenSheet()`  [INFERRED]
+  docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/TokenSheet.kt
 - `Security posture of the shell` --references--> `ManifestHardeningTest`  [INFERRED]
   docs/architecture/overview.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
 - `3.6 Icons and emoji (UI-6)` --references--> `ManifestHardeningTest`  [INFERRED]
   docs/plans/2026-10-29-m1a-design-system.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
-- `8. Security considerations` --references--> `ManifestHardeningTest`  [INFERRED]
-  docs/plans/2026-10-29-m1a-design-system.md → app/src/test/kotlin/dev/imagh/pft/app/ManifestHardeningTest.kt
-- `Third-party assets` --references--> `BundledFontTest`  [INFERRED]
-  docs/architecture/design-system.md → app/src/test/kotlin/dev/imagh/pft/app/ui/theme/BundledFontTest.kt
 
 ## Import Cycles
 - None detected.
@@ -129,7 +129,7 @@
 - **Secrets handling across constitution, technical rules and setup guide** — docs_technical_r2_no_secrets, docs_guides_local_setup_secrets_env [INFERRED 0.85]
 - **Untrusted message handling (templates, unverified flag, read-only)** — docs_prd_deterministic_parsing, docs_prd_untrusted_messages, docs_prd_unverified_state, docs_prd_read_only_messages [INFERRED 0.85]
 
-## Communities (86 total, 33 thin omitted)
+## Communities (86 total, 32 thin omitted)
 
 ### Community 0 - "redact.py"
 Cohesion: 0.15
@@ -156,20 +156,20 @@ Cohesion: 0.14
 Nodes (13): always_run, entry, exclude, files, id, language, name, pass_filenames (+5 more)
 
 ### Community 9 - "PftTheme.kt"
-Cohesion: 0.07
-Nodes (5): resolveColorScheme(), RegisterHostActivity, Statement, `dynamic dark resolves to the system dynamic dark scheme`(), `dynamic light resolves to the system dynamic light scheme`()
+Cohesion: 0.06
+Nodes (5): resolveColorScheme(), BundledFontTest, `dynamic dark resolves to the system dynamic dark scheme`(), `dynamic light resolves to the system dynamic light scheme`(), NameBasedId
 
 ### Community 10 - "Plan: M1a — Core ledger (manual-entry household tracker)"
-Cohesion: 0.15
-Nodes (13): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 3.1 Modules (Gradle), 3.3 New dependencies (all pinned, vetted, recorded in `gradle/verification-metadata.xml`), 3.5 Design system (owner decision, 2026-10-29) (+5 more)
+Cohesion: 0.14
+Nodes (14): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 3.1 Modules (Gradle), 3.3 New dependencies (all pinned, vetted, recorded in `gradle/verification-metadata.xml`), 3.5 Design system (owner decision, 2026-10-29) (+6 more)
 
 ### Community 11 - "`build-logic` — convention plugins"
 Cohesion: 0.15
 Nodes (12): `build-logic` — convention plugins, Configuration, Data it owns, Dependencies, How the build scripts and build-logic are linted, How to run and test, Public interface, Purpose (+4 more)
 
 ### Community 14 - "ColorContrastTest"
-Cohesion: 0.09
-Nodes (6): BundledFontTest, ColorContrastTest, Theme, DARK, LIGHT, NameBasedId
+Cohesion: 0.21
+Nodes (4): ColorContrastTest, Theme, DARK, LIGHT
 
 ### Community 16 - "BrandColors"
 Cohesion: 0.17
@@ -263,13 +263,17 @@ Nodes (17): Auditable, AlreadyInitialised, AmountNotPositive, AmountTooLarge, Ar
 Cohesion: 0.21
 Nodes (6): AuditedWriterTest, Fixture, Leaky, LeakyRepository, Note, NoteId
 
+### Community 53 - "PressScaleTest.kt"
+Cohesion: 0.10
+Nodes (3): RegisterHostActivity, Statement, PressScaleTest
+
 ### Community 54 - "EntityMeta"
 Cohesion: 0.09
 Nodes (18): EntityMeta, LedgerEntity, AuditFieldsCheckTest, Complete, HasDerived, HasScratch, Kind, LARGE (+10 more)
 
 ### Community 55 - "How to run and test"
-Cohesion: 0.17
-Nodes (15): `:app` — Android application, Configuration, Data it owns, Debug and release source sets, Dependencies, How to run and test, Public interface, Purpose (+7 more)
+Cohesion: 0.20
+Nodes (14): `:app` — Android application, Configuration, Data it owns, Debug and release source sets, Dependencies, How to run and test, Public interface, Purpose (+6 more)
 
 ### Community 56 - "CollapsingHeaderScaffold"
 Cohesion: 0.26
@@ -345,14 +349,14 @@ Nodes (4): HeaderPhase, Collapsed, Expanded, Moving
 
 ## Knowledge Gaps
 - **70 isolated node(s):** `TOKENS`, `MOTION`, `BOTTOM_BAR`, `STANDARD_HEADER`, `DASHBOARD_HEADER` (+65 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 388 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **33 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 387 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **32 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `6.1 Design-system slice: PRs into `feat/m1a-foundation`` to `WindowThemeTest.kt`, `ColorContrastTest`, `BrandColors`, `NavTransitionTest.kt`, `CollapsingHeaderScaffoldTest`, `Paise`, `DesignCatalog.kt`, `PftTypographyTest`, `PftShapesTest.kt`, `SettingsService`, `PftMotion.kt`, `MoneyColors`, `BottomActionBarTest.kt`, `PressScaleTest.kt`, `How to run and test`, `CollapsingHeaderScaffold`, `assertequals`, `main`, `BottomActionBar.kt`, `ThemePrefs`, `ManifestHardeningTest`?**
-  _High betweenness centrality (0.196) - this node is a cross-community bridge._
+- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `6.1 Design-system slice: PRs into `feat/m1a-foundation`` to `WindowThemeTest.kt`, `PftTheme.kt`, `BrandColors`, `NavTransitionTest.kt`, `CollapsingHeaderScaffoldTest`, `Paise`, `DesignCatalog.kt`, `PftTypographyTest`, `PftShapesTest.kt`, `SettingsService`, `PftMotion.kt`, `MoneyColors`, `BottomActionBarTest.kt`, `PressScaleTest.kt`, `How to run and test`, `CollapsingHeaderScaffold`, `assertequals`, `main`, `BottomActionBar.kt`, `ThemePrefs`, `ManifestHardeningTest`?**
+  _High betweenness centrality (0.195) - this node is a cross-community bridge._
 - **Are the 5 inferred relationships involving `CollapsingHeaderScaffoldTest` (e.g. with `How to run and test` and `One-hand layout (UI-7)`) actually correct?**
   _`CollapsingHeaderScaffoldTest` has 5 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `TOKENS`, `MOTION`, `BOTTOM_BAR` to the rest of the system?**
@@ -360,7 +364,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `redact.py` be split into smaller, more focused modules?**
   _Cohesion score 0.14761904761904762 - nodes in this community are weakly interconnected._
 - **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Collecting and Redacting Sample Messages Guide`, `Automatic capture from SMS (S-1..S-13)`, `SettingsService`, ``build-logic` — convention plugins`, `CLAUDE.md Development Constitution`, `Paise`, `Personal Finance Tracker PRD`, `Architecture overview`?**
-  _High betweenness centrality (0.155) - this node is a cross-community bridge._
+  _High betweenness centrality (0.145) - this node is a cross-community bridge._
 - **Are the 40 inferred relationships involving `Public interface` (e.g. with `AuditDiff` and `FieldChange`) actually correct?**
   _`Public interface` has 40 INFERRED edges - model-reasoned connections that need verification._
 - **Should `docs/TECHNICAL.md` be split into smaller, more focused modules?**
