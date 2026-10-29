@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PFT — M1a design system mockups (rough, for owner reaction)</title>
+<!-- Rough static mockup for plan docs/plans/2026-10-29-m1a-design-system.md. Fake data only.
+     Newsreader loads from Google Fonts in the browser only; the app bundles the font file (plan §3.5).
+     Colours: money tokens are the plan's exact values; brand surfaces approximate the #4A55B8 tonal-spot scheme. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+  :root { --serif: "Newsreader", Georgia, serif; --sans: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .light {
+    --surface:#FBF8FF; --sc-low:#F5F2FA; --sc:#EFEDF4; --sc-high:#E9E7EF; --on:#1B1B21; --on-var:#46464F; --outline-var:#C6C5D0;
+    --primary:#4A55B8; --on-primary:#FFFFFF; --primary-c:#DFE0FF; --on-primary-c:#1A2478;
+    --pos:#13653C; --neg:#A3261D; --warn:#734900;
+    --pos-c:#DDF4E5; --on-pos-c:#0B4A2A; --neg-c:#FCE3E0; --on-neg-c:#7A1B14; --warn-c:#FCEFD2; --on-warn-c:#5C3A00;
+    --amber-c:#FDE7C2; --amber:#5E4200; --emerald-c:#CDEFDD; --emerald:#0F5132; --rose-c:#FFD9E0; --rose:#7A1F35;
+    --sky-c:#D3E8FB; --sky:#0E4A6E; --slate-c:#DEE3EA; --slate:#37414D; --coral-c:#FFDBD0; --coral:#7A2E14; --violet-c:#E8DDFF; --violet:#4A2C8A;
+  }
+  .dark {
+    --surface:#131318; --sc-low:#1B1B21; --sc:#1F1F25; --sc-high:#2A292F; --on:#E4E1E9; --on-var:#C6C5D0; --outline-var:#46464F;
+    --primary:#BCC2FF; --on-primary:#1A2478; --primary-c:#323D9F; --on-primary-c:#DFE0FF;
+    --pos:#6FD99E; --neg:#FF8F85; --warn:#F2C14E;
+    --pos-c:#123C27; --on-pos-c:#B5EFCB; --neg-c:#4A1712; --on-neg-c:#FFD3CD; --warn-c:#3F2E05; --on-warn-c:#F8DFA2;
+    --amber-c:#5E4200; --amber:#FDE7C2; --emerald-c:#0F5132; --emerald:#CDEFDD; --rose-c:#7A1F35; --rose:#FFD9E0;
+    --sky-c:#0E4A6E; --sky:#D3E8FB; --slate-c:#37414D; --slate:#DEE3EA; --coral-c:#7A2E14; --coral:#FFDBD0; --violet-c:#4A2C8A; --violet:#E8DDFF;
+  }
+  body { margin:0; font-family:var(--sans); background:#E6E4EA; color:#222; }
+  body.page-dark { background:#0B0B0E; color:#ddd; }
+  header.page { padding:20px 28px 4px; }
+  header.page h1 { font: 500 26px var(--serif); margin:0 0 6px; }
+  header.page p { margin:4px 0; font-size:14px; max-width:980px; line-height:1.45; }
+  header.page button { margin-top:10px; font:500 14px var(--sans); padding:8px 16px; border-radius:20px; border:0; background:#4A55B8; color:#fff; cursor:pointer; }
+  .row { display:flex; flex-wrap:wrap; gap:28px; padding:20px 28px 40px; }
+  figure { margin:0; }
+  figcaption { font-size:13px; margin:10px 4px 0; opacity:.75; max-width:360px; }
+  .phone { width:360px; height:760px; border-radius:36px; overflow:hidden; position:relative; background:var(--surface); color:var(--on);
+           box-shadow:0 0 0 10px #111, 0 18px 40px rgba(0,0,0,.25); display:flex; flex-direction:column; }
+  .status { height:28px; display:flex; justify-content:space-between; align-items:center; padding:0 22px; font-size:12px; color:var(--on-var); flex:none; }
+  .hdr { height:262px; flex:none; display:flex; flex-direction:column; justify-content:flex-end; padding:0 20px 18px; position:relative; }
+  .hdr .acts { position:absolute; top:6px; right:14px; display:flex; gap:18px; color:var(--on-var); font-size:18px; }
+  .hdr .acts.left { left:16px; right:auto; }
+  .label { font-size:13px; color:var(--on-var); letter-spacing:.2px; }
+  .switcher { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--on-var); margin-bottom:6px; }
+  .switcher b { color:var(--on); font-weight:500; }
+  .hero { font: 400 48px/1.1 var(--serif); font-variant-numeric: tabular-nums lining-nums; letter-spacing:-.5px; }
+  .hero small { font-size:26px; }
+  .dtitle { font: 400 36px/1.15 var(--serif); }
+  .chips { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .chip { font-size:12.5px; padding:6px 10px; border-radius:10px; font-variant-numeric: tabular-nums; }
+  .chip.pos { background:var(--pos-c); color:var(--on-pos-c); }
+  .chip.neutral { background:var(--sc-high); color:var(--on); }
+  .chip.sel { background:var(--sc-high); color:var(--on); display:flex; align-items:center; gap:6px; padding:6px 12px 6px 6px; border-radius:18px; font-size:13.5px; }
+  .content { flex:1; overflow:hidden; padding:0 14px; }
+  .dayhead { display:flex; justify-content:space-between; font-size:13px; color:var(--on-var); padding:12px 8px 8px; font-variant-numeric: tabular-nums; }
+  .island { background:var(--sc-low); border-radius:24px; overflow:hidden; }
+  .item { display:flex; align-items:center; gap:12px; padding:11px 14px; min-height:42px; position:relative; }
+  .item + .item::before { content:""; position:absolute; top:0; left:66px; right:14px; border-top:1px solid var(--outline-var); opacity:.6; }
+  .g { width:40px; height:40px; border-radius:30%; display:grid; place-items:center; font-size:20px; flex:none; }
+  .g.sym { font: 600 18px var(--sans); }
+  .g.big { width:56px; height:56px; font-size:28px; }
+  .g.sm { width:28px; height:28px; font-size:15px; }
+  .amber{background:var(--amber-c);color:var(--amber)} .emerald{background:var(--emerald-c);color:var(--emerald)}
+  .rose{background:var(--rose-c);color:var(--rose)} .sky{background:var(--sky-c);color:var(--sky)}
+  .slate{background:var(--slate-c);color:var(--slate)} .coral{background:var(--coral-c);color:var(--coral)} .violet{background:var(--violet-c);color:var(--violet)}
+  .t { flex:1; min-width:0; }
+  .t1 { font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .t2 { font-size:12.5px; color:var(--on-var); margin-top:2px; display:flex; gap:6px; align-items:center; }
+  .amt { font-size:15px; font-weight:500; font-variant-numeric: tabular-nums; white-space:nowrap; }
+  .pos { color:var(--pos); } .neg { color:var(--neg); } .warn { color:var(--warn); }
+  .pill { font-size:11px; padding:2px 7px; border-radius:8px; font-weight:500; }
+  .pill.unv { background:var(--warn-c); color:var(--on-warn-c); }
+  .pill.ver { background:var(--sc-high); color:var(--on-var); }
+  .pill.over { background:var(--neg-c); color:var(--on-neg-c); }
+  .pill.th { background:var(--warn-c); color:var(--on-warn-c); }
+  .pill.ok { background:var(--pos-c); color:var(--on-pos-c); }
+  .nav { height:70px; flex:none; background:var(--sc); display:flex; justify-content:space-around; align-items:center; font-size:11.5px; color:var(--on-var); }
+  .nav div { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .nav .ic { width:56px; height:28px; border-radius:14px; display:grid; place-items:center; font-size:16px; }
+  .nav .on .ic { background:var(--primary-c); color:var(--on-primary-c); }
+  .nav .on { color:var(--on); font-weight:500; }
+  .fab { position:absolute; right:18px; bottom:88px; width:58px; height:58px; border-radius:18px; background:var(--primary-c); color:var(--on-primary-c);
+         display:grid; place-items:center; font-size:28px; box-shadow:0 6px 16px rgba(0,0,0,.22); }
+  .meter { height:10px; border-radius:5px; background:var(--sc-high); position:relative; overflow:hidden; margin-top:8px; }
+  .meter i { position:absolute; top:0; bottom:0; left:0; border-radius:5px; }
+  .meter .u { background: repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 6px); opacity:.55; }
+  .meter .tick { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--on); opacity:.7; }
+  .bud .top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:6px 14px 0; }
+  .key { height:52px; border-radius:16px; background:var(--sc-low); display:grid; place-items:center; font:400 24px var(--sans); }
+  .seg { display:flex; background:var(--sc-high); border-radius:20px; padding:3px; margin:0 auto; width:max-content; font-size:13.5px; }
+  .seg span { padding:6px 14px; border-radius:17px; color:var(--on-var); }
+  .seg .on { background:var(--surface); color:var(--on); font-weight:500; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+  .bab { flex:none; padding:10px 14px 18px; display:flex; gap:10px; }
+  .btn { flex:1; height:52px; border-radius:26px; display:grid; place-items:center; font-weight:500; font-size:15px; }
+  .btn.p { background:var(--primary); color:var(--on-primary); }
+  .btn.s { flex:.55; background:transparent; color:var(--neg); box-shadow: inset 0 0 0 1px var(--outline-var); }
+  .kv { display:flex; justify-content:space-between; font-size:14.5px; }
+  .kv span:first-child { color:var(--on-var); }
+  .sect { font-size:13px; color:var(--on-var); padding:14px 8px 8px; }
+  .center { text-align:center; }
+  .reach { position:absolute; left:0; right:0; top:290px; border-top:1px dashed var(--primary); opacity:.0; pointer-events:none; }
+  body.show-reach .reach { opacity:.5; }
+  .reach::after { content:"content starts ≈38% (thumb zone below)"; position:absolute; right:10px; top:-16px; font-size:10px; color:var(--primary); }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Personal Finance Tracker: M1a visual direction (rough mockups)</h1>
+  <p>For reaction, not pixel-final. "Cashew, but premium": quiet tonal surfaces, a single accent (dynamic in the app; ink indigo <code>#4A55B8</code> here), serif numerals on dashboards, sans everywhere else, inset grouped islands, and everything you tap sits in the lower part of the screen. The money colours are the plan's exact tokens. Every amount carries a sign or a label, so colour is never the only cue. All data is fake.</p>
+  <p>Open questions shown here: rows show expenses in neutral text with "−" and totals in red (Q2); bottom navigation is Home · Budgets · Upcoming · More (Q6).</p>
+  <button onclick="toggleTheme()">Toggle light / dark</button>
+  <button onclick="document.body.classList.toggle('show-reach')">Toggle reach line</button>
+</header>
+
+<div class="row" id="screens">
+
+<!-- HOME -->
+<figure><div class="phone light">
+  <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
+  <div class="hdr">
+    <div class="acts"><span>⌕</span><span>⚲</span><span>⋮</span></div>
+    <div class="switcher"><span>‹</span><b>October 2026</b><span>›</span></div>
+    <div class="hero neg">−₹48,250<small>.40</small></div>
+    <div class="label">spent this month</div>
+    <div class="chips"><span class="chip pos">+₹1,20,000 in</span><span class="chip neutral">net +₹71,749.60</span></div>
+  </div>
+  <div class="reach"></div>
+  <div class="content">
+    <div class="dayhead"><span>Today · Wed 29</span><span>−₹1,040.00</span></div>
+    <div class="island">
+      <div class="item"><div class="g coral">🍔</div><div class="t"><div class="t1">Swiggy order</div><div class="t2">Food › Delivery · HDFC</div></div><div class="amt">−₹540.00</div></div>
+      <div class="item"><div class="g amber">⛽</div><div class="t"><div class="t1">Fuel</div><div class="t2">Transport <span class="pill unv">Unverified</span></div></div><div class="amt">−₹500.00</div></div>
+    </div>
+    <div class="dayhead"><span>Tue 28</span><span class="pos">+₹1,20,000.00</span></div>
+    <div class="island">
+      <div class="item"><div class="g emerald">💼</div><div class="t"><div class="t1">Salary</div><div class="t2">Income · HDFC</div></div><div class="amt pos">+₹1,20,000.00</div></div>
+      <div class="item"><div class="g slate sym">⇄</div><div class="t"><div class="t1">Card bill payment</div><div class="t2">HDFC → ICICI card</div></div><div class="amt">₹12,000.00</div></div>
+    </div>
+  </div>
+  <div class="fab">+</div>
+  <div class="nav"><div class="on"><span class="ic">⌂</span>Home</div><div><span class="ic">◔</span>Budgets</div><div><span class="ic">↻</span>Upcoming</div><div><span class="ic">⋯</span>More</div></div>
+</div><figcaption><b>Home / month list</b>: a dashboard header (serif hero, rolling digits). The header collapses to a 64dp bar on scroll and snaps. The FAB grows into the add screen.</figcaption></figure>
+
+<!-- ADD -->
+<figure><div class="phone light">
+  <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
+  <div class="hdr" style="justify-content:center;">
+    <div class="acts left"><span>✕</span></div>
+    <div class="seg"><span class="on">Expense</span><span>Income</span><span>Transfer</span></div>
+    <div class="center" style="margin-top:26px; font:500 44px var(--sans); font-variant-numeric:tabular-nums;">₹250</div>
+    <div class="center label" style="margin-top:6px; font-size:15px; color:var(--on);">Swiggy order<span style="color:var(--primary)">|</span></div>
+  </div>
+  <div class="reach"></div>
+  <div class="content" style="padding-top:4px;">
+    <div class="chips" style="margin:0 2px 12px;">
+      <span class="chip sel"><span class="g sm coral">🍔</span>Food › Delivery</span>
+      <span class="chip sel"><span class="g sm sky">🏦</span>HDFC</span>
+      <span class="chip sel"><span class="g sm violet">📅</span>Today</span>
+      <span class="chip sel"><span class="g sm slate">#</span>Tags</span>
+    </div>
+  </div>
+  <div class="keypad">
+    <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+    <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+    <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+    <div class="key">.</div><div class="key">0</div><div class="key">⌫</div>
+  </div>
+  <div class="bab"><div class="btn p">Save ₹250.00</div></div>
+</div><figcaption><b>Add transaction</b>: everyday screen (sans). Amount on top, and every control (chips that open bottom-sheet pickers, keypad, Save) in the thumb zone.</figcaption></figure>
+
+<!-- BUDGETS -->
+<figure><div class="phone light">
+  <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
+  <div class="hdr">
+    <div class="acts"><span>+</span><span>⋮</span></div>
+    <div class="dtitle">Budgets</div>
+    <div class="hero" style="font-size:34px; margin-top:6px;">₹48,250 <span style="font-size:20px; color:var(--on-var)">of ₹60,000</span></div>
+    <div class="label">October · 3 days left</div>
+    <div class="meter" style="color:var(--warn)"><i style="width:72%; background:var(--warn)"></i><i class="u" style="left:72%; width:8%"></i><span class="tick" style="left:80%"></span></div>
+    <div class="t2" style="margin-top:8px;"><span class="pill th">80% · alert</span><span>▒ includes ₹4,800 unverified</span></div>
+  </div>
+  <div class="reach"></div>
+  <div class="content" style="padding-top:10px;">
+    <div class="island">
+      <div class="item bud" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g emerald">🛒</div><div class="t1">Groceries</div></div><div class="amt">₹6,500 <span style="color:var(--on-var);font-weight:400">/ ₹8,000</span></div></div>
+        <div class="meter" style="color:var(--warn)"><i style="width:74%; background:var(--warn)"></i><i class="u" style="left:74%; width:7%"></i><span class="tick" style="left:80%"></span></div>
+        <div class="t2" style="margin-top:6px;"><span class="pill th">81% ⚠</span><span>₹1,500 left</span></div></div>
+      <div class="item bud" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g coral">🍽️</div><div class="t1">Dining out</div></div><div class="amt neg">₹4,200 <span style="color:var(--on-var);font-weight:400">/ ₹3,000</span></div></div>
+        <div class="meter"><i style="width:100%; background:var(--neg)"></i></div>
+        <div class="t2" style="margin-top:6px;"><span class="pill over">Over by ₹1,200</span></div></div>
+      <div class="item bud" style="display:block;"><div class="top"><div style="display:flex;gap:12px;align-items:center;"><div class="g amber">🚕</div><div class="t1">Transport</div></div><div class="amt">₹900 <span style="color:var(--on-var);font-weight:400">/ ₹2,500</span></div></div>
+        <div class="meter"><i style="width:36%; background:var(--pos)"></i><span class="tick" style="left:80%"></span></div>
+        <div class="t2" style="margin-top:6px;"><span class="pill ok">₹1,600 left</span></div></div>
+    </div>
+  </div>
+  <div class="nav"><div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◔</span>Budgets</div><div><span class="ic">↻</span>Upcoming</div><div><span class="ic">⋯</span>More</div></div>
+</div><figcaption><b>Budgets</b>: dashboard (serif). Each ProgressMeter shows the verified fill, a <i>hatched</i> unverified segment (B-3, not colour alone) and a threshold tick. Status is spelled out in pills.</figcaption></figure>
+
+<!-- DETAIL -->
+<figure><div class="phone light">
+  <div class="status"><span>9:41</span><span>▂▄▆ 100%</span></div>
+  <div class="hdr" style="align-items:center; text-align:center;">
+    <div class="acts left"><span>←</span></div><div class="acts"><span>⋮</span></div>
+    <div class="g big coral">🍔</div>
+    <div style="font:500 32px var(--sans); font-variant-numeric:tabular-nums; margin-top:12px;" class="neg">−₹540.00</div>
+    <div style="font-size:16px; margin-top:4px;">Swiggy order</div>
+    <div class="t2" style="justify-content:center; margin-top:6px;">Food › Delivery <span class="pill ver">Verified</span></div>
+  </div>
+  <div class="reach"></div>
+  <div class="content">
+    <div class="island" style="padding:4px 0;">
+      <div class="item kv"><span>Account</span><span>HDFC Savings ›</span></div>
+      <div class="item kv"><span>Date</span><span>Wed 29 Oct, 1:05 pm</span></div>
+      <div class="item kv"><span>Tags</span><span>#work #lunch</span></div>
+      <div class="item kv"><span>Source</span><span>Manual · by Akash</span></div>
+    </div>
+    <div class="sect">History</div>
+    <div class="island">
+      <div class="item"><div class="t"><div class="t1" style="font-variant-numeric:tabular-nums">Amount ₹500.00 → ₹540.00</div><div class="t2">by Akash on Pixel · 29 Oct, 1:10 pm</div></div></div>
+      <div class="item"><div class="t"><div class="t1">Created</div><div class="t2">by Akash on Pixel · 29 Oct, 1:05 pm</div></div></div>
+    </div>
+  </div>
+  <div class="bab"><div class="btn s">Delete</div><div class="btn p">Edit</div></div>
+</div><figcaption><b>Transaction detail</b>: the glyph and amount fly in from the list row (shared elements). Facts and audit history sit in grouped islands, with Edit and Delete in reach.</figcaption></figure>
+
+</div>
+<script>
+  function toggleTheme(){
+    document.querySelectorAll('.phone').forEach(p=>{ p.classList.toggle('light'); p.classList.toggle('dark'); });
+    document.body.classList.toggle('page-dark');
+  }
+</script>
+</body>
+</html>

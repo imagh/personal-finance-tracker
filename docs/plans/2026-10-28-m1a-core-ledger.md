@@ -84,7 +84,9 @@ Late-2024 line per `docs/TECHNICAL.md` §7.1; exact patch **[Verify]** at instal
 | detekt plugin | 1.23.7 | lint (plain `detekt` task; no type resolution) |
 | OWASP dependency-check plugin | 11.1.1 | vulnerability scan; `NVD_API_KEY` from env, never committed |
 
-Rejected: Paging, WorkManager, Hilt, kotlinx-serialization, Turbine, androidx.security-crypto (deprecated), Kover (built-in JaCoCo suffices), material-icons-extended (large; use core icons).
+Rejected: Paging, WorkManager, Hilt, kotlinx-serialization, Turbine, androidx.security-crypto (deprecated), Kover (built-in JaCoCo suffices), material-icons-extended (large). Icons are curated Material Symbols drawables instead, and `material-icons-core` is banned too (design-system plan §3.6).
+
+Note (2026-10-29): Material 3 resolves to **1.3.1** through the Compose BOM, not 1.3.0. The design-system plan adds Roborazzi 1.36.0 for screenshot tests (its §3.8).
 
 ### 3.4 Reuse by layer (owner decision, 2026-10-28)
 
@@ -108,11 +110,27 @@ Code is abstract *at its own layer* so it is reused, not copied: one shared buil
 | app data | `@Embedded MetaColumns` with one `MetaColumns ↔ EntityMeta` mapper; generic `BaseDao<E>` (insert, update); `RoomEntityRepository<T, E, Id>` base taking the DAO and a mapper | every Room repository | A4a |
 | app tests | `TestDatabase` factory (Robolectric) and `MigrationTestSupport` for every `migrateNToN+1` test and the chain test | all app tests | A4a |
 | app UI (`ui/common/`) | `UiState` convention, `FormState` field validation, `EditFormScaffold`, `NameField` | all edit screens | A5 |
-| app UI | `EntityListScreen` (active and archived sections, FAB, empty state), `UndoDeleteSnackbar`, `AmountField` (wraps `Paise.parse` and shows the error), `MoneyText`, `AccountPicker` | accounts, categories, tags, transactions, budgets, recurring, loans, goals | B2 |
+| app UI | `EntityListScreen` (active and archived sections, FAB, empty state), `UndoDeleteSnackbar`, `AmountField` (wraps `Paise.parse` and shows the error), `AccountPicker` (`MoneyText` moved to design-system DS5) | accounts, categories, tags, transactions, budgets, recurring, loans, goals | B2 |
 | app UI | `CategoryPicker` (B4), `TagPicker` (B5), `DateField` (C4) | transactions, budgets, recurring, loans | B4, B5, C4 |
 | app UI | `AuditHistoryList`: a generic history view for every detail screen, not only transactions | transaction, loan, goal, budget and recurring detail | C5 |
 
 From B1 on, each entity step **composes** `EntityMeta`, `AuditedWriter`, `EntityRepository`/`RoomEntityRepository`, `EntityListScreen` and `EditFormScaffold`, so the step contains only that entity's own rules.
+
+### 3.5 Design system (owner decision, 2026-10-29)
+
+Every screen is built on the design system in [`2026-10-29-m1a-design-system.md`](2026-10-29-m1a-design-system.md): `PftTheme` tokens (colour, type, shape, spacing, motion), the one-hand `CollapsingHeaderScaffold` and `BottomActionBar`, `MoneyText`/`MoneyTone`, `CategoryGlyph` and the other shared components. Its PRs DS1–DS5 land in `feat/m1a-foundation` before A5. Appearance settings and custom-font import (AP1, AP2) get their own slice after A-final. How each M1a step consumes it is listed below (the design plan's §6.3, applied here):
+
+| M1a step | Change |
+|---|---|
+| **A5** | **Navigation:** `PftNavHost` uses `PftMotion` nav transitions, and the manifest sets `enableOnBackInvokedCallback="true"`. `MainActivity` swaps `DevContent()` for the nav host, and the catalogue becomes a debug-only route. **Forms:** `EditFormScaffold` = `CollapsingHeaderScaffold(Standard)` + `BottomActionBar(Save)` + `imePadding`, and `SetupScreen` is its first consumer. `SetupFlowTest` also asserts that Continue is in the bottom bar. **Lint:** `SafeLog` uses a detekt `ForbiddenImport` of `android.util.Log`, not `ForbiddenMethodCall`, which needs type resolution and would silently do nothing. |
+| **B2** | `EntityListScreen` = `CollapsingHeaderScaffold` + M3 `ListItem` + `EmptyState`. `MoneyText` comes from DS5. **New here:** `PftBottomSheet` (first consumer `AccountPicker`). The account type badge is a `CategoryGlyph` with a symbol. |
+| **B3** | `CategoryColour` enum and `CategoryIcon` in core, with validation tests in `CategoryServiceTest`. `DefaultCategories` assigns symbols and colours. |
+| **B4** | Category edit has a symbol grid (`PftSymbol`), an emoji tab (quick-pick plus keyboard, with `EmojiInputValidator` and its test) and palette swatches. `CategoryPicker` is a `PftBottomSheet` grid of `CategoryGlyph`. A shared `CategoryIcon → GlyphSource` mapper goes in `ui/common` (consumers: C4, D4, E4). |
+| **C4** | Home uses `HeaderStyle.Dashboard` with a hero `MoneyText(animate = true)`. **New here:** `PeriodSwitcher` and `TransactionRow` (shared), plus `AmountKeypad` (local). FAB → add uses a container transform via `SharedElements`; list insert and delete animate; unverified rows show the `StatusChip`. |
+| **C5** | List → detail shared elements (glyph and amount). The detail is built on `GroupedSection` + `AuditHistoryList` + `BottomActionBar(Edit, Delete)`. |
+| **D4** | **New here:** `ProgressMeter` (shared). Its test asserts that unverified spend is drawn with a distinct pattern (screenshot) and labelled in semantics (B-3). The budgets screen uses the Dashboard header. |
+| **E4 / F3 / G2** | E4 uses `StatusChip` for Overdue/Paused/Cancelled. F3 and G2 use `ProgressMeter`. G2 completion uses the `bouncy` spring, which reduced motion skips. |
+| **H1 / H3** | H1: the lock screen uses `PftTheme`, and the timeout row joins AP1's `SettingsScreen`. H3: motion is judged on a minified release build, and jank numbers go in learnings. |
 
 ## 4. Data model & schema
 
@@ -314,9 +332,10 @@ Adds `:core:recurring`.
 | A1 | Gradle skeleton, gates, manifest hardening | `feat/m1a-foundation` | — | build infrastructure only |
 | A2 | `core/money` | `feat/m1a-foundation` | A1 | one pure value type |
 | A3 | ledger IDs, audit model, runner, identity service | `feat/m1a-foundation` | A2 | pure core contracts plus fakes |
+| DS1–DS5 | design system (see the design-system plan's PR table) | `feat/m1a-foundation` | A1 (DS5 also needs A2) | one design concern each; A5 depends on DS5 |
 | A4a | Room v1, audit triggers, Room runner/repos | `feat/m1a-foundation` | A3 | persistence adapter only |
 | A4b | SQLCipher, Keystore key, pre-migration backup | `feat/m1a-foundation` | A4a | security-critical, isolated for focused review |
-| A5 | SafeLog, AppContainer, first-run setup UI | `feat/m1a-foundation` | A4b | first user-visible flow |
+| A5 | SafeLog, AppContainer, first-run setup UI (on the design system) | `feat/m1a-foundation` | A4b, DS5 | first user-visible flow |
 | A-final | foundation | `main` | A1–A5 | encrypted app with a profile |
 | B1 / B2 | accounts core+Room / accounts UI | `feat/m1a-ledger-setup` | A-final | one entity, then its screen |
 | B3 / B4 | categories core+Room / categories UI | `feat/m1a-ledger-setup` | B1 | hierarchy rules isolated from UI |
@@ -377,7 +396,7 @@ About 32 slice PRs and 8 integration PRs, each sized for one session (TECHNICAL.
 - **Queries:** Room DAOs only, every query parameterised; FTS `MATCH` input is passed as a bound parameter and stripped of FTS operators to avoid query-syntax errors (not injection, but crash-proofing). No `@RawQuery`.
 - **Secrets:** the DB key is generated on device, wrapped by Keystore and kept in `noBackupFilesDir`; it is never logged and its bytes are zeroed after use. Signing comes from env; `NVD_API_KEY` from env. `.gitignore` already blocks keystores and `local.properties`.
 - **Manifest:** no permissions except `USE_BIOMETRIC`; no `INTERNET` in M1a (strongest possible "nothing leaves the device"); `allowBackup=false` plus `dataExtractionRules` excluding all; only the launcher activity is exported; `FLAG_SECURE` on the single activity covers every screen and recents.
-- **Logs:** only through `SafeLog` with typed, non-sensitive `LogEvent`s. A detekt `ForbiddenMethodCall` rule bans `android.util.Log.*` and `println` outside `SafeLog`.
+- **Logs:** only through `SafeLog` with typed, non-sensitive `LogEvent`s. A detekt `ForbiddenImport` rule bans `android.util.Log` outside `SafeLog` (`ForbiddenMethodCall` needs type resolution, which our detekt setup doesn't run), and `println` is banned in production code.
 - **Fail closed:** missing or invalid DB key → error screen, no new DB; no device credential → app stays locked; release build without a signing env → build fails.
 - **Audit immutability:** DB triggers plus an insert-only DAO.
 - **Dependencies:** listed in §3.3, pinned, locked, checksum-verified, OWASP scan in the PR checklist; no analytics or crash SDKs.
