@@ -7,10 +7,10 @@ later slices) the Room/SQLCipher implementations of the `core` repository interf
 handling, app lock and safe logging. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1–DS2 theming.** The app launches a `FLAG_SECURE`, edge-to-edge
+Status: **A1 skeleton plus DS1, DS2 and DS4 (theming, motion, one-hand layout).** The app launches a `FLAG_SECURE`, edge-to-edge
 window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
 Screens, persistence and DI arrive in slices A4a–A5 (plan
-`docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system in DS3–DS5 (plan
+`docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system in DS3 and DS5 (plan
 `docs/plans/2026-10-29-m1a-design-system.md`; what is built: `docs/architecture/design-system.md`).
 
 ## Responsibilities and boundaries
@@ -47,7 +47,7 @@ screenshot tests work. `ManifestHardeningTest` runs against both variants.
 Entry point: `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
 as they land (`data/common`, `ui/common`).
 
-### `ui/theme` (design-system tokens, DS1–DS2)
+### `ui/theme` (design-system tokens, DS1, DS2, DS4)
 
 | Symbol | What it is |
 |---|---|
@@ -56,7 +56,10 @@ as they land (`data/common`, `ui/common`).
 | `PftTheme.type` | `PftTypography`: `amountHero` (48/60, display font, `tnum`+`lnum`), `amountLarge` (32/40, sans), `amountRow` (16/24, sans, `tnum`) |
 | `PftTheme.shapes`, `MaterialTheme.shapes` | `PftShapes.glyph` (category badge, 30% corners); M3 shapes are 6/10/16/24/32dp |
 | `PftTheme.spacing` | `PftSpacing`: `xxs` 2, `xs` 4, `sm` 8, `md` 12, `lg` 16, `gutter` 20, `xl` 24, `xxl` 32, `huge` 48 dp |
-| `MaterialTheme.typography` | The M3 scale, **every role in the sans text family** (`FontFamily.Default`); `headlineLarge` 32/40 semibold and `titleLarge` 22/28 medium are the header titles. Motion accessors join in DS4 |
+| `MaterialTheme.typography` | The M3 scale, **every role in the sans text family** (`FontFamily.Default`); `headlineLarge` 32/40 semibold and `titleLarge` 22/28 medium are the header titles. |
+| `PftTheme.motion` | `PftMotion`: springs `snappy` (0.30 s, bounce 0.10), `smooth` (0.45 s, 0), `gentle` (0.60 s, 0), `bouncy` (0.50 s, 0.25) as `SpringSpec<Float>`; `navEnter`/`navExit`/`navPopEnter`/`navPopExit` (25% slide + fade on `smooth`); `PRESSED_SCALE` 0.97. A constant, not a CompositionLocal |
+| `iosSpring<T>(durationMillis, bounce)` | Converts a SwiftUI-style spring to a `SpringSpec<T>` (`stiffness = (2π/duration)²`, `dampingRatio = 1 − bounce`); throws `IllegalArgumentException` for bounce outside `[0, 1)` or duration ≤ 0 |
+| `Modifier.pressScale()` | Scales to 0.97 with `snappy` while pressed; observes pointers only (does not consume). Put it before `clickable` |
 | `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour on, bundled serif |
 | `DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }` | Font of the hero number only; the serif is never used for titles (owner decision Q10) |
 | `ThemeMode { SYSTEM, LIGHT, DARK }` | `SYSTEM` follows the system night mode |
@@ -73,6 +76,21 @@ Rules: never draw money text on `surfaceVariant`; use `background`, `surface` or
 `surfaceContainer*` step (dark `negative` on `surfaceVariant` is 4.23:1, below 4.5). Do not wrap an M3 component just to restyle it (style comes from the theme); raw colour
 values and design `dp`/`sp` live only in `ui/theme` (detekt's `MagicNumber` is relaxed there for
 that reason). Colour is never the only cue: every amount carries a sign and every status a word.
+
+### `ui/common` (shared components, DS4)
+
+| Symbol | What it is |
+|---|---|
+| `CollapsingHeaderScaffold(title, style, subtitle, hero, heroCaption, period, actions, bottomBar, floatingActionButton) { LazyListScope }` | The screen frame: M3 `TopAppBarState` + `exitUntilCollapsedScrollBehavior` (snap on `PftTheme.motion.smooth`), expanded height `clamp(0.38 x window, 200dp, 360dp)`, 64dp collapsed bar, collapsed-only under 560dp of window height, expanded while the list fits. Owns the `LazyColumn`. Edge-to-edge (`safeDrawing`); `bottomBar` is `imePadding()`-aware |
+| `HeaderStyle { Dashboard, Standard }` | `Dashboard`: `titleLarge` title about 12% down plus the hero, caption and period stepper in the lower (thumb) band. `Standard`: `headlineLarge` title centred in the middle, no hero. All titles are sans, centred and read-only (Q10) |
+| `HeaderPeriod(onPrevious, onNext)` | Dashboard only: draws the ‹ › stepper and makes a sideways swipe of more than 48dp on the expanded header step the period |
+| `BottomActionBar(primary, modifier, secondary)`, `BottomBarAction(label, enabled, onClick)` | One full-width primary button, or an outlined secondary plus the primary on the end side; at least 56dp tall; pads by `safeDrawing` (so it clears the IME and navigation bar) |
+
+The hero slot is set in `PftTheme.type.amountHero` by default (the serif is the number only). Actions
+go in the top row (back, search, filter, overflow; secondary only), add actions in the FAB. Both
+components are shared (named consumers in `docs/architecture/code-structure.md`); do not wrap them
+to restyle. `HeaderSamples.kt` holds the fake-data samples that feed the previews, the debug
+catalogue and `HeaderScreenshotTest`.
 
 ### Window theme
 
@@ -92,8 +110,8 @@ pre-Compose window colour would be wrong. AP1 fixes this with `UiModeManager.set
 ### Debug and release source sets
 
 `DevContent()` is what `MainActivity` shows until A5 brings the navigation host. In `src/debug` it
-shows `DesignCatalog`: the token sheet with toggles for light/dark, hero font and font scale (use it
-to check tokens on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
+shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar and both header styles, with toggles for light/dark, hero font and font scale (use it
+to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
 twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
 (`ui/theme`) so the screenshot tests can render it on both unit-test variants; it is unreferenced by
 release code and R8 will drop it once minification is on.
@@ -142,7 +160,9 @@ and diff images land in `app/build/outputs/roborazzi/`.
 Design-token tests: `ColorContrastTest` (JUnit 5, WCAG contrast of every colour pair, light and dark),
 `ThemeResolutionTest`, `PftThemeModeTest` (needs the `+night` qualifier), `WindowThemeTest`,
 `PftTypographyTest`, `PftShapesTest`, `PftSpacingTest`, `BundledFontTest` (font hash and OFL text) and
-`TokenSheetScreenshotTest` (all Robolectric); `DesignCatalogTest` lives in `src/testDebug` because
+`TokenSheetScreenshotTest` (all Robolectric). DS4 adds `PftMotionTest` and `HeaderHeightTest` (JUnit 5, pure),
+`NavTransitionTest`, `PressScaleTest`, `CollapsingHeaderScaffoldTest` (real nested scroll, clock stepped by hand),
+`BottomActionBarTest` and `HeaderScreenshotTest` (goldens for both header styles, expanded and collapsed, and the bar); `DesignCatalogTest` lives in `src/testDebug` because
 the catalogue is debug-only.
 
 Robolectric tests use the JUnit 4 runner and execute on the JUnit Vintage engine, because
