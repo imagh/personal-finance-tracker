@@ -55,6 +55,7 @@ extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         "settings.gradle.kts",
         "app/build.gradle.kts",
         "core/money/build.gradle.kts",
+        "core/ledger/build.gradle.kts",
     )
 }
 

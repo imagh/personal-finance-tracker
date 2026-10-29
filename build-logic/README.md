@@ -58,6 +58,11 @@ the rows above would make the Rule A gate itself regression-tested; planned afte
 
 Plugin ids above. Version pins are read from the root `gradle/libs.versions.toml` through the
 `libs` catalog (build-logic's `settings.gradle.kts` imports it), so there is one place to pin.
+A core module that must share fakes with other modules applies Gradle's `java-test-fixtures`
+itself (`:core:ledger` does); `pft.lint` already lints `src/testFixtures/kotlin`, and the JaCoCo
+gate counts only `src/main`, so fixtures do not need their own tests to meet the floor (they are
+exercised by the module's tests).
+
 Kotlin, ktlint and detekt plugin artifacts are `compileOnly` here and loaded once by the root build
 (`alias(...) apply false`); bundling them would load the Kotlin plugin twice in different
 classloaders.

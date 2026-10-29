@@ -1,7 +1,7 @@
 # Architecture overview
 
-How Personal Finance Tracker is put together. Status: **M1a, slice DS1** (colour tokens and `PftTheme` on the A1 skeleton). This
-file is refined as each slice lands (next: A3 adds the ledger contracts). Rules live in
+How Personal Finance Tracker is put together. Status: **M1a, slice A3** (the ledger foundations on top of the A1 skeleton and the DS
+tokens). This file is refined as each slice lands (next: A4a adds the Room implementations). Rules live in
 `CLAUDE.md` §3 and `docs/TECHNICAL.md` §6; the M1a plan is
 `docs/plans/2026-10-28-m1a-core-ledger.md`.
 
@@ -25,7 +25,7 @@ modules that have **no Android imports**, so they build and test on a plain JVM 
           money <- ledger <- budget ; ledger <- recurring
 ```
 
-Only `:app` and `:core:money` exist today (A1). `ledger`, `budget` and `recurring` are added in
+`:app`, `:core:money` and `:core:ledger` exist today. `budget` and `recurring` are added in
 the slice that needs them (plan §3.1). There is no `core/shared` package yet; promote shared code
 to it the day a module that must not depend on `ledger` needs it (likely parsing in M1b).
 
@@ -37,9 +37,39 @@ or a composable.
 
 ## The core/app boundary
 
-`core` defines the repository interfaces (plus `TransactionRunner` and `AuditLog`); `app`
-implements them with Room. These are the only swap-boundary interfaces in M1a (CLAUDE.md
-abstraction bar). Their concrete list is added in A3.
+`core` defines the persistence contracts; `app` implements them with Room (step A4a). These are the
+only swap-boundary interfaces in M1a (CLAUDE.md abstraction bar). `:core:ledger` defines:
+
+| Interface | Role | Room implementation (A4a) |
+|---|---|---|
+| `TransactionRunner` | `inTransaction { }`: the write and its audit entry commit or roll back together (INT-4) | `RoomTransactionRunner` over `withTransaction` |
+| `AuditLog` | insert-only audit trail (INT-2); immutability also enforced by DB triggers | `RoomAuditLog` |
+| `EntityRepository<T, Id>` | `get`, `getLive`, `insert`, `update`; extended by every entity's repository | `RoomEntityRepository` base |
+| `IdentityRepository` | users and devices | `RoomIdentityRepository` |
+| `AppSettingsRepository` | runtime settings | `RoomAppSettingsRepository` |
+
+Core tests use in-memory fakes of all of these (`:core:ledger` test fixtures); the in-memory runner
+snapshots and restores its state when a block throws, so atomicity is testable on a plain JVM.
+
+## The audited write path
+
+Every ledger entity (account, transaction, ...) is written through `AuditedWriter`, never by calling
+a repository and the audit log separately:
+
+```
+service rule check -> AuditedWriter.create/update/delete/restore/archive
+                        -> runner.inTransaction {
+                             identity.requireIdentity()          // attribution (fails closed)
+                             repository.insert/update(entity)    // meta stamped by the writer
+                             recorder.record(AuditDiff.diff(old, new))   // same transaction
+                           }
+```
+
+A no-op edit (no audited field changed) writes nothing. Deletes are tombstones (INT-3). Each
+entity composes `EntityMeta` and implements `LedgerEntity`/`Auditable`; its service holds only its
+own rules (the reuse-by-layer table is in `docs/architecture/code-structure.md`). First-run setup
+(`IdentityService`) and runtime settings (`SettingsService`) are audited through the same
+`AuditRecorder`, since they carry no `EntityMeta`.
 
 ## Build and quality gates
 
