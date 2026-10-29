@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!-- ui-tooling (debug only) registers an exported PreviewActivity for Android Studio's
+             "run preview on device". Only the launcher activity may be exported
+             (ManifestHardeningTest), and static previews and the screenshot tests do not need it. -->
+        <activity
+            android:name="androidx.compose.ui.tooling.PreviewActivity"
+            tools:node="remove" />
+    </application>
+</manifest>

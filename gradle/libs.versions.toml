@@ -11,6 +11,7 @@ junitBom = "5.11.3"
 junit4 = "4.13.2"
 kotest = "5.9.1"
 robolectric = "4.14.1"
+roborazzi = "1.36.0"
 androidxTestCore = "1.6.1"
 ktlintPlugin = "12.1.2"
 ktlintEngine = "1.4.1"
@@ -28,6 +29,9 @@ detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plu
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
+# @Preview / @PreviewLightDark annotations (tiny). The renderer (ui-tooling) is debug-only.
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 # Compose tests (design-system plan §3.8). ui-test-manifest is deliberately NOT used: it adds an
 # exported ComponentActivity to the debug manifest (ManifestHardeningTest forbids that); the JVM
 # tests register the host activity with Robolectric instead (HostedComposeRule).
@@ -44,6 +48,10 @@ kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+# Screenshot tests (design-system plan §3.8): 1.36.0 is built against Robolectric 4.14.1 / Compose 1.7.5.
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -52,4 +60,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp" }
