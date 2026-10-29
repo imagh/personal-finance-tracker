@@ -58,4 +58,12 @@ sealed class LedgerError(
      * fails closed rather than treating the device as new and creating a second identity.
      */
     class IdentityCorrupt : LedgerError("The stored identity is inconsistent")
+
+    /** A setting key is not a lower-case identifier of the allowed length, or is reserved. */
+    class InvalidSettingKey : LedgerError("Invalid setting key")
+
+    /** A setting value is longer than [max] characters. */
+    class SettingValueTooLong(
+        val max: Int,
+    ) : LedgerError("A setting value may be at most $max characters")
 }

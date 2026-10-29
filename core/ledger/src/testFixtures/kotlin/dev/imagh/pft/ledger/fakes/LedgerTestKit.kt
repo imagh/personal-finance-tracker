@@ -5,6 +5,7 @@ import dev.imagh.pft.ledger.audit.AuditRecorder
 import dev.imagh.pft.ledger.identity.Identity
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
+import dev.imagh.pft.ledger.settings.SettingsService
 
 /**
  * The core object graph wired over in-memory fakes, so a service test starts with one line
@@ -34,6 +35,9 @@ class LedgerTestKit {
 
     /** First-run setup and current identity. */
     val identity = IdentityService(store, identityRepository, settingsRepository, recorder, ids, clock)
+
+    /** Audited runtime settings. */
+    val settings = SettingsService(store, settingsRepository, identity, recorder, clock)
 
     /** An [IdentityService] over the same fakes whose audit entries go to [log] (to inject failures). */
     fun identityServiceWith(log: AuditLog) =

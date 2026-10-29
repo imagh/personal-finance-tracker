@@ -91,6 +91,8 @@ class ValidationTest :
             LedgerLimits.MAX_TITLE_LENGTH shouldBe 200
             LedgerLimits.MAX_DESCRIPTION_LENGTH shouldBe 2_000
             LedgerLimits.MAX_AMOUNT shouldBe Paise.MAX_AMOUNT
+            LedgerLimits.MAX_SETTING_KEY_LENGTH shouldBe 64
+            LedgerLimits.MAX_SETTING_VALUE_LENGTH shouldBe 256
         }
 
         test("errors never echo user content, only the kind or the limit") {

@@ -18,6 +18,12 @@ object LedgerLimits {
     /** Longest transaction description, in characters (plan §3.2 decision 8). */
     const val MAX_DESCRIPTION_LENGTH = 2_000
 
+    /** Longest app-setting key, in characters. */
+    const val MAX_SETTING_KEY_LENGTH = 64
+
+    /** Longest app-setting value, in characters. */
+    const val MAX_SETTING_VALUE_LENGTH = 256
+
     /** Largest amount on a single transaction: Rs 1e11, the same bound the amount parser enforces. */
     val MAX_AMOUNT: Paise = Paise.MAX_AMOUNT
 }
