@@ -42,7 +42,8 @@ fun resolveColorScheme(
  * are styled from it, never wrapped to restyle them.
  *
  * The M3 type scale is the sans text family throughout; only `PftTheme.type.amountHero` takes the
- * display font ([ThemePrefs.displayFont]). Shape, spacing and motion tokens join in DS2 and DS4.
+ * display font ([ThemePrefs.displayFont]). Shapes come from [PftShapes]; the spacing scale is
+ * [PftSpacing] (a fixed grid, so its local needs no provider). Motion joins in DS4.
  */
 @Composable
 fun PftTheme(
@@ -61,12 +62,20 @@ fun PftTheme(
     val typography = remember(textFamily) { pftMaterialTypography(textFamily) }
     val pftType =
         remember(prefs.displayFont, textFamily) { pftType(displayFamily(prefs.displayFont, textFamily), textFamily) }
-    CompositionLocalProvider(LocalMoneyColors provides moneyColors(dark), LocalPftType provides pftType) {
-        MaterialTheme(colorScheme = colorScheme, typography = typography, content = content)
+    CompositionLocalProvider(LocalMoneyColors provides moneyColors(dark), LocalPftTypography provides pftType) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = typography,
+            shapes = PftShapes.material,
+            content = content,
+        )
     }
 }
 
-private val LocalPftType = staticCompositionLocalOf { pftType(NewsreaderFamily, FontFamily.Default) }
+// A fixed grid: the default is the only value, but a local lets tests and previews override it.
+private val LocalPftSpacing = staticCompositionLocalOf { PftSpacing() }
+
+private val LocalPftTypography = staticCompositionLocalOf { pftType(NewsreaderFamily, FontFamily.Default) }
 
 /** Accessors for the extended theme tokens provided by [PftTheme]. */
 object PftTheme {
@@ -80,5 +89,15 @@ object PftTheme {
     val type: PftTypography
         @Composable
         @ReadOnlyComposable
-        get() = LocalPftType.current
+        get() = LocalPftTypography.current
+
+    /** The shape tokens beyond M3's own (`MaterialTheme.shapes` carries the five M3 sizes). */
+    val shapes: PftShapes
+        get() = PftShapes
+
+    /** The spacing scale. */
+    val spacing: PftSpacing
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalPftSpacing.current
 }
