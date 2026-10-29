@@ -13,6 +13,11 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-10-29 — Each session works in its own git worktree
+- **Learning:** two Claude sessions shared the root checkout. One switched it to the A2 branch one second after the other created the DS2 branch, so DS2's six commits landed on top of A2 and had to be cherry-picked back out before PR #14. Owner rule: every session works in its own worktree.
+- **Why:** a checkout has one HEAD; any session that switches branches there silently moves every other session's next commit onto the wrong branch.
+- **How to apply:** before any branch work, `git worktree add <unique-parent>/personal-finance-tracker <branch>` and run every git, Gradle and file command there. Keep the folder name `personal-finance-tracker`: graphify titles `GRAPH_REPORT.md` after the checkout folder, and a DS2 refresh in a folder named `ds2-wt` committed that as the title. Give spawned agents the worktree path and forbid them from touching the root checkout. Never check out, reset or commit in the root checkout, run `git branch --show-current` before committing, and `git worktree remove` once the branch is pushed.
+
 ### 2026-10-29 — Header rule: serif only for the number, titles sans and away from it
 - **Learning:** in rendered mockups, a serif title over a serif number was too heavy, and a sans title directly above a serif number clashed. What worked: the serif sets only the dashboard hero number; every title is sans, read-only and centred high in the header with clear space above the hero; the hero, its caption and the ‹ › period stepper sit low, in the thumb zone. The owner also split Budgets into a list tab and a detail page.
 - **Why:** type pairing problems only showed once rendered at phone size; the wireframes looked fine. A read-only title can sit out of thumb reach, which frees the lower band for what you tap.
