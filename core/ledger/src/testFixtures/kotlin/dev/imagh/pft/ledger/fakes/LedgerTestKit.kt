@@ -2,6 +2,7 @@ package dev.imagh.pft.ledger.fakes
 
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
+import dev.imagh.pft.ledger.audit.AuditedWriter
 import dev.imagh.pft.ledger.identity.Identity
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
@@ -39,10 +40,16 @@ class LedgerTestKit {
     /** Audited runtime settings. */
     val settings = SettingsService(store, settingsRepository, identity, recorder, clock)
 
+    /** The audited write path every service uses. */
+    val writer = AuditedWriter(store, identity, recorder, clock)
+
     /** An [IdentityService] over the same fakes whose audit entries go to [log] (to inject failures). */
     fun identityServiceWith(log: AuditLog) =
         IdentityService(store, identityRepository, settingsRepository, AuditRecorder(log, ids, clock), ids, clock)
 
     /** Performs first-run setup as `Akash` on `Pixel` and returns that identity. */
     suspend fun initialise(): Identity = identity.initialise("Akash", "Pixel")
+
+    /** An [AuditedWriter] over the same fakes whose audit entries go to [log] (to inject failures). */
+    fun writerWith(log: AuditLog) = AuditedWriter(store, identity, AuditRecorder(log, ids, clock), clock)
 }
