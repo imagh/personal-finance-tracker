@@ -43,7 +43,7 @@ fun resolveColorScheme(
  *
  * The M3 type scale is the sans text family throughout; only `PftTheme.type.amountHero` takes the
  * display font ([ThemePrefs.displayFont]). Shapes come from [PftShapes]; the spacing scale is
- * [PftSpacing] (a fixed grid, so its local needs no provider). Motion joins in DS4.
+ * [PftSpacing] (a fixed grid, so a plain constant, not a CompositionLocal). Motion joins in DS4.
  */
 @Composable
 fun PftTheme(
@@ -72,8 +72,7 @@ fun PftTheme(
     }
 }
 
-// A fixed grid: the default is the only value, but a local lets tests and previews override it.
-private val LocalPftSpacing = staticCompositionLocalOf { PftSpacing() }
+private val Spacing = PftSpacing()
 
 private val LocalPftTypography = staticCompositionLocalOf { pftType(NewsreaderFamily, FontFamily.Default) }
 
@@ -95,9 +94,7 @@ object PftTheme {
     val shapes: PftShapes
         get() = PftShapes
 
-    /** The spacing scale. */
+    /** The spacing scale: a fixed 4dp grid, the same in every theme. */
     val spacing: PftSpacing
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalPftSpacing.current
+        get() = Spacing
 }
