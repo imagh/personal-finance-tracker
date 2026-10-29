@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.ResourceFont
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import dev.imagh.pft.R
@@ -72,6 +73,14 @@ class PftTypographyTest {
                 .type.amountHero.fontFamily
                 .isBundledNewsreader(),
         )
+    }
+
+    @Test
+    fun `the bundled hero font is pinned to weight 400 and the 48sp optical size`() {
+        val font = (resolve().type.amountHero.fontFamily as FontListFontFamily).fonts.single() as ResourceFont
+        val axes = font.variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }
+        assertEquals(400f, axes["wght"])
+        assertEquals(48f, axes["opsz"])
     }
 
     @Test
