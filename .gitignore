@@ -29,3 +29,13 @@ __pycache__/
 graphify-out/*
 !graphify-out/graph.json
 !graphify-out/GRAPH_REPORT.md
+
+# Gradle / Android build output (regenerated; never committed)
+.gradle/
+build/
+.kotlin/
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
