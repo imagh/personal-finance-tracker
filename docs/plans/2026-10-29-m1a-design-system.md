@@ -660,6 +660,7 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
   - Screenshots: Standard and Dashboard styles, expanded and collapsed, light and dark.
 - **Green:** `ui/theme/PftMotion.kt` (tokens, `iosSpring`, nav transition specs, `pressScale`), and `ui/common/{CollapsingHeaderScaffold,BottomActionBar}.kt`. Add both to the catalogue.
 - **Refactor:** `design-system.md` motion and one-hand sections. `code-structure.md` shared-blocks rows.
+- **Release guard (added 2026-10-30):** any `@Preview` or sample code DS4 adds (`ui/common/HeaderSamples`) is added to `mustBeRemoved` in `:app:verifyReleaseShrink` (`app/build.gradle.kts`), so R8 is shown to drop it.
 
 **DS5: content primitives** (needs A2 merged: `:app` gains `implementation(project(":core:money"))`)
 - **Red:**
