@@ -52,7 +52,7 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 
 | Fixture | Use |
 |---|---|
-| `InMemoryLedgerStore` | The fake `TransactionRunner` and home of every fake table. `inTransaction` snapshots all stores when the outermost block starts and **restores them if it throws**, so atomicity is testable in core. `newStore(idOf)` registers a new table |
+| `InMemoryLedgerStore` | The fake `TransactionRunner` and home of every fake table. `inTransaction` snapshots all stores when the outermost block starts and **restores them if any block at any depth throws**, even when an outer block swallows it, so atomicity is testable in core. `newStore(idOf)` registers a new table |
 | `InMemoryEntityStore<T, Id>` | A keyed, insertion-ordered table with primary-key behaviour (duplicate insert and missing update fail) |
 | `InMemoryEntityRepository<T, Id>` | `EntityRepository` over a store; extend it with an entity's own queries (`protected val rows`) |
 | `InMemoryAuditLog`, `InMemoryIdentityRepository`, `InMemoryAppSettingsRepository` | the fakes for this module's boundaries |

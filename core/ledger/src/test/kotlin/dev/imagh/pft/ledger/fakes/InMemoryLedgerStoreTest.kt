@@ -82,6 +82,37 @@ class InMemoryLedgerStoreTest :
             rows.all().shouldBeEmpty()
         }
 
+        test("an outer block that swallows an inner failure is still rolled back, like Room's nested transaction") {
+            val ledger = InMemoryLedgerStore()
+            val rows = ledger.newStore<Row, String> { it.id }
+            val result =
+                ledger.inTransaction {
+                    rows.insert(Row("outer", "1"))
+                    try {
+                        ledger.inTransaction {
+                            rows.insert(Row("inner", "2"))
+                            error("inner failed")
+                        }
+                    } catch (expected: IllegalStateException) {
+                        // swallowed: the outer block carries on and returns normally
+                    }
+                    rows.insert(Row("after", "3"))
+                    "returned"
+                }
+            result shouldBe "returned"
+            rows.all().shouldBeEmpty()
+        }
+
+        test("the failed mark does not leak into the next transaction") {
+            val ledger = InMemoryLedgerStore()
+            val rows = ledger.newStore<Row, String> { it.id }
+            ledger.inTransaction {
+                runCatching { ledger.inTransaction { error("inner failed") } }
+            }
+            ledger.inTransaction { rows.insert(Row("b", "2")) }
+            rows.all() shouldBe listOf(Row("b", "2"))
+        }
+
         test("nested blocks that succeed are committed together") {
             val ledger = InMemoryLedgerStore()
             val rows = ledger.newStore<Row, String> { it.id }
