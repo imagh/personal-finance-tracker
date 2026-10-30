@@ -90,23 +90,27 @@ object PftMotion {
     /** (0.50 s, bounce 0.25): rare celebration only (goal reached). */
     val bouncy: SpringSpec<Float> = iosSpring(BOUNCY_MS, BOUNCY_BOUNCE)
 
-    private val slide = iosSpring<IntOffset>(SMOOTH_MS, 0f)
+    /**
+     * `smooth` as a spring over `IntOffset`, for `slideIn*`/`slideOut*` transitions (rolling digits,
+     * screen pushes): the same (0.45 s, bounce 0) feel as [smooth], in the type a slide needs.
+     */
+    val smoothOffset: SpringSpec<IntOffset> = iosSpring(SMOOTH_MS, 0f)
 
     /** Push, the incoming screen: slides in from the end by 25% of the width while fading in. */
     val navEnter: EnterTransition =
-        slideInHorizontally(slide) { it / NAV_SLIDE_FRACTION } + fadeIn(smooth)
+        slideInHorizontally(smoothOffset) { it / NAV_SLIDE_FRACTION } + fadeIn(smooth)
 
     /** Push, the outgoing screen: slides out toward the start by 25% of the width while fading out. */
     val navExit: ExitTransition =
-        slideOutHorizontally(slide) { -it / NAV_SLIDE_FRACTION } + fadeOut(smooth)
+        slideOutHorizontally(smoothOffset) { -it / NAV_SLIDE_FRACTION } + fadeOut(smooth)
 
     /** Pop, the screen coming back: the reverse of [navExit]. */
     val navPopEnter: EnterTransition =
-        slideInHorizontally(slide) { -it / NAV_SLIDE_FRACTION } + fadeIn(smooth)
+        slideInHorizontally(smoothOffset) { -it / NAV_SLIDE_FRACTION } + fadeIn(smooth)
 
     /** Pop, the screen leaving: the reverse of [navEnter]. */
     val navPopExit: ExitTransition =
-        slideOutHorizontally(slide) { it / NAV_SLIDE_FRACTION } + fadeOut(smooth)
+        slideOutHorizontally(smoothOffset) { it / NAV_SLIDE_FRACTION } + fadeOut(smooth)
 }
 
 /**

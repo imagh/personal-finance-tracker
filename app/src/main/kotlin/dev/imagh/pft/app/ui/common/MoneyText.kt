@@ -1,16 +1,27 @@
 package dev.imagh.pft.app.ui.common
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -63,6 +74,11 @@ internal fun moneySign(
  * @param amount the figure; a magnitude, except for a [MoneySemantic.Balance], which may be negative.
  * @param semantic what the figure means, which decides the sign and tone.
  * @param size the amount style; [MoneySize.Row] is the default.
+ * @param animate roll the digits to the new figure when [amount] or [semantic] changes (a hero on
+ *   Home, for example). Each character is its own slot, aligned from the end so the units digit
+ *   keeps its column; the roll uses `PftMotion.smooth` and jumps to the end state under reduced
+ *   motion. Assistive technology still sees one string, and the text is correct as soon as the
+ *   state changes, never after the animation. Off by default (list rows do not animate).
  * @throws IllegalArgumentException if [amount] is negative and [semantic] is not a balance.
  */
 @Composable
@@ -71,20 +87,28 @@ fun MoneyText(
     semantic: MoneySemantic,
     modifier: Modifier = Modifier,
     size: MoneySize = MoneySize.Row,
+    animate: Boolean = false,
 ) {
     val figure = PaiseFormat.format(amount)
     val text = moneySign(semantic, amount) + figure
     val description = "${directionLabel(semantic, amount)}, $figure"
     val color = toneColor(moneyTone(semantic, amount, inRow = size == MoneySize.Row))
+    // One string for assistive technology. Rolling digits are one Text per character, so they are
+    // hidden from semantics and the whole text and description are set on the container instead.
+    val semantics =
+        if (animate) {
+            Modifier.clearAndSetSemantics {
+                this.text = AnnotatedString(text)
+                contentDescription = description
+            }
+        } else {
+            Modifier.semantics(mergeDescendants = true) { contentDescription = description }
+        }
     if (size == MoneySize.Hero) {
-        HeroText(text, description, color, modifier)
+        HeroText(text, color, animate, modifier.then(semantics))
     } else {
-        Text(
-            text,
-            modifier.semantics { contentDescription = description },
-            color = color,
-            style = if (size == MoneySize.Large) PftTheme.type.amountLarge else PftTheme.type.amountRow,
-        )
+        val style = if (size == MoneySize.Large) PftTheme.type.amountLarge else PftTheme.type.amountRow
+        Figure(text, style.copy(color = color), animate, Int.MAX_VALUE, modifier.then(semantics))
     }
 }
 
@@ -98,17 +122,70 @@ fun MoneyText(
 @Composable
 private fun HeroText(
     text: String,
-    description: String,
     color: Color,
+    animate: Boolean,
     modifier: Modifier,
 ) {
     val measurer = rememberTextMeasurer()
     val base = PftTheme.type.amountHero
     val density = LocalDensity.current
-    BoxWithConstraints(modifier.semantics(mergeDescendants = true) { contentDescription = description }) {
+    BoxWithConstraints(modifier) {
         val available = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
         val fit = remember(text, available, base, density) { fitHero(measurer, text, base, available) }
-        Text(text, color = color, style = fit.style, maxLines = if (fit.fits) 1 else Int.MAX_VALUE)
+        Figure(text, fit.style.copy(color = color), animate, if (fit.fits) 1 else Int.MAX_VALUE, Modifier)
+    }
+}
+
+/** The figure itself: plain text, or rolling digits. */
+@Composable
+private fun Figure(
+    text: String,
+    style: TextStyle,
+    animate: Boolean,
+    maxLines: Int,
+    modifier: Modifier,
+) {
+    if (animate) {
+        RollingDigits(text, style, modifier)
+    } else {
+        Text(text, modifier, style = style, maxLines = maxLines)
+    }
+}
+
+/**
+ * [text] with each character in its own slot that rolls to its new value: a digit that goes up
+ * slides in from below and one that goes down from above, with the leaving character fading out.
+ * Slots are keyed from the end of the string, so the units digit keeps its column when the length
+ * changes and a new leading character simply appears. Tabular figures (`tnum`) keep the columns
+ * from jittering; a custom font without them may shift slightly (design plan §3.3).
+ */
+@Composable
+private fun RollingDigits(
+    text: String,
+    style: TextStyle,
+    modifier: Modifier,
+) {
+    val motion = PftTheme.motion
+    Row(modifier) {
+        text.forEachIndexed { index, character ->
+            key(text.length - index) {
+                AnimatedContent(
+                    targetState = character,
+                    transitionSpec = {
+                        val rollUp = targetState > initialState
+                        val sign = if (rollUp) 1 else -1
+                        (
+                            slideInVertically(motion.smoothOffset) { sign * it } +
+                                fadeIn(motion.smooth)
+                        ) togetherWith (
+                            slideOutVertically(motion.smoothOffset) { -sign * it } +
+                                fadeOut(motion.smooth)
+                        )
+                    },
+                    label = "digit",
+                ) { shown -> Text(shown.toString(), style = style, maxLines = 1) }
+            }
+        }
     }
 }
 

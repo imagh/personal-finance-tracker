@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontListFontFamily
@@ -61,6 +62,7 @@ class MoneyTextTest {
         val amount: Paise,
         val semantic: MoneySemantic,
         val size: MoneySize,
+        val animate: Boolean,
     )
 
     private var spec by mutableStateOf<Spec?>(null)
@@ -71,13 +73,19 @@ class MoneyTextTest {
         amount: Paise,
         semantic: MoneySemantic,
         size: MoneySize = MoneySize.Row,
+        animate: Boolean = false,
     ) {
-        spec = Spec(amount, semantic, size)
-        if (started) return
+        if (started) {
+            // On the UI thread, so the write reaches the composition even with the clock paused.
+            compose.runOnUiThread { spec = Spec(amount, semantic, size, animate) }
+            compose.waitForIdle()
+            return
+        }
+        spec = Spec(amount, semantic, size, animate)
         started = true
         compose.setContent {
             PftTheme(ThemePrefs(dynamicColor = false)) {
-                spec?.let { MoneyText(it.amount, it.semantic, Modifier.testTag(tag), size = it.size) }
+                spec?.let { MoneyText(it.amount, it.semantic, Modifier.testTag(tag), it.size, it.animate) }
             }
         }
     }
@@ -393,5 +401,70 @@ class MoneyTextTest {
         assertEquals(HeroSizeSteps.last().value, heroSizeSp(), 0f)
         assertTrue("expected a wrapped amount, got ${result.lineCount} line", result.lineCount > 1)
         assertEquals(result.layoutInput.text.length, result.getLineEnd(result.lineCount - 1, visibleEnd = false))
+    }
+
+    // --- rolling digits (animate = true) -------------------------------------------------------
+
+    @Test
+    fun `with animate on, the text starts as the plain text and one string is exposed to semantics`() {
+        show(Paise(12_345_678), MoneySemantic.Expense, MoneySize.Hero, animate = true)
+        node().assertTextEquals("$minus₹1,23,456.78")
+        node().assertContentDescriptionEquals("Expense, ₹1,23,456.78")
+    }
+
+    @Test
+    fun `with animate on, changing the value ends on the new text once the clock has advanced`() {
+        show(Paise(12_345_678), MoneySemantic.Expense, MoneySize.Hero, animate = true)
+        compose.mainClock.autoAdvance = false
+        show(Paise(98_765_432), MoneySemantic.Expense, MoneySize.Hero, animate = true)
+        compose.mainClock.advanceTimeBy(2_000)
+        compose.waitForIdle()
+        node().assertTextEquals("$minus₹9,87,654.32")
+        node().assertContentDescriptionEquals("Expense, ₹9,87,654.32")
+    }
+
+    @Test
+    fun `with animate on, a change in length and sign ends on the new text`() {
+        show(Paise(99_999), MoneySemantic.Expense, MoneySize.Hero, animate = true)
+        compose.mainClock.autoAdvance = false
+        show(Paise(12_345_678_900), MoneySemantic.Income, MoneySize.Hero, animate = true)
+        compose.mainClock.advanceTimeBy(2_000)
+        compose.waitForIdle()
+        node().assertTextEquals("+₹12,34,56,789.00")
+    }
+
+    @Test
+    fun `digits roll rather than jump, so the old digit is still on screen a frame into the change`() {
+        show(Paise(100), MoneySemantic.Transfer, MoneySize.Hero, animate = true)
+        compose.mainClock.autoAdvance = false
+        show(Paise(200), MoneySemantic.Transfer, MoneySize.Hero, animate = true)
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeByFrame()
+        // Mid-roll both the leaving "1" and the arriving "2" exist as separate nodes in the unmerged tree.
+        val unmerged = compose.onAllNodesWithText("1", useUnmergedTree = true).fetchSemanticsNodes().size
+        val arriving = compose.onAllNodesWithText("2", useUnmergedTree = true).fetchSemanticsNodes().size
+        assertTrue("old digit gone at once: $unmerged", unmerged >= 1)
+        assertTrue("new digit missing: $arriving", arriving >= 1)
+    }
+
+    @Test
+    fun `the animated hero also shrinks to fit the maximum amount`() {
+        var density = 1f
+        compose.setContent {
+            density = LocalDensity.current.density
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                Box(Modifier.width(353.dp)) {
+                    MoneyText(
+                        Paise.MAX_AMOUNT,
+                        MoneySemantic.Expense,
+                        Modifier.testTag(tag),
+                        MoneySize.Hero,
+                        animate = true,
+                    )
+                }
+            }
+        }
+        val bounds = node().fetchSemanticsNode().boundsInRoot
+        assertTrue("animated hero is ${bounds.width / density}dp wide", bounds.width <= 353f * density + 1f)
     }
 }
