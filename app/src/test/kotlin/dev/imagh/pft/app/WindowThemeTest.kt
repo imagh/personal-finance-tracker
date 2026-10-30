@@ -5,7 +5,7 @@ import android.graphics.Color
 import android.view.WindowManager
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
-import dev.imagh.pft.app.ui.theme.BrandColors
+import dev.imagh.pft.app.ui.theme.GraphitePalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The window theme (`values` / `values-night`) matches the brand surface, so a dark launch never
+ * The window theme (`values` / `values-night`) matches the default (Graphite) surface, so a dark launch never
  * flashes a light window before Compose draws, and the activity is edge-to-edge (UI-4, SEC-2).
  *
  * Under Robolectric the only observable trace of `enableEdgeToEdge()` is the bar icon appearance
@@ -42,13 +42,21 @@ class WindowThemeTest {
     @Test
     @Config(qualifiers = "+night")
     fun `dark system paints the dark surface behind the first frame`() {
-        assertEquals(BrandColors.dark.surface.toArgb(), launch().windowBackgroundColor())
+        assertEquals(
+            GraphitePalette.dark.scheme.surface
+                .toArgb(),
+            launch().windowBackgroundColor(),
+        )
     }
 
     @Test
     @Config(qualifiers = "+notnight")
     fun `light system paints the light surface behind the first frame`() {
-        assertEquals(BrandColors.light.surface.toArgb(), launch().windowBackgroundColor())
+        assertEquals(
+            GraphitePalette.light.scheme.surface
+                .toArgb(),
+            launch().windowBackgroundColor(),
+        )
     }
 
     @Test

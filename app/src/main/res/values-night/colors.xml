@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Must equal BrandColors.dark.surface (see values/colors.xml). -->
-    <color name="pft_window_background">#131316</color>
+    <!-- Must equal GraphitePalette.dark.scheme.surface (see values/colors.xml). -->
+    <color name="pft_window_background">#101113</color>
 </resources>
