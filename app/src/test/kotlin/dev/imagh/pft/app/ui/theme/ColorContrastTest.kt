@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import dev.imagh.pft.app.ui.common.MoneyTone
 import dev.imagh.pft.app.ui.common.chipColors
+import dev.imagh.pft.app.ui.common.groupedSectionColor
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -102,6 +103,23 @@ class ColorContrastTest {
                     "$theme $tone chip pill is surfaceVariant",
                 )
             }
+        }
+    }
+
+    @Test
+    fun `the GroupedSection island is a surface the money tokens clear 4_5 on, never surfaceVariant`() {
+        for (theme in Theme.entries) {
+            val island = groupedSectionColor(scheme(theme))
+            assertNotEquals(scheme(theme).surfaceVariant, island, "$theme island is surfaceVariant")
+            assertTrue(
+                island in scheme(theme).surfaceRoles().values,
+                "$theme island is not one of the swept surface roles",
+            )
+            val m = money(theme)
+            mapOf("positive" to m.positive, "negative" to m.negative, "warning" to m.warning).forEach { (name, token) ->
+                assertAtLeast(textMin, "$theme $name on the island", token, island)
+            }
+            assertAtLeast(textMin, "$theme onSurface on the island", scheme(theme).onSurface, island)
         }
     }
 
