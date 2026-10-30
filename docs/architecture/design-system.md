@@ -90,10 +90,12 @@ digits; that is accepted.
 
 See `BrandColors` and `MoneyColors` (KDoc) and plan §3.3. `ColorContrastTest` pins every pair at
 WCAG 4.5:1. Never draw money text on `surfaceVariant`:
-dark `negative` on it is 4.23:1. `ColorContrastTest` pins both halves of that: the sweep excludes
+dark `negative` on it is 4.23:1. `ColorContrastTest` pins two things: the sweep excludes
 `surfaceVariant` on purpose (a test asserts the ratio is still below 4.5, so the exclusion is not
-dropped by accident), and the backgrounds DS5 draws money on (`groupedSectionColor`, every
-`chipColors` pill) are asserted to be swept surface roles and never `surfaceVariant`.
+dropped by accident), and the backgrounds DS5 components draw money on (`groupedSectionColor`, every
+`chipColors` pill) are asserted to be swept surface roles and never `surfaceVariant`. It cannot stop
+a future component choosing `surfaceVariant`: that stays a code-review rule, and a new money
+surface should add its colour to this test.
 
 ### Motion (UI-10)
 
@@ -198,9 +200,15 @@ is the only way an amount is drawn (plan §5.2).
   prepends the sign (`moneySign`) and never reformats; there is no float anywhere in the path.
   U+2212 (a true minus, not a hyphen) for an expense or a negative balance, `+` for income, nothing for
   a transfer, a budget figure or a non-negative balance.
-- **Negative amounts.** Transaction amounts are positive magnitudes and the direction is the
-  semantic, so a negative `Paise` is rejected with `IllegalArgumentException` for every semantic except
-  `Balance`. A wrong sign would misreport the money, so it fails closed instead of drawing it.
+- **Negative amounts: the caller's contract.** Transaction amounts are positive magnitudes and the
+  direction is the semantic, so a negative `Paise` is rejected with `IllegalArgumentException` for every
+  semantic except `Balance`. A wrong sign would misreport the money, so `MoneyText` fails closed instead
+  of drawing it, and that throw happens during composition (it would crash the screen). So **callers must
+  pass magnitudes (non-negative `Paise`) for every semantic except `Balance`**, and the ViewModel or
+  mapper that builds the UI state owns that: it takes `abs` of a signed difference only where the
+  semantic says the direction (for example a budget's remaining amount shown with `Budget(OVER)`), and
+  validates at that boundary, with a test, rather than relying on the composable's `require`. C4
+  (transaction rows and Home totals), C5 (detail) and D4 (budget figures) each have such a mapper.
 - **Tone** (`moneyTone(semantic, amount, inRow)` → `MoneyTone` → colour):
 
   | Semantic | Tone |
@@ -229,7 +237,7 @@ is the only way an amount is drawn (plan §5.2).
   truncated amount would misreport the money. The line break may fall right after the sign.
 - **Rolling digits** (`animate = true`). Each character is its own `AnimatedContent` slot, keyed from
   the end of the string so the units digit keeps its column when the length changes; a rising digit
-  slides in from below, a falling one from above, on `PftMotion.smooth` (`smoothOffset` for the slide).
+  slides in from below, a falling one from above, on `PftMotion.smooth` (`smoothOffset` for the slide). Per-character slots cannot wrap, so a hero that does not fit even at 12sp is drawn as plain wrapping text with no roll (it must never be cut off).
   Assistive technology sees one text and one description on the container, and the text is correct as
   soon as the state changes, not after the animation. A custom font without `tnum` may shift slightly.
 - **Never on `surfaceVariant`** (see Colour).
@@ -246,7 +254,7 @@ Neutral. `labelMedium`, `extraLarge` shape, one merged semantics node. Not inter
 `GroupedSection { row(onClick?) { ... } }`: the replacement for cards. Inset by the 20dp gutter,
 `large` shape, filled with `surfaceContainer` (`groupedSectionColor`, never `surfaceVariant`), one
 physical-pixel `outlineVariant` divider between rows, inset 16dp from the start (N rows give N-1
-dividers). A row with `onClick` is clickable and at least 56dp tall. A rows lambda rather than a
+dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. A rows lambda rather than a
 composable slot lets the section own the dividers. M3 `ListItem` paints its own `surface` container,
 so rows use `GroupedSectionDefaults.listItemColors()` (transparent). `Dp.Hairline` is not used for the
 divider because it lays out at zero height, which cannot be measured and relies on an unclipped

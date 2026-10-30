@@ -259,11 +259,11 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 **C4 — Transaction list and add/edit UI**
 - **Red:** `TransactionsFlowTest`: on Home, tap +, enter ₹250, pick account, category and tags, then save; the row shows in this month's list with "₹250.00", and month totals (expense/income, excluding transfers) update. Switching to Transfer shows a destination-account field, and saving shows paired legs. Editing changes the amount. Delete gives an Undo snackbar that restores the row. Bad amount text shows an inline error and saves nothing.
-- **Green:** `ui/transactions/{TransactionListScreen,TransactionEditScreen,TransactionsViewModel,TransactionEditViewModel}.kt`, month switcher, state chip (Verified/Unverified badge, L-6).
+- **Green:** `ui/transactions/{TransactionListScreen,TransactionEditScreen,TransactionsViewModel,TransactionEditViewModel}.kt`, month switcher, state chip (Verified/Unverified badge, L-6). **Amount contract (design plan DS5):** the ViewModel maps transaction amounts to non-negative `Paise` with the direction as the `MoneySemantic`; `MoneyText` throws in composition for a negative one, and only an account `Balance` may be negative. Test the mapper.
 
 **C5 — Search/filter UI and transaction detail with history**
 - **Red:** `SearchFlowTest`: a filter by tag plus text returns the expected rows. `TransactionDetailTest`: detail shows fields, source and bank ref, and an audit history list ("Amount ₹200.00 → ₹250.00 by Akash on Pixel"; history is formatted in the UI from the audit rows).
-- **Green:** `ui/search/*`, `ui/transactions/TransactionDetailScreen.kt`, `AuditQueries` read API in core plus Room, and the generic `ui/common/AuditHistoryList.kt` (§3.4), which the loan, goal, budget and recurring detail screens reuse later.
+- **Green:** `ui/search/*`, `ui/transactions/TransactionDetailScreen.kt`, `AuditQueries` read API in core plus Room, and the generic `ui/common/AuditHistoryList.kt` (§3.4), which the loan, goal, budget and recurring detail screens reuse later. **Amount contract (design plan DS5):** the detail ViewModel passes the stored positive amount with its `MoneySemantic`; `MoneyText` throws in composition for a negative `Paise` (only `Balance` may be negative).
 
 ### Slice D — Budgets (`feat/m1a-budgets`)
 
@@ -284,7 +284,7 @@ Adds `:core:budget` to settings.
 - **Red:** `RoomBudgetIntegrationTest`: create a budget and add expenses through `TransactionService`; `progress()` reflects them, and a deleted transaction drops out. `migrate5To6`.
 - **Green:** `app/.../data/budget/*`, `MIGRATION_5_6`.
 
-**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11)
+**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11). **Amount contract (design plan DS5):** the budget mapper passes non-negative `Paise` with `Budget(state)` to `MoneyText` (an overspend as a magnitude with `OVER`, never a negative remainder), which throws in composition otherwise; test the mapper.
 - **Red:** `BudgetsFlowTest` (through the nav host, real in-memory Room):
   - **List:** create "Groceries ₹8,000 monthly"; adding a ₹6,500 groceries expense shows the Groceries card at 81% with a threshold warning at 80%, and unverified spend is shown with a distinct marker. Each active budget has one card; an archived budget is not listed. The FAB opens the create form.
   - **List → detail:** tapping the card opens the budget detail, whose title is the budget name and whose subtitle is the current period.
