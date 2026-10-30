@@ -15,7 +15,7 @@ import javax.crypto.SecretKey
  * [java.security.ProviderException]) when the store cannot produce a key; [DbKeyManager] turns that
  * into [DbKeyUnavailable].
  */
-interface KekSource {
+internal interface KekSource {
     /** The KEK, or null when no key exists under the alias. Never creates one. */
     fun existing(): SecretKey?
 

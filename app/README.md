@@ -130,6 +130,12 @@ snake_case `@ColumnInfo` names, DAO, mapper, repository, a `Migration` registere
 with `PftDatabase.VERSION` bumped, a `migrateNToN+1` test, and a line in `AuditedTables` (test
 support). `RoomAuditColumnsTest` fails if a column is neither audited nor on the reviewed allowlist.
 
+### `security` (database key, A4b; not wired into the app yet)
+
+| Symbol | What it is |
+|---|---|
+| `DbKeyManager.forApp(context)`, `useKey { key -> ... }` | The SQLCipher key: 32 random bytes, stored only wrapped (AES-256-GCM, Keystore KEK `pft_db_kek`) in `noBackupFilesDir/pft_db_key.bin`. `useKey` wipes the key after the block. Fails closed with `DbKeyUnavailable(reason)` and never creates a key over an existing key file or an existing `pft.db`. The KEK is not user-auth-bound, because M1b's SMS receiver writes while locked |
+
 ### Window theme
 
 `res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint the brand surface

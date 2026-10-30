@@ -1,5 +1,10 @@
 package dev.imagh.pft.app.security
 
+import android.content.Context
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
+import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.security.DbKeyUnavailable.Reason
 import java.io.File
 import java.io.FileOutputStream
@@ -49,7 +54,7 @@ import javax.crypto.spec.GCMParameterSpec
  * **No leaks.** Key material is never logged and never put in an exception; [DbKeyUnavailable]
  * carries a fixed reason and a class name only, never a path or a cause.
  *
- * Build it with `DbKeyManager.forApp` in production; the constructor is for tests.
+ * Build it with [forApp] in production; the constructor is for tests.
  *
  * @param keyFile where the wrapped key is stored.
  * @param databaseFile the encrypted database the key belongs to; only its existence is checked.
@@ -198,5 +203,36 @@ class DbKeyManager internal constructor(
 
         /** Serialises key creation across instances, so two callers cannot both create a key. */
         private val LOCK = Any()
+
+        /**
+         * The app's key manager: the wrapped key in `noBackupFilesDir/`[KEY_FILE_NAME], guarding the
+         * database [PftDatabase.NAME], with the KEK in the Android Keystore ([AndroidKeystoreKek.ALIAS]).
+         * Cheap to build; nothing is read until [useKey].
+         */
+        fun forApp(context: Context): DbKeyManager =
+            DbKeyManager(
+                keyFile = File(context.noBackupFilesDir, KEY_FILE_NAME),
+                databaseFile = context.getDatabasePath(PftDatabase.NAME),
+                kek = AndroidKeystoreKek(),
+                syncDirectory = ::fsyncDirectory,
+            )
+
+        /**
+         * Flushes [dir]'s entries, so the renamed key file survives a power cut. Best effort: if the
+         * directory cannot be synced the file is still complete (the rename is atomic), and a lost
+         * entry can only ever fail closed later ([Reason.KEY_FILE_MISSING]), never create a key.
+         */
+        internal fun fsyncDirectory(dir: File) {
+            try {
+                val fd = Os.open(dir.path, OsConstants.O_RDONLY, 0)
+                try {
+                    Os.fsync(fd)
+                } finally {
+                    Os.close(fd)
+                }
+            } catch (ignored: ErrnoException) {
+                // Best effort, see above; the error names a path, so it is not reported.
+            }
+        }
     }
 }
