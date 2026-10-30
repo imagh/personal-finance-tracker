@@ -4,7 +4,7 @@
 |-------------|-------|
 | Date        | 2026-10-30 |
 | Author      | architect |
-| Status      | Draft. Every owner decision from 2026-10-30 is folded in (§1); awaiting approval of this document |
+| Status      | Draft. Every owner decision from 2026-10-30 is folded in (§1); awaiting approval of this document. **DS6f spike results (2026-10-30) are folded into §3.6–§3.7, §6.1, §12 and §13**: Google Sans Flex and DM Sans are out of the candidate set |
 | Related ACs | UI-1, UI-2 (revised), UI-3 (revised), UI-4, UI-5, UI-7, UI-8 (revised); new UI-11..UI-18 (§1); SEC-2, SEC-3 |
 | Plan owner  | akashg (repo owner) |
 
@@ -27,7 +27,7 @@ Interactive mockup: `docs/plans/2026-10-30-m1a-premium-look-mockups.html`. Open 
 | O3 | **Palettes:** four curated palettes generated offline, each with light and dark: **GRAPHITE** (neutral + platinum), **MIDNIGHT** (navy + brass), **IVORY** (warm paper + ink blue) and **AUBERGINE** (deep plum + champagne). The light and dark palettes are chosen independently. |
 | O4 | **Defaults:** `lightPalette = GRAPHITE`, `darkPalette = GRAPHITE`, `sansFont = FIGTREE`, `typePairing = HERO_ONLY`, `background = TONAL`, `headerGlow = false`. **Material You dynamic colour stays available but is no longer the default** (this revises UI-8). |
 | O5 | **Type pairing setting:** `HERO_ONLY` (default, today's look) or `EDITORIAL` (§3.6). An all-serif pairing was evaluated in the mockup and liked, but the owner deferred it (2026-10-30, second round). |
-| O6 | **Sans font setting:** `FIGTREE` (default), `GOOGLE_SANS_FLEX`, `PLUS_JAKARTA_SANS`, `DM_SANS` or `SYSTEM`. All are bundled under OFL, with sizes measured. One UI Sans and Circular / Spotify Mix are proprietary and **cannot be bundled**. |
+| O6 | **Sans font setting:** `FIGTREE` (default), `PLUS_JAKARTA_SANS` or `SYSTEM`. All bundled fonts are OFL, with sizes measured. One UI Sans and Circular / Spotify Mix are proprietary and **cannot be bundled**. **Amended by DS6f (2026-10-30):** the original list also had `GOOGLE_SANS_FLEX` (owner: "drop for now"; 3.9 MB) and `DM_SANS` (no tabular figures); see §3.7. |
 | O7 | **Header actions are icon-only:** search, filter and the others are 24dp icons with content descriptions and 48dp touch targets, with no text labels. |
 | O8 | **All of these are user settings** (AP1): `lightPalette`, `darkPalette`, `sansFont`, `typePairing`, `background` and `headerGlow`, plus the existing theme mode, dynamic colour and display font. An unknown stored value reads as the default. |
 
@@ -35,7 +35,7 @@ Interactive mockup: `docs/plans/2026-10-30-m1a-premium-look-mockups.html`. Open 
 
 | ID | Requirement |
 |---|---|
-| UI-2 (revised) | The default text font is the bundled **Figtree**. The system font and three other bundled sans fonts are options. Custom import (AP2) is unchanged. |
+| UI-2 (revised) | The default text font is the bundled **Figtree**. The system font and one other bundled sans font (Plus Jakarta Sans) are options (DS6f: Google Sans Flex and DM Sans were dropped). Custom import (AP2) is unchanged. |
 | UI-3 (revised) | The serif sets the hero figure by default (Q10). The type-pairing setting can also extend it to the large amount and the titles (`EDITORIAL`). |
 | UI-8 (revised) | The default accent is the curated **Graphite** palette. Material You dynamic colour is an opt-in. |
 | UI-11 | Four curated palettes, light and dark chosen independently, all passing the DS contrast rules. The accent never reads as income or expense. |
@@ -43,14 +43,14 @@ Interactive mockup: `docs/plans/2026-10-30-m1a-premium-look-mockups.html`. Open 
 | UI-13 | Optional header glow, off by default, capped, never under money. |
 | UI-14 | Header actions are icon-only, labelled for TalkBack, with 48dp touch targets. |
 | UI-15 | The type pairing (hero only, editorial) with Newsreader's optical size set per role. |
-| UI-16 | The sans choice (five options). Every bundled font is OFL with its licence shipped, and money digits are tabular in every bundled font. |
+| UI-16 | The sans choice (three options: Figtree, Plus Jakarta Sans, system; DS6f). Every bundled font is OFL with its licence shipped, and money digits are tabular in every bundled font. |
 | UI-17 | Every bundled font's size is measured, recorded and pinned by a test, and all of `res/font` together is at most 3 MiB (owner-confirmed 2026-10-30). |
 | UI-18 | No visible first-frame flash with any palette or background: the window colour is within 8 tones of the first Compose frame, and exact after it. |
 
 **Done means:**
 1. `PftTheme` resolves the chosen palette per mode (or dynamic colour, on opt-in), and the default is Graphite.
 2. The surface style (tonal or flat), the header glow and the type pairing come from `ThemePrefs`.
-3. The four sans fonts are bundled with their licences and pinned hashes and sizes.
+3. The two sans fonts (Figtree, Plus Jakarta Sans) are bundled with their licences and pinned hashes and sizes.
 4. Header actions are icon-only.
 5. Every palette passes the contrast and hue tests in both modes.
 6. The debug catalogue toggles every option.
@@ -137,7 +137,7 @@ Interactive mockup: `docs/plans/2026-10-30-m1a-premium-look-mockups.html`. Open 
   - GSUB has `tnum` and `pnum` but **no `lnum`**, so the `lnum` request in `PftTypography.kt:91,99` is a harmless no-op.
   - The default figures are already equal-width (1100 units each).
   - The axes are `wght` 200–800 (default 400) and `opsz` 6–72 (**default 18**).
-  - So tabular figures and the ₹ glyph in Newsreader are **confirmed statically**. What is still unconfirmed is how they *render* on the device (§6, DS6f).
+  - So tabular figures and the ₹ glyph in Newsreader are **confirmed statically**. What was still unconfirmed was how they *render* on the device; DS6f confirmed it on the emulator (§3.7, §13).
 - **Hues** (CAM16 / HCT-style hue computed from the hex values; CIELAB hue in brackets):
 
   | Token | Light | Dark |
@@ -163,7 +163,7 @@ Interactive mockup: `docs/plans/2026-10-30-m1a-premium-look-mockups.html`. Open 
 - **The mockup differs from the spec in two places.** Neither is adopted:
   1. Its money **container** values (`--warn-c`, `--pos-c` and so on) differ slightly from `MoneyColors`. The app keeps `MoneyColors` unchanged.
   2. Its budget meter is filled with `primary`. In the app, D4's `ProgressMeter` is filled with the **money tone** of the budget state (DS §3.7), never the accent, because brass and champagne sit next to warning amber.
-- **Pre-commit:** `.pre-commit-config.yaml:31` runs `check-added-large-files`, which rejects files over 500 KB. Bundled fonts larger than that need a decision (DS6f).
+- **Pre-commit:** `.pre-commit-config.yaml:31` runs `check-added-large-files`, which rejects files over 500 KB. Bundled fonts larger than that need a decision (DS6f measured: none of the kept fonts is over it, so no exception is needed; §3.7).
 - **The R8 guard** is `mustBeRemoved` in `app/build.gradle.kts:109-115`. New sample files go there.
 
 ## 3. Design & decision
@@ -321,35 +321,61 @@ The pairing chooses **which roles use the display family**. `displayFont` (uncha
   - It sets `FontVariation.Settings(weight, FontStyle.Normal, FontVariation.opticalSizing(size.coerceIn(6.sp, 72.sp)))`. `EDITORIAL`'s serif roles run from `titleMedium` at 16sp to `displayLarge` at 57sp, so each gets its own cut instead of today's fixed 48.
   - Only what `EDITORIAL` needs is built: the function is called for the serif roles in the table above, and nothing else.
   - The variation applies only to the bundled serif. `SYSTEM_SERIF` and `TEXT` get no variation settings.
-- **Hero weight 350**, from the mockup (it is 400 today), **if the DS6f device check shows variable weight renders as 350**. Otherwise it stays 400, and that is recorded.
+- **Hero weight stays 400** (owner, 2026-10-30, after the DS6f device check: "400"). The mockup's 350 is not adopted. For the record, variable weight does render on the device: the same hero amount measured 634, 638, 642 and 660 px wide at `wght` 300, 350, 400 and 500 (opsz 48), so 350 was distinct from 400; the owner chose 400.
 - `tnum` stays on all three amount roles in every pairing. Newsreader's default figures are already tabular, and `tnum` keeps that true for other fonts.
 - **All serif is deferred.** It was evaluated in the mockup, liked, and deferred by the owner (2026-10-30). It can return later as a third `TypePairing` value **without a migration**, because an unknown stored value reads as the default and a new value is simply added.
-- **No body-size gate.** With all serif deferred, no body or label text is ever set in Newsreader, so the earlier gate on its 12–16sp text cut is dropped. DS6f still looks at the smallest `EDITORIAL` serif role (`titleMedium`, 16sp). If that looks weak, `titleMedium` stays sans in `EDITORIAL`; that is a token change recorded in DS6g, not an owner gate.
+- **No body-size gate.** With all serif deferred, no body or label text is ever set in Newsreader, so the earlier gate on its 12–16sp text cut is dropped. DS6f looked at the smallest `EDITORIAL` serif role (`titleMedium`, 16sp). **Result (owner, 2026-10-30): "500 w for title looks good. 48sp is good for title"; asked whether that meant Newsreader or Figtree at w500, "both"; asked what "48sp" referred to, "Hero amount".** So the 16sp serif cut is not weak, and **`titleMedium` stays in the serif list in `EDITORIAL`, at `wght` 500 with `opsz` 16.** The hero at 48sp is confirmed.
 
-### 3.7 Bundled sans fonts (UI-16, UI-17; DS6f spike, then DS6h, DS6i)
+### 3.7 Bundled sans fonts (UI-16, UI-17; DS6f spike done, then DS6h, DS6i)
 
 ```kotlin
-enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYSTEM }  // persisted by AP1; AP2 adds CUSTOM
+enum class SansFont { FIGTREE, PLUS_JAKARTA_SANS, SYSTEM }  // persisted by AP1; AP2 adds CUSTOM
 ```
 
-- **Shipping:** each family ships **unmodified** from google/fonts at a pinned commit into `res/font/`. Variable files (`wght` only needed: 400, 500 and 600) are preferred. Static 400/500/600 instances are used if they are smaller in total.
+DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans are not in the enum.** Both can come back later as new values with no migration, because an unknown stored value reads as the default (§6.3).
+
+- **Shipping:** each family ships **unmodified** from google/fonts at the pinned commit below into `res/font/`, as the **variable** file (`wght` only is used: 400, 500 and 600).
   - Each has an OFL text in `assets/licenses/<family>-OFL.txt`.
-  - Each has a row in the `design-system.md` third-party table (source, commit, licence, Reserved Font Name, size, sha256).
+  - Each has a row in the `design-system.md` third-party table (source, commit, licence, Reserved Font Name, size, sha256). Those rows are added by the slice that bundles the font (DS6h, DS6i), not by DS6f: nothing is bundled yet.
   - `BundledFontTest` pins each size and hash.
 - **Only the chosen family is loaded:** Compose loads a `ResourceFont` when it is first used.
 - **`SYSTEM`** is `FontFamily.Default`: Roboto or Google Sans on Pixel, and the One UI font on Samsung [still to verify on the owner's phone, DS §3.3]. Tabular figures there depend on the device font; that is accepted and documented, like custom fonts.
-- **Proprietary fonts:** One UI Sans (Samsung) and Circular / Spotify Mix are proprietary and **cannot be bundled**. Google Sans Flex (OFL, November 2025) is the legitimate Google-Sans-like option, and DM Sans, Figtree and Plus Jakarta Sans cover the Circular feel.
-- **The spike gates everything here** (DS6f; results amend this section). For each candidate it reads the font file the way the Newsreader probe did and checks on the emulator. It records:
-  - **Licence:** is it OFL, and is a Reserved Font Name declared? Google Sans Flex's licence text is checked first; if it is not OFL-compatible, the font is dropped.
-  - **Axes:** the `fvar` list. For Google Sans Flex, sources say five or six axes; the app uses `wght` only.
-  - **Figures:** `tnum` present, or the default digits equal-width. **This is a hard requirement:** a font without tabular figures is dropped.
-  - **Glyphs:** U+20B9 ₹ and U+2212 −. These are soft: if one is missing, Android falls back per glyph to the system font. That is accepted if the on-device rendering looks right, and recorded per font.
-  - **Size:** bytes of the variable file and of a static 400+500+600 set, plus the release APK delta.
-  - **Newsreader on the device:** whether weight 350 renders, `titleMedium` at 16sp (the smallest `EDITORIAL` serif role), and ₹ and `tnum` rendering.
+- **Proprietary fonts:** One UI Sans (Samsung) and Circular / Spotify Mix are proprietary and **cannot be bundled**. Figtree and Plus Jakarta Sans cover the Circular feel. Google Sans Flex (OFL, November 2025) is the legitimate Google-Sans-like option but is out for now (below).
+
+**DS6f results.** All files come from `github.com/google/fonts` at the **single pinned commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec`** (2026-10-30), directory `ofl/<family>/`. They were read with a standard-library probe (cmap, GSUB, fvar, hmtx), the same way as the Newsreader file in §2. Every licence is SIL OFL 1.1, and **none declares a Reserved Font Name** (the copyright line has no "with Reserved Font Name" clause).
+
+| | Figtree | Plus Jakarta Sans | DM Sans | Google Sans Flex |
+|---|---|---|---|---|
+| File | `Figtree[wght].ttf` | `PlusJakartaSans[wght].ttf` | `DMSans[opsz,wght].ttf` | `GoogleSansFlex[ROND,opsz,slnt,wdth,wght].ttf` |
+| Copyright line | 2022 The Figtree Project Authors | 2020 The Plus Jakarta Sans Project Authors | 2014 The DM Sans Project Authors | 2015 The Google Sans Flex Authors |
+| Licence / RFN | OFL 1.1 / none | OFL 1.1 / none | OFL 1.1 / none | OFL 1.1 / none (`TRADEMARKS.md`: the Google marks are not licensed) |
+| `fvar` axes | `wght` 300-900, **default 300** | `wght` 200-800, default 400 | `opsz` 9-40, `wght` 100-1000, default 400 | **five axes:** `opsz` 1-144 (default 18), `wdth` 25-151, `wght` 1-1000, `ROND` 0-100, `slnt` -10-0 |
+| 400, 500, 600 in range | yes | yes | yes | yes |
+| `tnum` (GSUB) | yes; digits proportional by default, `tnum` makes all ten 620/1000 equal | yes; proportional by default, `tnum` gives 600/1000 | **no `tnum`, no `pnum`; default digits proportional (342 to 656)** | yes; proportional by default, `tnum` gives 1290/2000 (also `lnum`, `zero`) |
+| `lnum` | no | no | no | yes |
+| ₹ U+20B9 / − U+2212 in cmap | yes / yes | yes / yes | yes / yes | yes / yes |
+| Variable file, bytes | 62,712 | 176,288 | 240,164 | 3,910,784 |
+| Static 400+500+600, bytes (**indicative**) | 120,376 | 289,720 | not measured | 393,000 (wght-only variable instance: 243,440) |
+| Chosen form | **variable** | **variable** | n/a | n/a |
+| sha256 of the file | `26ad3db9b31ff7dde67a91ff515d022d2f495cd506590699cf264f0bfe6fb714` | `89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8` | `8cd08d97e89c24d0aa92edd2f0f4c8ee6195eee9b7c9f154865a58b02f0c1c0d` | `a9ac770798857d5e8ac593ced42b22e40a7c08cec98319f92b0eccc2783a77ba` |
+| `OFL.txt` upstream sha256 | `140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268` | `995c7199cab65954f545996326755daee7b63cc6b42b06c13da1f9502ab08a99` | `9af36190332437f5ecd09974de43c1f7c77a310a996cdd8ceb25628b458840e1` | `fc13d69f63e36d284b6e383d4d1463d8ad404f0aa065e57cf961252d51063137` |
+| Release APK delta (compressed entry) | +35,171 B | +79,125 B | +108,937 B | +1,809,451 B |
+| **Decision** | **KEEP** | **KEEP** | **DROP:** fails the hard tabular-figures requirement | **DROP "for now"** (owner): 3.9 MB alone exceeds the 3 MiB budget |
+
+- **Statics are indicative only.** google/fonts has no static files for these families at the pinned commit, so the static sizes come from instancing the variable files with fontTools 4.55.3 in a scratch virtual environment (never in the repo, no dependency added). The shipped files are the unmodified variable ones; the variable file is smaller than three statics for both kept families, so no static swap is needed.
+- **Google Sans Flex, revisitable.** The owner's decision is "drop for now". The licence is fine, and the full file is the problem. A wght-only variable instance would be about 243 KB, but it is a modified file, which breaks the "shipped unmodified" rule and needs a recorded, reproducible instancing recipe; it would also need to say how it complies with `TRADEMARKS.md`. Do not ship it without a new owner decision.
+- **Rendering checks on the device.** A throwaway debug catalogue page (not committed) showed ₹48,250.40 and −₹540.00 with `tnum` on, at 12, 14, 16, 24 and 48sp, in Figtree, Plus Jakarta Sans, Google Sans Flex, the system font and Newsreader. Owner, 2026-10-30, on ₹, − and the digits in each sans: **"looks good"**; no per-glyph fallback was seen, as the cmap check predicted. Variable weight applies on the device through `FontVariation.Settings(FontWeight(w))` on a `Font` declared per weight.
 - **Size rules** (UI-17):
-  - **Budget (owner-confirmed 2026-10-30): at most 3 MiB for all of `res/font` together** (`FONT_BUDGET_BYTES = 3 * 1024 * 1024`). Newsreader is 0.43 MiB. The release APK is 1.39 MB today, from R8 learnings 2026-10-30. If DS6f finds the candidate set over budget, drop or swap to static instances until it fits; the budget does not move without the owner.
-  - **Decided (owner, 2026-10-30):** a file over the 500 KB pre-commit limit gets a **path-scoped** exception for `app/src/main/res/font/` in `.pre-commit-config.yaml`. That is safe because `BundledFontTest` pins every font's exact size and hash, and `FontBudgetTest` pins the total.
-  - The hook is never bypassed with `--no-verify`.
+  - **Budget (owner-confirmed 2026-10-30): at most 3 MiB (3,145,728 B) for all of `res/font` together** (`FONT_BUDGET_BYTES = 3 * 1024 * 1024`). The measured totals:
+
+    | Set | `res/font` bytes |
+    |---|---|
+    | Newsreader + all four candidates | 4,841,612 (over by 1,695,884) |
+    | **Newsreader + Figtree + Plus Jakarta Sans (the kept set)** | **690,664 (0.66 MiB), 2.34 MiB free** |
+
+  - **Base release APK, measured at `1f787ef`: 21,241,278 B (21.2 MB), not the 1.39 MB** quoted from the R8 learnings entry. The older figure predates A4b: SQLCipher's native libraries (four ABIs, about 19 MB uncompressed in the APK) are now most of the APK. The kept fonts add about 114 KB (Figtree 35,171 + Plus Jakarta Sans 79,125, compressed).
+  - **Pre-commit hook: no exception is needed for the kept set.** `check-added-large-files` rejects files over 500 KB; the largest files are Newsreader 451,664 B (already committed), Plus Jakarta Sans 176,288 B and Figtree 62,712 B, all under it. **Fallback, kept as approved (owner, 2026-10-30):** if a font over 500 KB is ever bundled (Google Sans Flex's 3,910,784 B file would be the case, but it would also break the 3 MiB budget on its own), add a **path-scoped** exception for `app/src/main/res/font/` in `.pre-commit-config.yaml`, backed by `BundledFontTest` (exact size and hash) and `FontBudgetTest` (total). The hook is never bypassed with `--no-verify`.
+- **R8 gotcha (found by DS6f): resource shrinking strips unreferenced fonts.** Release builds shrink resources (`isShrinkResources`), so a `res/font` file that no reachable code names as `R.font.<name>` is removed from the APK. The first all-fonts build showed a +0 delta until the throwaway used `tools:keep="@font/*"`. Consequence for DS6h and DS6i: reference every font directly as `R.font.<name>` from main code that the theme reaches (`sansFamily()` and `SansFont`), never by `getIdentifier` or a name string. The recipe in §11 step 4 checks the `res/*.ttf` entries in the release APK. Do **not** ship a `tools:keep` file to hide the problem.
 
 ### 3.8 Abstraction bar
 
@@ -410,7 +436,7 @@ enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYS
     val headerGlow: Boolean = false,                          // DS6d
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF, // existing
     val typePairing: TypePairing = TypePairing.HERO_ONLY,     // DS6g
-    val sansFont: SansFont = SansFont.FIGTREE,                // DS6h (DS6i adds three entries)
+    val sansFont: SansFont = SansFont.FIGTREE,                // DS6h (DS6i adds one entry: PLUS_JAKARTA_SANS)
 )
 ```
 
@@ -426,7 +452,7 @@ enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYS
 | `ui_header_glow` | `true`, `false` | `false` |
 | `ui_font_display` | `BUNDLED_SERIF`, `SYSTEM_SERIF`, `TEXT` (AP2 adds `CUSTOM`) | `BUNDLED_SERIF` |
 | `ui_type_pairing` | `HERO_ONLY`, `EDITORIAL` | `HERO_ONLY` |
-| `ui_font_sans` | `FIGTREE`, `GOOGLE_SANS_FLEX`, `PLUS_JAKARTA_SANS`, `DM_SANS`, `SYSTEM` (AP2 adds `CUSTOM`; this replaces DS's `ui.font.text`) | `FIGTREE` |
+| `ui_font_sans` | `FIGTREE`, `PLUS_JAKARTA_SANS`, `SYSTEM` (AP2 adds `CUSTOM`; this replaces DS's `ui.font.text`; DS6f dropped `GOOGLE_SANS_FLEX` and `DM_SANS`) | `FIGTREE` |
 
 **Rules:**
 - An unknown, missing or malformed value reads as the default for that key alone. Matching is exact: `entries.firstOrNull { it.name == v }`, and booleans are exactly `true` or `false`. Reading never throws, so values written by a newer version are tolerated.
@@ -583,27 +609,27 @@ enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYS
   - Re-record the header goldens.
 - **Refactor:** `design-system.md` (the icon-only rule; remove the DS4 "text glyphs" note). `code-structure.md`.
 
-**DS6f: font spike (docs only; gates DS6g–DS6i)**
+**DS6f: font spike (docs only; gates DS6g–DS6i). DONE 2026-10-30; results in §3.7 and §13.**
 - **Do:**
   - Download each candidate from google/fonts at one pinned commit into a fresh scratch directory (untrusted-download rules), and read each file as in §2. Scripts stay outside the download directory, and Python runs with `-I`.
   - On a throwaway, unmerged branch: bundle all of them, `assembleRelease`, and record the APK delta per font.
-  - On `pft35`, a throwaway catalogue page shows ₹48,250.40 and −₹540.00 at 12, 14, 16, 24 and 48sp in every font, plus Newsreader at `wght` 350 and 400 and at the per-role optical size.
+  - On the emulator (a throwaway AVD, because `pft35` is shared), a throwaway catalogue page shows ₹48,250.40 and −₹540.00 at 12, 14, 16, 24 and 48sp in every font, plus Newsreader at `wght` 350 and 400 and at the per-role optical size.
 - **Output** (a PR that amends §3.6–§3.7 of this plan):
   - The per-font table: licence and Reserved Font Name, axes, `tnum`, ₹, −, sizes, sha256, commit.
   - The keep or drop decision per font.
   - Variable or static per font.
   - The hook rule.
-  - Hero weight 350: yes or no (owner decides at the DS6f review).
-  - `titleMedium` in `EDITORIAL`: serif or sans.
+  - Hero weight 350: yes or no. **Decided: no, 400 stays.**
+  - `titleMedium` in `EDITORIAL`: serif or sans. **Decided: serif, `wght` 500.**
   - A learnings entry.
 - **No production code.** Red/Green does not apply; this is a measurement step.
 
-**DS6g: type pairing and optical size per role (Newsreader only)**
+**DS6g: type pairing and optical size per role (Newsreader only; no new font file, so DS6f's R8 gotcha does not apply here)**
 - **Red:**
   - `PftTypographyTest`:
-    - `HERO_ONLY` is unchanged. The hero's `wght` axis is 350 (if DS6f says yes; otherwise 400 stays).
+    - `HERO_ONLY` is unchanged. The hero's `wght` axis stays 400 (DS6f decision).
     - `EDITORIAL`: the §3.6 roles use Newsreader and the rest use the text family.
-    - Each Newsreader role's `opsz` equals its font size clamped to 6–72 (for example `titleMedium` 16, `displayLarge` 57, hero 48), and its `wght` axis equals its weight.
+    - Each Newsreader role's `opsz` equals its font size clamped to 6–72 (for example `titleMedium` 16, `displayLarge` 57, hero 48), and its `wght` axis equals its weight (`titleMedium` is serif at `wght` 500 in `EDITORIAL`, per DS6f; the hero stays 400).
     - `displayFont = TEXT` with `EDITORIAL` gives no Newsreader at all.
     - An unknown pairing value is not representable in `ThemePrefs`; the parse-to-default rule is AP1's test (§6.3).
     - `SYSTEM_SERIF` gives `FontFamily.Serif` with no variation settings.
@@ -628,14 +654,23 @@ enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYS
   - `res/font/figtree*.ttf` and `assets/licenses/figtree-OFL.txt`.
   - `SansFont { FIGTREE, SYSTEM }` and `sansFamily()`.
   - `PftTheme` `:61` uses the chosen family.
-  - The path-scoped hook exception, if DS6f requires it.
+  - **No hook exception** (DS6f: Figtree is 62,712 B, under the 500 KB limit); `.pre-commit-config.yaml` is untouched.
   - Re-record every golden (all the text changes).
 - **Refactor:** `design-system.md` third-party table. `README.md`.
+- **Pick-ups from DS6f (apply in DS6h and DS6i):**
+  - **Weights are set explicitly.** Figtree's `wght` axis runs 300-900 with a **default of 300**, so declare one `Font(R.font.figtree, FontWeight(w), variationSettings = FontVariation.Settings(FontWeight(w)))` for each of 400, 500 and 600; that is the form verified on the device. Roles asking for a weight that is not declared (for example bold) fall to the nearest declared one, so declare any weight a role uses.
+  - **Digits are proportional by default** in Figtree and Plus Jakarta Sans; only `tnum` makes them equal (620/1000 and 600/1000). `TabularFiguresTest` must apply `tnum` through the amount styles, and plain body text in these fonts keeps proportional digits by design. Neither font has `lnum`, so the `lnum` in `"tnum, lnum"` is a harmless no-op, as with Newsreader.
+  - **Reference every font directly as `R.font.<name>`** so release resource shrinking keeps it (§3.7 R8 gotcha), and check the `res/*.ttf` entries in the release APK (§11 step 4).
+  - **Pin from the DS6f table:** file name, bytes, sha256, the google/fonts commit, and the upstream `OFL.txt` hash. The shipped OFL text may differ from upstream only by trailing whitespace and a final newline (as for Newsreader).
+  - **Resource names** are lowercase with underscores: `figtree.ttf`, `plus_jakarta_sans.ttf`.
+  - **Enum and settings:** `SansFont` is `FIGTREE`, `PLUS_JAKARTA_SANS`, `SYSTEM`; AP1's Appearance screen offers three sans options (§6.3).
+  - **Budget:** the kept set is 690,664 B of 3,145,728 B; `FontBudgetTest` pins the sum of `R.font.*` file sizes.
+  - **Baseline:** the release APK before fonts is 21,241,278 B; expect about +114 KB after Figtree and Plus Jakarta Sans.
 
-**DS6i: the other three sans fonts**
-- **Red:** the same `BundledFontTest`, `TabularFiguresTest` and `FontBudgetTest` cases, now over `GOOGLE_SANS_FLEX`, `PLUS_JAKARTA_SANS` and `DM_SANS`. `PftTypographyTest` checks that each entry maps to its family.
+**DS6i: Plus Jakarta Sans**
+- **Red:** the same `BundledFontTest`, `TabularFiguresTest` and `FontBudgetTest` cases, now over `PLUS_JAKARTA_SANS` (the only sans left; DS6f dropped `GOOGLE_SANS_FLEX` and `DM_SANS`). `PftTypographyTest` checks that each entry maps to its family.
 - **Green:**
-  - The files, licences and enum entries, excluding any that DS6f dropped.
+  - `plus_jakarta_sans.ttf` (176,288 B), its OFL text and the enum entry. Nothing else: the other two candidates were dropped by DS6f.
   - Catalogue toggle.
 - **Refactor:** third-party table. `docs/features/appearance.md`.
 
@@ -656,10 +691,10 @@ enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYS
 | DS6c | `feat/m1a-foundation-ds6c-tonal-surfaces` | `PftSurfaces`, TONAL/FLAT, window sync, consumers | DS6b, DS5 | the background change in isolation |
 | DS6d | `feat/m1a-foundation-ds6d-header-glow` | glow functions, drawing, pref | DS6c | one effect, off by default |
 | DS6e | `feat/m1a-foundation-ds6e-icon-header-actions` | `HeaderIconButton`, samples, chevrons | DS3, DS4 (parallel with DS6b–d) | header API rule plus a TalkBack contract |
-| DS6f | `docs/m1a-ds6f-font-spike` | measurements and decisions (docs) | DS6-0 (parallel) | facts only, gates fonts |
-| DS6g | `feat/m1a-foundation-ds6g-type-pairing` | pairing, per-role `opsz`, hero weight | DS6f | typography only, Newsreader only |
+| DS6f | `docs/m1a-ds6f-font-spike` | measurements and decisions (docs); **done** | DS6-0 (parallel) | facts only, gates fonts |
+| DS6g | `feat/m1a-foundation-ds6g-type-pairing` | pairing, per-role `opsz`; hero weight stays 400 | DS6f | typography only, Newsreader only |
 | DS6h | `feat/m1a-foundation-ds6h-figtree` | Figtree default, `SansFont{FIGTREE, SYSTEM}`, budget tests | DS6g | one font, one default change |
-| DS6i | `feat/m1a-foundation-ds6i-more-sans` | the three optional sans fonts | DS6h | options only |
+| DS6i | `feat/m1a-foundation-ds6i-more-sans` | Plus Jakarta Sans only (DS6f dropped the other two; the owner may fold this into DS6h) | DS6h | options only |
 | A5 (existing) | as M1a | consumes everything | DS5, DS6a–e, A4b | — |
 
 - **Hard gates before A5:** DS6a, DS6c and DS6e. They change what screens pass (surfaces, header actions) or what they look like by default.
@@ -678,8 +713,8 @@ enum class SansFont { FIGTREE, GOOGLE_SANS_FLEX, PLUS_JAKARTA_SANS, DM_SANS, SYS
    - "Use wallpaper colours" (dynamic). When it is on, the palette pickers are disabled with a note.
    - Background (Tonal / Flat).
    - Header glow (switch).
-   - Sans font (five options, each label in its own font).
-   - Type pairing (three options, each with a small preview).
+   - Sans font (three options: Figtree, Plus Jakarta Sans, system; each label in its own font).
+   - Type pairing (two options, each with a small preview).
    - Display font (existing).
 3. **First frame:** the existing ≤500 ms hold uses the stored prefs. `SyncWindowBackground` is already wired. `AppearanceFlowTest` checks that switching the light palette to IVORY repaints the window and the scaffold canvas.
 4. **The Licences screen** lists Newsreader, every bundled sans and Material Symbols.
@@ -789,9 +824,10 @@ No mocks; the platform shadows are the only fakes.
 | First-frame flash with a non-default palette | a visible jump at launch | resources equal the default canvas; a tone bound of at most 8 (tested); runtime sync; AP1 first-frame hold |
 | A font over 500 KB, or a large total | the pre-commit hook blocks it; APK growth | measured first (DS6f); path-scoped exception backed by exact size and hash pins; 3 MiB budget pinned by `FontBudgetTest` |
 | A bundled sans lacks ₹ or − | a glyph from another font inside an amount | recorded per font; on-device check; per-glyph fallback accepted, or the font dropped if it looks broken |
-| A font lacks tabular figures | amounts jitter and columns misalign | hard requirement in DS6f; `TabularFiguresTest` |
-| Newsreader weight 350 does not render, or its 16sp cut looks weak | hero weight wrong; `EDITORIAL` section titles look thin | DS6f device check; weight kept at 400 by owner sign-off; `titleMedium` stays sans in `EDITORIAL` |
-| Google Sans Flex licence or axes differ from the reports | cannot bundle it, or the wrong axis | DS6f reads its licence and `fvar` first; dropped if it fails |
+| A font lacks tabular figures | amounts jitter and columns misalign | hard requirement in DS6f (it dropped DM Sans); `TabularFiguresTest` |
+| Newsreader weight 350 does not render, or its 16sp cut looks weak | hero weight wrong; `EDITORIAL` section titles look thin | **Resolved by DS6f:** 350 does render; the owner kept the hero at 400 and judged the 16sp w500 serif title good |
+| Google Sans Flex licence or axes differ from the reports | cannot bundle it, or the wrong axis | **Resolved by DS6f:** the licence is OFL 1.1 with no RFN and it has five axes, but the file is 3.9 MB, so it is dropped "for now" (owner) |
+| A bundled font is stripped from the release APK | the font silently falls back to the system one | reference each font as `R.font.<name>` in reachable code; check the `res/*.ttf` entries in the release APK (§3.7, §11) |
 | Golden churn across four PRs | review fatigue | goldens re-recorded only in DS6a, c, e and h; behaviour tests carry correctness |
 | Merge-order conflicts with DS5 (goldens, `GroupedSection`) and DS3 | rework | DS6b and DS6c wait for DS5, DS6e for DS3; DS6a ideally after DS5 |
 | Retiring `BrandColors` supersedes owner decision Q5 | surprise | called out here and in DS §12; the owner decided Graphite is the default |
@@ -810,7 +846,7 @@ No mocks; the platform shadows are the only fakes.
    - **Launch flash:** cold-start in each palette (`adb shell am force-stop dev.imagh.pft`, then launch), watching the first frame.
 4. **Fonts (DS6f, DS6h, DS6i):**
    - Run `./gradlew :app:assembleRelease`.
-   - Record the APK size before and after with `ls -l app/build/outputs/apk/release/`, and the `res/font` entries with `unzip -l`.
+   - Record the APK size before and after with `ls -l app/build/outputs/apk/release/`, and the `res/font` entries with `unzip -lv` (R8 renames them to `res/<xx>.ttf`; match them by uncompressed size). A font missing from the list was stripped as unreferenced (§3.7).
    - Install a debug-key-signed **copy** for a smoke test (recipe in learnings, 2026-10-30).
    - Write the numbers into learnings.
 
@@ -820,11 +856,17 @@ No mocks; the platform shadows are the only fakes.
 
 ## 12. Open questions
 
-**None blocking DS6a–DS6e.** One decision is taken at the DS6f review, on its device check:
-1. **Hero weight 350 or 400.** The mockup sets the hero at 350; the owner decides once DS6f shows how variable weight renders on `pft35`.
+**No blocking question.** The one decision that was open (hero weight) was taken at the DS6f review. One minor owner item is open and not decided here:
+- **Fold DS6i into DS6h?** DS6f left DS6i with a single font (Plus Jakarta Sans, 176,288 B). The owner may bundle it in DS6h or keep it as its own small PR (§6.2).
+
+**Decided (owner, 2026-10-30, DS6f device check):**
+1. **Hero weight: 400** (owner, verbatim: "400"). The mockup's 350 is not adopted.
+2. **`titleMedium` in `EDITORIAL`: serif (Newsreader) at `wght` 500** (owner, verbatim: "500 w for title looks good. 48sp is good for title"; asked whether Newsreader or Figtree at w500, "both"; asked what "48sp" meant, "Hero amount"). The serif was not judged weak, so the plan's default (serif) stands; the hero at 48sp is confirmed.
+3. **₹, − and digits in each sans** (owner, verbatim: "looks good"). No per-glyph fallback was seen.
+4. **Google Sans Flex: dropped "for now"** (owner, verbatim: "drop for now"). Revisitable later as a new `SansFont` value; the wght-only instance is not shipped.
 
 **Decided (owner, 2026-10-30, second round):**
-- **Font size budget:** at most 3 MiB for all of `res/font`, with a path-scoped exception to the 500 KB hook for `app/src/main/res/font/` (§3.7).
+- **Font size budget:** at most 3 MiB for all of `res/font`, with a path-scoped exception to the 500 KB hook for `app/src/main/res/font/` as a **fallback only**: DS6f measured that the kept fonts need no exception (§3.7).
 - **All serif:** deferred. `TypePairing` is `{ HERO_ONLY, EDITORIAL }`; all serif can return later as a third value without a migration (§3.6).
 - **Scope:** app-wide, through the theme and the shared components (§3.9).
 
@@ -855,3 +897,14 @@ Decisions recorded here that revise earlier owner decisions (for the owner's awa
 - **LTR only.** The app is LTR-only, so symbols are not auto-mirrored: `CHEVRON_LEFT` is always "previous" and `BACK` is unmirrored, although the scaffold's swipe already flips under RTL. Revisit (autoMirrored drawables or swapped chevrons) if RTL is ever supported. It is also in the `HeaderPeriod` and `PeriodStepper` KDoc.
 - **No new `*Samples.kt`**, so `mustBeRemoved` is unchanged.
 - **Commit shape.** The stepper change and its two expanded Dashboard goldens are one commit; the samples change and all 8 header goldens are the next (the Dashboard-expanded pair is therefore recorded twice).
+
+**DS6f (font spike)**
+- **Base.** Briefed on `ca11f41`; `feat/m1a-foundation` had moved to `1f787ef` (DS6a, PR #28), and the branch is cut from that.
+- **Candidate set shrank from four to two.** DM Sans has no `tnum`/`pnum` and proportional default digits (hard requirement fails). Google Sans Flex passes the licence check (OFL 1.1, no RFN) but is 3,910,784 B, over the whole 3 MiB budget by itself; the owner said "drop for now". Kept: Figtree and Plus Jakarta Sans, both variable. §3.7, §4, O6, UI-2, UI-16, §6.3 and the DS6h/DS6i slices were updated.
+- **Where it was checked.** The brief said `pft35`; `pft35` is shared and was not running, so a throwaway AVD (API 35, Pixel 7, 1080x2400 at 420 dpi) was used and deleted afterwards. The owner looked at the emulator window; rendering was also read through `uiautomator` (all 43 catalogue rows present, no crash). `FLAG_SECURE` was not touched, so screenshots are blank.
+- **APK baseline correction.** The plan quoted a 1.39 MB release APK; at `1f787ef` it is 21,241,278 B because of SQLCipher's native libraries (A4b).
+- **APK delta method.** One all-fonts rebuild with `./gradlew :app:assembleRelease --offline`, then per-entry compressed sizes from `unzip -lv` (not one font at a time). Total delta with all four was 2,033,320 B; the entries sum to 2,032,684 B and the rest is resource-table overhead. R8 strips unreferenced fonts, so the throwaway used `tools:keep="@font/*"`, which is not shipped.
+- **Static sizes** are fontTools 4.55.3 instances made in a scratch virtual environment, indicative only; google/fonts has no statics for these families.
+- **Hook exception not needed** for the kept set (largest file Newsreader 451,664 B, Plus Jakarta Sans 176,288 B, Figtree 62,712 B); the approved path-scoped shape is kept as a fallback in §3.7.
+- **Wording fixes outside the font scope, made while here:** the `TypePairing` options in §6.3 said three; it has two since all-serif was deferred (§3.6). The "five or six axes" expectation for Google Sans Flex was five.
+- **Nothing was bundled.** No font, licence file, test, hook change or dependency was added in this slice; `design-system.md`'s third-party table gains rows in DS6h and DS6i.

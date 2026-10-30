@@ -183,6 +183,7 @@ So every money text token clears 4.5:1 on every surface either scheme can produc
 > - A **type-pairing** setting chooses which roles use the display font: `HERO_ONLY` (default; the table below) or `EDITORIAL`. An all-serif option was evaluated and deferred by the owner.
 > - Newsreader's optical size is set per serif role (the size clamped to 6–72), not pinned at 48.
 > - The bundled fonts together are capped at 3 MiB (owner-confirmed).
+> - **DS6f outcome (2026-10-30):** only Figtree and Plus Jakarta Sans (plus System) are bundled options; Google Sans Flex and DM Sans were dropped. See premium-look plan §3.7.
 > - Read from the bundled file: Newsreader has ₹, −, `tnum` and `pnum`, but no `lnum`, and its default figures are already tabular.
 > - Details: `2026-10-30-m1a-premium-look.md` §3.6–3.7.
 
