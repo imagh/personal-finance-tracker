@@ -4,7 +4,7 @@
 |-------------|-------|
 | Date        | 2026-10-29 |
 | Author      | architect |
-| Status      | Approved 2026-10-29 (decisions in §12); §6.3 applied to the M1a plan. Amended 2026-10-29 after the owner's mockup review: serif for hero numbers only, header title layout, Budgets list + detail (§12 Q10–Q11) |
+| Status      | Approved 2026-10-29 (decisions in §12); §6.3 applied to the M1a plan. Amended 2026-10-29 after the owner's mockup review: serif for hero numbers only, header title layout, Budgets list + detail (§12 Q10–Q11). Annotated 2026-10-30 by the premium-look plan `2026-10-30-m1a-premium-look.md` (DS6): curated palettes with Graphite as the default, tonal surfaces, type-pairing and sans options, and valid AP1 setting keys. Its notes are marked "DS6" |
 | Related ACs | Owner UI requirements UI-1..UI-10 (defined in §1); PRD L-2 (recolour/re-icon), L-6 (state visible), B-2 (threshold flag), B-3 (unverified visibly marked), SEC-2 (`FLAG_SECURE`), SEC-3 (no permissions), SEC-5 (no sensitive logs), NFR responsiveness |
 | Plan owner  | akashg (repo owner) |
 
@@ -23,13 +23,13 @@ Mockups for the owner to react to are in §5.5 (wireframes), and a styled HTML m
 | ID | Requirement |
 |---|---|
 | UI-1 | The look is like Cashew, but more premium, clean and sleek. |
-| UI-2 | The system default font, plus an option to load a custom font. There is no `INTERNET` permission, so no downloadable fonts. |
-| UI-3 | A modern serif for dashboards and reports; sans-serif for everyday screens. Refined at the mockup review (Q10): the serif sets only the dashboard and report **figures** (the hero number); every title, on every screen, is sans. |
+| UI-2 | The system default font, plus an option to load a custom font. There is no `INTERNET` permission, so no downloadable fonts. **Revised 2026-10-30 (DS6):** the default text font is the bundled Figtree. The system font and three other bundled OFL sans fonts are options, and custom import is unchanged. |
+| UI-3 | A modern serif for dashboards and reports; sans-serif for everyday screens. Refined at the mockup review (Q10): the serif sets only the dashboard and report **figures** (the hero number); every title, on every screen, is sans. **Revised 2026-10-30 (DS6):** this stays the default (`HERO_ONLY`); a type-pairing setting adds `EDITORIAL` (serif hero, large amount and titles). An all-serif option was evaluated and deferred. |
 | UI-4 | Light and dark mode. |
 | UI-5 | Green and red money colours (income/expense, under/over budget, positive/negative balance), accessible in both themes. |
 | UI-6 | Emoji and icons for categories, sub-categories and descriptions, without `material-icons-extended`. |
 | UI-7 | One-hand use in the style of Samsung One UI: content starts mid-screen under a large collapsing header, and interactive elements are within reach. |
-| UI-8 | The accent comes from the system (Material You dynamic colour). An override comes later. |
+| UI-8 | The accent comes from the system (Material You dynamic colour). An override comes later. **Revised 2026-10-30 (DS6):** the default is the curated Graphite palette, with dynamic colour as an opt-in. Four curated palettes are the override. |
 | UI-9 | Every UI element is a reusable, extensible component (M1a §3.4 and the abstraction bar). |
 | UI-10 | Smooth, iOS-like animation: springs and continuity (shared-element) transitions, with no janky defaults. |
 
@@ -101,6 +101,13 @@ Keep what makes Cashew good: emoji/icon categories on coloured badges, a month-b
 | **Reach first** | Content starts about 38% down the screen. Primary actions sit at the bottom (bottom action bar, FAB, bottom sheets). The top holds only secondary actions. |
 | **Continuity** | Springs everywhere. The FAB grows into the add screen, a row's glyph and amount fly into the detail screen, and digits roll. Nothing pops in from nowhere. |
 
+**DS6 amendment (2026-10-30, owner):**
+- "Quiet surfaces, one accent" now means a **tonal canvas with tonal islands**: each island is a slightly different tonal step of the canvas hue, **never white**, with a 1px hairline edge (plus a faint inset top highlight in dark mode). A flat option remains.
+- The accent is a muted metal from a curated palette (Graphite by default) rather than the wallpaper. It is still only on interactive chrome.
+- An optional header glow is off by default.
+- Header actions are icon-only.
+- See `2026-10-30-m1a-premium-look.md` §3.
+
 ### 3.2 Theming architecture (no new abstraction)
 
 All code is in `:app` (Compose is Android-only; `core` stays pure). There are two packages:
@@ -126,6 +133,14 @@ This is the Compose-idiomatic "extended theme" mechanism. It is not an interface
 **Accent override (later, not built):** when needed, offer a curated set of about 8 accent presets whose full schemes are generated offline and committed as constants. This needs no colour-utilities library and matches how the brand fallback is produced. A `ThemePrefs.accent` field is added then, not now (YAGNI).
 
 ### 3.3 Tokens
+
+> **DS6 amendment (2026-10-30):**
+> - The ink-indigo brand scheme below is **retired** by DS6a and replaced by four curated palettes: GRAPHITE (the default), MIDNIGHT, IVORY and AUBERGINE. Light and dark are chosen independently.
+> - Each palette is generated with the procedure below, then pinned to the owner-approved mockup values.
+> - Dynamic colour becomes opt-in (off by default).
+> - Money colours are unchanged.
+> - The accent must be at least 40° of CIELAB hue from money green and red. Warning amber is exempt, because brass and champagne sit 1–9° from it; the warning pill is distinguished by its label and its palette-independent colours instead.
+> - Details: `2026-10-30-m1a-premium-look.md` §3.1.
 
 **Colour: brand fallback scheme** (used when dynamic colour is off, and always in screenshot tests so goldens are deterministic).
 - **Seed:** "ink indigo" `#4A55B8`. Its hue is chosen to be far from money green (~150°) and red (~25°), so the accent can never read as income or expense.
@@ -162,6 +177,14 @@ So every money text token clears 4.5:1 on every surface either scheme can produc
 **Colour: category palette.** 12 named hues (`rose, coral, amber, olive, emerald, teal, sky, blue, indigo, violet, magenta, slate`). Each has a container and content colour per theme: light container at about tone 90 with content at about tone 30, and dark container at about tone 30 with content at about tone 90. The palette is used only for glyph badges.
 - **Contrast:** content on container is at least 3:1 for symbols (WCAG 1.4.11, non-text) and at least 4.5:1 for the letter fallback.
 - **Storage:** the **key** is what is stored in the DB (§4), not a hex value. That lets each theme render its own accessible tones.
+
+> **DS6 amendment (2026-10-30):**
+> - The text font defaults to the bundled **Figtree**. Google Sans Flex, Plus Jakarta Sans, DM Sans and System are options, subject to the DS6f licence and size spike.
+> - A **type-pairing** setting chooses which roles use the display font: `HERO_ONLY` (default; the table below) or `EDITORIAL`. An all-serif option was evaluated and deferred by the owner.
+> - Newsreader's optical size is set per serif role (the size clamped to 6–72), not pinned at 48.
+> - The bundled fonts together are capped at 3 MiB (owner-confirmed).
+> - Read from the bundled file: Newsreader has ₹, −, `tnum` and `pnum`, but no `lnum`, and its default figures are already tabular.
+> - Details: `2026-10-30-m1a-premium-look.md` §3.6–3.7.
 
 **Typography (UI-2, UI-3).** There are two font slots:
 - **Display:** serif, for dashboard and report **figures** only (`amountHero`).
@@ -381,6 +404,7 @@ Release footprint: about 450 KB of font, about 90 KB of icons, and no new runtim
 
 - An unknown or missing value reads as the default. It never throws, so settings written by a newer version are tolerated.
 - Every change is audited.
+- **DS6 correction (2026-10-30):** `SettingsService` accepts only keys matching `[a-z][a-z0-9_]*` (`SettingsService.kt:70`), so the dotted keys above would throw `InvalidSettingKey`. AP1 uses underscored keys (`ui_theme_mode`, ...), the `ui_font_sans` default changes to `FIGTREE`, and `ui_dynamic_color` defaults to `false`. The full key table, with the DS6 keys added, is in `2026-10-30-m1a-premium-look.md` §4.
 - **AP2 files:** `noBackupFilesDir/fonts/custom-text.font` and `custom-display.font`, which are not in the DB. Backup is off anyway.
 
 ## 5. Flows
@@ -718,6 +742,11 @@ Fake data only. Legend: `[serif]` means the display font, `( )` is a glyph badge
   - `ui/settings/{SettingsScreen,AppearanceScreen,AppearanceViewModel,LicencesScreen}.kt`, built from `CollapsingHeaderScaffold`, `GroupedSection` and M3 `ListItem`/`Switch`/`RadioButton`.
   - `MainActivity` collects the prefs and holds the first frame for at most 500 ms.
 - **Refactor:** `docs/features/appearance.md`.
+- **DS6 additions (2026-10-30):**
+  - AP1 also persists `ui_palette_light`, `ui_palette_dark`, `ui_background`, `ui_header_glow`, `ui_type_pairing` and `ui_font_sans`, with the underscored keys, defaults and parse rules in `2026-10-30-m1a-premium-look.md` §4.
+  - It pins the persisted enum names in a test resource.
+  - It adds the Appearance rows, the font licences and the window-colour flow test listed in that plan's §6.3.
+  - `SyncWindowBackground` is already wired by DS6c.
 
 **AP2: custom font import**
 - **Red:**
@@ -813,7 +842,7 @@ No mocks. The only fakes are Robolectric's platform shadows and a test `Activity
 | UI-5 | `ColorContrastTest`, `MoneyToneTest`, `MoneyTextTest` (sign and semantics), `StatusChipTest`, D4 `ProgressMeter` test |
 | UI-6 | `PftSymbolTest`, `CategoryGlyphTest`, `CategoryPaletteContrastTest`, B4 `EmojiInputValidatorTest`, `ManifestHardeningTest` (EmojiCompat) |
 | UI-7 | `CollapsingHeaderScaffoldTest` (content ≥ 35% down, snap, short-window), `BottomActionBarTest` (reach, 48dp) |
-| UI-8 | `ThemeResolutionTest` (dynamic default, brand fallback, money independent of the accent) |
+| UI-8 | `ThemeResolutionTest` (dynamic default, brand fallback, money independent of the accent). **Revised by DS6:** Graphite is the default, dynamic colour is opt-in and ignores the palette, and money is independent of both (premium-look plan §7) |
 | UI-9 | Reviewer reuse check (M1a §8), the §3.7 inventory, `code-structure.md` table |
 | UI-10 | `PftMotionTest`, `PressScaleTest`, `MoneyTextTest` (animated end state), `CollapsingHeaderScaffoldTest` (snap), manual release-build check |
 | B-3 | D4 `ProgressMeter` test (hatched segment, labelled), `StatusChipTest` |
@@ -913,10 +942,10 @@ The owner's phone gets only release-signed builds (PRD decision 31). The first o
 | Q2 | Expense amounts in **list rows**: neutral text with a `−` sign (calmer and more premium; red is kept for totals, over-budget and negative balances), or red on every expense row? | Neutral in rows, red in totals |
 | Q3 | Positive account balances: green as stated, or neutral, with only negative balances in red? (Cash and bank balances are almost always positive, so green everywhere is loud.) | **Neutral** positive balances; only negative balances are red |
 | Q4 | When do appearance settings and custom-font import ship: their own small slice right after A-final (recommended), or folded into slice H? | Own slice after A-final |
-| Q5 | Brand fallback accent (used when dynamic colour is off, and in goldens): ink indigo `#4A55B8`? | `#4A55B8` |
+| Q5 | Brand fallback accent (used when dynamic colour is off, and in goldens): ink indigo `#4A55B8`? | `#4A55B8`. **Superseded 2026-10-30 (DS6):** ink indigo is retired, and the curated Graphite palette is the default and the goldens' scheme |
 | Q6 | Bottom navigation: **Home · Budgets · Upcoming · More**, with a bottom-right FAB for add (mockups). Accounts, categories, tags, loans, goals and settings live under More. | As proposed |
 | Q7 | "Emoji for descriptions": category glyph on each row plus free emoji typed in titles (no schema change), or a per-transaction icon override (adds a column in C1)? | Category glyph + typed emoji |
 | Q8 | Remove the EmojiCompat initializer, so emoji come from the system font only and nothing asks Play services for a font? | Remove |
 | Q9 | The brief says A1 is merged, but `feat/m1a-foundation` is still at `8bde3b6` without A1. Merge the A1 PR into the base before DS1 branches? | Done: PR #9 merged into `feat/m1a-foundation` (2026-10-29) |
-| Q10 | (Mockup review, 2026-10-29.) Serif titles, sans titles, or a mix? Where does the title sit relative to the serif hero? | Serif for the hero number only; **all titles sans**. The read-only title is centred in the upper band with clear space above the hero; the hero, caption and the ‹ › period stepper (plus a header swipe) sit low in the thumb zone (§3.4 "Header layout rule"). |
+| Q10 | (Mockup review, 2026-10-29.) Serif titles, sans titles, or a mix? Where does the title sit relative to the serif hero? | Serif for the hero number only; **all titles sans**. The read-only title is centred in the upper band with clear space above the hero; the hero, caption and the ‹ › period stepper (plus a header swipe) sit low in the thumb zone (§3.4 "Header layout rule"). **Revisited 2026-10-30 (owner, DS6):** hero-only serif stays the **default** (`HERO_ONLY`). `EDITORIAL` (serif hero, large amount, display, headline and title roles) becomes a user option, with Newsreader's optical size set per role. All serif was evaluated in the mockup and deferred; it could return later as a third value without a migration. The header layout rule is unchanged. |
 | Q11 | (Mockup review, 2026-10-29.) Budgets as one dashboard, or a list plus a detail page? | **List + detail.** The Budgets tab lists budgets (Standard header); a budget detail page shows everything about one budget (Dashboard header). Add stays in the FAB. M1a D2/D4 amended. |
