@@ -19,13 +19,21 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.SemanticsNodeInteractionCollection
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.center
 import androidx.compose.ui.test.down
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.moveBy
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -525,6 +533,34 @@ class CollapsingHeaderScaffoldTest {
         compose.onNodeWithContentDescription("Next period").performClick()
         assertEquals(1, steps.previous)
         assertEquals(2, steps.next)
+    }
+
+    private val isImage = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Image)
+    private val hasTextNode = SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)
+
+    private fun SemanticsNodeInteractionCollection.contentDescriptions() =
+        fetchSemanticsNodes().map { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }
+
+    private fun SemanticsNodeInteractionCollection.assertTouchTargetsAtLeast48dp() =
+        fetchSemanticsNodes().forEach { node ->
+            val touch = node.touchBoundsInRoot.inDp()
+            assertTrue(
+                "touch target is ${touch.width} x ${touch.height}dp",
+                touch.width >= 47.5f && touch.height >= 47.5f,
+            )
+        }
+
+    @Test
+    fun `the period stepper buttons are 48dp symbols named Previous period and Next period, with no text`() {
+        show(style = HeaderStyle.Dashboard, hero = sampleHero, period = HeaderPeriod({}, {}))
+        val inStepper = hasAnyAncestor(hasTestTag(HeaderTags.PERIOD_STEPPER))
+
+        val buttons = compose.onAllNodes(hasClickAction() and inStepper)
+        assertEquals(listOf("Previous period", "Next period"), buttons.contentDescriptions())
+        buttons.assertTouchTargetsAtLeast48dp()
+        // A symbol is an Icon (an Image node); a text glyph is not.
+        compose.onAllNodes(isImage and inStepper, useUnmergedTree = true).assertCountEquals(2)
+        compose.onAllNodes(hasTextNode and inStepper, useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test

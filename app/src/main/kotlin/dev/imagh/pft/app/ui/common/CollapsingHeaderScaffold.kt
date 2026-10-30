@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
@@ -46,8 +45,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -59,6 +56,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import dev.imagh.pft.R
+import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -76,11 +74,11 @@ enum class HeaderStyle {
 }
 
 /**
- * The period control of a [HeaderStyle.Dashboard] header: the scaffold draws a ‹ › stepper at the
+ * The period control of a [HeaderStyle.Dashboard] header: the scaffold draws a chevron stepper at the
  * end of the caption row and also steps when the expanded header is swiped sideways.
  *
- * @property onPrevious show the previous period (swipe right in a left-to-right layout, or ‹).
- * @property onNext show the next period (swipe left in a left-to-right layout, or ›).
+ * @property onPrevious show the previous period (swipe right in a left-to-right layout, or the left chevron).
+ * @property onNext show the next period (swipe left in a left-to-right layout, or the right chevron).
  */
 class HeaderPeriod(
     val onPrevious: () -> Unit,
@@ -581,26 +579,11 @@ private fun HeaderTitle(
     )
 }
 
+/** The previous and next period buttons: chevron symbols ([HeaderIconButton]), labelled for TalkBack. */
 @Composable
 private fun PeriodStepper(period: HeaderPeriod) {
-    val previous = stringResource(R.string.header_period_previous)
-    val next = stringResource(R.string.header_period_next)
     Row(Modifier.testTag(HeaderTags.PERIOD_STEPPER)) {
-        IconButton(period.onPrevious) {
-            Text(
-                "‹",
-                Modifier.clearAndSetSemantics {
-                    contentDescription = previous
-                },
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        }
-        IconButton(period.onNext) {
-            Text(
-                "›",
-                Modifier.clearAndSetSemantics { contentDescription = next },
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        }
+        HeaderIconButton(PftSymbol.CHEVRON_LEFT, stringResource(R.string.header_period_previous), period.onPrevious)
+        HeaderIconButton(PftSymbol.CHEVRON_RIGHT, stringResource(R.string.header_period_next), period.onNext)
     }
 }
