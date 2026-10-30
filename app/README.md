@@ -7,9 +7,10 @@ later slices) the Room/SQLCipher implementations of the `core` repository interf
 handling, app lock and safe logging. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1, DS2 and DS4 (theming, motion, one-hand layout).** The app launches a `FLAG_SECURE`, edge-to-edge
+Status: **A1 skeleton plus DS1, DS2 and DS4 (theming, motion, one-hand layout) and A4a (the Room database v1 and its core adapters).** The app launches a `FLAG_SECURE`, edge-to-edge
 window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
-Screens, persistence and DI arrive in slices A4a–A5 (plan
+The database is built and tested but **not wired into the running app yet** (no `AppContainer` until A5, no
+encryption until A4b). Screens, DI and encryption arrive in slices A4b–A5 (plan
 `docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system in DS3 and DS5 (plan
 `docs/plans/2026-10-29-m1a-design-system.md`; what is built: `docs/architecture/design-system.md`).
 
@@ -92,6 +93,27 @@ components are shared (named consumers in `docs/architecture/code-structure.md`)
 to restyle. `HeaderSamples.kt` holds the fake-data samples that feed the previews, the debug
 catalogue and `HeaderScreenshotTest`.
 
+### `data` (Room persistence, A4a)
+
+Package `dev.imagh.pft.app.data`. The Room implementations of the repository interfaces `core`
+defines (the only swap boundaries in M1a); tables and conventions are in
+[`docs/architecture/data-model.md`](../docs/architecture/data-model.md).
+
+| Symbol | What it is |
+|---|---|
+| `PftDatabase` (`VERSION = 1`), `Migrations.ALL` | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`) with exported schemas in `app/schemas/`; the ordered list of migrations. Builders must call `installAuditTriggers()` |
+| `AuditTriggers`, `RoomDatabase.Builder.installAuditTriggers()` | The `BEFORE UPDATE`/`BEFORE DELETE` triggers that make `audit_entry` append-only, created in `onCreate` (Room does not model triggers) |
+| `RoomTransactionRunner(db)` | core `TransactionRunner` over `withTransaction`. A failure at any nesting depth rolls back the outermost block, even when an outer block swallows it (same as core's fake) |
+| `RoomAuditLog(dao)`, `AuditDao`, `AuditEntryMapper` | core `AuditLog`: insert and select only. `changes_json` is the pinned JSON shape written with `org.json` |
+| `RoomIdentityRepository`, `RoomAppSettingsRepository` | core `IdentityRepository` and `AppSettingsRepository` over plain DAOs |
+| `MetaColumns` + `MetaMapper` | The `@Embedded` shared columns (`id`, `created_at`, `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at`, `archived_at`) and the one mapping to `EntityMeta`. Entities declare `primaryKeys = ["id"]` themselves |
+| `BaseDao<E>`, `EntityMapper<T, E>`, `RoomEntityRepository<T, E, Id>` | What a new entity composes (B1 onwards): its DAO extends `BaseDao` and overrides `byId` with an `@Query`; its mapper implements `EntityMapper`; its repository extends `RoomEntityRepository(dao, "<auditType>", mapper)` and adds only its own queries |
+
+Adding an entity table (B1 onwards): the Room entity with `@Embedded MetaColumns` and explicit
+snake_case `@ColumnInfo` names, DAO, mapper, repository, a `Migration` registered in `Migrations.ALL`
+with `PftDatabase.VERSION` bumped, a `migrateNToN+1` test, and a line in `AuditedTables` (test
+support). `RoomAuditColumnsTest` fails if a column is neither audited nor on the reviewed allowlist.
+
 ### Window theme
 
 `res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint the brand surface
@@ -118,7 +140,11 @@ release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 
 ## Data it owns
 
-None yet. The encrypted Room database (`pft.db`) arrives in A4a/A4b.
+The Room database `pft.db` (schema v1: `user_profile`, `device`, `app_setting`, `audit_entry`; see
+[`docs/architecture/data-model.md`](../docs/architecture/data-model.md)). It is plaintext and not opened
+by the running app yet: A4b adds SQLCipher, the Keystore-wrapped key and the pre-migration backup, and
+A5 the `AppContainer` that opens it. Times are stored as epoch milliseconds, so the clock the app
+gives `AuditedWriter` must be millisecond-resolution (A5).
 
 ## Configuration
 
@@ -132,9 +158,14 @@ nothing reads or writes a setting. Colours, like all design tokens, are static c
 ## Dependencies
 
 Compose BOM 2024.10.01 (ui 1.7.5, material3 1.3.1), `androidx.activity:activity-compose` 1.9.3.
+`:core:ledger` (and `:core:money` through it). Room 2.7.1 (`room-runtime`; `room-ktx` is not needed, since
+2.7 `withTransaction` lives in the runtime) with its compiler through KSP 2.1.0-1.0.29, which pulls in
+`androidx.sqlite` 2.5.0 and kotlinx-coroutines. Room's compiler, KSP and the SQL verifier
+(`sqlite-jdbc`) run at build time only and are not shipped.
 `androidx.compose.ui:ui-tooling-preview` (annotations only, via the BOM; the only DS2 addition to
 the release runtime classpath), `androidx.compose.ui:ui-tooling` (debug only).
-Test only: JUnit 5 Jupiter, JUnit Vintage + JUnit 4 (to run Robolectric), Robolectric 4.14.1,
+Test only: `:core:ledger` test fixtures (in-memory fakes, `TestClock`, Kotest assertions), `room-testing`
+(`MigrationTestHelper`), JUnit 5 Jupiter, JUnit Vintage + JUnit 4 (to run Robolectric), Robolectric 4.14.1,
 `androidx.test:core`, `androidx.compose.ui:ui-test-junit4` (via the BOM), Roborazzi 1.36.0
 (`roborazzi`, `roborazzi-compose`, `roborazzi-junit-rule` and its Gradle plugin; screenshot tests).
 No network, analytics or crash SDKs.
@@ -148,22 +179,24 @@ No network, analytics or crash SDKs.
 ./gradlew :app:recordRoborazziDebug   # re-record the screenshot goldens (deliberate visual changes only)
 ./gradlew :app:verifyRoborazziDebug   # compare against the goldens (what `check` does via the unit tests)
 ./gradlew :app:assembleRelease        # minified (R8) release APK, UNSIGNED: no release signing until H3
-./gradlew :app:verifyReleaseShrink    # R8 guard (part of `check`): MainActivity kept, preview code removed
+./gradlew :app:verifyReleaseShrink    # R8 guard (part of `check`): MainActivity and PftDatabase_Impl kept, preview code removed
+./gradlew :app:testDebugUnitTest --tests '*Room*'   # the Room integration tests only
 ```
 
 **Release build (R8).** `buildTypes.release` has `isMinifyEnabled` and `isShrinkResources` on
 (owner decision 2026-10-30, so sample and preview code does not ship), with
-`proguard-android-optimize.txt` plus `app/proguard-rules.pro`. That file has no keep rules yet: the
-release runtime classpath is Compose and activity-compose, which carry their own consumer rules,
-and AGP keeps the manifest's `MainActivity`. Add a rule only for something R8 reports or a smoke
-test shows broken, with a comment saying why; the SQLCipher/Room rules come with those
-dependencies (A4a, H3). There is deliberately **no release `signingConfig`** (H3 adds it from
+`proguard-android-optimize.txt` plus `app/proguard-rules.pro`. That file has no keep rules: Compose,
+activity-compose and room-runtime carry their own consumer rules (Room's keeps every `RoomDatabase`
+subclass and its constructor, which is how `PftDatabase_Impl` is found by name), and AGP keeps the
+manifest's `MainActivity`. Add a rule only for something R8 reports or a smoke test shows broken,
+with a comment saying why; the SQLCipher rules come with that dependency (A4b, H3). There is deliberately **no release `signingConfig`** (H3 adds it from
 `ANDROID_KEYSTORE_*` and must fail closed), so `assembleRelease` yields `app-release-unsigned.apk`.
 The release APK is about 1.4 MB with R8 (18.3 MB without).
 
 `verifyReleaseShrink` (registered in `app/build.gradle.kts`, wired into `check`) runs
 `assembleRelease`, reads `build/outputs/mapping/release/mapping.txt` and fails with a clear message
-if minification is off, `dev.imagh.pft.app.MainActivity` is gone, or any
+if minification is off, `dev.imagh.pft.app.MainActivity` or `dev.imagh.pft.app.data.PftDatabase_Impl`
+(Room creates it by reflection; nothing references it until A5) is gone or renamed, or any
 `dev.imagh.pft.app.ui.theme.TokenSheet*` class is still present. When a slice adds preview or sample
 code, add its compiled class prefix to `mustBeRemoved`. To smoke-test a release build on `pft35`,
 sign a copy of the APK with the debug keystore, outside the build (recipe in `docs/learnings`).
@@ -183,6 +216,19 @@ Design-token tests: `ColorContrastTest` (JUnit 5, WCAG contrast of every colour 
 `NavTransitionTest`, `PressScaleTest`, `CollapsingHeaderScaffoldTest` (real nested scroll, clock stepped by hand),
 `BottomActionBarTest` and `HeaderScreenshotTest` (goldens for both header styles, expanded and collapsed, and the bar); `DesignCatalogTest` lives in `src/testDebug` because
 the catalogue is debug-only.
+
+**Room tests (A4a).** They run on a real in-memory `PftDatabase` (`TestDatabase.create()`, Robolectric's
+native SQLite) with `runSuspending { }` around suspend calls, and never mock the DAO. `AuditTriggersTest`
+(raw SQL: the database itself refuses UPDATE/DELETE on `audit_entry`), `AuditDaoTest` and
+`AuditEntryMapperTest`, `RoomIdentityRepositoryTest`, `RoomAppSettingsRepositoryTest`,
+`RoomTransactionRunnerTest` (commit, rollback, nesting, swallowed inner failure),
+`IdentityRoomIntegrationTest` and `RoomAuditedWriterIntegrationTest` (core services over Room via
+`RoomTestKit`, including injected audit-write failures), `MetaMapperTest` and `RoomEntityRepositoryTest`
+(the shared blocks, through the throwaway `SampleThing` entity and `TestDatabase.createWithSample()`),
+`RoomAuditColumnsTest` (every column audited or allowlisted, plus tests that the check catches a miss).
+`MigrationTest` (in `src/testDebug`, because Robolectric serves the tested variant's merged assets and
+the exported schemas are debug-variant assets only) uses `MigrationTestSupport`: `createV1 { seed }`,
+then `migrateTo(version, migrations)`, which also fails unless the audit triggers survived.
 
 Robolectric tests use the JUnit 4 runner and execute on the JUnit Vintage engine, because
 Robolectric does not run on Jupiter. Robolectric downloads its `android-all` SDK 35 jar from Maven
