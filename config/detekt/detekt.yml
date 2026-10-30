@@ -2,6 +2,14 @@
 # Keep this file small: every override needs a reason.
 
 style:
+  ForbiddenImport:
+    active: true
+    # One icon family. Every icon is a PftSymbol (Material Symbols Rounded vector drawables,
+    # ui/theme/PftSymbol.kt); material-icons-core is the older Material Icons family, and mixing two
+    # families looks cheap (design plan §3.6). material-icons-extended is also banned: it is several
+    # MB before R8. M3's own internal components may still use it; this only checks our sources.
+    imports:
+      - 'androidx.compose.material.icons.*'
   MagicNumber:
     # Tests use literal amounts and dates on purpose. The design tokens in ui/theme (colours now;
     # type, spacing and motion later) are named literals by definition, and `ui/theme` is the only

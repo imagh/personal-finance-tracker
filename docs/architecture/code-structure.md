@@ -16,11 +16,13 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   schemas/                               # exported Room schemas, one JSON per version (committed; served to migration tests as debug assets)
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors, PftTypography, PftShapes,
-                                         # PftSpacing, PftMotion (design-system tokens); TokenSheet* (token sheet: preview, catalogue, goldens)
+                                         # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
+                                         # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), BottomActionBar
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
-                                         # GroupedSection, EmptyState; *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples,
-                                         # GroupedSectionSamples, EmptyStateSamples: previews, catalogue and goldens share them, R8 drops them)
+                                         # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
+                                         # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
+                                         # EmptyStateSamples, CategoryGlyphSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v1), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
@@ -28,13 +30,15 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
       identity/ settings/ audit/               # entities, DAOs, Room repositories: users+devices, app settings, the audit trail (RoomAuditLog, AuditEntryMapper)
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
   src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
-  src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL)
+  src/main/res/drawable/                 # sym_<key>.xml: 92 Material Symbols Rounded vector drawables (Apache-2.0), imported by tools/material-symbols
+  src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Material Symbols Apache-2.0)
   src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section and empty-state pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
                                          # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
     testing/                             # test support: TestDatabase, RoomTestKit, MigrationTestSupport, AuditColumnsCheck + AuditedTables,
                                          # RunSuspending, SampleThing (throwaway entity for the shared-block tests)
+  src/test/resources/pft-symbol-keys.txt # the pinned, permanent PftSymbol keys (removal or rename fails PftSymbolTest)
   src/test/screenshots/                  # committed Roborazzi goldens (fake data only), verified by `check`
   src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest) and MigrationTest (needs the debug-only schema assets)
 core/
@@ -45,6 +49,7 @@ core/
     src/testFixtures/kotlin/...        # ledger only so far: fakes and matchers other modules reuse
 core/shared/            # none yet (promoted on the 2nd consumer outside the ledger chain)
 tools/redact/           # Python redaction tool (not part of the Gradle build)
+tools/material-symbols/ # Python importer for the Material Symbols drawables: symbols.txt (curated list), svg-sha256.txt (sources), unit tests (not part of the Gradle build)
 ```
 
 Package root `dev.imagh.pft` is permanent (plan §12 Q4).
@@ -99,6 +104,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `StatusChip` | C4, C5, D4, E4 | DS5 |
 | app UI (`ui/common`) | `GroupedSection` | C4 accounts strip, C5 detail, D4 detail, AP1/H1 settings, H2 diagnostics | DS5 |
 | app UI (`ui/common`) | `EmptyState` | B2 `EntityListScreen` (all lists), C4 empty month, C5 no results | DS5 |
+| app UI (`ui/theme`) | `PftSymbol` (92 Material Symbols, permanent keys, `fromKey`) | `CategoryGlyph`; chrome icons everywhere (DS6e `HeaderIconButton`, A5 nav, B4 symbol grid) | DS3 |
+| app UI (`ui/theme`) | `CategoryPalette` (`PftTheme.palette`, 12 named hues, light and dark), `GlyphSize` | `CategoryGlyph`; B4 palette swatches | DS3 |
+| app UI (`ui/common`) | `CategoryGlyph` + `GlyphSource` (`fromIconKey` parses `icon_key`) | B2 account type, B4, C4 rows, `CategoryPicker`, D4, E4 | DS3 |
 
 The remaining app-UI building blocks (`EntityListScreen`, `AmountField`, `AuditHistoryList`, ...) are
 added to this table by A5, B2 and C5.

@@ -1,10 +1,8 @@
 # Design system
 
 Status: **DS1 (colour, `PftTheme`, window themes), DS2 (type, shape, spacing, bundled serif,
-screenshot harness, debug catalogue), DS4 (motion tokens, `CollapsingHeaderScaffold`,
-`BottomActionBar`) and DS5 (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`) are built.**
-Icons and the category palette (DS3) are specified in
-`docs/plans/2026-10-29-m1a-design-system.md` and are added to this page by their slice.
+screenshot harness, debug catalogue), DS3 (icons, category palette, `CategoryGlyph`, emoji policy), DS4 (motion tokens,
+`CollapsingHeaderScaffold`, `BottomActionBar`) and DS5 (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`) are built.**
 
 The plan is the spec; this page records what is built and how to extend it.
 
@@ -266,6 +264,78 @@ canvas stroke.
 symbol goes here), a `bodyLarge` message in `onSurfaceVariant`, and an optional tonal button. The label
 and callback must be given together. It sits in a list's content; it does not fill the screen itself.
 
+## Icons and emoji (DS3, UI-6)
+
+**One icon family: Material Symbols Rounded** (Apache-2.0), weight 400, grade 0, optical size 24, outlined (FILL 0). Filled
+variants are for selected navigation items only and are not shipped yet (A5 adds them when the nav bar exists). Not
+`material-icons-extended` or `material-icons-core`: detekt `ForbiddenImport` bans `androidx.compose.material.icons.*` in our
+sources (M3's own internals may still use it).
+
+- **Registry.** `PftSymbol` (`ui/theme`) is an enum of 92 symbols, `PftSymbol(key, res)`, with `PftSymbol.fromKey(key)` (exact
+  match, null if unknown). Each is a vector drawable `res/drawable/sym_<key>.xml` (24dp, viewport 960, path data from the SVG,
+  black: tint it with `Icon`), 0.5 to 1.5 KB; all 92 total 73 KB.
+- **Keys are permanent.** They are persisted in `category.icon_key` (`sym:<key>`), so like the application ID they are never renamed or
+  removed, only added. `app/src/test/resources/pft-symbol-keys.txt` pins every key: removing or renaming one fails
+  `PftSymbolTest`, and so does adding one without listing it (so additions are a visible edit). An unknown key (for example from a newer
+  version synced in M2) renders the letter fallback and never crashes.
+- **`icon_key` grammar** (untrusted input, parsed once by `GlyphSource.fromIconKey`, `ui/common`): `sym:<key>`, key matching
+  `[a-z0-9_]{1,40}` and registered; or `emoji:<value>`, 1 to 16 UTF-16 units, well-formed, with no whitespace or control
+  characters (invisible format characters such as zero-width space, word joiner, BOM and the bidi overrides are also refused;
+  the zero-width joiner and tag characters are allowed, so ZWJ families, flags and subdivision flags work). Anything else, oversized
+  input included, is the letter fallback (the name's first letter or digit, upper-cased). Whether a value is really a renderable
+  emoji is the B4 `EmojiInputValidator`'s job when a category is saved.
+- **`CategoryGlyph(source, name, colourKey, size, onClick)`** (`ui/common`) draws a symbol, one emoji or a letter on a
+  `CategoryPalette` badge (12 hues, light and dark: `PftTheme.palette[colourKey]`; unknown name is `slate`). It is announced as the
+  category name, at a fixed dp size (`GlyphSize`: chip 28, row 40, hero 56), and is a button only when given `onClick`.
+- **Emoji** are drawn by the system emoji font, so they differ between phones (accepted; symbols are the consistent option).
+  `EmojiCompatInitializer` is removed from the merged manifest (it fetches a font through Google Play services);
+  `ManifestHardeningTest` asserts it is absent. Compose is not affected: it uses the platform emoji font (minSdk 33).
+- **Descriptions** (plan Q7): a transaction row's glyph is its sub-category's if set, otherwise its category's; free emoji
+  typed in titles render in the system font. There is no per-transaction icon.
+- **Not changed in DS3 (on purpose).** DS4's `PeriodStepper` text chevrons and DS5's `EmptyState` placeholder glyph stay as they are:
+  the premium-look plan assigns the chevron swap to DS6e (`PftSymbol.CHEVRON_LEFT`/`CHEVRON_RIGHT`, `HeaderIconButton`), and the
+  glyph slot of `EmptyState` is filled by its consumers with a `CategoryGlyph`.
+
+### The curated list
+
+Permanent key (Material Symbols name when different). Chrome keys are semantic; category keys keep the Material name.
+
+| Group | Keys |
+|---|---|
+| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle` |
+| Food and drink | `restaurant`, `local_cafe`, `fastfood`, `local_bar`, `bakery_dining`, `local_pizza`, `icecream` |
+| Shopping | `shopping_cart`, `shopping_bag`, `grocery`, `checkroom`, `redeem`, `diamond` |
+| Transport | `directions_car`, `directions_bus`, `train`, `local_taxi`, `two_wheeler`, `flight`, `local_gas_station` |
+| Home and bills | `home`, `bed`, `chair`, `bolt`, `water_drop`, `wifi`, `cleaning_services`, `handyman`, `receipt_long`, `phone_iphone`, `tv` |
+| Health | `medication`, `local_hospital`, `fitness_center`, `spa`, `favorite` |
+| Fun and travel | `movie`, `sports_esports`, `music_note`, `theater_comedy`, `beach_access`, `luggage` |
+| Family and learning | `school`, `menu_book`, `child_care`, `pets` |
+| Money and work | `work`, `payments`, `account_balance`, `savings`, `trending_up`, `credit_card`, `account_balance_wallet`, `currency_rupee`, `local_atm`, `receipt`, `subscriptions` |
+| Other | `category`, `star`, `flag`, `volunteer_activism` |
+
+DS6e depends on the chrome keys `back`, `search`, `filter`, `overflow`, `chevron_left` and `chevron_right`; `PftSymbolTest` pins them.
+
+### Adding an icon
+
+1. Pick the symbol on https://fonts.google.com/icons (style Rounded, weight 400, grade 0, optical size 24, fill off). The
+   file name is the symbol's name: `symbols/web/<name>/materialsymbolsrounded/<name>_24px.svg` in `google/material-design-icons`.
+2. Choose a permanent key `[a-z0-9_]{1,40}` and add a line `<key> <name>` to `tools/material-symbols/symbols.txt`. Chrome icons
+   get a semantic key; category symbols keep the Material name. **Think before choosing: the key can never change.**
+3. Download into a **new empty directory** and convert (the script treats each SVG as untrusted: it accepts only one `<svg>` with one
+   `<path>` and the expected `viewBox`, rejects DOCTYPE, scripts, external references and oversized files, and keeps only the path data):
+   `python3 -I tools/material-symbols/import_symbols.py --download-dir <new empty dir> --res-dir app/src/main/res/drawable`.
+   It re-creates every drawable from the pinned commit (`COMMIT` in the script). `tools/material-symbols/svg-sha256.txt` is a check, not
+   just a record: every file is downloaded, validated and compared with its committed hash **before anything is written**. A
+   mismatch for an already-listed key aborts with exit code 1 and a message naming the key, and writes no drawable and no hash. A key
+   not yet listed has its hash recorded. `git diff` must show only the new drawable and one new hash line. To move to a newer
+   upstream commit, change `COMMIT` deliberately and re-run with `--update-hashes`, which accepts changed sources and overwrites their
+   hashes; then review every changed drawable and hash.
+4. Add the entry to `PftSymbol` (`KEY("key", R.drawable.sym_key)`) and the key to `pft-symbol-keys.txt`.
+5. Run `./gradlew :app:testDebugUnitTest --tests '*PftSymbolTest'`, then re-record the symbol goldens
+   (`./gradlew :app:recordRoborazziDebug`) and review the PNG diff. Update the list above.
+6. The Apache-2.0 notice (`assets/licenses/material-symbols-APACHE-2.0.txt`) already covers every symbol from this source.
+   Icons from any other source need their own licence file and a row in the third-party table.
+
 ## Previews, the token sheet and screenshot goldens
 
 `ui/theme/TokenSheet.kt` shows every token on one sheet (type scale, amount styles, shapes,
@@ -287,6 +357,11 @@ Content goldens (DS5) come from `ContentScreenshotTest`, captured by the bounds 
 composable on `surface` (393dp wide): `money-text-<light|dark>[-2x].png` (the 2x ones at font scale
 2.0), `status-chip-`, `grouped-section-` and `empty-state-<light|dark>.png`, 19 to 170 KB each. The
 Dashboard header sample uses a `MoneyText` hero, so its two expanded goldens show the money red.
+
+Glyph goldens (DS3) come from `CategoryGlyphScreenshotTest`: every `PftSymbol` on a teal, an amber and a violet badge
+(`category-glyph-symbols-<teal|amber|violet>-<light|dark>.png`, about 175 KB each) and the emoji, letter and fallback sources
+in all 12 hues and three sizes (`category-glyph-sources-<light|dark>.png`, about 100 KB). They render identically on the debug
+and release unit-test variants. The emoji in them are drawn by Robolectric's native emoji font, so they check layout, not artwork.
 
 The sheet is split into `TokenSheetPages`, each short enough for one 393x851dp screen at 200% font
 scale, so each page is one golden. Goldens are in `app/src/test/screenshots/`:
@@ -314,7 +389,8 @@ Screenshot rules:
 - Goldens use **fake data only**; reviewers reject real names, amounts or account numbers.
 - Goldens are a review aid. Correctness is carried by the behaviour tests (`PftTypographyTest`,
   `PftShapesTest`, `PftSpacingTest`, `ColorContrastTest`, `CollapsingHeaderScaffoldTest`,
-  `BottomActionBarTest`, `MoneyTextTest`, `StatusChipTest`, `GroupedSectionTest`, `EmptyStateTest`), not by pixels.
+  `BottomActionBarTest`, `MoneyTextTest`, `StatusChipTest`, `GroupedSectionTest`, `EmptyStateTest`, `PftSymbolTest`, `GlyphSourceTest`,
+  `CategoryGlyphTest`), not by pixels.
   Native-graphics output can differ across OS or Robolectric versions; record on one machine and
   re-record on upgrades.
 - **Fit is asserted with line metrics, not `hasVisualOverflow`.** In Compose 1.7 `TextLayoutResult.hasVisualOverflow`
@@ -328,7 +404,9 @@ Screenshot rules:
 |---|---|---|---|---|---|---|
 | Newsreader variable font `Newsreader[opsz,wght].ttf` (Production Type) | https://github.com/google/fonts/tree/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/newsreader (google/fonts `ofl/newsreader`; upstream project https://github.com/productiontype/Newsreader) | Version 1.003 per google/fonts commit `db2573d`; file unchanged at google/fonts commit `8b0a1d0` (2026-03-12) | SIL OFL 1.1, no Reserved Font Name | 451,664 B | `8a08d13f8a6c0d51be379a60af84f945f65369a67e509ee3c3bdcc421254d7c1` | `app/src/main/res/font/newsreader.ttf`, unmodified |
 | Newsreader licence text `OFL.txt` | same directory, same commit | | | 4,394 B upstream | upstream `fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8` | `app/src/main/assets/licenses/newsreader-OFL.txt` (shipped sha256 `9a1ec58d31446303d5c3aac2e31ddecdb0e9ec285d5008747e929096d03f0b60`: the text is identical to upstream apart from trailing whitespace trimmed and a final newline added by the repo's pre-commit hooks) |
+| Material Symbols Rounded (92 icons, SVG path data only) | https://github.com/google/material-design-icons (`symbols/web/<name>/materialsymbolsrounded/<name>_24px.svg`) | commit `10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7` (2026-10-23) | Apache-2.0 | 73 KB of drawables | per-icon SVG hashes in `tools/material-symbols/svg-sha256.txt`; upstream `LICENSE` 11,357 B, `58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd` | `app/src/main/res/drawable/sym_<key>.xml` (path data unchanged, wrapped in a group that shifts the SVG's -960 origin); licence in `app/src/main/assets/licenses/material-symbols-APACHE-2.0.txt` (attribution header, then the upstream text with trailing whitespace trimmed) |
 
+`BundledSymbolsLicenceTest` checks that the Apache-2.0 text and the attribution (source and pinned commit) ship.
 `BundledFontTest` pins the font's size and SHA-256 and checks that the OFL text and the line
 "Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)" ship.
 OFL section 2 requires the licence to accompany every copy; AP1 adds an in-app licences viewer.
