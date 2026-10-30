@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import dev.imagh.pft.app.ui.common.BottomActionBarSamples
 import dev.imagh.pft.app.ui.common.DashboardHeaderSample
+import dev.imagh.pft.app.ui.common.MoneyTextSamples
 import dev.imagh.pft.app.ui.common.StandardHeaderSample
 import dev.imagh.pft.app.ui.common.StatusChipSamples
 import dev.imagh.pft.app.ui.theme.DisplayFont
@@ -109,6 +110,7 @@ private enum class CatalogSection(
     BOTTOM_BAR("Bottom bar"),
     STANDARD_HEADER("Standard header"),
     DASHBOARD_HEADER("Dashboard header"),
+    MONEY("Money"),
     CHIPS("Chips"),
 }
 
@@ -126,6 +128,7 @@ private fun SectionContent(section: CatalogSection) {
                 when (section) {
                     CatalogSection.MOTION -> MotionSection()
                     CatalogSection.BOTTOM_BAR -> BottomActionBarSamples()
+                    CatalogSection.MONEY -> Box(Modifier.padding(16.dp)) { MoneyTextSamples() }
                     CatalogSection.CHIPS -> Box(Modifier.padding(16.dp)) { StatusChipSamples() }
                     else -> TokenSheet()
                 }

@@ -123,4 +123,15 @@ class DesignCatalogTest {
         compose.onNodeWithText("Chips").assertIsSelected()
         listOf("Unverified", "Overdue", "Under", "Paused").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
     }
+
+    @Test
+    fun `the Money section shows signed amounts in every size`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Money").performClick()
+        compose.onNodeWithText("Money").assertIsSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("−₹48,250.40"))
+        compose.onNodeWithText("−₹48,250.40").assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("+₹1,25,000.00"))
+        compose.onNodeWithText("+₹1,25,000.00").assertIsDisplayed()
+    }
 }

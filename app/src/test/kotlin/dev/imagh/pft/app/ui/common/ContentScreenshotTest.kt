@@ -62,4 +62,20 @@ class ContentScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun statusChipDark() = capture("status-chip-dark") { StatusChipSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun moneyTextLight() = capture("money-text-light") { MoneyTextSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun moneyTextDark() = capture("money-text-dark") { MoneyTextSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun moneyTextLightFont200() = capture("money-text-light-2x", fontScale = 2f) { MoneyTextSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun moneyTextDarkFont200() = capture("money-text-dark-2x", fontScale = 2f) { MoneyTextSamples() }
 }
