@@ -2,6 +2,7 @@ package dev.imagh.pft.app.data
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import dev.imagh.pft.app.data.audit.AuditDao
 import dev.imagh.pft.app.data.audit.AuditEntryEntity
 import dev.imagh.pft.app.data.identity.DeviceEntity
 import dev.imagh.pft.app.data.identity.IdentityDao
@@ -30,6 +31,9 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
 abstract class PftDatabase : RoomDatabase() {
     /** Users and devices. */
     abstract fun identityDao(): IdentityDao
+
+    /** The audit trail (insert and select only). */
+    abstract fun auditDao(): AuditDao
 
     /** Runtime settings. */
     abstract fun appSettingDao(): AppSettingDao
