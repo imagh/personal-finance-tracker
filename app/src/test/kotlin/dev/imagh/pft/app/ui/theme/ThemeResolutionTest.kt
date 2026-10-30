@@ -6,6 +6,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,6 +18,12 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class ThemeResolutionTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
+
+    @Test
+    fun `default prefs turn dynamic colour off`() {
+        assertFalse(ThemePrefs.Default.dynamicColor)
+        assertFalse(ThemePrefs().dynamicColor)
+    }
 
     @Test
     fun `dynamic light resolves to the system dynamic light scheme`() {

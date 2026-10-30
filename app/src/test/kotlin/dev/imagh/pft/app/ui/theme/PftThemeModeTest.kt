@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import dev.imagh.pft.app.ui.HostedComposeRule
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,9 +58,9 @@ class PftThemeModeTest {
     }
 
     @Test
-    fun `the default prefs are system mode with dynamic colour on`() {
+    fun `the default prefs are system mode with dynamic colour off`() {
         assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
-        assertTrue(ThemePrefs.Default.dynamicColor)
+        assertFalse(ThemePrefs.Default.dynamicColor)
     }
 
     @Test

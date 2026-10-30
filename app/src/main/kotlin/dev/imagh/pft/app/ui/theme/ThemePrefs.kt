@@ -36,18 +36,18 @@ enum class DisplayFont {
  * import (AP2), and an accent override only if the owner asks for one (design plan §3.2).
  *
  * @property mode light, dark or follow the system.
- * @property dynamicColor use the system's Material You palette for the accent. Off falls back to
- *   [BrandColors]. Money colours are the same either way.
+ * @property dynamicColor use the system's Material You palette instead of the app's own scheme.
+ *   Opt-in: it is off by default (UI-8, revised). Money colours are the same either way.
  * @property displayFont the font of the hero number (`amountHero`); see [DisplayFont].
  */
 @Immutable
 data class ThemePrefs(
     val mode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
 ) {
     companion object {
-        /** System light/dark, dynamic colour on. */
+        /** System light/dark, dynamic colour off. */
         val Default = ThemePrefs()
     }
 }
