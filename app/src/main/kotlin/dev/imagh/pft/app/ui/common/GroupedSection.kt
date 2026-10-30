@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import dev.imagh.pft.app.ui.theme.PftTheme
 
@@ -104,7 +105,10 @@ fun GroupedSection(
                 }
                 val rowModifier =
                     if (item.onClick != null) {
-                        Modifier.heightIn(min = spacing.huge + spacing.sm).clickable(onClick = item.onClick)
+                        Modifier
+                            .heightIn(
+                                min = spacing.huge + spacing.sm,
+                            ).clickable(role = Role.Button, onClick = item.onClick)
                     } else {
                         Modifier
                     }

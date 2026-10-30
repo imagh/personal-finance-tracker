@@ -9,7 +9,11 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
@@ -119,6 +123,18 @@ class GroupedSectionTest {
     fun `a row without a click handler is not clickable`() {
         showRows(2)
         rows()[0].assertHasNoClickAction()
+    }
+
+    @Test
+    fun `a clickable row is announced as a button`() {
+        showRows(2) {}
+        rows()[0].assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+    }
+
+    @Test
+    fun `a plain row has no role`() {
+        showRows(2)
+        rows()[0].assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
     }
 
     @Test
