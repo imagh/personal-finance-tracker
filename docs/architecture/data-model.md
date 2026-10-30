@@ -44,8 +44,9 @@ registered in `AuditedTables` (test support) or the same test fails. Current all
 `"null"`. The shape is a contract between devices once sync exists, so it changes only with a versioned
 migration. A row that cannot be parsed fails closed with a message that holds no row content.
 
-`audit_entry` is **append-only in the database**. `AuditTriggers` installs two triggers in
-`RoomDatabase.Callback.onCreate` (Room does not model triggers): `audit_entry_no_update` and
+`audit_entry` is **append-only in the database**. `AuditTriggers` installs two triggers (Room does not
+model triggers) through a `RoomDatabase.Callback` that `PftDatabase.create` attaches, on **every open**
+(a same-named trigger is dropped and re-created first): `audit_entry_no_update` and
 `audit_entry_no_delete`, each `BEFORE ... ON audit_entry` with `RAISE(ABORT, 'audit_entry is
 append-only')`, so any UPDATE or DELETE, from any code, fails with `SQLiteConstraintException`. The
 DAO has only insert and select as well. The table has **no foreign keys** on purpose: the trail
@@ -53,8 +54,9 @@ must stay writable and intact whatever happens to the rows it describes. Limits:
 outside tool holding the key are not stopped; the encrypted file (A4b) is the protection against
 others.
 
-Because `audit_entry` exists from v1, every database created through `installAuditTriggers()` has the
-triggers. The exported schema JSON has no triggers, so `MigrationTestSupport` installs them when it
+`PftDatabase.create` is the only way a database is built, so no caller can forget the triggers, and
+a database that lost or had its triggers replaced (an old file, a bad migration, tampering) is repaired
+on the next open. The exported schema JSON has no triggers, so `MigrationTestSupport` installs them when it
 builds an old-version database and, after every migration, fails unless all triggers exist and still
 refuse to update or delete a seeded audit row. A migration that rebuilds `audit_entry` must re-create
 them.

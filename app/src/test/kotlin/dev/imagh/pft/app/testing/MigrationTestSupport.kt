@@ -22,7 +22,7 @@ import org.junit.runners.model.Statement
  * `PftDatabase.VERSION` and `Migrations.ALL`.
  *
  * Why it exists: the helper builds the old database from the schema JSON, and the JSON has no
- * triggers (Room does not model them), so [createV1] installs them the way `onCreate` does and seeds
+ * triggers (Room does not model them), so [createV1] installs them the way the production callback does and seeds
  * one audit row. [migrateTo] then runs the migrations, validates the result against the current
  * entities, and **fails unless the audit triggers are all present and still refuse to update or delete
  * the seeded row**. So no migration test can forget to prove the audit trail survived (INT-2).
@@ -37,7 +37,7 @@ class MigrationTestSupport : TestRule {
 
     /**
      * Creates the database file at schema version 1 from the exported JSON, installs the audit
-     * triggers unless [installAuditTriggers] is false (only for testing this support), seeds one audit
+     * triggers unless `installAuditTriggers` is false (only for testing this support), seeds one audit
      * row (id [SEED_AUDIT_ID]) and runs [seed] for any other old-shape rows. The database is closed
      * afterwards so [migrateTo] can open the file.
      */

@@ -84,7 +84,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app data | `MetaColumns` (`@Embedded` shared columns, explicit snake_case names) + `MetaMapper` (`EntityMeta` <-> columns, the one mapping) | every Room entity | A4a |
 | app data | `BaseDao<E>` (insert, update returning the row count, `byId`) | every entity DAO | A4a |
 | app data | `EntityMapper<T, E>` + `RoomEntityRepository<T, E, Id>` (get, getLive, insert, update; supplies `entityType`, refuses another kind, fails an update that matched no row) | every Room repository | A4a |
-| app data | `RoomTransactionRunner`, `RoomAuditLog` (+ `AuditEntryMapper`), `AuditTriggers.installAuditTriggers()` | every service (runner, audit), every database builder (triggers) | A4a |
+| app data | `RoomTransactionRunner`, `RoomAuditLog` (+ `AuditEntryMapper`), `PftDatabase.create` (the only database builder; adds the migrations and `AuditTriggers.callback`, which re-installs the audit triggers on every open) | every service (runner, audit); every database (A4b passes only its SQLCipher factory) | A4a |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
 | app tests | `AuditColumnsCheck` + `AuditedTables` (every column audited or allowlisted) | every entity table; each slice registers its table | A4a |

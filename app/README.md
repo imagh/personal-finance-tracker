@@ -101,8 +101,8 @@ defines (the only swap boundaries in M1a); tables and conventions are in
 
 | Symbol | What it is |
 |---|---|
-| `PftDatabase` (`VERSION = 1`), `Migrations.ALL` | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`) with exported schemas in `app/schemas/`; the ordered list of migrations. Builders must call `installAuditTriggers()` |
-| `AuditTriggers`, `RoomDatabase.Builder.installAuditTriggers()` | The `BEFORE UPDATE`/`BEFORE DELETE` triggers that make `audit_entry` append-only, created in `onCreate` (Room does not model triggers) |
+| `PftDatabase` (`VERSION = 1`), `Migrations.ALL` | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`) with exported schemas in `app/schemas/`; the ordered list of migrations. **`PftDatabase.create(context, name, openHelperFactory)` is the only way to build it** (production and tests): it registers `Migrations.ALL` and the audit-trigger callback; A4b only passes SQLCipher's open-helper factory. `name = null` is in-memory |
+| `AuditTriggers` | The `BEFORE UPDATE`/`BEFORE DELETE` triggers that make `audit_entry` append-only (Room does not model triggers). Its callback re-installs them on **every open** (dropping a same-named trigger first), so a database that lost or had its triggers replaced is repaired; `PftDatabaseTest` covers it |
 | `RoomTransactionRunner(db)` | core `TransactionRunner` over `withTransaction`. A failure at any nesting depth rolls back the outermost block, even when an outer block swallows it (same as core's fake) |
 | `RoomAuditLog(dao)`, `AuditDao`, `AuditEntryMapper` | core `AuditLog`: insert and select only. `changes_json` is the pinned JSON shape written with `org.json` |
 | `RoomIdentityRepository`, `RoomAppSettingsRepository` | core `IdentityRepository` and `AppSettingsRepository` over plain DAOs |
