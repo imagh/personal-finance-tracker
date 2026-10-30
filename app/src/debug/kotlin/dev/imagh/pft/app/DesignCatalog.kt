@@ -3,7 +3,8 @@ package dev.imagh.pft.app
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,8 +34,10 @@ import dev.imagh.pft.app.ui.common.MoneyTextSamples
 import dev.imagh.pft.app.ui.common.StandardHeaderSample
 import dev.imagh.pft.app.ui.common.StatusChipSamples
 import dev.imagh.pft.app.ui.theme.DisplayFont
+import dev.imagh.pft.app.ui.theme.PaletteSwatches
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemeMode
+import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.app.ui.theme.TokenSheet
 
@@ -42,23 +45,35 @@ import dev.imagh.pft.app.ui.theme.TokenSheet
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
  * the one-hand layout components (both header styles and `BottomActionBar`) and the content
  * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
- * light/dark, the hero font and the font scale, so they can be checked on a device or the
- * emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
+ * light/dark, the light palette, the dark palette, dynamic colour, the hero font and the font
+ * scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
  *
- * Each toggle row is a set of single-choice chips. The catalogue renders the default scheme,
- * Graphite (dynamic colour is off, as in the real app's default), and the money colours stay fixed.
+ * Each toggle row is a set of single-choice chips. The catalogue starts on the default scheme,
+ * Graphite in both modes with dynamic colour off, as in the real app's default; the money colours
+ * stay fixed under every palette.
  */
 @Composable
 internal fun DesignCatalog() {
     var mode by rememberSaveable { mutableStateOf(ThemeMode.SYSTEM) }
+    var lightPalette by rememberSaveable { mutableStateOf(ThemePalette.GRAPHITE) }
+    var darkPalette by rememberSaveable { mutableStateOf(ThemePalette.GRAPHITE) }
+    var dynamicColor by rememberSaveable { mutableStateOf(false) }
     var displayFont by rememberSaveable { mutableStateOf(DisplayFont.BUNDLED_SERIF) }
     var fontScale by rememberSaveable { mutableStateOf(1f) }
     var section by rememberSaveable { mutableStateOf(CatalogSection.TOKENS) }
     val density = LocalDensity.current
 
     CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-        PftTheme(ThemePrefs(mode = mode, displayFont = displayFont)) {
+        PftTheme(
+            ThemePrefs(
+                mode = mode,
+                dynamicColor = dynamicColor,
+                lightPalette = lightPalette,
+                darkPalette = darkPalette,
+                displayFont = displayFont,
+            ),
+        ) {
             Surface(Modifier.fillMaxSize()) {
                 Column(Modifier.statusBarsPadding()) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -71,6 +86,21 @@ internal fun DesignCatalog() {
                                 ),
                             selected = mode,
                             onSelect = { mode = it },
+                        )
+                        ChoiceRow(
+                            options = ThemePalette.entries.map { "Light: ${it.label()}" to it },
+                            selected = lightPalette,
+                            onSelect = { lightPalette = it },
+                        )
+                        ChoiceRow(
+                            options = ThemePalette.entries.map { "Dark: ${it.label()}" to it },
+                            selected = darkPalette,
+                            onSelect = { darkPalette = it },
+                        )
+                        ChoiceRow(
+                            options = listOf("Dynamic off" to false, "Dynamic on" to true),
+                            selected = dynamicColor,
+                            onSelect = { dynamicColor = it },
                         )
                         ChoiceRow(
                             options =
@@ -119,6 +149,8 @@ private enum class CatalogSection(
     SECTIONS("Sections"),
     EMPTY("Empty"),
     GLYPHS("Glyphs"),
+    ACCENT("Accent"),
+    PALETTES("Palettes"),
 }
 
 /**
@@ -144,21 +176,33 @@ private fun SectionContent(section: CatalogSection) {
                             CategoryGlyphSymbolSamples("teal")
                         }
                     CatalogSection.CHIPS -> Box(Modifier.padding(16.dp)) { StatusChipSamples() }
+                    CatalogSection.ACCENT -> AccentCheckSection()
+                    CatalogSection.PALETTES ->
+                        Column {
+                            PaletteSwatches(dark = false)
+                            PaletteSwatches(dark = true)
+                        }
                     else -> TokenSheet()
                 }
             }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class) // FlowRow, debug catalogue only
 @Composable
 private fun <T> ChoiceRow(
     options: List<Pair<String, T>>,
     selected: T,
     onSelect: (T) -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // Wraps: the palette rows have four chips, wider than a phone. (Not a sideways scroll, which
+    // the tests' `hasScrollAction()` lookups would also match.)
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { (label, value) ->
             FilterChip(selected = selected == value, onClick = { onSelect(value) }, label = { Text(label) })
         }
     }
 }
+
+/** The palette's name for the catalogue chips ("Graphite"); the persisted [ThemePalette.name] is upper case. */
+private fun ThemePalette.label() = name.lowercase().replaceFirstChar { it.uppercase() }
