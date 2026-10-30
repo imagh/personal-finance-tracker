@@ -62,7 +62,11 @@ fun PftTheme(
     val typography = remember(textFamily) { pftMaterialTypography(textFamily) }
     val pftType =
         remember(prefs.displayFont, textFamily) { pftType(displayFamily(prefs.displayFont, textFamily), textFamily) }
-    CompositionLocalProvider(LocalMoneyColors provides moneyColors(dark), LocalPftTypography provides pftType) {
+    CompositionLocalProvider(
+        LocalMoneyColors provides moneyColors(dark),
+        LocalCategoryPalette provides categoryPalette(dark),
+        LocalPftTypography provides pftType,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,
@@ -83,6 +87,12 @@ object PftTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalMoneyColors.current
+
+    /** The category badge colours for the current light or dark theme, by the name persisted in `category.colour`. */
+    val palette: CategoryPalette
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalCategoryPalette.current
 
     /** The amount text styles ([PftTypography]); every other text role is `MaterialTheme.typography`. */
     val type: PftTypography

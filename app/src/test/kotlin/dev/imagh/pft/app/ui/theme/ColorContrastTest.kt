@@ -143,6 +143,17 @@ class ColorContrastTest {
     }
 
     @Test
+    fun `every category palette content colour clears 4_5 on its container, so the letter fallback is legible`() {
+        for (theme in Theme.entries) {
+            val palette = categoryPalette(dark = theme == Theme.DARK)
+            for (key in CategoryPalette.keys) {
+                val colors = palette[key]
+                assertAtLeast(textMin, "$theme $key content on container", colors.content, colors.container)
+            }
+        }
+    }
+
+    @Test
     fun `brand scheme text and accent pairs clear their thresholds`() {
         for (theme in Theme.entries) {
             val s = scheme(theme)
