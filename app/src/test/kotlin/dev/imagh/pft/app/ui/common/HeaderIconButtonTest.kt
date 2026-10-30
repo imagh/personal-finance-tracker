@@ -14,6 +14,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
@@ -59,6 +60,7 @@ class HeaderIconButtonTest {
         }
     }
 
+    private val isImage = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Image)
     private val anyText = SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)
 
     private fun touchTarget(label: String): Rect =
@@ -89,6 +91,19 @@ class HeaderIconButtonTest {
         val bounds = touchTarget("Filter")
         assertTrue("width ${bounds.width}", bounds.width >= 48f - 0.5f)
         assertTrue("height ${bounds.height}", bounds.height >= 48f - 0.5f)
+    }
+
+    @Test
+    fun `the icon is drawn 24dp square inside the button`() {
+        show { HeaderIconButton(PftSymbol.FILTER, "Filter", onClick = {}) }
+        val image =
+            compose
+                .onNode(isImage and hasContentDescription("Filter"), useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .inDp()
+        assertEquals("icon width", 24f, image.width, 0.5f)
+        assertEquals("icon height", 24f, image.height, 0.5f)
     }
 
     @Test
