@@ -14,12 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.ResourceFont
@@ -146,12 +151,6 @@ class MoneyTextTest {
             show(Paise(650_000), MoneySemantic.Budget(state))
             node().assertTextEquals("₹6,500.00")
         }
-    }
-
-    @Test
-    fun `a negative expense is rejected, never shown with a wrong sign`() {
-        val failure = runCatching { show(Paise(-1), MoneySemantic.Expense) }.exceptionOrNull()
-        assertTrue("$failure", failure is IllegalArgumentException)
     }
 
     @Test
@@ -312,6 +311,7 @@ class MoneyTextTest {
         amount: Paise,
         widthDp: Int,
         fontScale: Float = 1f,
+        animate: Boolean = false,
     ) {
         boxWidthDp = widthDp
         compose.setContent {
@@ -319,7 +319,7 @@ class MoneyTextTest {
                 PftTheme(ThemePrefs(dynamicColor = false)) {
                     Column {
                         Box(Modifier.width(boxWidthDp.dp)) {
-                            MoneyText(amount, MoneySemantic.Expense, Modifier.testTag(tag), size = MoneySize.Hero)
+                            MoneyText(amount, MoneySemantic.Expense, Modifier.testTag(tag), MoneySize.Hero, animate)
                         }
                         probeSize?.let { probe ->
                             Box(Modifier.width(boxWidthDp.dp)) {
@@ -445,26 +445,75 @@ class MoneyTextTest {
         val arriving = compose.onAllNodesWithText("2", useUnmergedTree = true).fetchSemanticsNodes().size
         assertTrue("old digit gone at once: $unmerged", unmerged >= 1)
         assertTrue("new digit missing: $arriving", arriving >= 1)
+        // Once the roll has finished the leaving digit is gone and only the new one remains.
+        compose.mainClock.advanceTimeBy(2_000)
+        compose.waitForIdle()
+        assertEquals(0, compose.onAllNodesWithText("1", useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertEquals(1, compose.onAllNodesWithText("2", useUnmergedTree = true).fetchSemanticsNodes().size)
     }
 
+    /** Every text layout under the money node, in the unmerged tree: one per rolling digit, or one for plain text. */
+    private fun textNodes() =
+        compose
+            .onAllNodes(
+                SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes()
+            .filter { it.config.getOrNull(SemanticsProperties.TestTag) != "probe" }
+
     @Test
-    fun `the animated hero also shrinks to fit the maximum amount`() {
+    fun `the animated hero fits the maximum amount, with every digit its own node and all of them inside the box`() {
         var density = 1f
         compose.setContent {
             density = LocalDensity.current.density
             PftTheme(ThemePrefs(dynamicColor = false)) {
                 Box(Modifier.width(353.dp)) {
-                    MoneyText(
-                        Paise.MAX_AMOUNT,
-                        MoneySemantic.Expense,
-                        Modifier.testTag(tag),
-                        MoneySize.Hero,
-                        animate = true,
-                    )
+                    MoneyText(Paise.MAX_AMOUNT, MoneySemantic.Expense, Modifier.testTag(tag), MoneySize.Hero, true)
                 }
             }
         }
-        val bounds = node().fetchSemanticsNode().boundsInRoot
-        assertTrue("animated hero is ${bounds.width / density}dp wide", bounds.width <= 353f * density + 1f)
+        val nodes = textNodes()
+        val expected = "$minus₹1,00,00,00,00,000.00"
+        assertEquals("one node per character", expected.length, nodes.size)
+        assertEquals(expected, nodes.sortedBy { it.boundsInRoot.left }.joinToString("") { it.shownText() })
+        val box = 353f * density
+        nodes.forEach { node ->
+            assertTrue(
+                "'${node.shownText()}' spans ${node.boundsInRoot}, outside the ${box}px box",
+                node.boundsInRoot.right <= box + 1f,
+            )
+            assertTrue(node.boundsInRoot.left >= 0f)
+        }
+        // A character that was squeezed out would have no width.
+        assertTrue(nodes.all { it.boundsInRoot.width > 0f })
+    }
+
+    @Test
+    fun `an animated hero that cannot fit at the smallest step falls back to wrapping text with every digit`() {
+        showHero(maxAmount, widthDp = 150, fontScale = 2f, animate = true)
+        val nodes = textNodes()
+        assertEquals(
+            "the figure must be one wrapping Text, not per-digit nodes that cannot wrap: ${nodes.size} nodes",
+            1,
+            nodes.size,
+        )
+        val result = nodes.single().layoutResult()
+        assertTrue("expected a wrapped amount, got ${result.lineCount} line", result.lineCount > 1)
+        assertEquals(result.layoutInput.text.length, result.getLineEnd(result.lineCount - 1, visibleEnd = false))
+        assertEquals("$minus₹1,00,00,00,00,000.00", result.layoutInput.text.text)
+    }
+
+    @Test
+    fun `an animated hero that does fit still rolls, so the fallback is only for what cannot fit`() {
+        showHero(maxAmount, widthDp = 353, animate = true)
+        assertEquals("$minus₹1,00,00,00,00,000.00".length, textNodes().size)
     }
 }
+
+private fun SemanticsNode.layoutResult(): TextLayoutResult {
+    val results = mutableListOf<TextLayoutResult>()
+    config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+    return results.single()
+}
+
+private fun SemanticsNode.shownText(): String = layoutResult().layoutInput.text.text

@@ -93,22 +93,14 @@ fun MoneyText(
     val text = moneySign(semantic, amount) + figure
     val description = "${directionLabel(semantic, amount)}, $figure"
     val color = toneColor(moneyTone(semantic, amount, inRow = size == MoneySize.Row))
-    // One string for assistive technology. Rolling digits are one Text per character, so they are
-    // hidden from semantics and the whole text and description are set on the container instead.
-    val semantics =
-        if (animate) {
-            Modifier.clearAndSetSemantics {
-                this.text = AnnotatedString(text)
-                contentDescription = description
-            }
-        } else {
-            Modifier.semantics(mergeDescendants = true) { contentDescription = description }
-        }
+    // The description goes on the outer node, which merges its descendants. Plain text brings its own
+    // text; rolling digits (one Text per character) are hidden from semantics and set the whole text.
+    val described = modifier.semantics(mergeDescendants = true) { contentDescription = description }
     if (size == MoneySize.Hero) {
-        HeroText(text, color, animate, modifier.then(semantics))
+        HeroText(text, color, animate, described)
     } else {
         val style = if (size == MoneySize.Large) PftTheme.type.amountLarge else PftTheme.type.amountRow
-        Figure(text, style.copy(color = color), animate, Int.MAX_VALUE, modifier.then(semantics))
+        Figure(text, style.copy(color = color), animate, Int.MAX_VALUE, described)
     }
 }
 
@@ -118,6 +110,7 @@ fun MoneyText(
  * measured with an unbounded width it takes the first (largest) step. If even the smallest step
  * does not fit (an extreme amount at 200% font scale on a very narrow window) it wraps there
  * instead: a money figure is never cut off, because a truncated amount would misreport the money.
+ * With `animate` that fallback is plain wrapping text too, since rolling digits cannot wrap.
  */
 @Composable
 private fun HeroText(
@@ -132,7 +125,9 @@ private fun HeroText(
     BoxWithConstraints(modifier) {
         val available = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
         val fit = remember(text, available, base, density) { fitHero(measurer, text, base, available) }
-        Figure(text, fit.style.copy(color = color), animate, if (fit.fits) 1 else Int.MAX_VALUE, Modifier)
+        // Rolling digits are one Text per character and cannot wrap, so a figure that does not fit
+        // even at the smallest step is shown as plain wrapping text, without the roll.
+        Figure(text, fit.style.copy(color = color), animate && fit.fits, if (fit.fits) 1 else Int.MAX_VALUE, Modifier)
     }
 }
 
@@ -166,7 +161,7 @@ private fun RollingDigits(
     modifier: Modifier,
 ) {
     val motion = PftTheme.motion
-    Row(modifier) {
+    Row(modifier.clearAndSetSemantics { this.text = AnnotatedString(text) }) {
         text.forEachIndexed { index, character ->
             key(text.length - index) {
                 AnimatedContent(
