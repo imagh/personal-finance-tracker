@@ -138,10 +138,14 @@ val verifyReleaseShrink by tasks.registering {
     // PftDatabase_Impl: Room's generated database is created by name through reflection
     // (Room.getGeneratedImplementation); room-runtime's consumer rule keeps it and its constructor,
     // and nothing in this module references it yet, so only that rule stops R8 removing it.
+    // SQLiteConnection: libsqlcipher.so registers its natives on it by name through JNI, which R8
+    // cannot see, so it survives only because of the SQLCipher keep rules (the AAR's own and
+    // proguard-rules.pro).
     val mustBeKept =
         listOf(
             "dev.imagh.pft.app.MainActivity",
             "dev.imagh.pft.app.data.PftDatabase_Impl",
+            "net.zetetic.database.sqlcipher.SQLiteConnection",
         )
     // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
     // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.
