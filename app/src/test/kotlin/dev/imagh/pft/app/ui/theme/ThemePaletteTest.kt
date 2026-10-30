@@ -40,10 +40,18 @@ class ThemePaletteTest {
 
     @Test
     fun `Midnight pins the owner-approved mockup values`() {
-        val light = Pins(0xFFF4F5F9, 0xFFECEFF5, 0xFF11172A, 0xFF4A5266, 0xFFD2D7E3, 0xFF7D5F26)
-        val dark = Pins(0xFF0F1424, 0xFF161C30, 0xFFE6E8EF, 0xFFA5ACBF, 0xFF222B42, 0xFFD4B572)
-        assertPinned(ThemePalette.MIDNIGHT, dark = false, light)
-        assertPinned(ThemePalette.MIDNIGHT, dark = true, dark)
+        val lightPins = Pins(0xFFF4F5F9, 0xFFECEFF5, 0xFF11172A, 0xFF4A5266, 0xFFD2D7E3, 0xFF7D5F26)
+        val darkPins = Pins(0xFF0F1424, 0xFF161C30, 0xFFE6E8EF, 0xFFA5ACBF, 0xFF222B42, 0xFFD4B572)
+        assertPinned(ThemePalette.MIDNIGHT, dark = false, lightPins)
+        assertPinned(ThemePalette.MIDNIGHT, dark = true, darkPins)
+    }
+
+    @Test
+    fun `Ivory pins the owner-approved mockup values`() {
+        val lightPins = Pins(0xFFF6F2E9, 0xFFEFEADF, 0xFF1F1D18, 0xFF5A5548, 0xFFD9D2C2, 0xFF2E3A59)
+        val darkPins = Pins(0xFF181713, 0xFF201F1A, 0xFFECE6D8, 0xFFAFA896, 0xFF2B2923, 0xFFAEB9DA)
+        assertPinned(ThemePalette.IVORY, dark = false, lightPins)
+        assertPinned(ThemePalette.IVORY, dark = true, darkPins)
     }
 
     @Test

@@ -15,6 +15,9 @@ enum class ThemePalette {
 
     /** Midnight navy with a brass accent (champagne in dark). */
     MIDNIGHT,
+
+    /** Warm ivory paper with an ink-navy accent (pale periwinkle in dark). */
+    IVORY,
 }
 
 /**
@@ -25,4 +28,5 @@ internal fun ThemePalette.colors(dark: Boolean): PaletteColors =
     when (this) {
         ThemePalette.GRAPHITE -> if (dark) GraphitePalette.dark else GraphitePalette.light
         ThemePalette.MIDNIGHT -> if (dark) MidnightPalette.dark else MidnightPalette.light
+        ThemePalette.IVORY -> if (dark) IvoryPalette.dark else IvoryPalette.light
     }
