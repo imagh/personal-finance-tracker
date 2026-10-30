@@ -206,4 +206,34 @@ class ThemeResolutionTest {
             }
         }
     }
+
+    @Test
+    fun `PftTheme provides the surfaces for the palette, mode and background style`() {
+        var prefs by mutableStateOf(ThemePrefs(mode = ThemeMode.LIGHT, lightPalette = ThemePalette.IVORY))
+        lateinit var surfaces: PftSurfaces
+        compose.setContent { PftTheme(prefs) { surfaces = PftTheme.surfaces } }
+        for (style in BackgroundStyle.entries) {
+            prefs = prefs.copy(background = style)
+            compose.waitForIdle()
+            assertEquals(pftSurfaces(IvoryPalette.light, style, dark = false), surfaces)
+        }
+        prefs =
+            ThemePrefs(mode = ThemeMode.DARK, darkPalette = ThemePalette.MIDNIGHT, background = BackgroundStyle.TONAL)
+        compose.waitForIdle()
+        assertEquals(pftSurfaces(MidnightPalette.dark, BackgroundStyle.TONAL, dark = true), surfaces)
+    }
+
+    @Test
+    fun `dynamic colour with TONAL surfaces uses the derived canvas and island`() {
+        var surfaces: PftSurfaces? = null
+        compose.setContent {
+            PftTheme(ThemePrefs(mode = ThemeMode.LIGHT, dynamicColor = true, background = BackgroundStyle.TONAL)) {
+                surfaces = PftTheme.surfaces
+            }
+        }
+        compose.waitForIdle()
+        val scheme = dynamicLightColorScheme(context)
+        assertEquals(scheme.surfaceContainerHigh, surfaces?.canvas)
+        assertEquals(scheme.surfaceContainerLow, surfaces?.island)
+    }
 }

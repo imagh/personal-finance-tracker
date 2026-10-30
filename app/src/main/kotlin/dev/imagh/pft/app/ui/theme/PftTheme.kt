@@ -88,7 +88,8 @@ fun PftTheme(
             ThemeMode.LIGHT -> false
             ThemeMode.DARK -> true
         }
-    val colorScheme = resolveColorScheme(prefs, dark, LocalContext.current)
+    val palette = resolvePaletteColors(prefs, dark, LocalContext.current)
+    val colorScheme = palette.scheme
     // The text family is the system font until custom-font import (AP2) adds a choice.
     val textFamily = FontFamily.Default
     val typography = remember(textFamily) { pftMaterialTypography(textFamily) }
@@ -98,6 +99,7 @@ fun PftTheme(
         LocalMoneyColors provides moneyColors(dark),
         LocalCategoryPalette provides categoryPalette(dark),
         LocalPftTypography provides pftType,
+        LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -125,6 +127,12 @@ object PftTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalCategoryPalette.current
+
+    /** The screen canvas, card island and island edge for the current palette, mode and [BackgroundStyle]. */
+    val surfaces: PftSurfaces
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalPftSurfaces.current
 
     /** The amount text styles ([PftTypography]); every other text role is `MaterialTheme.typography`. */
     val type: PftTypography

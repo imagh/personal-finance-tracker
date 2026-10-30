@@ -42,6 +42,7 @@ enum class DisplayFont {
  *   Ignored while [dynamicColor] is on.
  * @property darkPalette the colour palette used when the resolved theme is dark. Chosen
  *   independently of [lightPalette]. Ignored while [dynamicColor] is on.
+ * @property background tonal or flat screen and card surfaces ([BackgroundStyle]); see [PftSurfaces].
  * @property displayFont the font of the hero number (`amountHero`); see [DisplayFont].
  */
 @Immutable
@@ -50,6 +51,8 @@ data class ThemePrefs(
     val dynamicColor: Boolean = false,
     val lightPalette: ThemePalette = ThemePalette.GRAPHITE,
     val darkPalette: ThemePalette = ThemePalette.GRAPHITE,
+    // FLAT until the surface consumers and the re-recorded goldens land later in DS6c; then TONAL (plan §3.2).
+    val background: BackgroundStyle = BackgroundStyle.FLAT,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
 ) {
     companion object {
