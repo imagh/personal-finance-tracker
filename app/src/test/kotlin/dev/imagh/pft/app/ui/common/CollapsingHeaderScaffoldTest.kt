@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -54,11 +55,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.drawToBitmap
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.HeroSizeSteps
+import dev.imagh.pft.app.ui.theme.IvoryPalette
 import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.money.Paise
 import org.junit.Assert.assertEquals
@@ -84,6 +89,7 @@ class CollapsingHeaderScaffoldTest {
     val compose = HostedComposeRule()
 
     private var density = Density(1f)
+    private var composeView: View? = null
     private val windowWidth = 393f
     private val windowHeight = 851f
     private val barHeight = 64f
@@ -115,12 +121,14 @@ class CollapsingHeaderScaffoldTest {
         period: HeaderPeriod? = null,
         captioned: Boolean = true,
         fontScale: Float = 1f,
+        prefs: ThemePrefs = ThemePrefs(dynamicColor = false),
         actions: @Composable RowScope.() -> Unit = {},
     ) {
         compose.setContent {
             density = LocalDensity.current
+            composeView = LocalView.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                PftTheme(ThemePrefs(dynamicColor = false)) {
+                PftTheme(prefs) {
                     CollapsingHeaderScaffold(
                         title = "Budgets",
                         style = style,
@@ -707,5 +715,46 @@ class CollapsingHeaderScaffoldTest {
 
         val save = compose.onNodeWithText("Save").bounds()
         assertTrue("Save bottom ${save.bottom}", save.bottom <= windowHeight - 300f + 0.5f)
+    }
+
+    // --- canvas pixels (DS6c) --------------------------------------------------------------
+
+    /** The colour the real draw pass put at ([x], [y]) in window pixels: `View.drawToBitmap()`, native graphics. */
+    private fun pixelAt(
+        x: Int,
+        y: Int,
+    ): Color {
+        var argb = 0
+        compose.runOnUiThread { argb = composeView!!.drawToBitmap().getPixel(x, y) }
+        return Color(argb)
+    }
+
+    /** A pixel in the header's empty area (its middle, right of the title) and one in the list gutter. */
+    private fun assertCanvasPixels(
+        expected: Color,
+        message: String,
+    ) {
+        val header = tag(HeaderTags.HEADER).fetchSemanticsNode().boundsInRoot
+        val list = tag(HeaderTags.LIST).fetchSemanticsNode().boundsInRoot
+        assertEquals(
+            "$message (header gap)",
+            expected,
+            pixelAt((header.right * 0.75f).toInt(), header.center.y.toInt()),
+        )
+        assertEquals("$message (list gutter)", expected, pixelAt((list.right - 8f).toInt(), (list.top + 60f).toInt()))
+    }
+
+    @Test
+    fun `TONAL Ivory light paints the header gap and the list gutter with the canvas`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, background = BackgroundStyle.TONAL)
+        show(prefs = prefs)
+        assertCanvasPixels(IvoryPalette.light.canvas, "TONAL")
+    }
+
+    @Test
+    fun `FLAT Ivory light paints the header gap and the list gutter with the surface`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, background = BackgroundStyle.FLAT)
+        show(prefs = prefs)
+        assertCanvasPixels(IvoryPalette.light.scheme.surface, "FLAT")
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,7 +42,7 @@ fun BottomActionBar(
     secondary: BottomBarAction? = null,
 ) {
     val spacing = PftTheme.spacing
-    Surface(modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
+    Surface(modifier.fillMaxWidth(), color = PftTheme.surfaces.canvas) {
         Row(
             Modifier
                 .windowInsetsPadding(

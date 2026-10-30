@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         val startup = (application as PftApplication).startup
         setContent {
             PftTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(modifier = Modifier.fillMaxSize(), color = PftTheme.surfaces.canvas) {
                     when (startup) {
                         is DatabaseStartup.Ready -> DevContent()
                         is DatabaseStartup.KeyUnavailable -> KeyUnavailableScreen(startup.reason)
