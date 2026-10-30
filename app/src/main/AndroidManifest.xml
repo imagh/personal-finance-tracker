@@ -31,6 +31,22 @@
             tools:ignore="MissingClass"
             tools:node="remove" />
 
+        <!-- androidx.startup's provider is merged in from the libraries (stated unexported here, as in the library). Its
+             EmojiCompat initializer is removed: the default config asks Google Play services for a
+             downloadable emoji font, a cross-app fetch, and Compose draws emoji with the system
+             emoji font anyway (minSdk 33 covers Unicode 14+). Rendering stays deterministic.
+             ManifestHardeningTest asserts it is gone. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:ignore="MissingClass"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+
         <activity
             android:name=".app.MainActivity"
             android:exported="true">

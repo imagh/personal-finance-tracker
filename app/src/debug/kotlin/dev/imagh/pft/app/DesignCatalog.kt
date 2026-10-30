@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import dev.imagh.pft.app.ui.common.BottomActionBarSamples
+import dev.imagh.pft.app.ui.common.CategoryGlyphSamples
+import dev.imagh.pft.app.ui.common.CategoryGlyphSymbolSamples
 import dev.imagh.pft.app.ui.common.DashboardHeaderSample
 import dev.imagh.pft.app.ui.common.EmptyStateSamples
 import dev.imagh.pft.app.ui.common.GroupedSectionSamples
@@ -39,7 +41,7 @@ import dev.imagh.pft.app.ui.theme.TokenSheet
 /**
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
  * the one-hand layout components (both header styles and `BottomActionBar`) and the content
- * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), with live toggles for
+ * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
  * light/dark, the hero font and the font scale, so they can be checked on a device or the
  * emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
@@ -116,6 +118,7 @@ private enum class CatalogSection(
     CHIPS("Chips"),
     SECTIONS("Sections"),
     EMPTY("Empty"),
+    GLYPHS("Glyphs"),
 }
 
 /**
@@ -135,6 +138,11 @@ private fun SectionContent(section: CatalogSection) {
                     CatalogSection.MONEY -> Box(Modifier.padding(16.dp)) { MoneyTextSamples() }
                     CatalogSection.SECTIONS -> Box(Modifier.padding(vertical = 16.dp)) { GroupedSectionSamples() }
                     CatalogSection.EMPTY -> EmptyStateSamples()
+                    CatalogSection.GLYPHS ->
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                            CategoryGlyphSamples()
+                            CategoryGlyphSymbolSamples("teal")
+                        }
                     CatalogSection.CHIPS -> Box(Modifier.padding(16.dp)) { StatusChipSamples() }
                     else -> TokenSheet()
                 }

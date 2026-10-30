@@ -23,6 +23,7 @@ A private, offline-first Android app for tracking a household's expenses, budget
 | `core/<module>/` | Further pure-Kotlin modules (budget, recurring) are added by their slices |
 | `build-logic/` | Convention plugins `pft.kotlin-core` and `pft.lint`. See [build-logic/README.md](build-logic/README.md) |
 | `tools/redact/` | Local redaction tool (Python) |
+| `tools/material-symbols/` | Importer for the Material Symbols drawables (Python; see `docs/architecture/design-system.md`, "Adding an icon") |
 | `fixtures/` | Reviewed, redacted samples only (planned) |
 
 **Build and test** (JDK 17 and the Android SDK from [local setup](docs/guides/local-setup.md); `ANDROID_HOME` must be set):

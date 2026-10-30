@@ -150,6 +150,7 @@ val verifyReleaseShrink by tasks.registering {
     // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
     // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.
     // HeaderSamplesKt holds DS4's fake-data header samples and their @PreviewLightDark previews.
+    // DS3 adds CategoryGlyphSamplesKt (the symbol grid, the source samples and the preview).
     // DS5 adds one *SamplesKt per component (GroupedSectionSamplesKt, MoneyTextSamplesKt, ...) holding
     // its fake-data samples and previews.
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
@@ -167,6 +168,8 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$MoneyTextSamples",
             "dev.imagh.pft.app.ui.common.StatusChipSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$StatusChipSamples",
+            "dev.imagh.pft.app.ui.common.CategoryGlyphSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$CategoryGlyphSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

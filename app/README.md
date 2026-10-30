@@ -7,12 +7,12 @@ Room/SQLCipher implementations of the `core` repository interfaces, Keystore key
 later slices) app lock and safe logging. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1, DS2, DS4 and DS5 (theming, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters) and A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup).** The app launches a `FLAG_SECURE`, edge-to-edge
+Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters) and A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup).** The app launches a `FLAG_SECURE`, edge-to-edge
 window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
 On start `PftApplication` opens the **encrypted** database; if the key cannot be produced, `MainActivity`
 shows `KeyUnavailableScreen` instead (fail closed). Nothing uses the open database yet (no `AppContainer`
 until A5). Screens and DI arrive in slices A5 onwards (plan
-`docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system (icons, DS3) later (plan
+`docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system (the DS6 premium-look slices) later (plan
 `docs/plans/2026-10-29-m1a-design-system.md`; what is built: `docs/architecture/design-system.md`).
 
 ## Responsibilities and boundaries
@@ -31,11 +31,12 @@ until A5). Screens and DI arrive in slices A5 onwards (plan
 | Cleartext traffic | `usesCleartextTraffic="false"` | Defence in depth; there is no network code |
 | Exported components | only `MainActivity` (launcher) | Smallest attack surface |
 | Screen capture | `FLAG_SECURE` set in `MainActivity.onCreate` before `enableEdgeToEdge()` and any content | No screenshots, screen recording or recents preview |
+| Emoji font | `androidx.emoji2.text.EmojiCompatInitializer` removed from the merged `androidx.startup.InitializationProvider` (`tools:node="remove"`) | Its default config asks Google Play services for a downloadable emoji font, a cross-app fetch; emoji are drawn by the system emoji font instead, so rendering is deterministic and nothing is fetched. The provider itself is declared `exported="false"` |
 
-Two library-contributed manifest entries are removed with `tools:node="remove"` because they would
+Three library-contributed manifest entries are removed with `tools:node="remove"` because they would
 break the table above: `androidx.profileinstaller.ProfileInstallReceiver` (an exported receiver)
-and the `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` permission from `androidx.core` (only needed
-below API 33; minSdk is 33). If a library upgrade adds a new entry, `ManifestHardeningTest` fails.
+the `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` permission from `androidx.core` (only needed
+below API 33; minSdk is 33), and the EmojiCompat initializer (last table row). If a library upgrade adds a new entry, `ManifestHardeningTest` fails.
 
 `androidx.compose.ui:ui-test-manifest` is deliberately not a dependency: it adds an exported
 `ComponentActivity` to the debug manifest. Compose tests use `HostedComposeRule`, which registers
@@ -49,7 +50,7 @@ screenshot tests work. `ManifestHardeningTest` runs against both variants.
 Entry points: `dev.imagh.pft.app.PftApplication` (opens the database) and `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
 as they land (`data/common`, `ui/common`).
 
-### `ui/theme` (design-system tokens, DS1, DS2, DS4)
+### `ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)
 
 | Symbol | What it is |
 |---|---|
@@ -62,6 +63,9 @@ as they land (`data/common`, `ui/common`).
 | `PftTheme.motion` | `PftMotion`: springs `snappy` (0.30 s, bounce 0.10), `smooth` (0.45 s, 0), `gentle` (0.60 s, 0), `bouncy` (0.50 s, 0.25) as `SpringSpec<Float>`; `navEnter`/`navExit`/`navPopEnter`/`navPopExit` (25% slide + fade on `smooth`); `PRESSED_SCALE` 0.97; `smoothOffset` is `smooth` over `IntOffset` for slide transitions (rolling digits). A constant, not a CompositionLocal |
 | `iosSpring<T>(durationMillis, bounce)` | Converts a SwiftUI-style spring to a `SpringSpec<T>` (`stiffness = (2π/duration)²`, `dampingRatio = 1 − bounce`); throws `IllegalArgumentException` for bounce outside `[0, 1)` or duration ≤ 0 |
 | `Modifier.pressScale()` | Scales to 0.97 with `snappy` while pressed; observes pointers only (does not consume). Put it before `clickable` |
+| `PftSymbol` (`key`, `res`), `PftSymbol.fromKey(key)` | The icon registry: 92 Material Symbols Rounded vector drawables (`res/drawable/sym_<key>.xml`; chrome: `back`, `forward`, `add`, `close`, `check`, `search`, `filter`, `overflow`, `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar`, ...; the rest are category symbols). **Keys are permanent** (persisted in `category.icon_key`): add, never rename or remove; `src/test/resources/pft-symbol-keys.txt` pins them. `fromKey` is exact-match and null for anything unknown. Draw one with `Icon(painterResource(symbol.res), contentDescription = ..., tint = ...)`: the drawable is black. `androidx.compose.material.icons.*` is banned in app code (detekt `ForbiddenImport`). The full list and the how-to are in `docs/architecture/design-system.md` |
+| `PftTheme.palette`, `CategoryPalette[key]`, `categoryPalette(dark)`, `CategoryColors(container, content)` | The 12 named category hues (`rose, coral, amber, olive, emerald, teal, sky, blue, indigo, violet, magenta, slate`), light and dark, for glyph badges only (never money). An unknown or null name gives `slate`. Content is at least 4.5:1 on container |
+| `GlyphSize { Chip 28, Row 40, Hero 56 }` | The badge sides, fixed dp |
 | `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour on, bundled serif |
 | `DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }` | Font of the hero number only; the serif is never used for titles (owner decision Q10) |
 | `ThemeMode { SYSTEM, LIGHT, DARK }` | `SYSTEM` follows the system night mode |
@@ -79,7 +83,7 @@ Rules: never draw money text on `surfaceVariant`; use `background`, `surface` or
 values and design `dp`/`sp` live only in `ui/theme` (detekt's `MagicNumber` is relaxed there for
 that reason). Colour is never the only cue: every amount carries a sign and every status a word.
 
-### `ui/common` (shared components, DS4 and DS5)
+### `ui/common` (shared components, DS3, DS4 and DS5)
 
 | Symbol | What it is |
 |---|---|
@@ -92,6 +96,8 @@ that reason). Colour is never the only cue: every amount carries a sign and ever
 | `MoneyTone { Neutral, Positive, Negative, Warning }`, `moneyTone(semantic, amount, inRow)` | The pure mapping: income Positive; expense Negative in totals and Neutral in rows (Q2); balance Neutral unless negative (Q3); budget Positive, Warning or Negative by state |
 | `StatusChip(label, tone: MoneyTone, modifier)` | A labelled pill (Unverified, Overdue, Paused, Over, 80%). The label is required (blank is rejected): colour is never the only cue. Colours are the money container tokens, or `surfaceContainerHighest` for Neutral (`chipColors`) |
 | `GroupedSection(modifier) { row(onClick?) { ... } }`, `GroupedSectionDefaults.listItemColors()` | An inset (20dp gutter), rounded (`large`) island of rows on `surfaceContainer`, with a one-pixel divider, inset 16dp from the start, between rows only (N rows, N-1 dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. Give M3 `ListItem`s `listItemColors()` (transparent container) |
+| `CategoryGlyph(source: GlyphSource, name, colourKey, modifier, size = Row, onClick = null)` | The category/account badge: a soft-square tile in a palette colour holding a symbol, one emoji or a letter. One image node announced as `name` (never the key); fixed dp size; emoji clipped to one line; with `onClick` it is a button (48dp touch target, press scale) |
+| `GlyphSource { Symbol(PftSymbol), Emoji(text), Letter(letter) }` (`Letter` holds one code point as a string, with a `Char` constructor), `GlyphSource.fromIconKey(iconKey, name)`, `GlyphSource.letterFor(name)` | The UI model of `category.icon_key`. `fromIconKey` is the **boundary parser** (untrusted input): `sym:<key>` with key `[a-z0-9_]{1,40}` naming a registered symbol, or `emoji:<value>` of 1 to 16 UTF-16 units, well-formed, no whitespace, control or invisible format characters (ZWJ and tag characters allowed). Anything else (null, no prefix, oversized, malformed, unknown) is `Letter` of the name's first letter or digit by code point (a combining mark or unpaired surrogate never counts, a letter outside the basic plane does), upper-cased (`?` if none); it never throws. `Emoji` itself rejects an invalid value (`IllegalArgumentException`) |
 | `EmptyState(message, modifier, glyph, actionLabel, onAction)` | A centred glyph slot, message and optional tonal-button action; the label and callback must be given together |
 
 The hero slot is set in `PftTheme.type.amountHero` by default (the serif is the number only). Actions
@@ -99,13 +105,18 @@ go in the top row (back, search, filter, overflow; secondary only), add actions 
 components are shared (named consumers in `docs/architecture/code-structure.md`); do not wrap them
 to restyle. `HeaderSamples.kt` holds the fake-data samples that feed the previews, the debug
 catalogue and `HeaderScreenshotTest`; DS5 adds one file per component (`MoneyTextSamples.kt`,
-`StatusChipSamples.kt`, `GroupedSectionSamples.kt`, `EmptyStateSamples.kt`) for the same three
+`StatusChipSamples.kt`, `GroupedSectionSamples.kt`, `EmptyStateSamples.kt`; DS3 adds `CategoryGlyphSamples.kt`) for the same three
 consumers and `ContentScreenshotTest`. Each `*Samples` file is listed in `mustBeRemoved` of
 `verifyReleaseShrink`, so R8 is shown to drop it from the release APK.
 
 Money text never sits on `surfaceVariant`: `GroupedSection` and `StatusChip` use `surfaceContainer`
 steps, and `ColorContrastTest` sweeps both and pins that the sweep still excludes `surfaceVariant`. The test cannot stop
 a future component using it: that is a review rule, and a new money surface should add its colour to the test.
+
+**Icons and emoji (DS3).** All icons come from `PftSymbol`; emoji are drawn by the system emoji font (they can look different
+on different phones: accepted, symbols are the consistent option). The pre-DS3 `PeriodStepper` text chevrons in
+`CollapsingHeaderScaffold` and the placeholder glyph in `EmptyStateSamples` are unchanged on purpose: DS6e swaps the chevrons for
+`PftSymbol.CHEVRON_LEFT`/`CHEVRON_RIGHT`, and consumers pass a `CategoryGlyph` to `EmptyState`.
 
 **Amount contract.** `MoneyText` throws in composition for a negative `Paise` with any semantic except `Balance`, so
 callers (the C4, C5 and D4 ViewModels or mappers) must pass magnitudes (non-negative `Paise`) and validate there.
@@ -162,7 +173,7 @@ pre-Compose window colour would be wrong. AP1 fixes this with `UiModeManager.set
 ### Debug and release source sets
 
 `DevContent()` is what `MainActivity` shows until A5 brings the navigation host. In `src/debug` it
-shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections and the empty state, with toggles for light/dark, hero font and font scale (use it
+shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, hero font and font scale (use it
 to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
 twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
 (`ui/theme`) so the screenshot tests can render it on both unit-test variants; it is unreferenced by
@@ -207,6 +218,8 @@ Compose BOM 2024.10.01 (ui 1.7.5, material3 1.3.1), `androidx.activity:activity-
 H3 option). Pinned, locked and checksummed like every dependency.
 `androidx.compose.ui:ui-tooling-preview` (annotations only, via the BOM; the only DS2 addition to
 the release runtime classpath), `androidx.compose.ui:ui-tooling` (debug only).
+Icons: 92 vector drawables derived from Material Symbols (Apache-2.0, `assets/licenses/material-symbols-APACHE-2.0.txt`);
+no icon library is a dependency (`material-icons-core` is on the classpath through Compose but banned by detekt).
 Project: `:core:money` (`implementation`, DS5): `MoneyText` formats through `PaiseFormat`. It has no
 external dependencies, so the lockfiles and verification metadata did not change.
 Test only: `:core:ledger` test fixtures (in-memory fakes, `TestClock`, Kotest assertions), `room-testing`
@@ -241,7 +254,8 @@ reason in the file (H3 narrows it). Add a rule only for something R8 reports or 
 broken, with a comment saying why. There is deliberately **no release `signingConfig`** (H3 adds it from
 `ANDROID_KEYSTORE_*` and must fail closed), so `assembleRelease` yields `app-release-unsigned.apk`.
 The release APK is about 21 MB with R8 since SQLCipher's native libraries (four ABIs) joined it
-(1.4 MB before; the app code itself is still about 1.4 MB).
+(1.4 MB before; the app code itself is still about 1.4 MB). DS3's 92 icons add about 87 KB once
+something in release references `PftSymbol` (A5), and 4 KB (the licence text) until then.
 
 `verifyReleaseShrink` (registered in `app/build.gradle.kts`, wired into `check`) runs
 `assembleRelease`, reads `build/outputs/mapping/release/mapping.txt` and fails with a clear message
@@ -271,6 +285,12 @@ signs, spoken direction, tone colours, hero shrink at the real maximum `Paise.MA
 scale on 320dp, rolling digits), `StatusChipTest`, `GroupedSectionTest`, `EmptyStateTest` and
 `ContentScreenshotTest` (goldens for the four components, `MoneyText` also at 200%). Text fit is asserted with
 line metrics (`TextLayoutSupport.kt`), not `hasVisualOverflow`, which is unreliable in Compose 1.7.
+
+DS3 adds `PftSymbolTest` (permanent keys, drawables inflate), `GlyphSourceTest` (JUnit 5, the `icon_key` boundary),
+`CategoryPaletteTest`, palette contrast in `ColorContrastTest`, `CategoryGlyphTest`, `BundledSymbolsLicenceTest` and
+`CategoryGlyphScreenshotTest` (8 goldens: symbol grids on teal, amber and violet, and the sources page, light and dark),
+and `ManifestHardeningTest` checks the EmojiCompat initializer is gone. The importer has its own tests:
+`python3 -I -m unittest discover -s tools/material-symbols`.
 
 **Room tests (A4a).** They run on a real in-memory `PftDatabase` (`TestDatabase.create()`, Robolectric's
 native SQLite) with `runSuspending { }` around suspend calls, and never mock the DAO. `AuditTriggersTest`

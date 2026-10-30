@@ -31,11 +31,8 @@ class ManifestHardeningTest {
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
     private val packageName = context.packageName
 
-    /**
-     * Reads an `android:` attribute of `<application>` from the merged manifest that AGP records
-     * for local tests. Robolectric's ApplicationInfo does not expose `dataExtractionRules`.
-     */
-    private fun mergedManifestApplicationAttribute(name: String): String {
+    /** The merged manifest that AGP records for local tests (the variant under test). */
+    private fun mergedManifest(): org.w3c.dom.Document {
         val config =
             Properties().apply {
                 val resource = "com/android/tools/test_config.properties"
@@ -43,15 +40,26 @@ class ManifestHardeningTest {
                     "AGP test_config.properties missing; is isIncludeAndroidResources enabled?"
                 }.use { load(it) }
             }
-        val manifest = File(config.getProperty("android_merged_manifest"))
-        val document =
-            DocumentBuilderFactory
-                .newInstance()
-                .apply { isNamespaceAware = true }
-                .newDocumentBuilder()
-                .parse(manifest)
-        val application = document.getElementsByTagName("application").item(0) as Element
-        return application.getAttributeNS("http://schemas.android.com/apk/res/android", name)
+        return DocumentBuilderFactory
+            .newInstance()
+            .apply { isNamespaceAware = true }
+            .newDocumentBuilder()
+            .parse(File(config.getProperty("android_merged_manifest")))
+    }
+
+    /**
+     * Reads an `android:` attribute of `<application>` from the merged manifest. Robolectric's
+     * ApplicationInfo does not expose `dataExtractionRules`.
+     */
+    private fun mergedManifestApplicationAttribute(name: String): String {
+        val application = mergedManifest().getElementsByTagName("application").item(0) as Element
+        return application.getAttributeNS(ANDROID_NS, name)
+    }
+
+    /** The `android:name` of every `<meta-data>` in the merged manifest, wherever it sits. */
+    private fun mergedManifestMetaDataNames(): List<String> {
+        val nodes = mergedManifest().getElementsByTagName("meta-data")
+        return (0 until nodes.length).map { (nodes.item(it) as Element).getAttributeNS(ANDROID_NS, "name") }
     }
 
     @Test
@@ -126,6 +134,17 @@ class ManifestHardeningTest {
     }
 
     @Test
+    fun `emoji compat initializer is not registered`() {
+        // Its default config asks Google Play services for a downloadable emoji font (a cross-app
+        // fetch). Emoji are drawn by the system emoji font instead (plan §3.6).
+        val registered = mergedManifestMetaDataNames()
+        assertTrue(
+            "androidx.emoji2.text.EmojiCompatInitializer must be removed from InitializationProvider: $registered",
+            "androidx.emoji2.text.EmojiCompatInitializer" !in registered,
+        )
+    }
+
+    @Test
     fun `main activity window is FLAG_SECURE`() {
         val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         val flags = activity.window.attributes.flags
@@ -133,5 +152,9 @@ class ManifestHardeningTest {
             "FLAG_SECURE must be set on the single activity",
             flags and WindowManager.LayoutParams.FLAG_SECURE != 0,
         )
+    }
+
+    private companion object {
+        const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
     }
 }

@@ -94,4 +94,18 @@ class PftThemeModeTest {
         compose.waitForIdle()
         assertEquals(moneyColors(dark = false), money)
     }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun `the category palette follows the resolved mode and ignores dynamic colour`() {
+        var prefs by mutableStateOf(ThemePrefs(mode = ThemeMode.SYSTEM, dynamicColor = true))
+        lateinit var palette: CategoryPalette
+        compose.setContent { PftTheme(prefs) { palette = PftTheme.palette } }
+        compose.waitForIdle()
+        assertEquals(categoryPalette(dark = true)["teal"], palette["teal"])
+
+        prefs = prefs.copy(mode = ThemeMode.LIGHT, dynamicColor = false)
+        compose.waitForIdle()
+        assertEquals(categoryPalette(dark = false)["teal"], palette["teal"])
+    }
 }
