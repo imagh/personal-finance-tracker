@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import dev.imagh.pft.app.ui.common.MoneyTone
 import dev.imagh.pft.app.ui.common.chipColors
-import dev.imagh.pft.app.ui.common.groupedSectionColor
+import dev.imagh.pft.app.ui.common.groupedSectionColors
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -114,17 +114,21 @@ class ColorContrastTest {
     @Test
     fun `the GroupedSection island is a surface the money tokens clear 4_5 on, never surfaceVariant`() {
         for (case in cases) {
-            val island = groupedSectionColor(scheme(case))
-            assertNotEquals(scheme(case).surfaceVariant, island, "$case island is surfaceVariant")
-            assertTrue(
-                island in scheme(case).surfaceRoles().values,
-                "$case island is not one of the swept surface roles",
-            )
-            val m = money(case)
-            mapOf("positive" to m.positive, "negative" to m.negative, "warning" to m.warning).forEach { (name, token) ->
-                assertAtLeast(textMin, "$case $name on the island", token, island)
+            val dark = case.theme == Theme.DARK
+            for (style in BackgroundStyle.entries) {
+                val island = groupedSectionColors(pftSurfaces(case.palette.colors(dark), style, dark)).fill
+                assertNotEquals(scheme(case).surfaceVariant, island, "$case $style island is surfaceVariant")
+                assertTrue(
+                    island in scheme(case).surfaceRoles().values + tonalSurfaces(case).values,
+                    "$case $style island is not one of the swept surfaces",
+                )
+                val m = money(case)
+                val tokens = mapOf("positive" to m.positive, "negative" to m.negative, "warning" to m.warning)
+                tokens.forEach { (name, token) ->
+                    assertAtLeast(textMin, "$case $style $name on the island", token, island)
+                }
+                assertAtLeast(textMin, "$case $style onSurface on the island", scheme(case).onSurface, island)
             }
-            assertAtLeast(textMin, "$case onSurface on the island", scheme(case).onSurface, island)
         }
     }
 

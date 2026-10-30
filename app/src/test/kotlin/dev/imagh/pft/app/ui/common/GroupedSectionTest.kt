@@ -1,5 +1,6 @@
 package dev.imagh.pft.app.ui.common
 
+import android.view.View
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -7,7 +8,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -18,10 +22,18 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.core.view.drawToBitmap
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.theme.BackgroundStyle
+import dev.imagh.pft.app.ui.theme.IvoryPalette
+import dev.imagh.pft.app.ui.theme.MidnightPalette
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.ThemeMode
+import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.app.ui.theme.pftSurfaces
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -30,6 +42,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import kotlin.math.abs
 
 /** `GroupedSection` (plan §3.4, §6.1 DS5): an inset rounded island of rows with hairline dividers between them. */
 @RunWith(RobolectricTestRunner::class)
@@ -40,6 +53,7 @@ class GroupedSectionTest {
     val compose = HostedComposeRule()
 
     private var density = 1f
+    private var composeView: View? = null
     private var rowCount by mutableIntStateOf(0)
 
     private fun Float.dp() = this / density
@@ -49,12 +63,14 @@ class GroupedSectionTest {
 
     private fun showRows(
         count: Int,
+        prefs: ThemePrefs = ThemePrefs(dynamicColor = false),
         onClick: ((Int) -> Unit)? = null,
     ) {
         rowCount = count
         compose.setContent {
             density = LocalDensity.current.density
-            PftTheme(ThemePrefs(dynamicColor = false)) {
+            composeView = LocalView.current
+            PftTheme(prefs) {
                 GroupedSection(Modifier.testTag("section")) {
                     repeat(rowCount) { index ->
                         row(
@@ -110,7 +126,7 @@ class GroupedSectionTest {
     @Test
     fun `a clickable row is at least 56dp tall however little it holds, and a click reaches its callback`() {
         val clicked = mutableListOf<Int>()
-        showRows(2) { clicked += it }
+        showRows(2, onClick = { clicked += it })
         listOf(0, 1).forEach { index ->
             val height = rows()[index].bounds().height
             assertTrue("row $index is ${height}dp tall", height >= 56f)
@@ -127,7 +143,7 @@ class GroupedSectionTest {
 
     @Test
     fun `a clickable row is announced as a button`() {
-        showRows(2) {}
+        showRows(2, onClick = {})
         rows()[0].assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
     }
 
@@ -139,7 +155,7 @@ class GroupedSectionTest {
 
     @Test
     fun `a row with a click handler exposes a click action`() {
-        showRows(2) {}
+        showRows(2, onClick = {})
         rows()[0].assertHasClickAction()
     }
 
@@ -154,5 +170,89 @@ class GroupedSectionTest {
         }
         compose.waitForIdle()
         assertEquals(Color.Transparent, container)
+    }
+
+    // --- island fill and edge (DS6c), read from the real draw pass -----------------------------
+
+    private fun pixelAt(
+        x: Float,
+        y: Float,
+    ): Color {
+        var argb = 0
+        compose.runOnUiThread { argb = composeView!!.drawToBitmap().getPixel(x.toInt(), y.toInt()) }
+        return Color(argb)
+    }
+
+    private fun distance(
+        a: Color,
+        b: Color,
+    ) = abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue)
+
+    private fun assertSame(
+        expected: Color,
+        actual: Color,
+        message: String,
+    ) = assertTrue("$message: expected $expected but was $actual", distance(expected, actual) <= 2f / 255f)
+
+    /**
+     * The edge row is a one-pixel stroke blended with the fill by the rasteriser (about 70% edge on
+     * native graphics), so it is not exactly the edge colour: it must be nearer the edge than the fill.
+     */
+    private fun assertEdgeRow(
+        edge: Color,
+        fill: Color,
+        actual: Color,
+        message: String,
+    ) = assertTrue(
+        "$message: $actual is not nearer the edge $edge than the fill $fill",
+        distance(edge, actual) < distance(fill, actual),
+    )
+
+    /** The section's bounds in window pixels (its top row is the island's top edge). */
+    private fun section(): Rect = compose.onNodeWithTag("section").fetchSemanticsNode().boundsInRoot
+
+    @Test
+    fun `TONAL fills the island with the palette's island colour and edges it with the hairline`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, background = BackgroundStyle.TONAL)
+        showRows(2, prefs = prefs)
+        val bounds = section()
+        val x = bounds.center.x
+        val fill = IvoryPalette.light.island
+        val edge = IvoryPalette.light.scheme.outlineVariant
+        assertSame(fill, pixelAt(x, bounds.center.y - 20f), "fill")
+        assertEdgeRow(edge, fill, pixelAt(x, bounds.top), "top edge")
+        assertEdgeRow(edge, fill, pixelAt(x, bounds.bottom - 1f), "bottom edge")
+        assertSame(fill, pixelAt(x, bounds.top + 1f), "the edge is one pixel, not two")
+    }
+
+    @Test
+    fun `FLAT fills the island with surfaceContainer and draws no edge`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, background = BackgroundStyle.FLAT)
+        showRows(2, prefs = prefs)
+        val bounds = section()
+        val fill = IvoryPalette.light.scheme.surfaceContainer
+        assertSame(fill, pixelAt(bounds.center.x, bounds.center.y - 20f), "fill")
+        assertSame(fill, pixelAt(bounds.center.x, bounds.top), "top edge row is the fill")
+        assertSame(fill, pixelAt(bounds.center.x, bounds.bottom - 1f), "bottom edge row is the fill")
+    }
+
+    @Test
+    fun `dark TONAL lights the top edge more than the bottom edge`() {
+        val prefs =
+            ThemePrefs(mode = ThemeMode.DARK, darkPalette = ThemePalette.MIDNIGHT, background = BackgroundStyle.TONAL)
+        showRows(2, prefs = prefs)
+        val bounds = section()
+        val dark = MidnightPalette.dark
+        val surfaces = pftSurfaces(dark, BackgroundStyle.TONAL, dark = true)
+        val x = bounds.center.x
+        assertSame(dark.island, pixelAt(x, bounds.center.y - 20f), "fill")
+        val top = pixelAt(x, bounds.top)
+        val bottom = pixelAt(x, bounds.bottom - 1f)
+        assertEdgeRow(surfaces.islandHighlight.compositeOver(surfaces.islandEdge), dark.island, top, "top edge")
+        assertEdgeRow(surfaces.islandEdge, dark.island, bottom, "bottom edge")
+        assertTrue(
+            "top ${top.luminance()} is not lighter than bottom ${bottom.luminance()}",
+            top.luminance() > bottom.luminance(),
+        )
     }
 }
