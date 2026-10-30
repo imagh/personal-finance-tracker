@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
@@ -46,8 +45,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -59,6 +56,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import dev.imagh.pft.R
+import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -76,11 +74,15 @@ enum class HeaderStyle {
 }
 
 /**
- * The period control of a [HeaderStyle.Dashboard] header: the scaffold draws a ‹ › stepper at the
+ * The period control of a [HeaderStyle.Dashboard] header: the scaffold draws a chevron stepper at the
  * end of the caption row and also steps when the expanded header is swiped sideways.
  *
- * @property onPrevious show the previous period (swipe right in a left-to-right layout, or ‹).
- * @property onNext show the next period (swipe left in a left-to-right layout, or ›).
+ * **LTR only.** The app is left-to-right only, so the symbols are not auto-mirrored: the left
+ * chevron is always "previous" and the right one "next", while the swipe already flips under RTL.
+ * Revisit (autoMirrored drawables or swapped chevrons) if RTL is ever supported.
+ *
+ * @property onPrevious show the previous period (swipe right in a left-to-right layout, or the left chevron).
+ * @property onNext show the next period (swipe left in a left-to-right layout, or the right chevron).
  */
 class HeaderPeriod(
     val onPrevious: () -> Unit,
@@ -96,6 +98,7 @@ internal object HeaderTags {
     const val HERO = "header-hero"
     const val LOWER_BAND = "header-lower-band"
     const val PERIOD_STEPPER = "header-period-stepper"
+    const val ACTIONS = "header-actions"
     const val LIST = "header-list"
 }
 
@@ -168,7 +171,10 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * @param period Dashboard only: the period control; see [HeaderPeriod].
  * @param actions secondary actions in the top row (back, search, filter, overflow), laid out left
  *   to right across the full width; use a weighted `Spacer` to push some to the end. Add actions
- *   belong in [floatingActionButton], not here.
+ *   belong in [floatingActionButton], not here. **Only [HeaderIconButton]s go in here** (UI-14):
+ *   icon-only, a TalkBack label each, 48dp targets, no text. This stays a slot rather than a typed
+ *   list because an overflow `DropdownMenu` needs a `Box` anchor around its button; the rule is
+ *   kept by convention and by `CollapsingHeaderScaffoldTest`, which checks the samples.
  * @param bottomBar a `NavigationBar` or a [BottomActionBar], or null for none. With none, the list
  *   and the FAB are padded by the `safeDrawing` bottom inset instead, so they clear the navigation bar.
  * @param floatingActionButton the add action.
@@ -334,7 +340,7 @@ private fun HeaderChildren(
 ) {
     val typography = MaterialTheme.typography
     Row(
-        Modifier.layoutId(HeaderSlot.Actions),
+        Modifier.layoutId(HeaderSlot.Actions).testTag(HeaderTags.ACTIONS),
         verticalAlignment = Alignment.CenterVertically,
         content = content.actions,
     )
@@ -581,26 +587,14 @@ private fun HeaderTitle(
     )
 }
 
+/**
+ * The previous and next period buttons: chevron symbols ([HeaderIconButton]), labelled for TalkBack.
+ * The app is LTR-only, so the chevrons are not mirrored (see [HeaderPeriod]).
+ */
 @Composable
 private fun PeriodStepper(period: HeaderPeriod) {
-    val previous = stringResource(R.string.header_period_previous)
-    val next = stringResource(R.string.header_period_next)
     Row(Modifier.testTag(HeaderTags.PERIOD_STEPPER)) {
-        IconButton(period.onPrevious) {
-            Text(
-                "‹",
-                Modifier.clearAndSetSemantics {
-                    contentDescription = previous
-                },
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        }
-        IconButton(period.onNext) {
-            Text(
-                "›",
-                Modifier.clearAndSetSemantics { contentDescription = next },
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        }
+        HeaderIconButton(PftSymbol.CHEVRON_LEFT, stringResource(R.string.header_period_previous), period.onPrevious)
+        HeaderIconButton(PftSymbol.CHEVRON_RIGHT, stringResource(R.string.header_period_next), period.onNext)
     }
 }

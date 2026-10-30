@@ -2,7 +2,8 @@
 
 Status: **DS1 (colour, `PftTheme`, window themes), DS2 (type, shape, spacing, bundled serif,
 screenshot harness, debug catalogue), DS3 (icons, category palette, `CategoryGlyph`, emoji policy), DS4 (motion tokens,
-`CollapsingHeaderScaffold`, `BottomActionBar`) and DS5 (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`) are built.**
+`CollapsingHeaderScaffold`, `BottomActionBar`), DS5 (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`) and DS6e
+(`HeaderIconButton`, icon-only header actions) are built.**
 
 The plan is the spec; this page records what is built and how to extend it.
 
@@ -158,16 +159,28 @@ primary action.
 
   | Style | Title | Lower band (thumb zone) |
   |---|---|---|
-  | `Dashboard` | `titleLarge`, top edge about 12% down the expanded header; at least 24dp clear above the hero | the hero (display font), its caption, and the ‹ › period stepper at the end of the caption row |
+  | `Dashboard` | `titleLarge`, top edge about 12% down the expanded header; at least 24dp clear above the hero | the hero (display font), its caption, and the chevron period stepper at the end of the caption row |
   | `Standard` | `headlineLarge`, centred in the middle of the expanded area | none (a hero is ignored) |
 
   The top row holds only secondary `actions` (back, search, filter, overflow); add actions go in the
-  FAB. On collapse the title cross-fades and scales into the 64dp bar's `titleLarge` title, and the
+  FAB. **Header actions are icon-only (UI-14, DS6e):** only `HeaderIconButton`s go in `actions`. The
+  slot stays a slot because an overflow `DropdownMenu` needs a `Box` anchor around its button, so the
+  rule is a convention checked by `CollapsingHeaderScaffoldTest` on both samples (every action is one
+  labelled button, at least 48dp, with no text node). On collapse the title cross-fades and scales into the 64dp bar's `titleLarge` title, and the
   subtitle and lower band fade out (three times faster than the collapse). While fully expanded
   only the large title exists in the tree, and while fully collapsed only the bar title, so
   assistive technology never reads the title twice.
-- **Period.** `period: HeaderPeriod(onPrevious, onNext)` (Dashboard only) draws the ‹ › stepper
-  ("Previous period" / "Next period" for TalkBack) and makes a horizontal swipe of more than 48dp on
+- **`HeaderIconButton(symbol: PftSymbol, label: String, onClick)`** (`ui/common`) is the only
+  control a header's `actions` row holds: an M3 `IconButton` around a 24dp `Icon` of a registry
+  symbol, tinted `onSurfaceVariant`, announced as a button named `label`. A blank `label` throws
+  `IllegalArgumentException`, so an unlabelled icon cannot ship. Compose gives it a touch target of at
+  least 48dp (`touchBoundsInRoot`; the drawn button is 40dp, and the 40dp semantics bounds do not
+  include the 48dp target, so tests read `touchBoundsInRoot`). It is a component and not a restyle
+  wrapper because it enforces the owner's contract (no text, mandatory label, registry symbol) and
+  has many named consumers: Home search and filter, list and settings back, budget-detail overflow,
+  and the period stepper below.
+- **Period.** `period: HeaderPeriod(onPrevious, onNext)` (Dashboard only) draws the chevron stepper
+  (`CHEVRON_LEFT` / `CHEVRON_RIGHT` through `HeaderIconButton`; "Previous period" / "Next period" for TalkBack) and makes a horizontal swipe of more than 48dp on
   the *expanded* header step the period: toward the end of the line is previous. Vertical drags stay
   with the scroll. C4's `PeriodSwitcher` adds the directional slide on top of this.
 - **Insets.** Edge-to-edge with `WindowInsets.safeDrawing`. `bottomBar` (nullable) sits in
@@ -302,9 +315,8 @@ sources (M3's own internals may still use it).
   `ManifestHardeningTest` asserts it is absent. Compose is not affected: it uses the platform emoji font (minSdk 33).
 - **Descriptions** (plan Q7): a transaction row's glyph is its sub-category's if set, otherwise its category's; free emoji
   typed in titles render in the system font. There is no per-transaction icon.
-- **Not changed in DS3 (on purpose).** DS4's `PeriodStepper` text chevrons and DS5's `EmptyState` placeholder glyph stay as they are:
-  the premium-look plan assigns the chevron swap to DS6e (`PftSymbol.CHEVRON_LEFT`/`CHEVRON_RIGHT`, `HeaderIconButton`), and the
-  glyph slot of `EmptyState` is filled by its consumers with a `CategoryGlyph`.
+- **Not changed in DS3 (on purpose).** DS5's `EmptyState` placeholder glyph stays as it is: its glyph slot is filled by its
+  consumers with a `CategoryGlyph`. (DS4's `PeriodStepper` text chevrons were swapped for symbols in DS6e.)
 
 ### The curated list
 
@@ -450,6 +462,6 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 
 - **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently. Money colours are unchanged.
 - **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas.
-- **Header.** An optional glow, off by default, never under money. Actions are icon-only, through `HeaderIconButton`.
+- **Header.** An optional glow, off by default, never under money. (Icon-only actions through `HeaderIconButton` are done: DS6e.)
 - **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB.
 - **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this (built in DS6a).
