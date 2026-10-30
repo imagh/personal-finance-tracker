@@ -152,7 +152,7 @@ val verifyReleaseShrink by tasks.registering {
     // HeaderSamplesKt holds DS4's fake-data header samples and their @PreviewLightDark previews.
     // DS3 adds CategoryGlyphSamplesKt (the symbol grid, the source samples and the preview).
     // DS5 adds one *SamplesKt per component (GroupedSectionSamplesKt, MoneyTextSamplesKt, ...) holding
-    // its fake-data samples and previews.
+    // its fake-data samples and previews. DS6b adds PaletteSamplesKt (the four-palette swatch page).
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
@@ -170,6 +170,8 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$StatusChipSamples",
             "dev.imagh.pft.app.ui.common.CategoryGlyphSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$CategoryGlyphSamples",
+            "dev.imagh.pft.app.ui.theme.PaletteSamples",
+            "dev.imagh.pft.app.ui.theme.ComposableSingletons\$PaletteSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile
