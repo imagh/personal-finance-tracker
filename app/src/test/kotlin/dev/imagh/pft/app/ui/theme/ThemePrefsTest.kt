@@ -21,6 +21,12 @@ class ThemePrefsTest {
     }
 
     @Test
+    fun `the header glow defaults to off`() {
+        assertFalse(ThemePrefs().headerGlow)
+        assertFalse(ThemePrefs.Default.headerGlow)
+    }
+
+    @Test
     fun `the other defaults are system mode and dynamic colour off`() {
         assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
         assertFalse(ThemePrefs.Default.dynamicColor)

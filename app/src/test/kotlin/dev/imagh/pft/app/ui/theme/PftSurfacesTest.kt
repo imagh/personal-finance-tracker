@@ -3,6 +3,7 @@ package dev.imagh.pft.app.ui.theme
 import androidx.compose.ui.graphics.Color
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -87,6 +88,40 @@ class PftSurfacesTest {
                 pftSurfaces(colors, BackgroundStyle.FLAT, dark).canvas,
                 "$palette dark=$dark canvas is the same in both styles",
             )
+        }
+    }
+
+    @Test
+    fun `the default prefs give no glow, in either style`() {
+        forEveryPalette { palette, dark, colors ->
+            for (style in BackgroundStyle.entries) {
+                val prefs = ThemePrefs.Default
+                assertNull(pftSurfaces(colors, style, dark, prefs.headerGlow).glow, "$palette dark=$dark $style")
+                assertNull(pftSurfaces(colors, style, dark).glow, "$palette dark=$dark $style (no glow argument)")
+            }
+        }
+    }
+
+    @Test
+    fun `with the header glow on the glow is the palette wash, in either style`() {
+        forEveryPalette { palette, dark, colors ->
+            for (style in BackgroundStyle.entries) {
+                val surfaces = pftSurfaces(colors, style, dark, glow = true)
+                assertEquals(colors.wash, surfaces.glow, "$palette dark=$dark $style")
+            }
+        }
+    }
+
+    @Test
+    fun `turning the glow on changes nothing but the glow`() {
+        forEveryPalette { palette, dark, colors ->
+            for (style in BackgroundStyle.entries) {
+                assertEquals(
+                    pftSurfaces(colors, style, dark),
+                    pftSurfaces(colors, style, dark, glow = true).copy(glow = null),
+                    "$palette dark=$dark $style",
+                )
+            }
         }
     }
 

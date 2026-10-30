@@ -239,6 +239,33 @@ class ThemeResolutionTest {
     }
 
     @Test
+    fun `PftTheme provides the glow only while the header glow pref is on`() {
+        var prefs by mutableStateOf(ThemePrefs(mode = ThemeMode.LIGHT, lightPalette = ThemePalette.IVORY))
+        lateinit var surfaces: PftSurfaces
+        compose.setContent { PftTheme(prefs) { surfaces = PftTheme.surfaces } }
+        compose.waitForIdle()
+        assertEquals(null, surfaces.glow)
+        prefs = prefs.copy(headerGlow = true)
+        compose.waitForIdle()
+        assertEquals(IvoryPalette.light.wash, surfaces.glow)
+        prefs = prefs.copy(headerGlow = false)
+        compose.waitForIdle()
+        assertEquals(null, surfaces.glow)
+    }
+
+    @Test
+    fun `dynamic colour with the glow on tints with the dynamic wash`() {
+        var surfaces: PftSurfaces? = null
+        compose.setContent {
+            PftTheme(ThemePrefs(mode = ThemeMode.DARK, dynamicColor = true, headerGlow = true)) {
+                surfaces = PftTheme.surfaces
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(dynamicDarkColorScheme(context).primaryContainer, surfaces?.glow)
+    }
+
+    @Test
     fun `dynamic colour with TONAL surfaces uses the derived canvas and island`() {
         var surfaces: PftSurfaces? = null
         compose.setContent {

@@ -102,7 +102,7 @@ fun PftTheme(
         LocalMoneyColors provides moneyColors(dark),
         LocalCategoryPalette provides categoryPalette(dark),
         LocalPftTypography provides pftType,
-        LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark),
+        LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark, prefs.headerGlow),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -131,7 +131,7 @@ object PftTheme {
         @ReadOnlyComposable
         get() = LocalCategoryPalette.current
 
-    /** The screen canvas, card island and island edge for the current palette, mode and [BackgroundStyle]. */
+    /** The canvas, island, island edge and header glow for the current palette, mode and prefs. */
     val surfaces: PftSurfaces
         @Composable
         @ReadOnlyComposable
