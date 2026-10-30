@@ -45,6 +45,11 @@ Restart the phone and try again. If it keeps happening, note the code and tell t
 The screen shows only this code, never file paths or key details, and (like every screen) it cannot
 be screenshotted.
 
+Development devices only: an emulator or test phone that ran a build from before this slice has a
+plain, unencrypted database and no key file, so it shows `KEY_FILE_MISSING`. Uninstall the app or clear
+its data once before installing this version (see the local setup guide). Nothing like this applies to
+real users; there are none with an older database.
+
 ## Not built yet
 
 - A restore from the pre-migration copies in the UI (they exist for manual recovery; none are made

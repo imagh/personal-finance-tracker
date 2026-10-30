@@ -169,6 +169,11 @@ files with `adb shell run-as dev.imagh.pft ls -la databases no_backup`; deleting
 `no_backup/pft_db_key.bin` and restarting shows the "Your data can't be opened" screen
 (`KEY_FILE_MISSING`) and leaves the database untouched.
 
+**Dev devices that ran a build before A4b** (A4a created a plaintext `pft.db` and no key file) show
+`KEY_FILE_MISSING` with the A4b build, because the app never replaces an existing database. Uninstall
+the app, or clear its data (`adb shell pm clear dev.imagh.pft`), before installing A4b. This only affects
+development emulators and phones; there are no real users with an older database.
+
 **Changing dependencies.** Versions are pinned in `gradle/libs.versions.toml` and checked against
 lockfiles and `gradle/verification-metadata.xml`, so a new or upgraded dependency fails the build
 until you refresh them deliberately. The exact commands are in `build-logic/README.md`.
