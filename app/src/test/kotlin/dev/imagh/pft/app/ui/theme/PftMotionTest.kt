@@ -68,6 +68,12 @@ class PftMotionTest {
     }
 
     @Test
+    fun `smoothOffset is the smooth spring for slide transitions`() {
+        assertEquals(PftMotion.smooth.stiffness, PftMotion.smoothOffset.stiffness, 1e-3f)
+        assertEquals(PftMotion.smooth.dampingRatio, PftMotion.smoothOffset.dampingRatio, 0f)
+    }
+
+    @Test
     fun `the pressed scale is 0_97`() {
         assertEquals(0.97f, PftMotion.PRESSED_SCALE, 0f)
     }

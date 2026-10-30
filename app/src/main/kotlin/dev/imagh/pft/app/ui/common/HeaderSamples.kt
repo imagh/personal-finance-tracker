@@ -12,6 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.money.Paise
+
+/** A fake month total: Rs 48,250.40. */
+private const val SAMPLE_SPEND_PAISE = 4_825_040L
 
 private val SampleRows =
     listOf("Groceries", "Fuel", "Rent", "Electricity", "Phone", "Dining out", "Transport", "Health", "Gifts", "Savings")
@@ -40,13 +44,13 @@ internal fun StandardHeaderSample() {
     ) { sampleRows() }
 }
 
-/** A `Dashboard` header screen with fake data (hero, caption and period stepper). */
+/** A `Dashboard` header screen with fake data (a `MoneyText` hero, caption and period stepper). */
 @Composable
 internal fun DashboardHeaderSample() {
     CollapsingHeaderScaffold(
         title = "October 2026",
         style = HeaderStyle.Dashboard,
-        hero = { Text("−₹48,250.40") },
+        hero = { MoneyText(Paise(SAMPLE_SPEND_PAISE), MoneySemantic.Expense, size = MoneySize.Hero) },
         heroCaption = "spent this month",
         period = HeaderPeriod(onPrevious = {}, onNext = {}),
         actions = {

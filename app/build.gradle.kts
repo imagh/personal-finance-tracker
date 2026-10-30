@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.roborazzi)
     id("pft.lint")
 }
@@ -50,6 +51,14 @@ android {
         disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
     }
 
+    sourceSets {
+        // MigrationTestHelper reads the exported schemas (app/schemas/<db class>/<version>.json) as
+        // assets, and Robolectric serves the tested variant's merged assets. They go into the debug
+        // build only (a few KB of table definitions, no data) so the release APK does not carry
+        // them; for that reason MigrationTest lives in src/testDebug.
+        getByName("debug").assets.srcDir("$projectDir/schemas")
+    }
+
     testOptions {
         unitTests {
             // Robolectric needs the merged manifest and resources.
@@ -60,6 +69,12 @@ android {
     }
 }
 
+// Room exports one JSON schema per database version. They are committed: the migration tests
+// replay them and a reviewer sees every schema change as a diff (docs/TECHNICAL.md §6).
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 // Screenshot goldens are committed and verified by `check` (roborazzi.test.verify=true in
 // gradle.properties). Re-record deliberately with `./gradlew :app:recordRoborazziDebug`.
 roborazzi {
@@ -67,12 +82,18 @@ roborazzi {
 }
 
 dependencies {
+    implementation(project(":core:money"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.compose)
+
+    // Business logic and the repository interfaces this module implements (CLAUDE.md §3.1).
+    implementation(project(":core:ledger"))
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
@@ -81,6 +102,11 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.compose.ui.test.junit4)
+    // The in-memory fakes, TestClock and Kotest assertions that core publishes once (plan §3.2 #14).
+    testImplementation(testFixtures(project(":core:ledger")))
+    testImplementation(libs.room.testing)
+    // Room entities for the shared-block tests (a throwaway database, never shipped).
+    kspTest(libs.room.compiler)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
@@ -100,11 +126,20 @@ val verifyReleaseShrink by tasks.registering {
     dependsOn("assembleRelease")
     val mappingFile = layout.buildDirectory.file("outputs/mapping/release/mapping.txt")
     val preShrinkClasses = layout.buildDirectory.dir("tmp/kotlin-classes/release")
-    // Kept, and unobfuscated (the manifest references it), so it must map to its own name.
-    val mustBeKept = listOf("dev.imagh.pft.app.MainActivity")
+    // Kept, and unobfuscated, so each must map to its own name. MainActivity: the manifest names it.
+    // PftDatabase_Impl: Room's generated database is created by name through reflection
+    // (Room.getGeneratedImplementation); room-runtime's consumer rule keeps it and its constructor,
+    // and nothing in this module references it yet, so only that rule stops R8 removing it.
+    val mustBeKept =
+        listOf(
+            "dev.imagh.pft.app.MainActivity",
+            "dev.imagh.pft.app.data.PftDatabase_Impl",
+        )
     // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
     // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.
     // HeaderSamplesKt holds DS4's fake-data header samples and their @PreviewLightDark previews.
+    // DS5 adds one *SamplesKt per component (GroupedSectionSamplesKt, MoneyTextSamplesKt, ...) holding
+    // its fake-data samples and previews.
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
@@ -112,6 +147,14 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.theme.ComposableSingletons\$TokenSheet",
             "dev.imagh.pft.app.ui.common.HeaderSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$HeaderSamples",
+            "dev.imagh.pft.app.ui.common.EmptyStateSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$EmptyStateSamples",
+            "dev.imagh.pft.app.ui.common.GroupedSectionSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$GroupedSectionSamples",
+            "dev.imagh.pft.app.ui.common.MoneyTextSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$MoneyTextSamples",
+            "dev.imagh.pft.app.ui.common.StatusChipSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$StatusChipSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

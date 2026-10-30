@@ -112,7 +112,7 @@ Code is abstract *at its own layer* so it is reused, not copied: one shared buil
 | app data | `@Embedded MetaColumns` with one `MetaColumns ↔ EntityMeta` mapper; generic `BaseDao<E>` (insert, update); `RoomEntityRepository<T, E, Id>` base taking the DAO and a mapper | every Room repository | A4a |
 | app tests | `TestDatabase` factory (Robolectric) and `MigrationTestSupport` for every `migrateNToN+1` test and the chain test | all app tests | A4a |
 | app UI (`ui/common/`) | `UiState` convention, `FormState` field validation, `EditFormScaffold`, `NameField` | all edit screens | A5 |
-| app UI | `EntityListScreen` (active and archived sections, FAB, empty state), `UndoDeleteSnackbar`, `AmountField` (wraps `Paise.parse` and shows the error), `AccountPicker` (`MoneyText` moved to design-system DS5) | accounts, categories, tags, transactions, budgets, recurring, loans, goals | B2 |
+| app UI | `EntityListScreen` (active and archived sections, FAB, empty state), `UndoDeleteSnackbar`, `AmountField` (wraps `Paise.parse` and shows the error), `AccountPicker` (`MoneyText` is not built here: it is DS5's, already in `ui/common`) | accounts, categories, tags, transactions, budgets, recurring, loans, goals | B2 |
 | app UI | `CategoryPicker` (B4), `TagPicker` (B5), `DateField` (C4) | transactions, budgets, recurring, loans | B4, B5, C4 |
 | app UI | `AuditHistoryList`: a generic history view for every detail screen, not only transactions | transaction, loan, goal, budget and recurring detail | C5 |
 
@@ -128,6 +128,15 @@ From B1 on, each entity step **composes** `EntityMeta`, `AuditedWriter`, `Entity
 - **Typed ids:** only `UserId`, `DeviceId` and `AuditEntryId` exist, all implementing `EntityId`. Each slice adds its own.
 - **Test fixtures:** `InMemoryLedgerStore` (the fake runner: a failure at any nesting depth restores the whole outermost block, like Room), `InMemoryEntityStore`, `InMemoryEntityRepository(ledger, entityType)`, `LedgerTestKit`, `TestClock`, `shouldHaveAudited`/`shouldNotHaveAudited`.
 - **No coroutines library yet.** The `suspend` contracts need only the language feature; add `kotlinx-coroutines` with the first `Flow`-returning query (slice C), not before.
+
+**As built (A4a, 2026-10-30).** B1 and A4b build on these details, which the step text did not fix:
+- **Dependencies:** `room-runtime` 2.7.1 and KSP 2.1.0-1.0.29 only. `room-ktx` is not needed (in 2.7 `withTransaction` is in the runtime), and no coroutines pin was added: kotlinx-coroutines arrives transitively through Room (1.7.3 main, 1.8.0 unit tests). `app` now depends on `:core:ledger` and on its test fixtures for tests.
+- **`BaseDao<E>`** has `insert`, `update(): Int` and an unannotated `byId`, which each entity DAO overrides with an `@Query` (a DAO that forgets fails at compile time). `RoomEntityRepository(dao, entityType, mapper)` takes an `EntityMapper<T, E>` (`toRow`/`toModel`). It supplies `entityType`, refuses an entity whose `auditType` differs, and fails an update that matched no row. **Entities declare `@Entity(primaryKeys = ["id"])` themselves**: Room does not count a `@PrimaryKey` inside an `@Embedded` class.
+- **No real `LedgerEntity` exists until B1**, so the shared blocks and `AuditedWriter` over Room are tested with a throwaway `SampleThing` entity (test source set, `kspTest`) on `SampleDatabase`, which extends `PftDatabase` and adds `sample_thing`. B1 registers `account` in `AuditedTables` and can keep or drop the sample.
+- **Audit triggers** live in `AuditTriggers` (`SQL`, `TRIGGER_NAMES`) and are applied by `AuditTriggers.callback` on **every open** (drop a same-named trigger, re-create). **`PftDatabase.create(context, name, openHelperFactory)` is the only database builder** and attaches the callback and `Migrations.ALL`; `TestDatabase` goes through it, and A4b's `DatabaseFactory` only passes the SQLCipher open-helper factory to it. `MigrationTestSupport.createV1` installs them on the helper-built old database (the schema JSON has no triggers) and `migrateTo` fails unless they survived. `Migrations.ALL` and `PftDatabase.VERSION` exist; `MigrationTest` fails if a version step lacks a migration.
+- **Schemas as assets:** Robolectric serves the tested variant's merged assets, not the `test` source set's, so `app/schemas` is a **debug** asset directory (not in the release APK) and `MigrationTest` is in `src/testDebug`. B1+ migration tests go there too.
+- **Time** is epoch milliseconds in every column, stored **exactly**: `EpochMillis.of` (every mapper and the settings repository) throws `IllegalArgumentException` for an instant with sub-millisecond precision, so a wrong clock fails on its first write (nothing is stored) instead of silently rounding. Chosen over truncating inside core's `AuditedWriter`/`AuditRecorder`/services because that would change four core classes for a persistence concern. **A5 acceptance criterion:** `AppContainer` builds the one `Clock` it gives core with `EpochMillis.clock()`, and `AppContainerTest` asserts that instants from it have no sub-millisecond part (a container built on `Clock.systemUTC()` would fail at the first write). `AuditEntry.changes` is stored as `{"field":{"old":..,"new":..}}` JSON (unset = JSON null).
+- **R8:** Room needs no extra keep rule (its AAR keeps `RoomDatabase` subclasses and their constructor). `verifyReleaseShrink` now also requires `PftDatabase_Impl` to survive under its own name. A release build with a temporary Room smoke on `pft35` (insert, read, transaction, audit JSON, trigger abort) ran clean.
 
 ### 3.5 Design system (owner decision, 2026-10-29)
 
@@ -218,7 +227,8 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 **A5 — Safe logging and first-run profile (L-8)**
 - **Red:** `SafeLogTest` (JVM, app): `SafeLog.event(LogEvent.DbOpened(schemaVersion=1, millis=12))` produces `"db_opened schema=1 ms=12"`. `LogEvent` is a sealed hierarchy whose fields are only ints, enums and durations, so amounts, names and strings are unrepresentable (compile-time guard). `SetupFlowTest` (Robolectric + Compose): on a fresh DB the setup screen shows; entering a name and device label and tapping Continue lands on Home, and the DB holds a user, a device and the current-device setting. `SetupViewModelTest`: a blank name gives a validation error and nothing is persisted.
-- **Green:** `app/.../log/{SafeLog,LogEvent}.kt`, `app/.../di/AppContainer.kt`, `app/.../ui/common/{UiState,FormState,EditFormScaffold,NameField}.kt` (§3.4; setup is the first consumer), `app/.../ui/setup/{SetupScreen,SetupViewModel}.kt`, `app/.../ui/nav/PftNavHost.kt` (start destination depends on identity).
+- **Also (acceptance criterion carried over from A4a):** `AppContainerTest` asserts that the clock the container gives core yields only whole milliseconds (`EpochMillis.clock()`), and a first-run flow over the real container writes and re-reads without an `IllegalArgumentException`.
+- **Green:** `app/.../log/{SafeLog,LogEvent}.kt`, `app/.../di/AppContainer.kt` (builds its `Clock` with `EpochMillis.clock()`), `app/.../ui/common/{UiState,FormState,EditFormScaffold,NameField}.kt` (§3.4; setup is the first consumer), `app/.../ui/setup/{SetupScreen,SetupViewModel}.kt`, `app/.../ui/nav/PftNavHost.kt` (start destination depends on identity).
 - **Refactor:** none.
 
 ### Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`)
@@ -229,7 +239,7 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 **B2 — Accounts UI**
 - **Red:** `AccountsFlowTest` (Robolectric Compose): add a "HDFC Savings" BANK account and it appears in the list; archive it and it moves to the Archived section; invalid last-4 shows an error.
-- **Green:** `ui/common/{EntityListScreen,UndoDeleteSnackbar,AmountField,MoneyText,AccountPicker}.kt` (§3.4; accounts are the first consumer, the opening balance uses `AmountField`), then `ui/accounts/{AccountsScreen,AccountEditScreen,AccountsViewModel}.kt` built from them; bottom-nav "More" entry.
+- **Green:** `ui/common/{EntityListScreen,UndoDeleteSnackbar,AmountField,AccountPicker}.kt` (§3.4; `MoneyText` is DS5's and is used as is; accounts are the first consumer, the opening balance uses `AmountField`), then `ui/accounts/{AccountsScreen,AccountEditScreen,AccountsViewModel}.kt` built from them; bottom-nav "More" entry.
 
 **B3 — Categories core + Room (v3, includes `tag`)**
 - **Red:** `CategoryServiceTest`: create a top-level category and a sub-category; creating a sub-category of a sub-category → `DepthExceeded`; a sub-category's kind must equal its parent's; rename/recolour/re-icon are audited; `reorder(parent, orderedIds)` rewrites `sort_order` for siblings only; archive keeps history and removes it from `pickable()`; archiving a parent hides its children from `pickable()`; the `LOAN_EMI` system category can be renamed but not archived or deleted. `DefaultCategoriesTest`: `seedDefaults()` is idempotent and creates the documented list, including `LOAN_EMI`. Room integration plus `migrate2To3`.
@@ -259,11 +269,11 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 **C4 — Transaction list and add/edit UI**
 - **Red:** `TransactionsFlowTest`: on Home, tap +, enter ₹250, pick account, category and tags, then save; the row shows in this month's list with "₹250.00", and month totals (expense/income, excluding transfers) update. Switching to Transfer shows a destination-account field, and saving shows paired legs. Editing changes the amount. Delete gives an Undo snackbar that restores the row. Bad amount text shows an inline error and saves nothing.
-- **Green:** `ui/transactions/{TransactionListScreen,TransactionEditScreen,TransactionsViewModel,TransactionEditViewModel}.kt`, month switcher, state chip (Verified/Unverified badge, L-6).
+- **Green:** `ui/transactions/{TransactionListScreen,TransactionEditScreen,TransactionsViewModel,TransactionEditViewModel}.kt`, month switcher, state chip (Verified/Unverified badge, L-6). **Amount contract (design plan DS5):** the ViewModel maps transaction amounts to non-negative `Paise` with the direction as the `MoneySemantic`; `MoneyText` throws in composition for a negative one, and only an account `Balance` may be negative. Test the mapper.
 
 **C5 — Search/filter UI and transaction detail with history**
 - **Red:** `SearchFlowTest`: a filter by tag plus text returns the expected rows. `TransactionDetailTest`: detail shows fields, source and bank ref, and an audit history list ("Amount ₹200.00 → ₹250.00 by Akash on Pixel"; history is formatted in the UI from the audit rows).
-- **Green:** `ui/search/*`, `ui/transactions/TransactionDetailScreen.kt`, `AuditQueries` read API in core plus Room, and the generic `ui/common/AuditHistoryList.kt` (§3.4), which the loan, goal, budget and recurring detail screens reuse later.
+- **Green:** `ui/search/*`, `ui/transactions/TransactionDetailScreen.kt`, `AuditQueries` read API in core plus Room, and the generic `ui/common/AuditHistoryList.kt` (§3.4), which the loan, goal, budget and recurring detail screens reuse later. **Amount contract (design plan DS5):** the detail ViewModel passes the stored positive amount with its `MoneySemantic`; `MoneyText` throws in composition for a negative `Paise` (only `Balance` may be negative).
 
 ### Slice D — Budgets (`feat/m1a-budgets`)
 
@@ -284,7 +294,7 @@ Adds `:core:budget` to settings.
 - **Red:** `RoomBudgetIntegrationTest`: create a budget and add expenses through `TransactionService`; `progress()` reflects them, and a deleted transaction drops out. `migrate5To6`.
 - **Green:** `app/.../data/budget/*`, `MIGRATION_5_6`.
 
-**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11)
+**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11). **Amount contract (design plan DS5):** the budget mapper passes non-negative `Paise` with `Budget(state)` to `MoneyText` (an overspend as a magnitude with `OVER`, never a negative remainder), which throws in composition otherwise; test the mapper.
 - **Red:** `BudgetsFlowTest` (through the nav host, real in-memory Room):
   - **List:** create "Groceries ₹8,000 monthly"; adding a ₹6,500 groceries expense shows the Groceries card at 81% with a threshold warning at 80%, and unverified spend is shown with a distinct marker. Each active budget has one card; an archived budget is not listed. The FAB opens the create form.
   - **List → detail:** tapping the card opens the budget detail, whose title is the budget name and whose subtitle is the current period.

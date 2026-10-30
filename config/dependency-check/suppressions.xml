@@ -18,4 +18,31 @@
         <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib(-jdk7|-jdk8)?@.*$</packageUrl>
         <cve>CVE-2026-53914</cve>
     </suppress>
+    <suppress until="2026-12-31Z">
+        <notes><![CDATA[
+        androidx.sqlite (sqlite, sqlite-android, sqlite-framework, sqlite-framework-android) 2.5.0 is
+        AndroidX's Kotlin/Java wrapper API over SQLite, and "2.5.0" is the wrapper's own version. The
+        scanner matches it to the CPE of the SQLite *engine* (sqlite:sqlite:2.5.0, a release from
+        the early 2000s) and reports that engine's whole CVE history (CVE-2015-3414 ... CVE-2025-6965).
+        None of that code is in these jars. The engine in use is the platform's SQLite (patched by OS
+        updates; minSdk 33) until A4b swaps in SQLCipher 4.7.2, which bundles its own SQLite.
+        Follow-up for A4b: check the SQLite version SQLCipher 4.7.2 bundles against CVE-2025-6965
+        (SQLite before 3.50.2) and the other engine CVEs, and decide there; this suppression says
+        nothing about the engine. Added by the A4a developer; the owner decides whether to accept
+        (docs/TECHNICAL.md section 5). Expires so it comes back for review before the A4b/H3 release work.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/androidx\.sqlite/sqlite(-android|-framework(-android)?)?@2\.5\.0$</packageUrl>
+        <cpe>cpe:/a:sqlite:sqlite</cpe>
+    </suppress>
+    <suppress until="2026-12-31Z">
+        <notes><![CDATA[
+        CVE-2020-29582 (JetBrains Kotlin before 1.4.21: insecure temp file creation in the Java API used by
+        the standard library). It is fixed in 1.4.21, and the affected artifacts here are
+        kotlin-stdlib-jdk7 and -jdk8 1.8.20 (transitive of AndroidX; in these versions the jdk7/jdk8
+        artifacts are empty shims that forward to kotlin-stdlib). The scanner's CPE match ignores the
+        fixed-in version. Added by the A4a developer; the owner decides whether to accept.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk(7|8)@1\.8\.20$</packageUrl>
+        <cve>CVE-2020-29582</cve>
+    </suppress>
 </suppressions>

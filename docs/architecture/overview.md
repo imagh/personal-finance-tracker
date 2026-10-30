@@ -1,7 +1,8 @@
 # Architecture overview
 
-How Personal Finance Tracker is put together. Status: **M1a, slice A3** (the ledger foundations on top of the A1 skeleton and the DS
-tokens). This file is refined as each slice lands (next: A4a adds the Room implementations). Rules live in
+How Personal Finance Tracker is put together. Status: **M1a, slice A4a** (the Room implementations of the core boundary, plaintext, on top of the
+A3 ledger foundations, the A1 skeleton and the DS tokens). This file is refined as each slice lands
+(next: A4b adds SQLCipher and the Keystore-wrapped key). Rules live in
 `CLAUDE.md` §3 and `docs/TECHNICAL.md` §6; the M1a plan is
 `docs/plans/2026-10-28-m1a-core-ledger.md`.
 
@@ -37,10 +38,11 @@ or a composable.
 
 ## The core/app boundary
 
-`core` defines the persistence contracts; `app` implements them with Room (step A4a). These are the
+`core` defines the persistence contracts; `app` implements them with Room (built in A4a; tables and
+conventions in [data-model.md](data-model.md)). These are the
 only swap-boundary interfaces in M1a (CLAUDE.md abstraction bar). `:core:ledger` defines:
 
-| Interface | Role | Room implementation (A4a) |
+| Interface | Role | Room implementation (`dev.imagh.pft.app.data`) |
 |---|---|---|
 | `TransactionRunner` | `inTransaction { }`: the write and its audit entry commit or roll back together (INT-4) | `RoomTransactionRunner` over `withTransaction` |
 | `AuditLog` | insert-only audit trail (INT-2); immutability also enforced by DB triggers | `RoomAuditLog` |

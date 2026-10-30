@@ -15,7 +15,7 @@ below. Pure Kotlin/JVM, no Android imports, no third-party runtime dependency (o
   columns); the audit model, diff and the `AuditedWriter`; the `TransactionRunner` contract;
   `LedgerError` and `Validation`; users, devices and first-run setup; audited app settings; and
   the repository interfaces for all of these.
-- **Does not own:** persistence (Room/SQLCipher implement the interfaces in `app`, step A4a),
+- **Does not own:** persistence (Room implements the interfaces in `app`, built in A4a; SQLCipher follows in A4b),
   UI, logging, serialisation of audit `changes` (`app` does that with `org.json`), money
   representation (`:core:money`). Budget and recurring logic live in `:core:budget` and
   `:core:recurring`, which depend on this module.
@@ -123,7 +123,7 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
 
 ## Data it owns
 
-Defines (and `app` persists, from step A4a) these tables; they are created in Room v1:
+Defines (and `app` persists, since A4a) these tables; they are Room schema v1 (details in `docs/architecture/data-model.md`):
 
 | Table | Columns |
 |---|---|
@@ -175,4 +175,5 @@ Tests (Kotest on JUnit 5, `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/`): 
 `ValidationTest`, `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including
 rollback of the write and its audit entry), and `fakes/` tests that pin the fake runner's
 rollback semantics and the matcher. Services are tested against the in-memory fakes; the same
-contracts are re-tested against real Room in `app` (step A4a).
+contracts are re-tested against real Room in `app` (A4a: `RoomTransactionRunnerTest`, `IdentityRoomIntegrationTest`,
+`RoomAuditedWriterIntegrationTest`).

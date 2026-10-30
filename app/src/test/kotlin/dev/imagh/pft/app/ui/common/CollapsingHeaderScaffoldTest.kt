@@ -49,8 +49,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.theme.HeroSizeSteps
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.money.Paise
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -358,6 +360,47 @@ class CollapsingHeaderScaffoldTest {
         val gap = tag(HeaderTags.HERO).bounds().top - tag(HeaderTags.SUBTITLE).bounds().bottom
         assertTrue("gap was $gap", gap >= 24f)
         assertTrue(tag(HeaderTags.HERO).bounds().top - tag(HeaderTags.TITLE_LARGE).bounds().bottom >= 24f)
+    }
+
+    /** The real ledger maximum (Rs 1e11) as a hero `MoneyText`: the longest figure a hero can ever show. */
+    private val longHero: @Composable () -> Unit = {
+        MoneyText(Paise.MAX_AMOUNT, MoneySemantic.Expense, Modifier.testTag("hero-text"), size = MoneySize.Hero)
+    }
+
+    private fun assertLongHeroShrinksToFit() {
+        val hero = tag("hero-text")
+        val result = hero.layout()
+        result.assertShownInFull()
+        val size = result.layoutInput.style.fontSize.value
+        assertTrue("hero was not shrunk: $size", size < 48f)
+        assertTrue("size $size is not one of the steps", size in HeroSizeSteps.map { it.value })
+        val gutter = 20f
+        val bounds = hero.bounds()
+        val width = tag(HeaderTags.HEADER).bounds().width
+        assertTrue("hero ${bounds.right} runs past the right gutter", bounds.right <= width - gutter + 0.5f)
+        assertTrue("hero ${bounds.left} starts before the left gutter", bounds.left >= gutter - 0.5f)
+        // The title still ends 24dp above the hero, and the stepper is still below it.
+        assertTrue(bounds.top - tag(HeaderTags.TITLE_LARGE).bounds().bottom >= 24f)
+        assertTrue(bounds.bottom <= tag(HeaderTags.PERIOD_STEPPER).bounds().top + 1f)
+    }
+
+    @Test
+    fun `Dashboard expanded at 200 percent font scale, the longest possible hero shrinks to fit the header`() {
+        show(
+            style = HeaderStyle.Dashboard,
+            subtitle = "October - 3 days left",
+            hero = longHero,
+            period = HeaderPeriod({}, {}),
+            fontScale = 2f,
+        )
+        assertLongHeroShrinksToFit()
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h851dp-xxhdpi")
+    fun `on a 320dp window at 200 percent font scale the longest possible hero still shrinks to fit`() {
+        show(style = HeaderStyle.Dashboard, hero = longHero, period = HeaderPeriod({}, {}), fontScale = 2f)
+        assertLongHeroShrinksToFit()
     }
 
     @Test
