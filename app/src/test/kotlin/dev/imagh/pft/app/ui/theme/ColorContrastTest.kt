@@ -11,11 +11,22 @@ import org.junit.jupiter.api.Test
 import kotlin.math.pow
 
 /**
- * WCAG 2.x contrast for every colour pair the design system promises (plan §3.3, UI-5).
- * Pure JVM: [luminance] implements the WCAG relative-luminance formula.
+ * WCAG 2.x contrast for every colour pair the design system promises (plan §3.3, UI-5), checked
+ * for every [ThemePalette] in both modes (DS6b). Pure JVM: [luminance] implements the WCAG
+ * relative-luminance formula.
  */
 class ColorContrastTest {
     private enum class Theme { LIGHT, DARK }
+
+    /** One palette in one mode; its `toString` names it in assertion messages. */
+    private data class Case(
+        val palette: ThemePalette,
+        val theme: Theme,
+    ) {
+        override fun toString() = "$palette $theme"
+    }
+
+    private val cases = ThemePalette.entries.flatMap { palette -> Theme.entries.map { Case(palette, it) } }
 
     private val textMin = 4.5 // WCAG 1.4.3, normal text
     private val nonTextMin = 3.0 // WCAG 1.4.11, UI components and graphics
@@ -42,15 +53,14 @@ class ColorContrastTest {
 
     /**
      * Dynamic surfaces are low-chroma, so they are tested as greys across [sweptTones]. The dark
-     * band starts at black because Graphite's dark canvas and flat surface sit at tones 3 to 5.
+     * band starts at black because the dark canvas and flat surfaces sit at tones 3 to 8.
      */
-    private fun surfaceGreys(theme: Theme): Map<String, Color> =
-        sweptTones(theme).associate { "grey tone $it" to greyAtTone(it) }
+    private fun surfaceGreys(case: Case): Map<String, Color> =
+        sweptTones(case.theme).associate { "grey tone $it" to greyAtTone(it) }
 
-    private fun scheme(theme: Theme) =
-        if (theme == Theme.LIGHT) GraphitePalette.light.scheme else GraphitePalette.dark.scheme
+    private fun scheme(case: Case) = case.palette.colors(dark = case.theme == Theme.DARK).scheme
 
-    private fun money(theme: Theme) = moneyColors(dark = theme == Theme.DARK)
+    private fun money(case: Case) = moneyColors(dark = case.theme == Theme.DARK)
 
     private fun assertAtLeast(
         min: Double,
@@ -63,14 +73,14 @@ class ColorContrastTest {
     }
 
     @Test
-    fun `money text tokens clear 4_5 on every Graphite surface role and every grey surface tone`() {
-        for (theme in Theme.entries) {
-            val surfaces = scheme(theme).surfaceRoles() + surfaceGreys(theme)
-            val m = money(theme)
+    fun `money text tokens clear 4_5 on every surface role and every grey surface tone`() {
+        for (case in cases) {
+            val surfaces = scheme(case).surfaceRoles() + surfaceGreys(case)
+            val m = money(case)
             val tokens = mapOf("positive" to m.positive, "negative" to m.negative, "warning" to m.warning)
             for ((tokenName, token) in tokens) {
                 for ((surfaceName, surface) in surfaces) {
-                    assertAtLeast(textMin, "$theme $tokenName on $surfaceName", token, surface)
+                    assertAtLeast(textMin, "$case $tokenName on $surfaceName", token, surface)
                 }
             }
         }
@@ -78,8 +88,8 @@ class ColorContrastTest {
 
     @Test
     fun `every money container pair clears 4_5`() {
-        for (theme in Theme.entries) {
-            val m = money(theme)
+        for (case in cases) {
+            val m = money(case)
             val pairs =
                 mapOf(
                     "positive" to (m.onPositiveContainer to m.positiveContainer),
@@ -87,21 +97,21 @@ class ColorContrastTest {
                     "warning" to (m.onWarningContainer to m.warningContainer),
                 )
             for ((name, pair) in pairs) {
-                assertAtLeast(textMin, "$theme $name on-container on container", pair.first, pair.second)
+                assertAtLeast(textMin, "$case $name on-container on container", pair.first, pair.second)
             }
         }
     }
 
     @Test
     fun `every StatusChip tone clears 4_5 for its label on its pill, and no pill is surfaceVariant`() {
-        for (theme in Theme.entries) {
+        for (case in cases) {
             for (tone in MoneyTone.entries) {
-                val colors = chipColors(tone, money(theme), scheme(theme))
-                assertAtLeast(textMin, "$theme $tone chip label on pill", colors.content, colors.container)
+                val colors = chipColors(tone, money(case), scheme(case))
+                assertAtLeast(textMin, "$case $tone chip label on pill", colors.content, colors.container)
                 assertNotEquals(
-                    scheme(theme).surfaceVariant,
+                    scheme(case).surfaceVariant,
                     colors.container,
-                    "$theme $tone chip pill is surfaceVariant",
+                    "$case $tone chip pill is surfaceVariant",
                 )
             }
         }
@@ -109,71 +119,71 @@ class ColorContrastTest {
 
     @Test
     fun `the GroupedSection island is a surface the money tokens clear 4_5 on, never surfaceVariant`() {
-        for (theme in Theme.entries) {
-            val island = groupedSectionColor(scheme(theme))
-            assertNotEquals(scheme(theme).surfaceVariant, island, "$theme island is surfaceVariant")
+        for (case in cases) {
+            val island = groupedSectionColor(scheme(case))
+            assertNotEquals(scheme(case).surfaceVariant, island, "$case island is surfaceVariant")
             assertTrue(
-                island in scheme(theme).surfaceRoles().values,
-                "$theme island is not one of the swept surface roles",
+                island in scheme(case).surfaceRoles().values,
+                "$case island is not one of the swept surface roles",
             )
-            val m = money(theme)
+            val m = money(case)
             mapOf("positive" to m.positive, "negative" to m.negative, "warning" to m.warning).forEach { (name, token) ->
-                assertAtLeast(textMin, "$theme $name on the island", token, island)
+                assertAtLeast(textMin, "$case $name on the island", token, island)
             }
-            assertAtLeast(textMin, "$theme onSurface on the island", scheme(theme).onSurface, island)
+            assertAtLeast(textMin, "$case onSurface on the island", scheme(case).onSurface, island)
         }
     }
 
     @Test
     fun `money text is never drawn on surfaceVariant, and the sweep that proves the tokens excludes it on purpose`() {
         // surfaceVariant is the one scheme surface the money tokens do not clear 4.5:1 on: dark
-        // `negative` on it is about 4.23:1. If this stops being true the exclusion could be revisited;
+        // `negative` on Graphite's is about 4.23:1. If this stops being true the exclusion could be revisited;
         // until then nothing that carries money text may use it as a background.
-        val dark = scheme(Theme.DARK)
-        val ratio = contrast(money(Theme.DARK).negative, dark.surfaceVariant)
+        val graphiteDark = Case(ThemePalette.GRAPHITE, Theme.DARK)
+        val ratio = contrast(money(graphiteDark).negative, scheme(graphiteDark).surfaceVariant)
         assertTrue(
             ratio < textMin,
-            "dark negative on surfaceVariant is ${"%.2f".format(ratio)}, so the exclusion is no longer needed",
+            "Graphite dark negative on surfaceVariant is ${"%.2f".format(ratio)}, so the exclusion is no longer needed",
         )
-        for (theme in Theme.entries) {
+        for (case in cases) {
             assertTrue(
-                "surfaceVariant" !in scheme(theme).surfaceRoles().keys,
-                "$theme sweep must not include surfaceVariant",
+                "surfaceVariant" !in scheme(case).surfaceRoles().keys,
+                "$case sweep must not include surfaceVariant",
             )
         }
     }
 
     @Test
     fun `every category palette content colour clears 4_5 on its container, so the letter fallback is legible`() {
-        for (theme in Theme.entries) {
-            val palette = categoryPalette(dark = theme == Theme.DARK)
+        for (case in cases) {
+            val palette = categoryPalette(dark = case.theme == Theme.DARK)
             for (key in CategoryPalette.keys) {
                 val colors = palette[key]
-                assertAtLeast(textMin, "$theme $key content on container", colors.content, colors.container)
+                assertAtLeast(textMin, "$case $key content on container", colors.content, colors.container)
             }
         }
     }
 
     @Test
     fun `onSurface and onSurfaceVariant clear 4_5 on every surface role`() {
-        for (theme in Theme.entries) {
-            val s = scheme(theme)
+        for (case in cases) {
+            val s = scheme(case)
             for ((surfaceName, surface) in s.surfaceRoles()) {
-                assertAtLeast(textMin, "$theme onSurface on $surfaceName", s.onSurface, surface)
-                assertAtLeast(textMin, "$theme onSurfaceVariant on $surfaceName", s.onSurfaceVariant, surface)
+                assertAtLeast(textMin, "$case onSurface on $surfaceName", s.onSurface, surface)
+                assertAtLeast(textMin, "$case onSurfaceVariant on $surfaceName", s.onSurfaceVariant, surface)
             }
         }
     }
 
     @Test
-    fun `Graphite scheme text and accent pairs clear their thresholds`() {
-        for (theme in Theme.entries) {
-            val s = scheme(theme)
-            assertAtLeast(textMin, "$theme onPrimary on primary", s.onPrimary, s.primary)
-            assertAtLeast(textMin, "$theme onPrimaryContainer on container", s.onPrimaryContainer, s.primaryContainer)
-            assertAtLeast(textMin, "$theme onSurface on surface", s.onSurface, s.surface)
-            assertAtLeast(textMin, "$theme onSurfaceVariant on surface", s.onSurfaceVariant, s.surface)
-            assertAtLeast(nonTextMin, "$theme primary on surface", s.primary, s.surface)
+    fun `scheme text and accent pairs clear their thresholds`() {
+        for (case in cases) {
+            val s = scheme(case)
+            assertAtLeast(textMin, "$case onPrimary on primary", s.onPrimary, s.primary)
+            assertAtLeast(textMin, "$case onPrimaryContainer on container", s.onPrimaryContainer, s.primaryContainer)
+            assertAtLeast(textMin, "$case onSurface on surface", s.onSurface, s.surface)
+            assertAtLeast(textMin, "$case onSurfaceVariant on surface", s.onSurfaceVariant, s.surface)
+            assertAtLeast(nonTextMin, "$case primary on surface", s.primary, s.surface)
         }
     }
 
@@ -184,19 +194,19 @@ class ColorContrastTest {
     }
 
     @Test
-    fun `every Graphite surface role lies within the swept band`() {
+    fun `every surface role lies within the swept band`() {
         // Tone is CIE L*, a function of luminance alone, so a role is inside the band exactly
         // when its luminance is between the band's end greys. If one drifts out, the grey sweep
         // above no longer brackets the real surfaces and must be widened.
-        for (theme in Theme.entries) {
-            val tones = sweptTones(theme)
+        for (case in cases) {
+            val tones = sweptTones(case.theme)
             val low = greyAtTone(tones.first).luminance()
             val high = greyAtTone(tones.last).luminance()
-            for ((name, role) in scheme(theme).surfaceRoles()) {
+            for ((name, role) in scheme(case).surfaceRoles()) {
                 val l = role.luminance()
                 assertTrue(
                     l in (low - 0.002f)..(high + 0.002f),
-                    "$theme $name luminance $l is outside the swept tones $tones",
+                    "$case $name luminance $l is outside the swept tones $tones",
                 )
             }
         }
