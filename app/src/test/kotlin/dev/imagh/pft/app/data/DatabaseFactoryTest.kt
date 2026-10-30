@@ -47,6 +47,7 @@ class DatabaseFactoryTest {
 
     private val handoffs = mutableListOf<Handoff>()
     private var failOpenHelper: Exception? = null
+    private var helperFactory: SupportSQLiteOpenHelper.Factory = FrameworkSQLiteOpenHelperFactory()
 
     private val backup =
         PreMigrationBackup(
@@ -68,7 +69,7 @@ class DatabaseFactoryTest {
                 backupExisted = File(dir, "backups/${PreMigrationBackup.backupName(0)}").exists(),
             )
         failOpenHelper?.let { throw it }
-        FrameworkSQLiteOpenHelperFactory() as SupportSQLiteOpenHelper.Factory
+        helperFactory
     }
 
     private fun open(factory: DatabaseFactory = factory()): PftDatabase = factory.open().also { opened += it }
@@ -198,5 +199,36 @@ class DatabaseFactoryTest {
         failure.stackTraceToString().contains(context.noBackupFilesDir.path) shouldBe false
         handoffs.single().key.all { it == 0.toByte() } shouldBe true
         backup.lastOpenedVersion() shouldBe null
+    }
+
+    @Test
+    fun `a close that throws during a failed open does not skip wiping the key`() {
+        helperFactory = ThrowingCloseFactory()
+        File(dir, "schema_version.tmp").mkdirs() // the open succeeds, then recording the version fails
+
+        shouldThrow<Exception> { factory().open() }
+
+        handoffs.single().key.all { it == 0.toByte() } shouldBe true
+    }
+
+    @Test
+    fun `a failure while closing does not hide the failure that stopped the start`() {
+        helperFactory = ThrowingCloseFactory()
+        File(dir, "schema_version.tmp").mkdirs()
+
+        shouldThrow<PreMigrationBackupFailed> { factory().open() }
+    }
+
+    /** An open helper whose close throws, as a broken connection pool might. */
+    private class ThrowingCloseFactory : SupportSQLiteOpenHelper.Factory {
+        override fun create(configuration: SupportSQLiteOpenHelper.Configuration): SupportSQLiteOpenHelper {
+            val delegate = FrameworkSQLiteOpenHelperFactory().create(configuration)
+            return object : SupportSQLiteOpenHelper by delegate {
+                override fun close() {
+                    delegate.close()
+                    error("close failed")
+                }
+            }
+        }
     }
 }

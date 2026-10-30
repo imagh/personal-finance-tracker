@@ -65,8 +65,10 @@ class DatabaseFactory internal constructor(
                 database
             } finally {
                 if (!opened) {
-                    database?.close()
+                    // Wipe first: nothing, not even a close that throws, may skip it. The close is best
+                    // effort so that the failure that stopped the start is the one that propagates.
                     keyForDatabase.fill(0)
+                    runCatching { database?.close() }
                 }
             }
         }
