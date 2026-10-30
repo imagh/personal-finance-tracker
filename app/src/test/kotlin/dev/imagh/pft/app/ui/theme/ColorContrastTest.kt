@@ -2,6 +2,9 @@ package dev.imagh.pft.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import dev.imagh.pft.app.ui.common.MoneyTone
+import dev.imagh.pft.app.ui.common.chipColors
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.math.pow
@@ -84,6 +87,40 @@ class ColorContrastTest {
             for ((name, pair) in pairs) {
                 assertAtLeast(textMin, "$theme $name on-container on container", pair.first, pair.second)
             }
+        }
+    }
+
+    @Test
+    fun `every StatusChip tone clears 4_5 for its label on its pill, and no pill is surfaceVariant`() {
+        for (theme in Theme.entries) {
+            for (tone in MoneyTone.entries) {
+                val colors = chipColors(tone, money(theme), scheme(theme))
+                assertAtLeast(textMin, "$theme $tone chip label on pill", colors.content, colors.container)
+                assertNotEquals(
+                    scheme(theme).surfaceVariant,
+                    colors.container,
+                    "$theme $tone chip pill is surfaceVariant",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `money text is never drawn on surfaceVariant, and the sweep that proves the tokens excludes it on purpose`() {
+        // surfaceVariant is the one scheme surface the money tokens do not clear 4.5:1 on: dark
+        // `negative` on it is about 4.23:1. If this stops being true the exclusion could be revisited;
+        // until then nothing that carries money text may use it as a background.
+        val dark = scheme(Theme.DARK)
+        val ratio = contrast(money(Theme.DARK).negative, dark.surfaceVariant)
+        assertTrue(
+            ratio < textMin,
+            "dark negative on surfaceVariant is ${"%.2f".format(ratio)}, so the exclusion is no longer needed",
+        )
+        for (theme in Theme.entries) {
+            assertTrue(
+                "surfaceVariant" !in scheme(theme).surfaceRoles().keys,
+                "$theme sweep must not include surfaceVariant",
+            )
         }
     }
 
