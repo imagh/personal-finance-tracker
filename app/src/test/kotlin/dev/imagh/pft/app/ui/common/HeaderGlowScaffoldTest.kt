@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Recomposer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -121,6 +122,13 @@ class HeaderGlowScaffoldTest {
         frames(2)
     }
 
+    /** Moves the held finger [distanceDp] further up, one separate gesture step, and lets the frames run. */
+    private fun moveHeldFingerUp(distanceDp: Float) {
+        val pixels = distanceDp * density.density
+        tag(HeaderTags.LIST).performTouchInput { moveBy(Offset(0f, -pixels), delayMillis = 100) }
+        frames(2)
+    }
+
     /** The colour the real draw pass put at ([x], [y]) in window pixels. */
     private fun pixelAt(
         x: Int,
@@ -214,6 +222,40 @@ class HeaderGlowScaffoldTest {
         // Across the width, clear of the title in the middle: the glow is a circle, far out of it here.
         val row = (0 until header.right.toInt() step 8).map { x -> pixelAt(x, belowGlow) }
         assertEquals(setOf(canvas), row.toSet())
+    }
+
+    /**
+     * How many recompositions the recomposer has run so far. Slot lambdas cannot be probed: the
+     * header's parts are skippable, so a probe inside one never reruns when the header body does.
+     */
+    private fun recompositions() = Recomposer.runningRecomposers.value.sumOf { it.changeCount }
+
+    @Test
+    fun `scrolling a glowing header redraws the glow but never recomposes anything`() {
+        show(HeaderStyle.Dashboard, glowOn, sampleHero)
+        val atRest = recompositions()
+        val restingTint = topCentre()
+
+        // Leaving the expanded phase swaps which parts exist (the title and the lower band), so it
+        // recomposes once. That also proves the probe is live.
+        dragListAndHold(20f)
+        val inMotion = recompositions()
+        assertTrue("the probe never counted the phase change ($atRest, then $inMotion)", inMotion > atRest)
+
+        val tints = mutableListOf(topCentre())
+        val heights = mutableListOf(tag(HeaderTags.HEADER).bounds().height)
+        repeat(4) {
+            moveHeldFingerUp(30f)
+            tints += topCentre()
+            heights += tag(HeaderTags.HEADER).bounds().height
+        }
+        assertEquals("scroll frames recomposed the glowing header", inMotion, recompositions())
+
+        // The header really did move and the glow really was redrawn, each step weaker than the last.
+        assertTrue("header did not shrink: $heights", heights.zipWithNext().all { (a, b) -> b < a })
+        assertTrue("tint did not fade: $restingTint, $tints", tints.zipWithNext().all { (a, b) -> b.red >= a.red })
+        assertTrue("tint did not weaken overall: $restingTint, $tints", tints.last().red > restingTint.red)
+        tag(HeaderTags.LIST).performTouchInput { up() }
     }
 
     private companion object {
