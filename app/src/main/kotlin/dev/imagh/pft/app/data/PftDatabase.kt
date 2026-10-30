@@ -25,10 +25,15 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
         AppSettingEntity::class,
         AuditEntryEntity::class,
     ],
-    version = 1,
+    version = PftDatabase.VERSION,
     exportSchema = true,
 )
 abstract class PftDatabase : RoomDatabase() {
+    companion object {
+        /** The current schema version; bump it with a migration in [Migrations] and a migration test. */
+        const val VERSION = 1
+    }
+
     /** Users and devices. */
     abstract fun identityDao(): IdentityDao
 

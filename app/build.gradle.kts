@@ -52,9 +52,11 @@ android {
     }
 
     sourceSets {
-        // MigrationTestHelper reads the exported schemas (app/schemas/<db class>/<version>.json)
-        // as assets, so the Robolectric unit tests get that folder as test assets.
-        getByName("test").assets.srcDir("$projectDir/schemas")
+        // MigrationTestHelper reads the exported schemas (app/schemas/<db class>/<version>.json) as
+        // assets, and Robolectric serves the tested variant's merged assets. They go into the debug
+        // build only (a few KB of table definitions, no data) so the release APK does not carry
+        // them; for that reason MigrationTest lives in src/testDebug.
+        getByName("debug").assets.srcDir("$projectDir/schemas")
     }
 
     testOptions {
