@@ -13,8 +13,16 @@ import java.io.File
  * screen, present and future, through the theme alone.
  *
  * It is a text scan, not a detekt rule: detekt runs here without type resolution, and banning a
- * constructor call would need a custom rule module. It is syntactic, so an alias import could
- * slip past; review still covers that.
+ * constructor call would need a custom rule module. It is syntactic, so it has known limits that
+ * review still covers:
+ * - an alias import (`import ...Color as C`) slips past;
+ * - the scan is per line, so a line break between `Color` and `(`, or before `.Red`, is missed;
+ * - comment stripping is naive, so a line-comment or block-comment opener inside a string
+ *   literal blanks the rest of that line (or a block) and can hide a literal;
+ * - XML colour resources and `colorResource(...)` are not scanned.
+ *
+ * ktlint formatting keeps a call and its receiver on one line, which makes the line-break and
+ * string-literal cases unlikely in practice.
  */
 class ThemeLiteralScanTest {
     /** One forbidden literal: its 1-based [line] and the offending [text]. */
