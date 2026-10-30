@@ -3,9 +3,11 @@ package dev.imagh.pft.app
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -151,5 +153,15 @@ class DesignCatalogTest {
         compose.onNodeWithText("Empty").assertIsSelected()
         compose.onNodeWithText("Add account").assertIsDisplayed()
         compose.onNodeWithText("Nothing matches your search.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the Glyphs section shows the sources and the symbol grid`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Glyphs").performClick()
+        compose.onNodeWithText("Glyphs").assertIsSelected()
+        compose.onNodeWithText("Sizes").assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasContentDescription("savings"))
+        compose.onNodeWithContentDescription("savings").assertIsDisplayed()
     }
 }
