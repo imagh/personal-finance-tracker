@@ -1,0 +1,234 @@
+<title>PFT Premium Look</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,200..800&family=Google+Sans+Flex:wght@400;500;600&family=Figtree:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: control bar over a row of three phones (one per type pairing) that share every other choice, then a type specimen and the research notes. Fake data only. */
+:root {
+  --bg:#F4F3F6; --fg:#1D1C22; --muted:#5F5C69; --card:#FFFFFF; --line:#DAD8E0; --accent:#4954B7; --on-accent:#FFFFFF;
+  --serif:"Newsreader", Georgia, "Times New Roman", serif;
+  --sans:"Google Sans Flex", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0E0E12; --fg:#E8E6EC; --muted:#A3A0AE; --card:#17171C; --line:#2B2A33; --accent:#BDC2FF; --on-accent:#152187; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg:#0E0E12; --fg:#E8E6EC; --muted:#A3A0AE; --card:#17171C; --line:#2B2A33; --accent:#BDC2FF; --on-accent:#152187; color-scheme: dark }
+body { background:var(--bg); color:var(--fg); font:15px/1.5 var(--sans);
+  padding-block:24px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width:1240px; margin:0 auto; display:flex; flex-direction:column; gap:28px; }
+h1 { font:500 34px/1.15 var(--serif); margin:0 0 6px; text-wrap:balance; }
+h2 { font:500 22px/1.2 var(--serif); margin:0 0 4px; }
+p { margin:0; max-width:68ch; color:var(--muted); }
+.lead p + p { margin-top:8px; }
+.controls { display:flex; flex-wrap:wrap; gap:14px 28px; align-items:flex-end; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+.ctl { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.ctl > span { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.seg { display:flex; flex-wrap:wrap; gap:4px; }
+.seg button { font:500 13px var(--sans); color:var(--fg); background:transparent; border:1px solid var(--line); border-radius:999px; padding:6px 12px; cursor:pointer; }
+.seg button[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+.seg button:focus-visible, input[type=range]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+input[type=range] { width:140px; accent-color:var(--accent); }
+.scroller { overflow-x:auto; padding:6px 2px 18px; }
+.phones { display:flex; gap:40px; width:max-content; }
+figure { margin:0; display:flex; flex-direction:column; gap:12px; }
+figcaption { max-width:360px; font-size:13px; color:var(--muted); }
+figcaption b { display:block; color:var(--fg); font:500 17px var(--serif); margin-bottom:2px; }
+
+/* ---------- phone ---------- */
+.phone { width:360px; height:740px; border-radius:38px; overflow:hidden; position:relative; display:flex; flex-direction:column;
+  background:var(--pbg); color:var(--on); font-family:var(--sans); box-shadow:0 0 0 9px #111, 0 22px 44px rgba(0,0,0,.28); }
+.phone[data-sans="flex"]    { --sans:"Google Sans Flex", system-ui, sans-serif; }
+.phone[data-sans="figtree"] { --sans:"Figtree", system-ui, sans-serif; }
+.phone[data-sans="jakarta"] { --sans:"Plus Jakarta Sans", system-ui, sans-serif; }
+.phone[data-sans="dmsans"]  { --sans:"DM Sans", system-ui, sans-serif; }
+.phone[data-mode="light"] { --pos:#13653C; --neg:#A3261D; --warn-c:#F3E6C4; --on-warn-c:#5C3A00; --pos-c:#DDEFE3; --on-pos-c:#0B4A2A; }
+.phone[data-mode="dark"]  { --pos:#6FD99E; --neg:#FF8F85; --warn-c:#3A2E10; --on-warn-c:#F2D58C; --pos-c:#12301F; --on-pos-c:#B5EFCB; }
+.phone[data-surf="islands"] { --pbg:var(--canvas); --isl:var(--island); }
+.phone[data-surf="flat"]    { --pbg:var(--flat);   --isl:var(--flatlow); }
+/* Cards are a tonal step of the canvas hue with a hairline edge, never white. canvas, island, flat, flatlow, on, onvar, line (hairline), primary, pc (wash tint), onpc */
+.phone[data-pal="midnight"][data-mode="light"] { --canvas:#E6E9F0; --island:#F0F2F7; --flat:#F4F5F9; --flatlow:#ECEFF5; --on:#11172A; --onvar:#4A5266; --line:#D2D7E3; --primary:#7D5F26; --pc:#E9DDC2; --onpc:#2A1D00; }
+.phone[data-pal="midnight"][data-mode="dark"]  { --canvas:#0A0E1A; --island:#121929; --flat:#0F1424; --flatlow:#161C30; --on:#E6E8EF; --onvar:#A5ACBF; --line:#222B42; --primary:#D4B572; --pc:#33291A; --onpc:#F1E2C0; }
+.phone[data-pal="ivory"][data-mode="light"] { --canvas:#E9E4D8; --island:#F3EFE5; --flat:#F6F2E9; --flatlow:#EFEADF; --on:#1F1D18; --onvar:#5A5548; --line:#D9D2C2; --primary:#2E3A59; --pc:#DCD3BC; --onpc:#1F1A0A; }
+.phone[data-pal="ivory"][data-mode="dark"]  { --canvas:#12110E; --island:#1A1915; --flat:#181713; --flatlow:#201F1A; --on:#ECE6D8; --onvar:#AFA896; --line:#2B2923; --primary:#AEB9DA; --pc:#2A2C38; --onpc:#E4E8F6; }
+.phone[data-pal="graphite"][data-mode="light"] { --canvas:#E4E6E9; --island:#EFF0F2; --flat:#F3F4F5; --flatlow:#EBEDEF; --on:#14161A; --onvar:#50545C; --line:#D1D4D9; --primary:#3B4350; --pc:#D5DAE3; --onpc:#0B1220; }
+.phone[data-pal="graphite"][data-mode="dark"]  { --canvas:#0B0C0E; --island:#141618; --flat:#101113; --flatlow:#181A1D; --on:#E6E7EA; --onvar:#A8ACB3; --line:#25282C; --primary:#C9CED8; --pc:#2A2F38; --onpc:#E3E7EF; }
+.phone[data-pal="aubergine"][data-mode="light"] { --canvas:#EAE3EA; --island:#F4EFF4; --flat:#F7F2F7; --flatlow:#F0E9F0; --on:#1D141D; --onvar:#594C58; --line:#DACFD9; --primary:#5B2A66; --pc:#E2D0E4; --onpc:#2D0A36; }
+.phone[data-pal="aubergine"][data-mode="dark"]  { --canvas:#0E080F; --island:#181018; --flat:#140D15; --flatlow:#1D141E; --on:#EDE3EC; --onvar:#B3A5B2; --line:#2E2030; --primary:#D9BE8A; --pc:#3B2540; --onpc:#F0E0C0; }
+.phone[data-pal="today"][data-mode="light"] { --canvas:#ECEBF3; --island:#FFFFFF; --flat:#FCF8FD; --flatlow:#F6F2F7; --on:#1B1B1F; --onvar:#46464F; --line:#E1DFE8; --primary:#4954B7; --pc:#DFE0FF; --onpc:#000866; }
+.phone[data-pal="today"][data-mode="dark"]  { --canvas:#0B0B0F; --island:#1C1C21; --flat:#131316; --flatlow:#1B1B1F; --on:#E4E1E6; --onvar:#C7C5D0; --line:#2F2F36; --primary:#BDC2FF; --pc:#303B9E; --onpc:#DFE0FF; }
+
+.status { height:30px; flex:none; display:flex; justify-content:space-between; align-items:center; padding:0 24px; font-size:12px; color:var(--onvar); }
+.hdr { height:236px; flex:none; position:relative; display:flex; flex-direction:column; justify-content:flex-end; padding:0 20px 16px; background:var(--pbg); }
+.phone[data-wash="on"] .hdr { background:radial-gradient(130% 95% at 50% 0%, color-mix(in srgb, var(--pc) 72%, var(--pbg)) 0%, color-mix(in srgb, var(--pc) 28%, var(--pbg)) 38%, var(--pbg) 72%); }
+.ttl { position:absolute; top:30px; left:0; right:0; text-align:center; font:500 20px/1.3 var(--sans); }
+.acts { position:absolute; top:8px; right:16px; display:flex; gap:18px; color:var(--onvar); }
+.acts svg { width:22px; height:22px; display:block; }
+.cap { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--onvar); }
+.hero { font:350 48px/1.2 var(--serif); font-variant-numeric:tabular-nums lining-nums; color:var(--neg); letter-spacing:.005em; }
+.hero small { font-size:26px; }
+.step { display:flex; gap:6px; }
+.step span { width:32px; height:32px; border-radius:16px; background:color-mix(in srgb, var(--onvar) 14%, transparent); display:grid; place-items:center; color:var(--on); }
+.chips { display:flex; gap:8px; margin-top:10px; }
+.chip { font-size:12.5px; padding:5px 10px; border-radius:10px; font-variant-numeric:tabular-nums; }
+.chip.in { background:var(--pos-c); color:var(--on-pos-c); }
+.chip.net { background:color-mix(in srgb, var(--onvar) 14%, transparent); color:var(--on); }
+.body { flex:1; overflow:hidden; padding:0 14px; }
+.day { display:flex; justify-content:space-between; font-size:13px; color:var(--onvar); padding:10px 8px 7px; font-variant-numeric:tabular-nums; }
+.isle { background:var(--isl); border:1px solid var(--line); border-radius:22px; overflow:hidden; }
+.phone[data-surf="flat"] .isle { border-color:transparent; }
+.phone[data-mode="dark"][data-surf="islands"] .isle { box-shadow:inset 0 1px 0 rgba(255,255,255,.045); }
+.item { display:flex; align-items:center; gap:12px; padding:10px 14px; position:relative; }
+.item + .item::before { content:""; position:absolute; top:0; left:64px; right:14px; border-top:1px solid var(--line); }
+.g { width:38px; height:38px; border-radius:30%; display:grid; place-items:center; flex:none; font:600 16px var(--sans); background:color-mix(in srgb, var(--primary) 16%, var(--isl)); color:var(--primary); }
+.t { flex:1; min-width:0; }
+.t1 { font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.t2 { font-size:12.5px; color:var(--onvar); margin-top:1px; display:flex; gap:6px; align-items:center; }
+.amt { font-size:15px; font-weight:500; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.amt.pos { color:var(--pos); }
+.pill { font-size:11px; padding:1px 7px; border-radius:8px; font-weight:500; background:var(--warn-c); color:var(--on-warn-c); }
+.sec { font:500 17px var(--sans); padding:14px 8px 8px; }
+.bud { padding:13px 16px; }
+.bud .top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.bud .sub { font-size:12.5px; color:var(--onvar); font-variant-numeric:tabular-nums; }
+.meter { height:6px; border-radius:3px; background:color-mix(in srgb, var(--onvar) 20%, transparent); margin-top:9px; overflow:hidden; }
+.meter i { display:block; height:100%; width:78%; border-radius:3px; background:var(--primary); }
+.nav { height:66px; flex:none; background:color-mix(in srgb, var(--isl) 70%, var(--pbg)); border-top:1px solid var(--line); display:flex; justify-content:space-around; align-items:center; font-size:11.5px; color:var(--onvar); }
+.nav div { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.nav i { width:54px; height:26px; border-radius:13px; display:block; }
+.nav .on { color:var(--on); font-weight:500; } .nav .on i { background:color-mix(in srgb, var(--primary) 20%, transparent); }
+.fab { position:absolute; right:18px; bottom:84px; width:56px; height:56px; border-radius:18px; background:var(--primary); color:var(--canvas); display:grid; place-items:center; font:400 28px var(--sans); box-shadow:0 8px 20px rgba(0,0,0,.3); }
+
+/* ---------- type pairings ---------- */
+.tp-editorial .ttl, .tp-editorial .sec { font-family:var(--serif); font-weight:500; }
+.tp-editorial .ttl { font-size:22px; } .tp-editorial .sec { font-size:19px; }
+.tp-all, .tp-all .ttl, .tp-all .sec, .tp-all .amt, .tp-all .chip, .tp-all .nav, .tp-all .pill, .tp-all .g { font-family:var(--serif); }
+.tp-all .ttl { font-weight:500; font-size:22px; } .tp-all .sec { font-weight:500; font-size:19px; }
+.tp-all .t1 { font-size:16px; } .tp-all .t2, .tp-all .cap, .tp-all .day { font-size:13.5px; }
+
+/* ---------- specimen + notes ---------- */
+.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0; }
+.tbl { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; min-width:640px; }
+th { text-align:left; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:500; padding:4px 12px 8px 0; }
+td { padding:8px 12px 8px 0; border-top:1px solid var(--line); white-space:nowrap; font-variant-numeric:tabular-nums; }
+td.sz { color:var(--muted); font:12px var(--sans); width:48px; }
+.s-sans { font-family:var(--sans); } .s-auto { font-family:var(--serif); } .s-pin { font-family:var(--serif); font-variation-settings:"opsz" 48; }
+.notes { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
+.notes ul { margin:8px 0 0; padding-left:18px; color:var(--muted); display:flex; flex-direction:column; gap:6px; }
+.notes a { color:var(--accent); }
+</style>
+
+<div class="wrap">
+  <div class="lead">
+    <h1>Premium look, side by side</h1>
+    <p>Three phones, one per type pairing. Everything else follows the controls and applies to all three. Cards are now a quiet tonal step of the background with a hairline edge, so the shade and the cards belong to one family. Accents are muted metals (brass, champagne, platinum, ink) instead of a saturated indigo. "Today" is the previous look for comparison. All data is fake.</p>
+  </div>
+
+  <div class="controls" role="group" aria-label="Look controls">
+    <div class="ctl"><span>Light theme</span><div class="seg" data-key="palLight">
+      <button data-v="midnight" aria-pressed="false">Midnight + brass</button><button data-v="ivory" aria-pressed="true">Ivory + ink</button><button data-v="graphite" aria-pressed="false">Graphite + platinum</button><button data-v="aubergine" aria-pressed="false">Aubergine + champagne</button><button data-v="today" aria-pressed="false">Today</button></div></div>
+    <div class="ctl"><span>Dark theme</span><div class="seg" data-key="palDark">
+      <button data-v="midnight" aria-pressed="true">Midnight + brass</button><button data-v="ivory" aria-pressed="false">Ivory + ink</button><button data-v="graphite" aria-pressed="false">Graphite + platinum</button><button data-v="aubergine" aria-pressed="false">Aubergine + champagne</button><button data-v="today" aria-pressed="false">Today</button></div></div>
+    <div class="ctl"><span>Sans font</span><div class="seg" data-key="sans">
+      <button data-v="flex" aria-pressed="true">Google Sans Flex</button><button data-v="figtree" aria-pressed="false">Figtree</button><button data-v="jakarta" aria-pressed="false">Plus Jakarta Sans</button><button data-v="dmsans" aria-pressed="false">DM Sans</button></div></div>
+    <div class="ctl"><span>Background</span><div class="seg" data-key="surf">
+      <button data-v="islands" aria-pressed="true">Tonal canvas + cards</button><button data-v="flat" aria-pressed="false">Flat</button></div></div>
+    <div class="ctl"><span>Header glow</span><div class="seg" data-key="wash">
+      <button data-v="on" aria-pressed="true">On</button><button data-v="off" aria-pressed="false">Off</button></div></div>
+    <div class="ctl"><span>Screen mode</span><div class="seg" data-key="mode">
+      <button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="true">Dark</button></div></div>
+    <div class="ctl"><span>Zoom</span><input id="zoom" type="range" min="0.7" max="2" step="0.05" value="1" aria-label="Zoom phones"></div>
+  </div>
+
+  <div class="scroller"><div class="phones" id="phones"></div></div>
+
+  <section class="card">
+    <h2>Why "all serif" needs per-size tuning</h2>
+    <p>Newsreader changes its drawing with optical size. The middle column lets the size pick the cut, which is what we would do per role. The right column pins the cut to 48, which is how the font is set up today. Compare the small rows.</p>
+    <div class="tbl" style="margin-top:12px"><table>
+      <thead><tr><th>Size</th><th>Google Sans Flex</th><th>Newsreader, cut follows size</th><th>Newsreader, pinned to 48</th></tr></thead>
+      <tbody id="spec"></tbody></table></div>
+    <p style="margin-top:10px">Check the ₹ sign in the serif columns. If it looks like a fallback glyph, the bundled font lacks it and Android would fall back too.</p>
+  </section>
+
+  <section class="notes">
+    <div class="card"><h2>Sans fonts</h2><ul>
+      <li>One UI Sans (Samsung) and Circular (Spotify, since replaced by Spotify Mix) are proprietary. They cannot be bundled in this app.</li>
+      <li>Google Sans Flex is the closest legitimate match to the Google Sans look. It was released under the SIL Open Font License in November 2025 (<a href="https://www.omgubuntu.co.uk/2025/11/google-sans-flex-font-ubuntu">report</a>), so bundling is allowed.</li>
+      <li>For the Circular feel, <a href="https://fontalternatives.com/alternatives/circular/">comparison sites</a> name DM Sans, Figtree, Plus Jakarta Sans, Outfit and Manrope. Three of those are in the controls.</li>
+    </ul></div>
+    <div class="card"><h2>Colour notes</h2><ul>
+      <li>Money colours are unchanged. Brass sits near the warning amber, so the Unverified pill would need a different shape or label to stay distinct. Worth a look in dark mode.</li>
+      <li>Ivory and Graphite are the safest for contrast. Midnight and Aubergine look best in dark and are the most "private bank" of the four.</li>
+      <li>The glow is a soft radial tint behind the header, fading out before the hero number.</li>
+    </ul></div>
+    <div class="card"><h2>Type facts</h2><ul>
+      <li>Newsreader: optical size 6 to 72, weight 200 to 800, italic as a separate file (<a href="https://raw.githubusercontent.com/google/fonts/2796410152d4f9524b68ed46e69c1b60f8e0f7c3/ofl/newsreader/METADATA.pb">Google Fonts metadata</a>).</li>
+      <li>Not confirmed: tabular figures in Newsreader, and the ₹ glyph.</li>
+      <li>Not confirmed: the exact axis list of Google Sans Flex. Sources disagree on five or six, and the app would use weight only.</li>
+    </ul></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var state = { palLight: "graphite", palDark: "graphite", sans: "figtree", surf: "islands", wash: "off", mode: "dark" };
+  var pairings = [
+    { cls: "tp-hero", name: "Hero only", note: "Today. Serif for the big number, sans everywhere else." },
+    { cls: "tp-editorial", name: "Editorial", note: "Serif for the hero, screen title and section titles. Rows, chips, labels and amounts stay sans." },
+    { cls: "tp-all", name: "All serif", note: "Every role in Newsreader, each at its own optical size." }
+  ];
+  function phone(p) {
+    return '<figure><div class="phone ' + p.cls + '" data-pal="' + (state.mode === 'dark' ? state.palDark : state.palLight) + '" data-sans="' + state.sans + '" data-surf="' + state.surf + '" data-wash="' + state.wash + '" data-mode="' + state.mode + '">' +
+      '<div class="status"><span>9:41</span><span>100%</span></div>' +
+      '<div class="hdr"><div class="acts">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-label="Search" role="img"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-label="Filter" role="img"><path d="M4 7h16M7 12h10M10 17h4"/></svg></div>' +
+      '<div class="ttl">October 2026</div>' +
+      '<div class="hero">−₹48,250<small>.40</small></div>' +
+      '<div class="cap"><span>spent this month</span><div class="step"><span>‹</span><span>›</span></div></div>' +
+      '<div class="chips"><span class="chip in">+₹1,20,000 in</span><span class="chip net">net +₹71,749.60</span></div></div>' +
+      '<div class="body">' +
+      '<div class="day"><span>Today · Wed 29</span><span>−₹1,040.00</span></div>' +
+      '<div class="isle">' +
+      '<div class="item"><div class="g">F</div><div class="t"><div class="t1">Swiggy order</div><div class="t2">Food › Delivery · HDFC</div></div><div class="amt">−₹540.00</div></div>' +
+      '<div class="item"><div class="g">T</div><div class="t"><div class="t1">Fuel</div><div class="t2">Transport <span class="pill">Unverified</span></div></div><div class="amt">−₹500.00</div></div>' +
+      '</div>' +
+      '<div class="day"><span>Tue 28</span><span style="color:var(--pos)">+₹1,20,000.00</span></div>' +
+      '<div class="isle"><div class="item"><div class="g">₹</div><div class="t"><div class="t1">Salary</div><div class="t2">Income · Salary</div></div><div class="amt pos">+₹1,20,000.00</div></div></div>' +
+      '<div class="sec">Budgets</div>' +
+      '<div class="isle bud"><div class="top"><span style="font-size:15px">Food</span><span class="sub">₹9,400 of ₹12,000</span></div><div class="meter"><i></i></div></div>' +
+      '</div>' +
+      '<div class="fab">+</div>' +
+      '<div class="nav"><div class="on"><i></i>Home</div><div><i></i>Budgets</div><div><i></i>Upcoming</div><div><i></i>More</div></div>' +
+      '</div><figcaption><b>' + p.name + '</b>' + p.note + '</figcaption></figure>';
+  }
+  function render() {
+    document.querySelectorAll(".seg").forEach(function (seg) {
+      seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x.dataset.v === state[seg.dataset.key])); });
+    });
+    document.getElementById("phones").innerHTML = pairings.map(phone).join("");
+    applyZoom();
+  }
+  function applyZoom() {
+    document.getElementById("phones").style.zoom = document.getElementById("zoom").value;
+  }
+  document.querySelectorAll(".seg").forEach(function (seg) {
+    seg.addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      state[seg.dataset.key] = b.dataset.v;
+      seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      render();
+    });
+  });
+  document.getElementById("zoom").addEventListener("input", applyZoom);
+
+  document.getElementById("spec").innerHTML = [12, 14, 16, 24, 48].map(function (s) {
+    var t = "₹48,250.40 · Swiggy order";
+    return '<tr><td class="sz">' + s + ' sp</td>' +
+      ['s-sans', 's-auto', 's-pin'].map(function (c) { return '<td class="' + c + '" style="font-size:' + s + 'px">' + t + '</td>'; }).join("") + '</tr>';
+  }).join("");
+  render();
+})();
+</script>

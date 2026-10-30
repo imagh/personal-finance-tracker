@@ -355,3 +355,13 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 2. Add it under `ui/theme` with KDoc, and expose it through `PftTheme` if it is not an M3 token.
 3. Add it to the token sheet, run `./gradlew :app:recordRoborazziDebug` and review the PNG diff.
 4. Update this page and `app/README.md`.
+
+## Planned: premium look (DS6)
+
+`docs/plans/2026-10-30-m1a-premium-look.md` (owner decisions of 2026-10-30) changes several things on this page. Each DS6 slice updates the sections it touches as it lands; until then, the sections above describe what is built.
+
+- **Colour.** `BrandColors` (ink indigo) is retired. Four curated palettes replace it, with GRAPHITE as the default and light and dark chosen independently. Dynamic colour becomes opt-in. Money colours are unchanged.
+- **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas.
+- **Header.** An optional glow, off by default, never under money. Actions are icon-only, through `HeaderIconButton`.
+- **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB.
+- **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this.
