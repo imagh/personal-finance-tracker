@@ -23,6 +23,9 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        // Instrumented tests (src/androidTest) run on the pft35 emulator, only for what the JVM
+        // cannot provide: the Android Keystore and SQLCipher's native library (plan §3.2 #14).
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -110,6 +113,9 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.junit4)
 }
 
 // Guard for the release R8 switch (owner decision 2026-10-30, plan 2026-10-28 H3). Preview and

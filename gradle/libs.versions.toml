@@ -15,6 +15,8 @@ kotest = "5.9.1"
 robolectric = "4.14.1"
 roborazzi = "1.36.0"
 androidxTestCore = "1.6.1"
+# AndroidX Test 1.6 release set, with core 1.6.1 and monitor 1.7.2 (the instrumented tests' runner).
+androidxTestRunner = "1.6.2"
 ktlintPlugin = "12.1.2"
 ktlintEngine = "1.4.1"
 detekt = "1.23.7"
@@ -55,6 +57,8 @@ kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+# Instrumented tests on the pft35 emulator (SQLCipher and the Keystore, plan §3.2 #14).
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 # Screenshot tests (design-system plan §3.8): 1.36.0 is built against Robolectric 4.14.1 / Compose 1.7.5.
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }

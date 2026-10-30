@@ -194,6 +194,7 @@ Test only: `:core:ledger` test fixtures (in-memory fakes, `TestClock`, Kotest as
 (`MigrationTestHelper`), JUnit 5 Jupiter, JUnit Vintage + JUnit 4 (to run Robolectric), Robolectric 4.14.1,
 `androidx.test:core`, `androidx.compose.ui:ui-test-junit4` (via the BOM), Roborazzi 1.36.0
 (`roborazzi`, `roborazzi-compose`, `roborazzi-junit-rule` and its Gradle plugin; screenshot tests).
+Instrumented tests only: `androidx.test:runner` 1.6.2 and JUnit 4.13.2.
 No network, analytics or crash SDKs.
 
 ## How to run and test
@@ -263,5 +264,12 @@ then `migrateTo(version, migrations)`, which also fails unless the audit trigger
 Robolectric tests use the JUnit 4 runner and execute on the JUnit Vintage engine, because
 Robolectric does not run on Jupiter. Robolectric downloads its `android-all` SDK 35 jar from Maven
 Central on first use (cached in `~/.m2`); this download is outside Gradle's dependency
-verification (see `docs/learnings/README.md`). Instrumented tests (emulator `pft35`) arrive with
-A4b.
+verification (see `docs/learnings/README.md`).
+
+**Instrumented tests (A4b).** `src/androidTest` holds only what the JVM cannot run: the Android
+Keystore (`DbKeyManagerTest`) and, next, SQLCipher's native library. They are not part of `check`; run
+them on the `pft35` emulator (boot recipe in `docs/learnings`) with
+`ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`. The runner is
+`androidx.test:runner` 1.6.2 (same AndroidX Test release as `androidx.test:core` 1.6.1) plus JUnit 4.
+The JVM tests of the key logic are `DbKeyManagerJvmTest` (real AES-GCM with an in-memory KEK) and
+`DbKeyManagerWiringTest` (Robolectric).
