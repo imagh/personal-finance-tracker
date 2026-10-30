@@ -7,9 +7,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
 /**
- * One curated palette in one mode: the M3 roles plus the tones M3 has no role for. The header
- * wash joins this class with the slice that first reads it (DS6d), so each field arrives with its
- * consumer.
+ * One curated palette in one mode: the M3 roles plus the tones M3 has no role for. Each field
+ * arrived with the slice that first read it.
  *
  * @property scheme every M3 colour role. Money colours are deliberately not part of it: see
  *   [MoneyColors].
@@ -17,12 +16,17 @@ import androidx.compose.ui.graphics.Color
  *   `scheme.surface`, which is the flat background. Mockup token `canvas`.
  * @property island the tonal card fill (`PftSurfaces.island`): a step lighter than [canvas] in both
  *   modes, never white. Mockup token `island`.
+ * @property wash the header glow tint (`PftSurfaces.glow`, DS6d): a tinted step off [canvas]
+ *   (lighter in dark, a deeper tone of the palette hue in light). Mockup token `pc`; the mockup's
+ *   `onpc` is unused because no text sits on a wash fill, only on the glow, which is swept for
+ *   contrast at its strongest (the wash at 72% over the canvas).
  */
 @Immutable
 internal data class PaletteColors(
     val scheme: ColorScheme,
     val canvas: Color,
     val island: Color,
+    val wash: Color,
 )
 
 /**
@@ -56,6 +60,7 @@ internal data class PaletteColors(
  *    | `primary` | `primary` | #3B4350 | #C9CED8 |
  *    | `canvas` | `canvas` (DS6c) | #E4E6E9 | #0B0C0E |
  *    | `island` | `island` (DS6c) | #EFF0F2 | #141618 |
+ *    | `pc` | `wash` (DS6d) | #D5DAE3 | #2A2F38 |
  *
  * 4. Three follow-on adjustments keep the pinned values coherent (not mockup values, none of them
  *    changes a hue): `surfaceTint` equals the pinned `primary`, as in M3; dark `surfaceDim` equals
@@ -67,6 +72,10 @@ internal data class PaletteColors(
  * No pinned value was tone-adjusted: all of them passed `ColorContrastTest` and `AccentHueTest`
  * as owner-approved. Light `surfaceContainerLowest` is tone 100, i.e. white: it must not be used
  * as a card, sheet or dialog fill (the owner rejected white cards).
+ *
+ * `wash` (DS6d) is the mockup `pc`, pinned as approved over nothing (M3 has no such role). It passed
+ * the header-glow contrast sweep in `ColorContrastTest` (the wash at 72% over the canvas, with
+ * `onSurface`, `onSurfaceVariant` and the money tokens at 4.5:1) with no tone change.
  *
  * To change a value, regenerate or edit it, then re-run `ColorContrastTest` and `AccentHueTest`
  * and re-record the goldens.
@@ -115,6 +124,7 @@ internal object GraphitePalette {
             ),
             canvas = Color(0xFFE4E6E9),
             island = Color(0xFFEFF0F2),
+            wash = Color(0xFFD5DAE3),
         )
 
     /** Dark roles. */
@@ -160,5 +170,6 @@ internal object GraphitePalette {
             ),
             canvas = Color(0xFF0B0C0E),
             island = Color(0xFF141618),
+            wash = Color(0xFF2A2F38),
         )
 }

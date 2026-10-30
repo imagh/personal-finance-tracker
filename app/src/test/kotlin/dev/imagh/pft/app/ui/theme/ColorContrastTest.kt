@@ -30,15 +30,6 @@ class ColorContrastTest {
     private val textMin = 4.5 // WCAG 1.4.3, normal text
     private val nonTextMin = 3.0 // WCAG 1.4.11, UI components and graphics
 
-    private fun contrast(
-        a: Color,
-        b: Color,
-    ): Double {
-        val l1 = a.luminance().toDouble()
-        val l2 = b.luminance().toDouble()
-        return (maxOf(l1, l2) + 0.05) / (minOf(l1, l2) + 0.05)
-    }
-
     /**
      * Dynamic surfaces are low-chroma, so they are tested as greys across [sweptTones]. The dark
      * band starts at black because the dark canvas and flat surfaces sit at tones 3 to 8.
@@ -171,6 +162,75 @@ class ColorContrastTest {
                 assertAtLeast(textMin, "$case onSurface on $surfaceName", s.onSurface, surface)
                 assertAtLeast(textMin, "$case onSurfaceVariant on $surfaceName", s.onSurfaceVariant, surface)
             }
+        }
+    }
+
+    /** The strongest tinted header of [case]: the wash at the glow's cap over the tonal canvas and the flat surface. */
+    private fun glowTops(case: Case): Map<String, Color> {
+        val colors = case.palette.colors(dark = case.theme == Theme.DARK)
+        return mapOf(
+            "glow over canvas" to washTop(colors.wash, colors.canvas),
+            "glow over flat surface" to washTop(colors.wash, colors.scheme.surface),
+        )
+    }
+
+    @Test
+    fun `the title, the actions and money clear 4_5 on the strongest point of the header glow`() {
+        // Contrast, not the tone band: Ivory and Aubergine light fall to tone 86.5 to 86.9 under the glow.
+        for (case in cases) {
+            val s = scheme(case)
+            val m = money(case)
+            val texts =
+                mapOf(
+                    "onSurface" to s.onSurface,
+                    "onSurfaceVariant" to s.onSurfaceVariant,
+                    "positive" to m.positive,
+                    "negative" to m.negative,
+                    "warning" to m.warning,
+                )
+            for ((glowName, glow) in glowTops(case)) {
+                for ((textName, text) in texts) {
+                    assertAtLeast(textMin, "$case $textName on $glowName", text, glow)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `the text and money tokens clear 4_5 on the dynamic glow at its strongest, for the tones M3 maps`() {
+        // The dynamic wash is `primaryContainer` (M3: tone 90 in light, tone 30 in dark), so it is swept
+        // as a grey across five tones either side, over the derived canvas (light 92, dark 4) and the
+        // flat surface (light 98, dark 6). Robolectric's synthetic system palette puts primaryContainer
+        // at tone 49 to 60, which no device does, so the real dynamic scheme cannot be used here.
+        for (theme in Theme.entries) {
+            val dark = theme == Theme.DARK
+            val money = moneyColors(dark)
+            val texts =
+                mapOf(
+                    "onSurface" to greyAtTone(if (dark) 90 else 10),
+                    "onSurfaceVariant" to greyAtTone(if (dark) 80 else 30),
+                    "positive" to money.positive,
+                    "negative" to money.negative,
+                    "warning" to money.warning,
+                )
+            val bases = listOf(greyAtTone(if (dark) 4 else 92), greyAtTone(if (dark) 6 else 98))
+            val glows = (if (dark) 25..35 else 85..95).flatMap { tone -> bases.map { washTop(greyAtTone(tone), it) } }
+            for (glow in glows) {
+                for ((name, text) in texts) assertAtLeast(textMin, "dynamic $theme $name on glow $glow", text, glow)
+            }
+        }
+    }
+
+    @Test
+    fun `the glow is a visible tint of the canvas in every palette and mode`() {
+        // Guards the sweep above: a wash equal to the canvas would pass it and show nothing.
+        for (case in cases) {
+            val colors = case.palette.colors(dark = case.theme == Theme.DARK)
+            assertTrue(colors.wash != colors.canvas, "$case wash equals the canvas")
+            assertTrue(
+                kotlin.math.abs(toneOf(washTop(colors.wash, colors.canvas)) - toneOf(colors.canvas)) >= 2.0,
+                "$case glow top is less than 2 tones from the canvas",
+            )
         }
     }
 

@@ -174,6 +174,21 @@ class ThemeResolutionTest {
     }
 
     @Test
+    fun `the dynamic wash is the dynamic scheme's primary container`() {
+        val light = dynamicLightColorScheme(context)
+        val dark = dynamicDarkColorScheme(context)
+        assertEquals(light.primaryContainer, resolvePaletteColors(dynamicPrefs, dark = false, context = context).wash)
+        assertEquals(dark.primaryContainer, resolvePaletteColors(dynamicPrefs, dark = true, context = context).wash)
+    }
+
+    @Test
+    fun `dynamic off resolves the palette's own wash`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.MIDNIGHT)
+        assertEquals(ThemePalette.IVORY.colors(dark = false).wash, resolvePaletteColors(prefs, false, context).wash)
+        assertEquals(ThemePalette.MIDNIGHT.colors(dark = true).wash, resolvePaletteColors(prefs, true, context).wash)
+    }
+
+    @Test
     fun `dynamic off resolves the palette's own canvas and island`() {
         val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.MIDNIGHT)
         assertEquals(ThemePalette.IVORY.colors(dark = false).canvas, resolvePaletteColors(prefs, false, context).canvas)

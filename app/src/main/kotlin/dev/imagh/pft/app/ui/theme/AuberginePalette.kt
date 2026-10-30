@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
  *    | `primary` | `primary` | #5B2A66 | #D9BE8A |
  *    | `canvas` | `canvas` (DS6c) | #EAE3EA | #0E080F |
  *    | `island` | `island` (DS6c) | #F4EFF4 | #181018 |
+ *    | `pc` | `wash` (DS6d) | #E2D0E4 | #3B2540 |
  *
  * 4. Follow-on adjustments keep the pinned dark values coherent (not mockup values, none of them
  *    changes a hue). `surfaceTint` equals the pinned `primary`, as in M3. The pinned dark `surface`
@@ -46,6 +47,10 @@ import androidx.compose.ui.graphics.Color
  * amber, which the hue rule exempts on purpose (plan §3.1 "Accent safety"): a warning pill takes
  * its colours from `MoneyColors`, never from this palette. Light `surfaceContainerLowest` is
  * tone 100, i.e. white: it must not be used as a card, sheet or dialog fill.
+ *
+ * `wash` (DS6d) is the mockup `pc`, pinned as approved over nothing (M3 has no such role). It passed
+ * the header-glow contrast sweep in `ColorContrastTest` (the wash at 72% over the canvas, with
+ * `onSurface`, `onSurfaceVariant` and the money tokens at 4.5:1) with no tone change.
  *
  * To change a value, regenerate or edit it, then re-run `ColorContrastTest` and `AccentHueTest`
  * and re-record the goldens.
@@ -94,6 +99,7 @@ internal object AuberginePalette {
             ),
             canvas = Color(0xFFEAE3EA),
             island = Color(0xFFF4EFF4),
+            wash = Color(0xFFE2D0E4),
         )
 
     /** Dark roles. */
@@ -139,5 +145,6 @@ internal object AuberginePalette {
             ),
             canvas = Color(0xFF0E080F),
             island = Color(0xFF181018),
+            wash = Color(0xFF3B2540),
         )
 }

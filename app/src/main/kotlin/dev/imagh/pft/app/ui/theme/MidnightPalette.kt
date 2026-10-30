@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
  *    | `primary` | `primary` | #7D5F26 | #D4B572 |
  *    | `canvas` | `canvas` (DS6c) | #E6E9F0 | #0A0E1A |
  *    | `island` | `island` (DS6c) | #F0F2F7 | #121929 |
+ *    | `pc` | `wash` (DS6d) | #E9DDC2 | #33291A |
  *
  * 4. `surfaceTint` equals the pinned `primary`, as in M3. `onPrimary` is the primary palette's tone
  *    100 (light) and tone 20 (dark), as generated. No other role was adjusted: the generated ladder
@@ -44,6 +45,10 @@ import androidx.compose.ui.graphics.Color
  * rule exempts on purpose (plan §3.1 "Accent safety"): a warning pill takes its colours from
  * `MoneyColors`, never from this palette. Light `surfaceContainerLowest` is tone 100, i.e. white:
  * it must not be used as a card, sheet or dialog fill.
+ *
+ * `wash` (DS6d) is the mockup `pc`, pinned as approved over nothing (M3 has no such role). It passed
+ * the header-glow contrast sweep in `ColorContrastTest` (the wash at 72% over the canvas, with
+ * `onSurface`, `onSurfaceVariant` and the money tokens at 4.5:1) with no tone change.
  *
  * To change a value, regenerate or edit it, then re-run `ColorContrastTest` and `AccentHueTest`
  * and re-record the goldens.
@@ -92,6 +97,7 @@ internal object MidnightPalette {
             ),
             canvas = Color(0xFFE6E9F0),
             island = Color(0xFFF0F2F7),
+            wash = Color(0xFFE9DDC2),
         )
 
     /** Dark roles. */
@@ -137,5 +143,6 @@ internal object MidnightPalette {
             ),
             canvas = Color(0xFF0A0E1A),
             island = Color(0xFF121929),
+            wash = Color(0xFF33291A),
         )
 }

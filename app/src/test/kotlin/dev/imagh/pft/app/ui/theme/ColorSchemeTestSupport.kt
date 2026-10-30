@@ -2,7 +2,9 @@ package dev.imagh.pft.app.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
+import dev.imagh.pft.app.ui.common.MAX_GLOW_ALPHA
 import kotlin.math.atan2
 import kotlin.math.cbrt
 import kotlin.math.pow
@@ -129,3 +131,23 @@ internal fun greyAtTone(tone: Int): Color {
 
 /** The tones a surface role can take: light 87 (surfaceDim) to 100, dark 0 to 24 (surfaceBright). */
 internal fun sweptTones(dark: Boolean): IntRange = if (dark) 0..24 else 87..100
+
+/** The WCAG 2.x contrast ratio of two opaque colours, 1 to 21 (relative luminance, as [luminance] computes it). */
+internal fun contrast(
+    a: Color,
+    b: Color,
+): Double {
+    val l1 = a.luminance().toDouble()
+    val l2 = b.luminance().toDouble()
+    return (maxOf(l1, l2) + 0.05) / (minOf(l1, l2) + 0.05)
+}
+
+/**
+ * The strongest the header glow gets (DS6d): [PaletteColors.wash] at `MAX_GLOW_ALPHA` composited over
+ * [canvas], which is what the title, actions and money sit on at the top of the header. Every other
+ * point of the glow is weaker, so it is between this colour and the canvas.
+ */
+internal fun washTop(
+    wash: Color,
+    canvas: Color,
+): Color = wash.copy(alpha = MAX_GLOW_ALPHA).compositeOver(canvas)
