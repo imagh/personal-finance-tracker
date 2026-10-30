@@ -66,12 +66,12 @@ as they land (`data/common`, `ui/common`).
 | `PftSymbol` (`key`, `res`), `PftSymbol.fromKey(key)` | The icon registry: 92 Material Symbols Rounded vector drawables (`res/drawable/sym_<key>.xml`; chrome: `back`, `forward`, `add`, `close`, `check`, `search`, `filter`, `overflow`, `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar`, ...; the rest are category symbols). **Keys are permanent** (persisted in `category.icon_key`): add, never rename or remove; `src/test/resources/pft-symbol-keys.txt` pins them. `fromKey` is exact-match and null for anything unknown. Draw one with `Icon(painterResource(symbol.res), contentDescription = ..., tint = ...)`: the drawable is black. `androidx.compose.material.icons.*` is banned in app code (detekt `ForbiddenImport`). The full list and the how-to are in `docs/architecture/design-system.md` |
 | `PftTheme.palette`, `CategoryPalette[key]`, `categoryPalette(dark)`, `CategoryColors(container, content)` | The 12 named category hues (`rose, coral, amber, olive, emerald, teal, sky, blue, indigo, violet, magenta, slate`), light and dark, for glyph badges only (never money). An unknown or null name gives `slate`. Content is at least 4.5:1 on container |
 | `GlyphSize { Chip 28, Row 40, Hero 56 }` | The badge sides, fixed dp |
-| `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour on, bundled serif |
+| `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour **off** (opt-in), bundled serif |
 | `DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }` | Font of the hero number only; the serif is never used for titles (owner decision Q10) |
 | `ThemeMode { SYSTEM, LIGHT, DARK }` | `SYSTEM` follows the system night mode |
-| `resolveColorScheme(dark, dynamic, context)` | Dynamic (Material You) scheme when `dynamic`, else `BrandColors` |
-| `BrandColors.light` / `.dark` | The fallback scheme: seed ink indigo `#4A55B8`, generated offline (tonal spot), committed as constants. Used when dynamic colour is off and in screenshot tests |
-| `MoneyColors`, `moneyColors(dark)` | Fixed green/red/amber tokens for amounts and status. **Never derived from the accent**; the same in the dynamic and the brand scheme. Positive balances are neutral by owner decision (`MoneyTone` in `ui/common` maps meaning to these tokens) |
+| `resolveColorScheme(dark, dynamic, context)` | Dynamic (Material You) scheme when `dynamic` (opt-in), else `GraphitePalette` |
+| `GraphitePalette.light` / `.dark` (`PaletteColors(scheme)`, internal) | The default scheme, Graphite + platinum: generated offline with material-color-utilities 0.3.0 from custom tonal palettes, the owner-approved mockup values pinned over the generated roles (provenance and every override are in its KDoc), committed as constants. Used whenever dynamic colour is off, and in screenshot tests. It replaces the ink-indigo `BrandColors`, which is deleted. Canvas, island and wash join `PaletteColors` in DS6c and DS6d |
+| `MoneyColors`, `moneyColors(dark)` | Fixed green/red/amber tokens for amounts and status. **Never derived from the accent**; the same in the dynamic and the Graphite scheme. Positive balances are neutral by owner decision (`MoneyTone` in `ui/common` maps meaning to these tokens) |
 
 The bundled serif is Newsreader (`res/font/newsreader.ttf`, OFL-1.1, unmodified upstream; licence in
 `assets/licenses/newsreader-OFL.txt`; provenance and hash in `docs/architecture/design-system.md`).
@@ -157,11 +157,11 @@ Design, key file format and the fail-closed table: [`docs/architecture/persisten
 
 ### Window theme
 
-`res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint the brand surface
-behind the first frame (`pft_window_background`, which must equal `BrandColors.*.surface`), keep
+`res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint the Graphite surface
+behind the first frame (`pft_window_background`, which must equal `GraphitePalette.*.scheme.surface`; `WindowThemeTest` fails on drift), keep
 the system bars transparent and colour the launch splash, so a dark launch does not flash a light
 window. `MainActivity` then calls `enableEdgeToEdge()` (after the `FLAG_SECURE` line). The window
-colour is the brand surface even when dynamic colour is on, because the dynamic palette is not
+colour is the Graphite surface even when dynamic colour is on, because the dynamic palette is not
 known before Compose runs; the difference is a few tones of a near-neutral.
 
 **Known limitation, AP1 must address:** plain `enableEdgeToEdge()`, the window theme
@@ -203,8 +203,8 @@ Static, build-time: `applicationId`/`namespace` `dev.imagh.pft` (**permanent**: 
 release signing key installs as a new app with an empty database; plan §12 Q4), minSdk 33,
 target/compile SDK 35, JDK 17. Pinned versions are in `gradle/libs.versions.toml`.
 Runtime appearance (`ThemePrefs`: mode, dynamic colour, display font) is a plain value that defaults to
-`SYSTEM` + dynamic on + bundled serif; the settings screen and its `app_setting` storage arrive in AP1, so today
-nothing reads or writes a setting. Colours, like all design tokens, are static code constants.
+`SYSTEM` + dynamic colour off (Graphite) + bundled serif; the settings screen and its `app_setting` storage arrive in AP1, so today
+nothing reads or writes a setting. Colours, like all design tokens, are static code constants, and screens never hardcode them: `ThemeLiteralScanTest` fails on any `Color(...)`, named `Color.*` (except `Transparent` and `Unspecified`), `FontFamily` or `R.font.*` outside `ui/theme`.
 
 ## Dependencies
 
@@ -267,7 +267,7 @@ code, add its compiled class prefix to `mustBeRemoved`. To smoke-test a release 
 sign a copy of the APK with the debug keystore, outside the build (recipe in `docs/learnings`).
 
 **Screenshot goldens.** `TokenSheetScreenshotTest` (Roborazzi, `@GraphicsMode(NATIVE)`, qualifiers
-`w393dp-h851dp-xxhdpi`, light and `+night`, font scale 1.0 and 2.0, brand colours) renders the token
+`w393dp-h851dp-xxhdpi`, light and `+night`, font scale 1.0 and 2.0, Graphite) renders the token
 sheet page by page. The goldens are committed in `app/src/test/screenshots/` (fake data only);
 `roborazzi.test.verify=true` in `gradle.properties` makes `./gradlew check` compare against them,
 on both the debug and release unit-test variants. After an intended visual change run
