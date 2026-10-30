@@ -6,10 +6,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.money.Paise
@@ -37,9 +37,9 @@ internal fun StandardHeaderSample() {
         title = "Budgets",
         subtitle = "October - 3 days left - 4 active",
         actions = {
-            TextButton(onClick = {}) { Text("Back") }
+            HeaderIconButton(PftSymbol.BACK, "Back", onClick = {})
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = {}) { Text("Search") }
+            HeaderIconButton(PftSymbol.SEARCH, "Search", onClick = {})
         },
     ) { sampleRows() }
 }
@@ -55,7 +55,7 @@ internal fun DashboardHeaderSample() {
         period = HeaderPeriod(onPrevious = {}, onNext = {}),
         actions = {
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = {}) { Text("Filter") }
+            HeaderIconButton(PftSymbol.FILTER, "Filter", onClick = {})
         },
     ) { sampleRows() }
 }

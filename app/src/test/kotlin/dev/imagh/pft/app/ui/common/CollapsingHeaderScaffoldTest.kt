@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,6 +57,7 @@ import androidx.core.view.WindowInsetsCompat
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.HeroSizeSteps
+import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.money.Paise
@@ -451,11 +451,12 @@ class CollapsingHeaderScaffoldTest {
 
     @Test
     fun `actions sit in the top row and stay when collapsed`() {
-        show(actions = { IconButton(onClick = {}, Modifier.testTag("search")) { Text("S") } })
-        assertTrue(tag("search").bounds().bottom <= barHeight + 1f)
+        show(actions = { HeaderIconButton(PftSymbol.SEARCH, "Search", onClick = {}) })
+        val search = compose.onNodeWithContentDescription("Search")
+        assertTrue(search.bounds().bottom <= barHeight + 1f)
         swipeListUp()
-        assertTrue(tag("search").bounds().bottom <= barHeight + 1f)
-        tag("search").assertIsDisplayed()
+        assertTrue(search.bounds().bottom <= barHeight + 1f)
+        search.assertIsDisplayed()
     }
 
     // --- period stepping ------------------------------------------------------------------
@@ -562,6 +563,35 @@ class CollapsingHeaderScaffoldTest {
         compose.onAllNodes(isImage and inStepper, useUnmergedTree = true).assertCountEquals(2)
         compose.onAllNodes(hasTextNode and inStepper, useUnmergedTree = true).assertCountEquals(0)
     }
+
+    // --- icon-only actions (UI-14) ---------------------------------------------------------
+
+    private fun assertIconOnlyActions(
+        expectedLabels: List<String>,
+        sample: @Composable () -> Unit,
+    ) {
+        compose.setContent { PftTheme(ThemePrefs(dynamicColor = false)) { sample() } }
+        compose.waitForIdle()
+        val inActions = hasAnyAncestor(hasTestTag(HeaderTags.ACTIONS))
+
+        // Merged tree (what TalkBack sees): every action is one button with a label.
+        val everything = compose.onAllNodes(inActions)
+        assertEquals(expectedLabels, everything.contentDescriptions())
+        val buttons = compose.onAllNodes(hasClickAction() and inActions)
+        buttons.assertCountEquals(expectedLabels.size)
+        buttons.assertTouchTargetsAtLeast48dp()
+        // Unmerged tree (what is drawn): symbols, and no text anywhere.
+        compose.onAllNodes(isImage and inActions, useUnmergedTree = true).assertCountEquals(expectedLabels.size)
+        compose.onAllNodes(hasTextNode and inActions, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `the Standard sample's actions are labelled 48dp symbols and no text`() =
+        assertIconOnlyActions(listOf("Back", "Search")) { StandardHeaderSample() }
+
+    @Test
+    fun `the Dashboard sample's actions are labelled 48dp symbols and no text`() =
+        assertIconOnlyActions(listOf("Filter")) { DashboardHeaderSample() }
 
     @Test
     fun `a horizontal swipe does nothing without a period, and not on a Standard header`() {

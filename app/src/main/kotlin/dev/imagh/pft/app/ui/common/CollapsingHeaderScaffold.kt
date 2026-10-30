@@ -94,6 +94,7 @@ internal object HeaderTags {
     const val HERO = "header-hero"
     const val LOWER_BAND = "header-lower-band"
     const val PERIOD_STEPPER = "header-period-stepper"
+    const val ACTIONS = "header-actions"
     const val LIST = "header-list"
 }
 
@@ -166,7 +167,10 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * @param period Dashboard only: the period control; see [HeaderPeriod].
  * @param actions secondary actions in the top row (back, search, filter, overflow), laid out left
  *   to right across the full width; use a weighted `Spacer` to push some to the end. Add actions
- *   belong in [floatingActionButton], not here.
+ *   belong in [floatingActionButton], not here. **Only [HeaderIconButton]s go in here** (UI-14):
+ *   icon-only, a TalkBack label each, 48dp targets, no text. This stays a slot rather than a typed
+ *   list because an overflow `DropdownMenu` needs a `Box` anchor around its button; the rule is
+ *   kept by convention and by `CollapsingHeaderScaffoldTest`, which checks the samples.
  * @param bottomBar a `NavigationBar` or a [BottomActionBar], or null for none. With none, the list
  *   and the FAB are padded by the `safeDrawing` bottom inset instead, so they clear the navigation bar.
  * @param floatingActionButton the add action.
@@ -332,7 +336,7 @@ private fun HeaderChildren(
 ) {
     val typography = MaterialTheme.typography
     Row(
-        Modifier.layoutId(HeaderSlot.Actions),
+        Modifier.layoutId(HeaderSlot.Actions).testTag(HeaderTags.ACTIONS),
         verticalAlignment = Alignment.CenterVertically,
         content = content.actions,
     )
