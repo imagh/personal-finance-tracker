@@ -92,6 +92,19 @@ class ThemePaletteTest {
     }
 
     @Test
+    fun `each palette has its display name`() {
+        assertEquals(
+            mapOf(
+                ThemePalette.GRAPHITE to "Graphite",
+                ThemePalette.MIDNIGHT to "Midnight",
+                ThemePalette.IVORY to "Ivory",
+                ThemePalette.AUBERGINE to "Aubergine",
+            ),
+            ThemePalette.entries.associateWith { it.displayName },
+        )
+    }
+
+    @Test
     fun `Graphite resolves to the Graphite palette in each mode`() {
         assertEquals(GraphitePalette.light, ThemePalette.GRAPHITE.colors(dark = false))
         assertEquals(GraphitePalette.dark, ThemePalette.GRAPHITE.colors(dark = true))

@@ -40,6 +40,7 @@ import dev.imagh.pft.app.ui.theme.ThemeMode
 import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.app.ui.theme.TokenSheet
+import dev.imagh.pft.app.ui.theme.displayName
 
 /**
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
@@ -88,12 +89,12 @@ internal fun DesignCatalog() {
                             onSelect = { mode = it },
                         )
                         ChoiceRow(
-                            options = ThemePalette.entries.map { "Light: ${it.label()}" to it },
+                            options = ThemePalette.entries.map { "Light: ${it.displayName}" to it },
                             selected = lightPalette,
                             onSelect = { lightPalette = it },
                         )
                         ChoiceRow(
-                            options = ThemePalette.entries.map { "Dark: ${it.label()}" to it },
+                            options = ThemePalette.entries.map { "Dark: ${it.displayName}" to it },
                             selected = darkPalette,
                             onSelect = { darkPalette = it },
                         )
@@ -203,6 +204,3 @@ private fun <T> ChoiceRow(
         }
     }
 }
-
-/** The palette's name for the catalogue chips ("Graphite"); the persisted [ThemePalette.name] is upper case. */
-private fun ThemePalette.label() = name.lowercase().replaceFirstChar { it.uppercase() }

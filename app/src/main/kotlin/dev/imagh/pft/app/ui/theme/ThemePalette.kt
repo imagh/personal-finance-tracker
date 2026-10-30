@@ -34,3 +34,11 @@ internal fun ThemePalette.colors(dark: Boolean): PaletteColors =
         ThemePalette.IVORY -> if (dark) IvoryPalette.dark else IvoryPalette.light
         ThemePalette.AUBERGINE -> if (dark) AuberginePalette.dark else AuberginePalette.light
     }
+
+/**
+ * The name shown to the user ("Graphite"): the entry's name in sentence case. Not the persisted
+ * form: that is [ThemePalette.name], which is permanent. Shared by the swatch page and the debug
+ * catalogue, and by the appearance settings screen (AP1) when it arrives.
+ */
+internal val ThemePalette.displayName: String
+    get() = name.lowercase().replaceFirstChar { it.uppercase() }

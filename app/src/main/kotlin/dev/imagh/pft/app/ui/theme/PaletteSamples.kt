@@ -62,7 +62,7 @@ private fun PaletteColumn(
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Text(
-            palette.name.lowercase().replaceFirstChar { it.uppercase() },
+            palette.displayName,
             color = scheme.onSurface,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
