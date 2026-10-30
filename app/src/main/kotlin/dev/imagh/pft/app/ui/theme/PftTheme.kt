@@ -17,22 +17,22 @@ import androidx.compose.ui.text.font.FontFamily
 /**
  * Picks the colour scheme for the resolved theme.
  *
- * With [dynamic] on (opt-in), the scheme comes from the system's Material You palette. That needs
- * API 31 and the app's minSdk is 33, so there is no version fallback. With it off, the committed
- * [GraphitePalette] is the scheme.
+ * With [ThemePrefs.dynamicColor] on (opt-in), the scheme comes from the system's Material You
+ * palette and the palette fields are ignored. That needs API 31 and the app's minSdk is 33, so
+ * there is no version fallback. With it off, the scheme is the committed palette the user picked
+ * for this mode: [ThemePrefs.darkPalette] in dark, [ThemePrefs.lightPalette] in light.
  *
  * @param dark the already-resolved dark/light decision (see [ThemeMode]).
  */
 fun resolveColorScheme(
+    prefs: ThemePrefs,
     dark: Boolean,
-    dynamic: Boolean,
     context: Context,
 ): ColorScheme =
     when {
-        dynamic && dark -> dynamicDarkColorScheme(context)
-        dynamic -> dynamicLightColorScheme(context)
-        dark -> GraphitePalette.dark.scheme
-        else -> GraphitePalette.light.scheme
+        prefs.dynamicColor && dark -> dynamicDarkColorScheme(context)
+        prefs.dynamicColor -> dynamicLightColorScheme(context)
+        else -> prefs.paletteFor(dark).colors(dark).scheme
     }
 
 /**
@@ -56,7 +56,7 @@ fun PftTheme(
             ThemeMode.LIGHT -> false
             ThemeMode.DARK -> true
         }
-    val colorScheme = resolveColorScheme(dark, prefs.dynamicColor, LocalContext.current)
+    val colorScheme = resolveColorScheme(prefs, dark, LocalContext.current)
     // The text family is the system font until custom-font import (AP2) adds a choice.
     val textFamily = FontFamily.Default
     val typography = remember(textFamily) { pftMaterialTypography(textFamily) }
