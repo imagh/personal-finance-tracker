@@ -1,5 +1,10 @@
 package dev.imagh.pft.app.ui.common
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
 import dev.imagh.pft.app.ui.theme.PftTheme
 import kotlin.math.max
@@ -64,3 +69,48 @@ internal fun Density.glowEnd(
  * plain canvas. A fraction outside 0..1 (an overscroll frame) is clamped.
  */
 internal fun glowStrength(collapsedFraction: Float): Float = (1f - collapsedFraction).coerceIn(0f, 1f)
+
+/**
+ * Draws the header glow behind this header: a radial gradient of [glow] centred on the header's
+ * top-centre point, strongest ([MAX_GLOW_ALPHA]) there and fading to nothing at [glowEnd], with its
+ * gradient stops taken from [glowAlpha] and its whole strength scaled by [glowStrength]. Because it
+ * is a circle on the top edge, everything at or below [glowEnd]'s depth is untouched: **the hero
+ * row is never tinted**.
+ *
+ * A null [glow] (the default: `PftTheme.surfaces.glow`) adds nothing at all. Put it after the
+ * header's canvas background.
+ *
+ * [heroTop] and [collapsedFraction] are read **in the draw phase only**, never in composition, so a
+ * scroll frame redraws the gradient but does not recompose the header (the DS4 rule).
+ *
+ * @param glow the wash colour, or null for no glow.
+ * @param heroTop the hero's top edge in px from the header's top, or null when there is no hero.
+ * @param collapsedFraction how far the header has collapsed, 0 (expanded) to 1 (a plain bar).
+ */
+internal fun Modifier.headerGlow(
+    glow: Color?,
+    heroTop: () -> Float?,
+    collapsedFraction: () -> Float,
+): Modifier =
+    if (glow == null) {
+        this
+    } else {
+        drawBehind {
+            val strength = glowStrength(collapsedFraction())
+            val end = glowEnd(heroTop(), size.height)
+            if (strength > 0f && end > 0f) {
+                val stops =
+                    GLOW_STOPS.map { stop -> stop to glow.copy(alpha = glowAlpha(stop * end, end) * strength) }
+                drawRect(
+                    Brush.radialGradient(
+                        colorStops = stops.toTypedArray(),
+                        center = Offset(size.width / 2f, 0f),
+                        radius = end,
+                    ),
+                )
+            }
+        }
+    }
+
+/** The gradient's stops as fractions of the reach: the top, the mockup's middle stop, and the end. */
+private val GLOW_STOPS = listOf(0f, MID_GLOW_STOP, 1f)
