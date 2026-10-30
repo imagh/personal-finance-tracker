@@ -177,4 +177,32 @@ class GlyphSourceTest {
         assertEquals(GlyphSource.Letter('?'), letter(""))
         assertEquals(GlyphSource.Letter('?'), letter("  --- "))
     }
+
+    @Test
+    fun `a first letter outside the basic plane is the letter, not skipped`() {
+        // U+1D49C mathematical script capital A, and U+10428 Deseret small long I (upper-cases to U+10400)
+        assertEquals(GlyphSource.Letter(text(0x1D49C)), GlyphSource.fromIconKey(null, text(0x1D49C) + "pple"))
+        assertEquals(GlyphSource.Letter(text(0x10400)), GlyphSource.fromIconKey(null, text(0x10428) + "bc"))
+        assertEquals(GlyphSource.Letter(text(0x1D49C)), GlyphSource.letterFor(burger + " " + text(0x1D49C)))
+    }
+
+    @Test
+    fun `a combining mark is never the letter, alone or leading`() {
+        val acute = text(0x0301)
+        assertEquals(GlyphSource.Letter('A'), GlyphSource.fromIconKey(null, acute + "apple"))
+        assertEquals(GlyphSource.Letter('E'), GlyphSource.fromIconKey(null, "e" + acute + "cole"))
+        assertEquals(GlyphSource.Letter('?'), GlyphSource.fromIconKey(null, acute + acute))
+    }
+
+    @Test
+    fun `an unpaired surrogate in a name is skipped, not drawn`() {
+        assertEquals(GlyphSource.Letter('B'), GlyphSource.fromIconKey(null, text(0xD83D) + "bank"))
+    }
+
+    @Test
+    fun `a Letter holds exactly one code point`() {
+        listOf("", "ab", text(0x1D49C, 0x1D49C)).forEach {
+            assertThrows(IllegalArgumentException::class.java) { GlyphSource.Letter(it) }
+        }
+    }
 }

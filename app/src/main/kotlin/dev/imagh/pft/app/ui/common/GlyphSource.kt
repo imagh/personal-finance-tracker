@@ -34,10 +34,25 @@ sealed interface GlyphSource {
         }
     }
 
-    /** The upper-cased first letter of the name, for a category with no usable icon. */
+    /**
+     * The upper-cased first letter of the name, for a category with no usable icon. It is one Unicode
+     * code point held as a string, because a letter outside the basic plane takes two UTF-16 units.
+     *
+     * @property letter exactly one code point.
+     * @throws IllegalArgumentException if [letter] is not exactly one code point.
+     */
     data class Letter(
-        val letter: Char,
-    ) : GlyphSource
+        val letter: String,
+    ) : GlyphSource {
+        init {
+            require(letter.isNotEmpty() && letter.codePointCount(0, letter.length) == 1) {
+                "a letter is exactly one code point"
+            }
+        }
+
+        /** A letter from a basic-plane character. */
+        constructor(letter: Char) : this(letter.toString())
+    }
 
     companion object {
         private const val SYMBOL_PREFIX = "sym:"
@@ -53,8 +68,22 @@ sealed interface GlyphSource {
             name: String,
         ): GlyphSource = parseSymbol(iconKey) ?: parseEmoji(iconKey) ?: letterFor(name)
 
-        /** The [Letter] for [name]: its first letter or digit upper-cased, or `?` if it has none. */
-        fun letterFor(name: String): Letter = Letter(name.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar() ?: '?')
+        /**
+         * The [Letter] for [name]: its first letter or digit (by code point, so a letter outside the
+         * basic plane counts, and a combining mark or unpaired surrogate never does), upper-cased one
+         * code point to one code point, or `?` if the name has none.
+         */
+        fun letterFor(name: String): Letter {
+            var index = 0
+            while (index < name.length) {
+                val codePoint = name.codePointAt(index)
+                if (Character.isLetterOrDigit(codePoint)) {
+                    return Letter(String(Character.toChars(Character.toUpperCase(codePoint))))
+                }
+                index += Character.charCount(codePoint)
+            }
+            return Letter('?')
+        }
 
         private fun parseSymbol(iconKey: String?): GlyphSource? {
             val key = payload(iconKey, SYMBOL_PREFIX, MAX_SYMBOL_KEY_LENGTH)

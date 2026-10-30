@@ -101,7 +101,7 @@ fun CategoryGlyph(
                 )
             is GlyphSource.Letter ->
                 Text(
-                    source.letter.toString(),
+                    source.letter,
                     color = colors.content,
                     fontSize = fixedSp(size, LETTER_FRACTION),
                     lineHeight = fixedSp(size, LETTER_FRACTION),
