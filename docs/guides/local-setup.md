@@ -147,10 +147,32 @@ Robolectric downloads its Android 15 (`android-all`) jar from Maven Central the 
 tests run and caches it under `~/.m2`; later runs are offline-capable.
 
 **Emulator (`pft35`, from §3).** Unit and Robolectric tests need no device. Instrumented tests
-(`./gradlew connectedDebugAndroidTest`, added with slice A4b for SQLCipher and Keystore) need the
-emulator running first (`adb devices` shows `emulator-5554  device`). To try the app by hand:
-`./gradlew :app:installDebug`, then launch "Personal Finance Tracker". It shows a blank window for
-now (slice A1), and screenshots are deliberately blocked by `FLAG_SECURE`.
+(`src/androidTest`: the Android Keystore and SQLCipher, slice A4b) are not part of `check`; run them
+locally with the emulator up:
+
+```bash
+emulator -avd pft35 -no-window -no-audio -gpu host > /tmp/pft35-emulator.log 2>&1 &
+adb wait-for-device; adb shell getprop sys.boot_completed       # wait until it prints 1
+adb devices                                                     # expect: emulator-5554  device
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
+```
+
+**If the snapshot boot hangs** (`adb devices` stays `offline`), cold-boot instead:
+`emulator -avd pft35 -no-window -no-audio -no-snapshot-load -no-snapshot-save -gpu host`, then wait
+for `sys.boot_completed` = 1 (about 15 s). The tests use their own database name, Keystore alias and
+folder, so they never touch the app's real data; stop the emulator with `adb emu kill`.
+
+To try the app by hand: `./gradlew :app:installDebug`, then launch "Personal Finance Tracker". It
+shows a blank window for now (slice A1), and screenshots are deliberately blocked by `FLAG_SECURE`.
+The first start creates the encrypted database and its key. In a debug build you can look at the
+files with `adb shell run-as dev.imagh.pft ls -la databases no_backup`; deleting
+`no_backup/pft_db_key.bin` and restarting shows the "Your data can't be opened" screen
+(`KEY_FILE_MISSING`) and leaves the database untouched.
+
+**Dev devices that ran a build before A4b** (A4a created a plaintext `pft.db` and no key file) show
+`KEY_FILE_MISSING` with the A4b build, because the app never replaces an existing database. Uninstall
+the app, or clear its data (`adb shell pm clear dev.imagh.pft`), before installing A4b. This only affects
+development emulators and phones; there are no real users with an older database.
 
 **Changing dependencies.** Versions are pinned in `gradle/libs.versions.toml` and checked against
 lockfiles and `gradle/verification-metadata.xml`, so a new or upgraded dependency fails the build

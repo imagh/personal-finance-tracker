@@ -23,6 +23,9 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        // Instrumented tests (src/androidTest) run on the pft35 emulator, only for what the JVM
+        // cannot provide: the Android Keystore and SQLCipher's native library (plan §3.2 #14).
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -93,6 +96,8 @@ dependencies {
     // Business logic and the repository interfaces this module implements (CLAUDE.md §3.1).
     implementation(project(":core:ledger"))
     implementation(libs.room.runtime)
+    // Encrypts pft.db (SEC-1); loaded by DatabaseFactory, keyed by DbKeyManager.
+    implementation(libs.sqlcipher.android)
     ksp(libs.room.compiler)
 
     testImplementation(platform(libs.junit.bom))
@@ -110,6 +115,9 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.junit4)
 }
 
 // Guard for the release R8 switch (owner decision 2026-10-30, plan 2026-10-28 H3). Preview and
@@ -130,10 +138,14 @@ val verifyReleaseShrink by tasks.registering {
     // PftDatabase_Impl: Room's generated database is created by name through reflection
     // (Room.getGeneratedImplementation); room-runtime's consumer rule keeps it and its constructor,
     // and nothing in this module references it yet, so only that rule stops R8 removing it.
+    // SQLiteConnection: libsqlcipher.so registers its natives on it by name through JNI, which R8
+    // cannot see, so it survives only because of the SQLCipher keep rules (the AAR's own and
+    // proguard-rules.pro).
     val mustBeKept =
         listOf(
             "dev.imagh.pft.app.MainActivity",
             "dev.imagh.pft.app.data.PftDatabase_Impl",
+            "net.zetetic.database.sqlcipher.SQLiteConnection",
         )
     // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
     // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.

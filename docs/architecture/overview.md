@@ -1,8 +1,9 @@
 # Architecture overview
 
-How Personal Finance Tracker is put together. Status: **M1a, slice A4a** (the Room implementations of the core boundary, plaintext, on top of the
-A3 ledger foundations, the A1 skeleton and the DS tokens). This file is refined as each slice lands
-(next: A4b adds SQLCipher and the Keystore-wrapped key). Rules live in
+How Personal Finance Tracker is put together. Status: **M1a, slice A4b** (the Room implementations of the core boundary, encrypted with SQLCipher
+under a Keystore-wrapped key, on top of the A3 ledger foundations, the A1 skeleton and the DS tokens;
+see [persistence-and-security.md](persistence-and-security.md)). This file is refined as each slice lands
+(next: A5, the app container and first-run setup). Rules live in
 `CLAUDE.md` §3 and `docs/TECHNICAL.md` §6; the M1a plan is
 `docs/plans/2026-10-28-m1a-core-ledger.md`.
 

@@ -166,7 +166,7 @@ Everything is built and tested **locally on the owner's machine**; see [local se
 | SDK packages | `platform-tools`, `platforms;android-35`, `build-tools;34.0.0`, `emulator`, `system-images;android-35;google_apis;arm64-v8a` | — | build-tools 34.0.0 is AGP 8.7's default. The emulator and one Google APIs image are the development device (the primary phone never gets USB debugging). Nothing else: no NDK, CMake, Google Play or extra system images unless a task needs them. |
 | Android Studio | current stable (not pinned) | — | A development tool, not part of the build. A newer Studio opens an AGP 8.7 project, and older versions miss security fixes. Ignore its prompts to upgrade AGP. |
 
-Room 2.7.1 with SQLCipher 4.7.2 has not been exercised together yet; the first M1a test that opens an encrypted database confirms the pairing.
+Room 2.7.1 with SQLCipher 4.7.2 is **confirmed working** (slice A4b, 2026-10-30): the instrumented `EncryptedDatabaseTest` opens, writes, reopens and enforces the audit triggers on an encrypted `PftDatabase` on the `pft35` emulator. Note that sqlcipher-android 4.7.2 bundles SQLite **3.49.1**, which the vulnerability scan cannot see (it does not read native libraries) and which is older than 3.50.2 (CVE-2025-6965); 4.10.0 bundles 3.50.4. See `docs/architecture/persistence-and-security.md` and the A4b learnings entry. Moving up is an owner decision.
 
 ## 8. Token and cost discipline
 

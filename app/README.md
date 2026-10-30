@@ -2,15 +2,16 @@
 
 ## Purpose
 
-The thin Android layer of Personal Finance Tracker: Compose UI, the single `MainActivity`, and (in
-later slices) the Room/SQLCipher implementations of the `core` repository interfaces, Keystore key
-handling, app lock and safe logging. It contains no business logic; that lives in `core/<module>`
+The thin Android layer of Personal Finance Tracker: Compose UI, the single `MainActivity`, the
+Room/SQLCipher implementations of the `core` repository interfaces, Keystore key handling and (in
+later slices) app lock and safe logging. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives) and A4a (the Room database v1 and its core adapters).** The app launches a `FLAG_SECURE`, edge-to-edge
+Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters) and A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup).** The app launches a `FLAG_SECURE`, edge-to-edge
 window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
-The database is built and tested but **not wired into the running app yet** (no `AppContainer` until A5, no
-encryption until A4b). Screens, DI and encryption arrive in slices A4b–A5 (plan
+On start `PftApplication` opens the **encrypted** database; if the key cannot be produced, `MainActivity`
+shows `KeyUnavailableScreen` instead (fail closed). Nothing uses the open database yet (no `AppContainer`
+until A5). Screens and DI arrive in slices A5 onwards (plan
 `docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system (the DS6 premium-look slices) later (plan
 `docs/plans/2026-10-29-m1a-design-system.md`; what is built: `docs/architecture/design-system.md`).
 
@@ -46,7 +47,7 @@ screenshot tests work. `ManifestHardeningTest` runs against both variants.
 
 ## Public interface
 
-Entry point: `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
+Entry points: `dev.imagh.pft.app.PftApplication` (opens the database) and `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
 as they land (`data/common`, `ui/common`).
 
 ### `ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)
@@ -128,7 +129,7 @@ defines (the only swap boundaries in M1a); tables and conventions are in
 
 | Symbol | What it is |
 |---|---|
-| `PftDatabase` (`VERSION = 1`), `Migrations.ALL` | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`) with exported schemas in `app/schemas/`; the ordered list of migrations. **`PftDatabase.create(context, name, openHelperFactory)` is the only way to build it** (production and tests): it registers `Migrations.ALL` and the audit-trigger callback; A4b only passes SQLCipher's open-helper factory. `name = null` is in-memory |
+| `PftDatabase` (`VERSION = 1`), `Migrations.ALL` | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`) with exported schemas in `app/schemas/`; the ordered list of migrations. **`PftDatabase.create(context, name, openHelperFactory)` is the only way to build it** (production and tests; `internal`, so only the app module, in production `DatabaseFactory`, can call it): it registers `Migrations.ALL` and the audit-trigger callback; `DatabaseFactory` only passes SQLCipher's open-helper factory. `name = null` is in-memory |
 | `AuditTriggers` | The `BEFORE UPDATE`/`BEFORE DELETE` triggers that make `audit_entry` append-only (Room does not model triggers). Its callback re-installs them on **every open** (dropping a same-named trigger first), so a database that lost or had its triggers replaced is repaired; `PftDatabaseTest` covers it |
 | `RoomTransactionRunner(db)` | core `TransactionRunner` over `withTransaction`. A failure at any nesting depth rolls back the outermost block, even when an outer block swallows it (same as core's fake) |
 | `RoomAuditLog(dao)`, `AuditDao`, `AuditEntryMapper` | core `AuditLog`: insert and select only. `changes_json` is the pinned JSON shape written with `org.json` |
@@ -140,6 +141,19 @@ Adding an entity table (B1 onwards): the Room entity with `@Embedded MetaColumns
 snake_case `@ColumnInfo` names, DAO, mapper, repository, a `Migration` registered in `Migrations.ALL`
 with `PftDatabase.VERSION` bumped, a `migrateNToN+1` test, and a line in `AuditedTables` (test
 support). `RoomAuditColumnsTest` fails if a column is neither audited nor on the reviewed allowlist.
+
+### `security` and the encrypted open (A4b)
+
+Design, key file format and the fail-closed table: [`docs/architecture/persistence-and-security.md`](../docs/architecture/persistence-and-security.md).
+
+| Symbol | What it is |
+|---|---|
+| `DbKeyManager.forApp(context)`, `useKey { key -> ... }` | The SQLCipher key: 32 random bytes, stored only wrapped (AES-256-GCM, Keystore KEK `pft_db_kek`) in `noBackupFilesDir/pft_db_key.bin`. `useKey` wipes the key after the block. Fails closed with `DbKeyUnavailable(reason)` and never creates a key over an existing key file or an existing `pft.db`. The KEK is not user-auth-bound, because M1b's SMS receiver writes while locked |
+| `DatabaseFactory.forApp(context).open()` | Opens `pft.db` through SQLCipher: key first (before the file exists), then the pre-migration backup, then `PftDatabase.create` over SQLCipher's open helper, opened eagerly. SQLCipher keeps and re-uses the key array it is given, so it is handed a **copy** that lives as long as the database (wiping it would key later connections with zeros). Throws `DbKeyUnavailable` or `PreMigrationBackupFailed`; creates and deletes nothing in either case |
+| `PreMigrationBackup`, `PreMigrationBackupFailed` | Copies the still-encrypted database (and its `-wal`) to `noBackupFilesDir/backups/pre-migration-v{n}.db` (n = the old schema version) before a migration, keeps the newest 3, never copies the key, `rwx------`/`rw-------`. Records the last-opened version in `noBackupFilesDir/pft_schema_version` |
+| `DatabaseStartup` (`Ready(database)`, `KeyUnavailable(reason)`), `DatabaseStartup.open(factory)` | How opening ended; only `DbKeyUnavailable` becomes a result |
+| `PftApplication.startup` | The one opening of the database, on first access (lazy); `MainActivity` reads it. A5's `AppContainer` takes this over |
+| `ui/startup/KeyUnavailableScreen(reason)` | The fail-closed screen: a plain explanation, a warning not to clear storage or uninstall, and `Code: <reason>`. No path, key or exception detail; no reset action |
 
 ### Window theme
 
@@ -167,10 +181,18 @@ release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 
 ## Data it owns
 
-The Room database `pft.db` (schema v1: `user_profile`, `device`, `app_setting`, `audit_entry`; see
-[`docs/architecture/data-model.md`](../docs/architecture/data-model.md)). It is plaintext and not opened
-by the running app yet: A4b adds SQLCipher, the Keystore-wrapped key and the pre-migration backup, and
-A5 the `AppContainer` that opens it. Times are stored as epoch milliseconds **exactly**: every
+- `pft.db` (with `pft.db-wal` and `pft.db-shm`) in the app's database directory: the Room database
+  (schema v1: `user_profile`, `device`, `app_setting`, `audit_entry`; see
+  [`docs/architecture/data-model.md`](../docs/architecture/data-model.md)), **encrypted with SQLCipher**.
+  `PftApplication` opens it; A5 adds the `AppContainer` that builds the services on it.
+- `noBackupFilesDir/pft_db_key.bin`: the wrapped database key (66 bytes, format v1). The KEK
+  `pft_db_kek` lives in the Android Keystore, not on disk. Never copy, log or export the file; it is
+  useless without the Keystore entry, and both names are permanent (renaming either orphans the data).
+- `noBackupFilesDir/backups/pre-migration-v{n}.db` (+ `-wal`): up to three safety copies taken
+  before migrations, still encrypted, private to the app.
+- `noBackupFilesDir/pft_schema_version`: one integer, the schema version of the last successful open.
+
+Times are stored as epoch milliseconds **exactly**: every
 time goes through `EpochMillis.of`, which refuses a finer instant (`IllegalArgumentException`) instead of
 rounding it. The app must build the `Clock` it gives core with `EpochMillis.clock()` (A5 acceptance
 criterion, plan A5), so every instant core produces is storable.
@@ -191,6 +213,9 @@ Compose BOM 2024.10.01 (ui 1.7.5, material3 1.3.1), `androidx.activity:activity-
 2.7 `withTransaction` lives in the runtime) with its compiler through KSP 2.1.0-1.0.29, which pulls in
 `androidx.sqlite` 2.5.0 and kotlinx-coroutines. Room's compiler, KSP and the SQL verifier
 (`sqlite-jdbc`) run at build time only and are not shipped.
+`net.zetetic:sqlcipher-android` 4.7.2 (A4b; runtime): the encryption layer, with its own SQLite
+(3.49.1) and a native library for four ABIs (it makes the release APK about 21 MB; an ABI filter is an
+H3 option). Pinned, locked and checksummed like every dependency.
 `androidx.compose.ui:ui-tooling-preview` (annotations only, via the BOM; the only DS2 addition to
 the release runtime classpath), `androidx.compose.ui:ui-tooling` (debug only).
 Icons: 92 vector drawables derived from Material Symbols (Apache-2.0, `assets/licenses/material-symbols-APACHE-2.0.txt`);
@@ -201,6 +226,7 @@ Test only: `:core:ledger` test fixtures (in-memory fakes, `TestClock`, Kotest as
 (`MigrationTestHelper`), JUnit 5 Jupiter, JUnit Vintage + JUnit 4 (to run Robolectric), Robolectric 4.14.1,
 `androidx.test:core`, `androidx.compose.ui:ui-test-junit4` (via the BOM), Roborazzi 1.36.0
 (`roborazzi`, `roborazzi-compose`, `roborazzi-junit-rule` and its Gradle plugin; screenshot tests).
+Instrumented tests only: `androidx.test:runner` 1.6.2 and JUnit 4.13.2.
 No network, analytics or crash SDKs.
 
 ## How to run and test
@@ -212,24 +238,30 @@ No network, analytics or crash SDKs.
 ./gradlew :app:recordRoborazziDebug   # re-record the screenshot goldens (deliberate visual changes only)
 ./gradlew :app:verifyRoborazziDebug   # compare against the goldens (what `check` does via the unit tests)
 ./gradlew :app:assembleRelease        # minified (R8) release APK, UNSIGNED: no release signing until H3
-./gradlew :app:verifyReleaseShrink    # R8 guard (part of `check`): MainActivity and PftDatabase_Impl kept, preview code removed
+./gradlew :app:verifyReleaseShrink    # R8 guard (part of `check`): MainActivity, PftDatabase_Impl and SQLCipher's SQLiteConnection kept, preview code removed
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest   # instrumented tests on the pft35 emulator (not part of `check`)
 ./gradlew :app:testDebugUnitTest --tests '*Room*'   # the Room integration tests only
 ```
 
 **Release build (R8).** `buildTypes.release` has `isMinifyEnabled` and `isShrinkResources` on
 (owner decision 2026-10-30, so sample and preview code does not ship), with
-`proguard-android-optimize.txt` plus `app/proguard-rules.pro`. That file has no keep rules: Compose,
-activity-compose and room-runtime carry their own consumer rules (Room's keeps every `RoomDatabase`
-subclass and its constructor, which is how `PftDatabase_Impl` is found by name), and AGP keeps the
-manifest's `MainActivity`. Add a rule only for something R8 reports or a smoke test shows broken,
-with a comment saying why; the SQLCipher rules come with that dependency (A4b, H3). There is deliberately **no release `signingConfig`** (H3 adds it from
+`proguard-android-optimize.txt` plus `app/proguard-rules.pro`. Compose, activity-compose,
+room-runtime and sqlcipher-android carry their own consumer rules (Room's keeps every `RoomDatabase`
+subclass and its constructor, which is how `PftDatabase_Impl` is found by name; SQLCipher's keeps
+`net.zetetic.**` with its natives and JNI-read fields), and AGP keeps the manifest's `MainActivity`.
+The one rule in `proguard-rules.pro` is a conservative blanket for SQLCipher's JNI surface, with its
+reason in the file (H3 narrows it). Add a rule only for something R8 reports or a smoke test shows
+broken, with a comment saying why. There is deliberately **no release `signingConfig`** (H3 adds it from
 `ANDROID_KEYSTORE_*` and must fail closed), so `assembleRelease` yields `app-release-unsigned.apk`.
-The release APK is about 1.4 MB with R8 (18.3 MB without); DS3's 92 icons add about 87 KB once something in release references `PftSymbol` (A5), and 4 KB (the licence text) until then.
+The release APK is about 21 MB with R8 since SQLCipher's native libraries (four ABIs) joined it
+(1.4 MB before; the app code itself is still about 1.4 MB). DS3's 92 icons add about 87 KB once
+something in release references `PftSymbol` (A5), and 4 KB (the licence text) until then.
 
 `verifyReleaseShrink` (registered in `app/build.gradle.kts`, wired into `check`) runs
 `assembleRelease`, reads `build/outputs/mapping/release/mapping.txt` and fails with a clear message
-if minification is off, `dev.imagh.pft.app.MainActivity` or `dev.imagh.pft.app.data.PftDatabase_Impl`
-(Room creates it by reflection; nothing references it until A5) is gone or renamed, or any
+if minification is off, `dev.imagh.pft.app.MainActivity`, `dev.imagh.pft.app.data.PftDatabase_Impl`
+(Room creates it by reflection; nothing references it by name) or
+`net.zetetic.database.sqlcipher.SQLiteConnection` (SQLCipher's natives register on it by name through JNI) is gone or renamed, or any
 `dev.imagh.pft.app.ui.theme.TokenSheet*` class is still present. When a slice adds preview or sample
 code, add its compiled class prefix to `mustBeRemoved`. To smoke-test a release build on `pft35`,
 sign a copy of the APK with the debug keystore, outside the build (recipe in `docs/learnings`).
@@ -276,5 +308,23 @@ then `migrateTo(version, migrations)`, which also fails unless the audit trigger
 Robolectric tests use the JUnit 4 runner and execute on the JUnit Vintage engine, because
 Robolectric does not run on Jupiter. Robolectric downloads its `android-all` SDK 35 jar from Maven
 Central on first use (cached in `~/.m2`); this download is outside Gradle's dependency
-verification (see `docs/learnings/README.md`). Instrumented tests (emulator `pft35`) arrive with
-A4b.
+verification (see `docs/learnings/README.md`).
+
+**Instrumented tests (A4b).** `src/androidTest` holds only what the JVM cannot run: the Android
+Keystore (`DbKeyManagerTest`) and SQLCipher's native library (`EncryptedDatabaseTest`). They are not
+part of `check`; run them on the `pft35` emulator (boot recipe in `docs/guides/local-setup.md` and
+`docs/learnings`) with `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`. The
+runner is `androidx.test:runner` 1.6.2 (same AndroidX Test release as `androidx.test:core` 1.6.1)
+plus JUnit 4. They run inside the app's process, so they use their own database name, Keystore alias
+and a subdirectory of `noBackupFilesDir`, never the app's real `pft.db` or key.
+`EncryptedDatabaseTest` proves the Room 2.7.1 + SQLCipher 4.7.2 pairing: the file is not plain
+SQLite, a wrong key and an all-zero key do not open it, a fresh manager and `PftDatabase` reopen it
+with the managed key, extra pooled connections are keyed, the audit triggers are installed,
+enforced and repaired on the encrypted file, a damaged file is never deleted, and a backup taken
+while rows are only in the `-wal` restores with it, encrypted and mode `0600`.
+The JVM tests of the key logic are `DbKeyManagerJvmTest` (real AES-GCM with an in-memory KEK) and
+`DbKeyManagerWiringTest` (Robolectric). `PreMigrationBackupTest` (plain files) covers the backup
+rules; `DatabaseFactoryTest` (Robolectric, a framework open helper in SQLCipher's place) pins the
+order of events and that the key array handed over stays intact; `DatabaseStartupTest`,
+`KeyUnavailableScreenTest` and `MainActivityStartupTest` (Robolectric has no Keystore, so it
+exercises the real fail-closed path end to end) cover the screen and that nothing is created.

@@ -26,10 +26,14 @@
         the early 2000s) and reports that engine's whole CVE history (CVE-2015-3414 ... CVE-2025-6965).
         None of that code is in these jars. The engine in use is the platform's SQLite (patched by OS
         updates; minSdk 33) until A4b swaps in SQLCipher 4.7.2, which bundles its own SQLite.
-        Follow-up for A4b: check the SQLite version SQLCipher 4.7.2 bundles against CVE-2025-6965
-        (SQLite before 3.50.2) and the other engine CVEs, and decide there; this suppression says
-        nothing about the engine. Added by the A4a developer; the owner decides whether to accept
-        (docs/TECHNICAL.md section 5). Expires so it comes back for review before the A4b/H3 release work.
+        A4b result (2026-10-30): the engine in the app is now the one inside libsqlcipher.so of
+        sqlcipher-android 4.7.2, SQLite 3.49.1, which is older than 3.50.2 (CVE-2025-6965). The scanner
+        cannot see inside native libraries, so it reports nothing for it; this suppression still says
+        nothing about the engine. The app only runs its own static, parameterised SQL, so those CVEs
+        (they need crafted SQL) are not reachable today; sqlcipher-android 4.10.0 bundles 3.50.4 and is
+        the way to remove the question (owner decision, see docs/architecture/persistence-and-security.md).
+        Added by the A4a developer; the owner decides whether to accept (docs/TECHNICAL.md section 5).
+        Expires so it comes back for review before the H3 release work.
         ]]></notes>
         <packageUrl regex="true">^pkg:maven/androidx\.sqlite/sqlite(-android|-framework(-android)?)?@2\.5\.0$</packageUrl>
         <cpe>cpe:/a:sqlite:sqlite</cpe>

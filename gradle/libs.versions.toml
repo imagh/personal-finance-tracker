@@ -7,6 +7,8 @@ agp = "8.7.3"
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
 room = "2.7.1"
+# SQLCipher for Android (A4b); bundles its own SQLite. Pairing with Room 2.7.1 is proven by the instrumented EncryptedDatabaseTest.
+sqlcipher = "4.7.2"
 composeBom = "2024.10.01"
 activityCompose = "1.9.3"
 junitBom = "5.11.3"
@@ -15,6 +17,8 @@ kotest = "5.9.1"
 robolectric = "4.14.1"
 roborazzi = "1.36.0"
 androidxTestCore = "1.6.1"
+# AndroidX Test 1.6 release set, with core 1.6.1 and monitor 1.7.2 (the instrumented tests' runner).
+androidxTestRunner = "1.6.2"
 ktlintPlugin = "12.1.2"
 ktlintEngine = "1.4.1"
 detekt = "1.23.7"
@@ -40,10 +44,11 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
-# Persistence (plan §3.3). Room is plaintext until A4b adds SQLCipher. Its compiler runs through KSP.
+# Persistence (plan §3.3). Room runs over SQLCipher (A4b). Its compiler runs through KSP.
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 
 # Tests.
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junitBom" }
@@ -55,6 +60,8 @@ kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+# Instrumented tests on the pft35 emulator (SQLCipher and the Keystore, plan §3.2 #14).
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 # Screenshot tests (design-system plan §3.8): 1.36.0 is built against Robolectric 4.14.1 / Compose 1.7.5.
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }

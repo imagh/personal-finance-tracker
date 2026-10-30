@@ -4,7 +4,7 @@ The Room database `pft.db`: tables, conventions and the version table. Status: *
 slice A4a)**. Each later slice adds its tables through its own migration and a migration test and
 updates this file in the same PR. The full table plan is in
 `docs/plans/2026-10-28-m1a-core-ledger.md` §4; the encryption layer (SQLCipher, Keystore key) is
-A4b and will be described in `persistence-and-security.md`.
+A4b and is described in [persistence-and-security.md](persistence-and-security.md).
 
 Core models are the canonical shape. The Room entities in `app/.../data/` are persistence DTOs that
 are mapped one-to-one to them, and core never sees them (CLAUDE.md §3.3).
@@ -54,7 +54,7 @@ must stay writable and intact whatever happens to the rows it describes. Limits:
 outside tool holding the key are not stopped; the encrypted file (A4b) is the protection against
 others.
 
-`PftDatabase.create` is the only way a database is built, so no caller can forget the triggers, and
+`PftDatabase.create` (`internal` to the app module) is the only way a database is built, so no caller can forget the triggers, and
 a database that lost or had its triggers replaced (an old file, a bad migration, tampering) is repaired
 on the next open. The exported schema JSON has no triggers, so `MigrationTestSupport` installs them when it
 builds an old-version database and, after every migration, fails unless all triggers exist and still
