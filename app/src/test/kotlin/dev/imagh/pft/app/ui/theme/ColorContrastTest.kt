@@ -37,17 +37,18 @@ class ColorContrastTest {
         return Color(encoded.toFloat(), encoded.toFloat(), encoded.toFloat())
     }
 
-    /**
-     * Dynamic surfaces are low-chroma, so they are tested as greys across the tones a surface role
-     * can take: light surfaceDim (87) to white (100), dark surfaceContainerLowest (4) to
-     * surfaceBright (24).
-     */
-    private fun surfaceGreys(theme: Theme): Map<String, Color> {
-        val tones = if (theme == Theme.LIGHT) 87..100 else 4..24
-        return tones.associate { "grey tone $it" to greyAtTone(it) }
-    }
+    /** The tones a surface role can take: light 87 (surfaceDim) to 100, dark 0 to 24 (surfaceBright). */
+    private fun sweptTones(theme: Theme) = if (theme == Theme.LIGHT) 87..100 else 0..24
 
-    private fun scheme(theme: Theme) = if (theme == Theme.LIGHT) BrandColors.light else BrandColors.dark
+    /**
+     * Dynamic surfaces are low-chroma, so they are tested as greys across [sweptTones]. The dark
+     * band starts at black because Graphite's dark canvas and flat surface sit at tones 3 to 5.
+     */
+    private fun surfaceGreys(theme: Theme): Map<String, Color> =
+        sweptTones(theme).associate { "grey tone $it" to greyAtTone(it) }
+
+    private fun scheme(theme: Theme) =
+        if (theme == Theme.LIGHT) GraphitePalette.light.scheme else GraphitePalette.dark.scheme
 
     private fun money(theme: Theme) = moneyColors(dark = theme == Theme.DARK)
 
@@ -62,7 +63,7 @@ class ColorContrastTest {
     }
 
     @Test
-    fun `money text tokens clear 4_5 on every brand surface role and every grey surface tone`() {
+    fun `money text tokens clear 4_5 on every Graphite surface role and every grey surface tone`() {
         for (theme in Theme.entries) {
             val surfaces = scheme(theme).surfaceRoles() + surfaceGreys(theme)
             val m = money(theme)
@@ -154,7 +155,18 @@ class ColorContrastTest {
     }
 
     @Test
-    fun `brand scheme text and accent pairs clear their thresholds`() {
+    fun `onSurface and onSurfaceVariant clear 4_5 on every surface role`() {
+        for (theme in Theme.entries) {
+            val s = scheme(theme)
+            for ((surfaceName, surface) in s.surfaceRoles()) {
+                assertAtLeast(textMin, "$theme onSurface on $surfaceName", s.onSurface, surface)
+                assertAtLeast(textMin, "$theme onSurfaceVariant on $surfaceName", s.onSurfaceVariant, surface)
+            }
+        }
+    }
+
+    @Test
+    fun `Graphite scheme text and accent pairs clear their thresholds`() {
         for (theme in Theme.entries) {
             val s = scheme(theme)
             assertAtLeast(textMin, "$theme onPrimary on primary", s.onPrimary, s.primary)
@@ -172,9 +184,21 @@ class ColorContrastTest {
     }
 
     @Test
-    fun `brand surfaces match the M3 tone ladder the contrast sweep assumes`() {
-        // If these drift, the grey sweep above no longer brackets the real surfaces.
-        assertTrue(contrast(BrandColors.light.surfaceDim, greyAtTone(87)) < 1.05)
-        assertTrue(contrast(BrandColors.dark.surfaceBright, greyAtTone(24)) < 1.05)
+    fun `every Graphite surface role lies within the swept band`() {
+        // Tone is CIE L*, a function of luminance alone, so a role is inside the band exactly
+        // when its luminance is between the band's end greys. If one drifts out, the grey sweep
+        // above no longer brackets the real surfaces and must be widened.
+        for (theme in Theme.entries) {
+            val tones = sweptTones(theme)
+            val low = greyAtTone(tones.first).luminance()
+            val high = greyAtTone(tones.last).luminance()
+            for ((name, role) in scheme(theme).surfaceRoles()) {
+                val l = role.luminance()
+                assertTrue(
+                    l in (low - 0.002f)..(high + 0.002f),
+                    "$theme $name luminance $l is outside the swept tones $tones",
+                )
+            }
+        }
     }
 }
