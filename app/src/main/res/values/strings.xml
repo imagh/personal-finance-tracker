@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Personal Finance Tracker</string>
+    <!-- Fail-closed screen when the database key cannot be produced (KeyUnavailableScreen). -->
+    <string name="key_unavailable_title">Your data can\'t be opened</string>
+    <string name="key_unavailable_explanation">Personal Finance Tracker could not get the key that protects your data on this phone, so it stopped instead of risking it. Your data has not been changed or deleted, and nothing was started over.</string>
+    <string name="key_unavailable_warning">Do not clear the app\'s storage or uninstall it: that would erase your data for good. Restart the phone and try again. If this keeps happening, note the code below.</string>
+    <string name="key_unavailable_code">Code: %1$s</string>
     <!-- Spoken labels for the ‹ › stepper in a Dashboard header. -->
     <string name="header_period_previous">Previous period</string>
     <string name="header_period_next">Next period</string>
