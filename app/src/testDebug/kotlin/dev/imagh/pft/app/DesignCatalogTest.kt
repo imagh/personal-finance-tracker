@@ -115,4 +115,41 @@ class DesignCatalogTest {
         compose.onNodeWithText("Cancel").assertIsDisplayed()
         compose.onNodeWithText("Continue").assertIsNotEnabled()
     }
+
+    @Test
+    fun `the Chips section shows a chip for each tone`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Chips").performClick()
+        compose.onNodeWithText("Chips").assertIsSelected()
+        listOf("Unverified", "Overdue", "Under", "Paused").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+    }
+
+    @Test
+    fun `the Money section shows signed amounts in every size`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Money").performClick()
+        compose.onNodeWithText("Money").assertIsSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("−₹48,250.40"))
+        compose.onNodeWithText("−₹48,250.40").assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("+₹1,25,000.00"))
+        compose.onNodeWithText("+₹1,25,000.00").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the Sections section shows islands of rows`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Sections").performClick()
+        compose.onNodeWithText("Sections").assertIsSelected()
+        compose.onNodeWithText("Everyday account").assertIsDisplayed()
+        compose.onNodeWithText("Monthly, from the 1st").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the Empty section shows the empty state with its action`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Empty").performClick()
+        compose.onNodeWithText("Empty").assertIsSelected()
+        compose.onNodeWithText("Add account").assertIsDisplayed()
+        compose.onNodeWithText("Nothing matches your search.").assertIsDisplayed()
+    }
 }

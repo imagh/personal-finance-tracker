@@ -153,4 +153,13 @@ class PftTypographyTest {
         assertEquals(28.sp, m3.titleLarge.lineHeight)
         assertEquals(FontWeight.Medium, m3.titleLarge.fontWeight)
     }
+
+    @Test
+    fun `the hero shrink steps start at the plan's 48, 40, 34, 28sp and only ever go down`() {
+        val sizes = HeroSizeSteps.map { it.value }
+        assertEquals(listOf(48f, 40f, 34f, 28f), sizes.take(4))
+        assertEquals(resolve().type.amountHero.fontSize, HeroSizeSteps.first())
+        assertEquals(sizes.sortedDescending(), sizes)
+        assertEquals(sizes.distinct(), sizes)
+    }
 }

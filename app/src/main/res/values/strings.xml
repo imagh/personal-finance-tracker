@@ -4,4 +4,13 @@
     <!-- Spoken labels for the ‹ › stepper in a Dashboard header. -->
     <string name="header_period_previous">Previous period</string>
     <string name="header_period_next">Next period</string>
+    <!-- Spoken direction of an amount (MoneyText): said before the figure, so colour is never the only cue. -->
+    <string name="money_expense">Expense</string>
+    <string name="money_income">Income</string>
+    <string name="money_transfer">Transfer</string>
+    <string name="money_balance">Balance</string>
+    <string name="money_balance_negative">Negative balance</string>
+    <string name="money_budget_under">Under budget</string>
+    <string name="money_budget_near_limit">Budget near its limit</string>
+    <string name="money_budget_over">Over budget</string>
 </resources>

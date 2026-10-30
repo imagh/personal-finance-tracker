@@ -112,7 +112,7 @@ Code is abstract *at its own layer* so it is reused, not copied: one shared buil
 | app data | `@Embedded MetaColumns` with one `MetaColumns ↔ EntityMeta` mapper; generic `BaseDao<E>` (insert, update); `RoomEntityRepository<T, E, Id>` base taking the DAO and a mapper | every Room repository | A4a |
 | app tests | `TestDatabase` factory (Robolectric) and `MigrationTestSupport` for every `migrateNToN+1` test and the chain test | all app tests | A4a |
 | app UI (`ui/common/`) | `UiState` convention, `FormState` field validation, `EditFormScaffold`, `NameField` | all edit screens | A5 |
-| app UI | `EntityListScreen` (active and archived sections, FAB, empty state), `UndoDeleteSnackbar`, `AmountField` (wraps `Paise.parse` and shows the error), `AccountPicker` (`MoneyText` moved to design-system DS5) | accounts, categories, tags, transactions, budgets, recurring, loans, goals | B2 |
+| app UI | `EntityListScreen` (active and archived sections, FAB, empty state), `UndoDeleteSnackbar`, `AmountField` (wraps `Paise.parse` and shows the error), `AccountPicker` (`MoneyText` is not built here: it is DS5's, already in `ui/common`) | accounts, categories, tags, transactions, budgets, recurring, loans, goals | B2 |
 | app UI | `CategoryPicker` (B4), `TagPicker` (B5), `DateField` (C4) | transactions, budgets, recurring, loans | B4, B5, C4 |
 | app UI | `AuditHistoryList`: a generic history view for every detail screen, not only transactions | transaction, loan, goal, budget and recurring detail | C5 |
 
@@ -239,7 +239,7 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 **B2 — Accounts UI**
 - **Red:** `AccountsFlowTest` (Robolectric Compose): add a "HDFC Savings" BANK account and it appears in the list; archive it and it moves to the Archived section; invalid last-4 shows an error.
-- **Green:** `ui/common/{EntityListScreen,UndoDeleteSnackbar,AmountField,MoneyText,AccountPicker}.kt` (§3.4; accounts are the first consumer, the opening balance uses `AmountField`), then `ui/accounts/{AccountsScreen,AccountEditScreen,AccountsViewModel}.kt` built from them; bottom-nav "More" entry.
+- **Green:** `ui/common/{EntityListScreen,UndoDeleteSnackbar,AmountField,AccountPicker}.kt` (§3.4; `MoneyText` is DS5's and is used as is; accounts are the first consumer, the opening balance uses `AmountField`), then `ui/accounts/{AccountsScreen,AccountEditScreen,AccountsViewModel}.kt` built from them; bottom-nav "More" entry.
 
 **B3 — Categories core + Room (v3, includes `tag`)**
 - **Red:** `CategoryServiceTest`: create a top-level category and a sub-category; creating a sub-category of a sub-category → `DepthExceeded`; a sub-category's kind must equal its parent's; rename/recolour/re-icon are audited; `reorder(parent, orderedIds)` rewrites `sort_order` for siblings only; archive keeps history and removes it from `pickable()`; archiving a parent hides its children from `pickable()`; the `LOAN_EMI` system category can be renamed but not archived or deleted. `DefaultCategoriesTest`: `seedDefaults()` is idempotent and creates the documented list, including `LOAN_EMI`. Room integration plus `migrate2To3`.
@@ -269,11 +269,11 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 **C4 — Transaction list and add/edit UI**
 - **Red:** `TransactionsFlowTest`: on Home, tap +, enter ₹250, pick account, category and tags, then save; the row shows in this month's list with "₹250.00", and month totals (expense/income, excluding transfers) update. Switching to Transfer shows a destination-account field, and saving shows paired legs. Editing changes the amount. Delete gives an Undo snackbar that restores the row. Bad amount text shows an inline error and saves nothing.
-- **Green:** `ui/transactions/{TransactionListScreen,TransactionEditScreen,TransactionsViewModel,TransactionEditViewModel}.kt`, month switcher, state chip (Verified/Unverified badge, L-6).
+- **Green:** `ui/transactions/{TransactionListScreen,TransactionEditScreen,TransactionsViewModel,TransactionEditViewModel}.kt`, month switcher, state chip (Verified/Unverified badge, L-6). **Amount contract (design plan DS5):** the ViewModel maps transaction amounts to non-negative `Paise` with the direction as the `MoneySemantic`; `MoneyText` throws in composition for a negative one, and only an account `Balance` may be negative. Test the mapper.
 
 **C5 — Search/filter UI and transaction detail with history**
 - **Red:** `SearchFlowTest`: a filter by tag plus text returns the expected rows. `TransactionDetailTest`: detail shows fields, source and bank ref, and an audit history list ("Amount ₹200.00 → ₹250.00 by Akash on Pixel"; history is formatted in the UI from the audit rows).
-- **Green:** `ui/search/*`, `ui/transactions/TransactionDetailScreen.kt`, `AuditQueries` read API in core plus Room, and the generic `ui/common/AuditHistoryList.kt` (§3.4), which the loan, goal, budget and recurring detail screens reuse later.
+- **Green:** `ui/search/*`, `ui/transactions/TransactionDetailScreen.kt`, `AuditQueries` read API in core plus Room, and the generic `ui/common/AuditHistoryList.kt` (§3.4), which the loan, goal, budget and recurring detail screens reuse later. **Amount contract (design plan DS5):** the detail ViewModel passes the stored positive amount with its `MoneySemantic`; `MoneyText` throws in composition for a negative `Paise` (only `Balance` may be negative).
 
 ### Slice D — Budgets (`feat/m1a-budgets`)
 
@@ -294,7 +294,7 @@ Adds `:core:budget` to settings.
 - **Red:** `RoomBudgetIntegrationTest`: create a budget and add expenses through `TransactionService`; `progress()` reflects them, and a deleted transaction drops out. `migrate5To6`.
 - **Green:** `app/.../data/budget/*`, `MIGRATION_5_6`.
 
-**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11)
+**D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11). **Amount contract (design plan DS5):** the budget mapper passes non-negative `Paise` with `Budget(state)` to `MoneyText` (an overspend as a magnitude with `OVER`, never a negative remainder), which throws in composition otherwise; test the mapper.
 - **Red:** `BudgetsFlowTest` (through the nav host, real in-memory Room):
   - **List:** create "Groceries ₹8,000 monthly"; adding a ₹6,500 groceries expense shows the Groceries card at 81% with a threshold warning at 80%, and unverified spend is shown with a distinct marker. Each active budget has one card; an archived budget is not listed. The FAB opens the create form.
   - **List → detail:** tapping the card opens the budget detail, whose title is the budget name and whose subtitle is the current period.

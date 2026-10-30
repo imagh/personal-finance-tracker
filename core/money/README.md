@@ -75,7 +75,7 @@ None at runtime. `Paise.MAX_AMOUNT` and `PaiseParser.MAX_INPUT_LENGTH` are stati
 
 JDK only at runtime. Tests use JUnit 5 and Kotest (runner, assertions, property testing), supplied
 by the `pft.kotlin-core` convention plugin. Depends on no other module; `:core:ledger` and `:app`
-depend on it.
+depend on it. `:app` consumes it since DS5: `MoneyText` (`ui/common`) prepends the sign glyph to `PaiseFormat.format` and never reformats; its hero-overflow test uses `Paise.MAX_AMOUNT`, the real limit.
 
 ## How to run and test
 

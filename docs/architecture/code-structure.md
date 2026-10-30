@@ -18,7 +18,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors, PftTypography, PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), BottomActionBar
-                                         # (+ BottomBarAction); HeaderSamples (previews, catalogue and goldens share them)
+                                         # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
+                                         # GroupedSection, EmptyState; *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples,
+                                         # GroupedSectionSamples, EmptyStateSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v1), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
@@ -27,7 +29,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
   src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL)
-  src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header and bottom-bar pages, toggles), manifest removing ui-tooling's PreviewActivity
+  src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section and empty-state pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
                                          # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
@@ -93,6 +95,10 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/theme`) | `PftMotion` (four springs, nav transitions, `iosSpring`, `Modifier.pressScale`) | every screen; A5 nav host, C4 rows and keypad, DS5 rolling digits | DS4 |
 | app UI (`ui/common`) | `CollapsingHeaderScaffold` (`HeaderStyle`, `HeaderPeriod`) | A5 setup and `EditFormScaffold`, B2 `EntityListScreen`, C4 Home, D4, AP1/H1 settings | DS4 |
 | app UI (`ui/common`) | `BottomActionBar` (`BottomBarAction`) | A5 `EditFormScaffold` (all forms) and setup, C5 detail | DS4 |
+| app UI (`ui/common`) | `MoneyText` (`MoneySemantic`, `MoneyTone`, `MoneySize`) on `:core:money` `PaiseFormat` | B2, C4, C5, D4, F3, G2 | DS5 |
+| app UI (`ui/common`) | `StatusChip` | C4, C5, D4, E4 | DS5 |
+| app UI (`ui/common`) | `GroupedSection` | C4 accounts strip, C5 detail, D4 detail, AP1/H1 settings, H2 diagnostics | DS5 |
+| app UI (`ui/common`) | `EmptyState` | B2 `EntityListScreen` (all lists), C4 empty month, C5 no results | DS5 |
 
 The remaining app-UI building blocks (`EntityListScreen`, `AmountField`, `AuditHistoryList`, ...) are
 added to this table by A5, B2 and C5.

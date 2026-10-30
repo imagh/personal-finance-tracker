@@ -25,7 +25,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import dev.imagh.pft.app.ui.common.BottomActionBarSamples
 import dev.imagh.pft.app.ui.common.DashboardHeaderSample
+import dev.imagh.pft.app.ui.common.EmptyStateSamples
+import dev.imagh.pft.app.ui.common.GroupedSectionSamples
+import dev.imagh.pft.app.ui.common.MoneyTextSamples
 import dev.imagh.pft.app.ui.common.StandardHeaderSample
+import dev.imagh.pft.app.ui.common.StatusChipSamples
 import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemeMode
@@ -34,7 +38,8 @@ import dev.imagh.pft.app.ui.theme.TokenSheet
 
 /**
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
- * the one-hand layout components (both header styles and `BottomActionBar`), with live toggles for
+ * the one-hand layout components (both header styles and `BottomActionBar`) and the content
+ * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), with live toggles for
  * light/dark, the hero font and the font scale, so they can be checked on a device or the
  * emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
@@ -82,16 +87,12 @@ internal fun DesignCatalog() {
                         )
                     }
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        ChoiceRow(
-                            options = CatalogSection.entries.take(3).map { it.label to it },
-                            selected = section,
-                            onSelect = { section = it },
-                        )
-                        ChoiceRow(
-                            options = CatalogSection.entries.drop(3).map { it.label to it },
-                            selected = section,
-                            onSelect = { section = it },
-                        )
+                        CatalogSection.entries.chunked(SECTIONS_PER_ROW).forEach { row ->
+                            ChoiceRow(options = row.map { it.label to it }, selected = section, onSelect = {
+                                section =
+                                    it
+                            })
+                        }
                     }
                     Box(Modifier.weight(1f)) { SectionContent(section) }
                 }
@@ -100,7 +101,9 @@ internal fun DesignCatalog() {
     }
 }
 
-/** The catalogue's pages: the token sheet, then the motion and layout components. */
+private const val SECTIONS_PER_ROW = 3
+
+/** The catalogue's pages: the token sheet, then the motion, layout and content components. */
 private enum class CatalogSection(
     val label: String,
 ) {
@@ -109,6 +112,10 @@ private enum class CatalogSection(
     BOTTOM_BAR("Bottom bar"),
     STANDARD_HEADER("Standard header"),
     DASHBOARD_HEADER("Dashboard header"),
+    MONEY("Money"),
+    CHIPS("Chips"),
+    SECTIONS("Sections"),
+    EMPTY("Empty"),
 }
 
 /**
@@ -125,6 +132,10 @@ private fun SectionContent(section: CatalogSection) {
                 when (section) {
                     CatalogSection.MOTION -> MotionSection()
                     CatalogSection.BOTTOM_BAR -> BottomActionBarSamples()
+                    CatalogSection.MONEY -> Box(Modifier.padding(16.dp)) { MoneyTextSamples() }
+                    CatalogSection.SECTIONS -> Box(Modifier.padding(vertical = 16.dp)) { GroupedSectionSamples() }
+                    CatalogSection.EMPTY -> EmptyStateSamples()
+                    CatalogSection.CHIPS -> Box(Modifier.padding(16.dp)) { StatusChipSamples() }
                     else -> TokenSheet()
                 }
             }
