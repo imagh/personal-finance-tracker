@@ -155,8 +155,12 @@ it scans every configuration **report-only**, so tooling findings stay visible. 
 new or notable from it in the PR.
 
 **Suppressions** live in `config/dependency-check/suppressions.xml`. Each one needs a written
-reason and an `until` expiry date, so it lapses and comes back for review. The current one
-(CVE-2026-53914, Kotlin compiler build-cache deserialization) expires 2027-01-31; until Kotlin is
->= 2.4.20 we use **no remote or shared Gradle build cache**.
+reason and an `until` expiry date, so it lapses and comes back for review. The current ones:
+CVE-2026-53914 (Kotlin compiler build-cache deserialization; expires 2027-01-31; until Kotlin is
+>= 2.4.20 we use **no remote or shared Gradle build cache**); and, added in A4a and expiring
+2026-12-31, two scanner false positives: `androidx.sqlite` 2.5.0 (AndroidX's wrapper API) matched to
+the CPE of the SQLite *engine*, and CVE-2020-29582 on `kotlin-stdlib-jdk7/jdk8` 1.8.20 (fixed in
+1.4.21). The first says nothing about the engine itself: A4b must check the SQLite version SQLCipher
+bundles (CVE-2025-6965 needs SQLite >= 3.50.2).
 The first run downloads the NVD database (about 1 hour; about 240 MB under
 `~/.gradle/dependency-check-data/`); later runs only fetch updates.
