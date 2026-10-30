@@ -41,12 +41,13 @@ object:
 | `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
+| `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge and top highlight for the palette, mode and `BackgroundStyle` (DS6c); see "Surfaces and window colour" |
 | `PftTheme.type` | `PftTypography` | the three amount styles |
 | `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge) |
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
 | `PftTheme.motion` | `PftMotion` | four springs, navigation transitions, press scale; a constant, the same in every theme |
 
-`ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `lightPalette`, `darkPalette`, `displayFont`). Until the appearance
+`ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `lightPalette`, `darkPalette`, `background`, `displayFont`). Until the appearance
 settings (AP1) the app always passes the defaults. Tokens are static code constants; per-user
 choices will live in the database (CLAUDE.md §3.5).
 
@@ -129,10 +130,49 @@ Graphite surface role lies inside that band. Light `surfaceContainerLowest` is w
 card, sheet or dialog fill. Never draw money text on `surfaceVariant`:
 dark `negative` on it is 4.23:1. `ColorContrastTest` pins two things: the sweep excludes
 `surfaceVariant` on purpose (a test asserts the ratio is still below 4.5, so the exclusion is not
-dropped by accident), and the backgrounds DS5 components draw money on (`groupedSectionColor`, every
+dropped by accident), and the backgrounds DS5 components draw money on (the island in both styles, every
 `chipColors` pill) are asserted to be swept surface roles and never `surfaceVariant`. It cannot stop
 a future component choosing `surfaceVariant`: that stays a code-review rule, and a new money
 surface should add its colour to this test.
+
+### Surfaces and window colour (DS6c, UI-12, UI-18)
+
+`PftTheme.surfaces` (`PftSurfaces`, from the pure `pftSurfaces(palette, style, dark)`; a
+`staticCompositionLocalOf`, so a palette change recomposes the whole tree, which only happens when the user
+changes a setting) is the one place a screen gets its background and card colours. `BackgroundStyle` has two
+persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
+
+| Style | `canvas` (screen, header, bottom bar) | `island` (`GroupedSection`, cards) | `islandEdge` | `islandHighlight` |
+|---|---|---|---|---|
+| `TONAL` | `PaletteColors.canvas` | `PaletteColors.island` | `outlineVariant`, 1 physical px | dark: white at 4.5% alpha; light: transparent |
+| `FLAT` | `scheme.surface` | `scheme.surfaceContainer` | transparent | transparent |
+
+- The canvas and island of each palette are the owner-approved mockup values (`canvas`, `island`), pinned in the
+  palette files; the island is lighter than the canvas in every palette and both modes, and never white.
+  `FLAT` reproduces the pre-DS6c look exactly.
+- **Dynamic colour** has no such roles, so they are derived (`dynamicPaletteColors`): canvas is
+  `surfaceContainerHigh` (light, tone 92) or `surfaceContainerLowest` (dark, tone 4); island is
+  `surfaceContainerLow` (tone 96 light, 10 dark).
+- **Consumers.** `CollapsingHeaderScaffold` (header and list background), `BottomActionBar` and `MainActivity`'s
+  root `Surface` paint the canvas. `GroupedSection` fills with the island and, for TONAL, draws the edge as a
+  vertical-gradient border from the hairline lit by the highlight (dark) to the plain hairline (`groupedSectionColors`
+  is the pure function). A later `NavigationBar` (A5/C4) uses the island for its container. Rows inside an island
+  must not paint their own background: use `GroupedSectionDefaults.listItemColors()`.
+- **The white-card rule.** Light `surfaceContainerLowest` is tone 100, white. It must never be a card, sheet or
+  dialog fill (owner decision: no white cards). `ColorContrastTest` sweeps `canvas` and `island` for every palette
+  and mode (money, `onSurface`, `onSurfaceVariant` at 4.5:1; `primary` at 3:1) and asserts the island is never
+  `surfaceVariant`; the white-card rule itself stays a review rule.
+- **Window colour and the first frame.** Before Compose draws, the window paints `pft_window_background`
+  (`res/values` and `values-night`), which equals Graphite's `canvas`, the default (`WindowThemeTest` pins this).
+  The resources cannot know the user's palette, so every palette's `canvas` and flat `surface`, and the derived
+  dynamic canvas, island and surface, stay within `WINDOW_FLASH_MAX_TONE_DELTA` (8 tones of CIE L*) of it in the
+  same mode (`WindowFlashToneTest`, `ThemeResolutionTest`): a palette change can shift the first frame by a barely
+  visible step, never light to dark. `SyncWindowBackground(window)` (a `SideEffect` in `ui/theme/WindowBackground.kt`,
+  called once inside `PftTheme` from `MainActivity`) then sets the window background to the live canvas, so predictive
+  back, IME gaps and configuration changes show the canvas. `FLAG_SECURE` stays the first line of `onCreate`,
+  followed by `enableEdgeToEdge()`. A forced light or dark mode against the system's night mode is AP1's
+  `setApplicationNightMode` item.
+- **The debug catalogue** has a Background (Tonal / Flat) row.
 
 ### Motion (UI-10)
 
@@ -301,7 +341,8 @@ Neutral. `labelMedium`, `extraLarge` shape, one merged semantics node. Not inter
 ### `GroupedSection`
 
 `GroupedSection { row(onClick?) { ... } }`: the replacement for cards. Inset by the 20dp gutter,
-`large` shape, filled with `surfaceContainer` (`groupedSectionColor`, never `surfaceVariant`), one
+`large` shape, filled with `PftTheme.surfaces.island` (never `surfaceVariant`, never white; with TONAL a
+one-pixel edge, lit along the top in dark mode; see "Surfaces and window colour"), one
 physical-pixel `outlineVariant` divider between rows, inset 16dp from the start (N rows give N-1
 dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. A rows lambda rather than a
 composable slot lets the section own the dividers. M3 `ListItem` paints its own `surface` container,
@@ -494,7 +535,7 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 `docs/plans/2026-10-30-m1a-premium-look.md` (owner decisions of 2026-10-30) changes several things on this page. Each DS6 slice updates the sections it touches as it lands; until then, the sections above describe what is built.
 
 - **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently (done; see "Colour"). Money colours are unchanged.
-- **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas.
+- **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas (done in DS6c; see "Surfaces and window colour").
 - **Header.** An optional glow, off by default, never under money. (Icon-only actions through `HeaderIconButton` are done: DS6e.)
 - **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB. The DS6f spike (plan §3.7) measured the candidates: only Figtree and Plus Jakarta Sans (both variable) will be bundled, 0.66 MiB with Newsreader; none is bundled yet, so the table has no rows for them until DS6h and DS6i.
 - **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this (built in DS6a).
