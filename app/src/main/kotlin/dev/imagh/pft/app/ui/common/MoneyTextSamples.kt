@@ -69,5 +69,5 @@ private fun AmountRow(
 @PreviewLightDark
 @Composable
 internal fun MoneyTextPreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { MoneyTextSamples() } }
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { MoneyTextSamples() } }
 }

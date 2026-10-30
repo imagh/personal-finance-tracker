@@ -75,5 +75,7 @@ internal fun BottomActionBarSamples() {
 @PreviewLightDark
 @Composable
 internal fun BottomActionBarPreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { BottomActionBarSamples() } }
+    PftTheme(
+        ThemePrefs(dynamicColor = false),
+    ) { Surface(color = PftTheme.surfaces.canvas) { BottomActionBarSamples() } }
 }

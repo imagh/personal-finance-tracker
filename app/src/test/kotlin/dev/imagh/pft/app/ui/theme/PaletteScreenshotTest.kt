@@ -35,7 +35,7 @@ class PaletteScreenshotTest {
     ) {
         compose.setContent {
             PftTheme(ThemePrefs(dynamicColor = false)) {
-                Surface(Modifier.testTag("sample")) { PaletteSwatches(dark) }
+                Surface(Modifier.testTag("sample"), color = PftTheme.surfaces.canvas) { PaletteSwatches(dark) }
             }
         }
         compose.waitForIdle()

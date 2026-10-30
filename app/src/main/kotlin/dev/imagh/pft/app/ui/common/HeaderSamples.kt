@@ -23,7 +23,12 @@ private val SampleRows =
 /** Fake list rows, repeated so the content is long enough to scroll and collapse the header. */
 private fun LazyListScope.sampleRows() {
     items(SampleRows + SampleRows + SampleRows) { name ->
-        ListItem(headlineContent = { Text(name) }, supportingContent = { Text("Sample row") })
+        ListItem(
+            headlineContent = { Text(name) },
+            supportingContent = { Text("Sample row") },
+            // A ListItem paints `surface` by default, which would hide the canvas the list sits on.
+            colors = GroupedSectionDefaults.listItemColors(),
+        )
     }
 }
 
@@ -63,11 +68,11 @@ internal fun DashboardHeaderSample() {
 @PreviewLightDark
 @Composable
 internal fun StandardHeaderPreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { StandardHeaderSample() } }
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { StandardHeaderSample() } }
 }
 
 @PreviewLightDark
 @Composable
 internal fun DashboardHeaderPreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { DashboardHeaderSample() } }
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { DashboardHeaderSample() } }
 }

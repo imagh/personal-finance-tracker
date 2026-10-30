@@ -50,7 +50,7 @@ class TokenSheetScreenshotTest {
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 PftTheme(ThemePrefs(dynamicColor = false)) {
                     // Only the page's own bounds are captured, so the PNG is as tall as its content.
-                    Surface(Modifier.testTag(PAGE_TAG)) { TokenSheetPageFrame(page) }
+                    Surface(Modifier.testTag(PAGE_TAG), color = PftTheme.surfaces.canvas) { TokenSheetPageFrame(page) }
                 }
             }
         }

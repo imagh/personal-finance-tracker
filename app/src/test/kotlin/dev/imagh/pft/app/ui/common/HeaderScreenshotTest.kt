@@ -52,7 +52,9 @@ class HeaderScreenshotTest {
 
     private fun captureBar(name: String) {
         compose.setContent {
-            PftTheme(ThemePrefs(dynamicColor = false)) { Surface(Modifier.testTag("bar")) { BottomActionBarSamples() } }
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                Surface(Modifier.testTag("bar"), color = PftTheme.surfaces.canvas) { BottomActionBarSamples() }
+            }
         }
         compose.waitForIdle()
         compose.onNodeWithTag("bar").captureRoboImage("src/test/screenshots/$name.png")

@@ -42,6 +42,20 @@ class PftSurfacesTest {
     }
 
     @Test
+    fun `the default prefs give the TONAL surfaces, with the dark highlight and the hairline edge`() {
+        for (palette in ThemePalette.entries) {
+            for (dark in modes) {
+                val prefs = ThemePrefs.Default.copy(lightPalette = palette, darkPalette = palette)
+                val colors = prefs.paletteFor(dark).colors(dark)
+                val surfaces = pftSurfaces(colors, prefs.background, dark)
+                assertEquals(pftSurfaces(colors, BackgroundStyle.TONAL, dark), surfaces, "$palette dark=$dark")
+                assertEquals(colors.canvas, surfaces.canvas, "$palette dark=$dark canvas")
+                assertNotEquals(Color.Transparent, surfaces.islandEdge, "$palette dark=$dark has an edge")
+            }
+        }
+    }
+
+    @Test
     fun `light TONAL has no highlight`() {
         forEveryPalette { palette, dark, colors ->
             if (!dark) {

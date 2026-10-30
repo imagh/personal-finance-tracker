@@ -51,12 +51,11 @@ data class ThemePrefs(
     val dynamicColor: Boolean = false,
     val lightPalette: ThemePalette = ThemePalette.GRAPHITE,
     val darkPalette: ThemePalette = ThemePalette.GRAPHITE,
-    // FLAT until the surface consumers and the re-recorded goldens land later in DS6c; then TONAL (plan §3.2).
-    val background: BackgroundStyle = BackgroundStyle.FLAT,
+    val background: BackgroundStyle = BackgroundStyle.TONAL,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
 ) {
     companion object {
-        /** System light/dark, dynamic colour off, Graphite in both modes. */
+        /** System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces. */
         val Default = ThemePrefs()
     }
 }

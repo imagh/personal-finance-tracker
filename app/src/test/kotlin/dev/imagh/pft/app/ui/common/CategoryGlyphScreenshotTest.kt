@@ -42,7 +42,9 @@ class CategoryGlyphScreenshotTest {
     ) {
         compose.setContent {
             PftTheme(ThemePrefs(dynamicColor = false)) {
-                Surface(Modifier.testTag("sample")) { Box(Modifier.padding(PftTheme.spacing.gutter)) { sample() } }
+                Surface(Modifier.testTag("sample"), color = PftTheme.surfaces.canvas) {
+                    Box(Modifier.padding(PftTheme.spacing.gutter)) { sample() }
+                }
             }
         }
         compose.waitForIdle()
