@@ -22,7 +22,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Golden screenshots of the token sheet pages (type scale, amount styles, shapes, spacing ruler and
  * the money tokens on surfaces), light and dark at font scales 1.0 and 2.0, on a 393x851dp xxhdpi
- * screen with the committed brand colours (dynamic colour off, so the goldens are deterministic).
+ * screen with the committed Graphite scheme (dynamic colour off, so the goldens are deterministic).
  *
  * `./gradlew check` verifies against `src/test/screenshots` (roborazzi.test.verify=true); after a
  * deliberate visual change run `./gradlew :app:recordRoborazziDebug` and review the PNG diff.

@@ -20,7 +20,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Golden screenshots of `CategoryGlyph` (DS3), light and dark, on a 393x851dp xxhdpi screen with
- * the committed brand colours (dynamic colour off, so they are deterministic): the whole symbol
+ * the committed Graphite scheme (dynamic colour off, so they are deterministic): the whole symbol
  * registry on three palette colours (teal, amber, violet), and the emoji, letter and fallback
  * sources with all 12 hues and three sizes. Fake data only. Emoji use the Robolectric
  * environment's emoji font, so they are a review aid for layout, not for emoji artwork.

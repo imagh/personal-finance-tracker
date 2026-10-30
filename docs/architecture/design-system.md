@@ -30,13 +30,13 @@ Rules, enforced in review (detekt has no type resolution, so it cannot check the
 
 `PftTheme(prefs: ThemePrefs = ThemePrefs.Default) { ... }` in `ui/theme` is the only theme entry
 point. It resolves dark or light from `ThemePrefs.mode`, picks the colour scheme (dynamic Material
-You, or the committed `BrandColors`), applies `MaterialTheme(colorScheme, typography, shapes)` and
+You, opt-in, or the committed Graphite palette, the default), applies `MaterialTheme(colorScheme, typography, shapes)` and
 provides the extended tokens through `staticCompositionLocalOf`. Read them through the `PftTheme`
 object:
 
 | Accessor | Type | Provided how |
 |---|---|---|
-| `MaterialTheme.colorScheme` | M3 `ColorScheme` | dynamic or `BrandColors` |
+| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the `GraphitePalette` scheme by default; dynamic when `ThemePrefs.dynamicColor` is on |
 | `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
@@ -86,8 +86,18 @@ digits; that is accepted.
 
 ### Colour
 
-See `BrandColors` and `MoneyColors` (KDoc) and plan §3.3. `ColorContrastTest` pins every pair at
-WCAG 4.5:1. Never draw money text on `surfaceVariant`:
+The default scheme is **Graphite + platinum** (`GraphitePalette`, owner decision 2026-10-30). It was
+generated offline with material-color-utilities 0.3.0 from custom tonal palettes, with the
+owner-approved mockup values pinned over the generated roles; its KDoc lists the provenance and every
+override. The primary is platinum: light `#3B4350`, dark `#C9CED8`. The accent is for interactive
+chrome only, and sits at least 40 degrees of CIELAB hue from money green and red (`AccentHueTest`).
+Dynamic (Material You) colour is **opt-in** (`ThemePrefs.dynamicColor`, default off); money colours
+are the same either way. Screens never hardcode a colour or a font: `ThemeLiteralScanTest` fails on
+any `Color(...)`, named `Color.*` (except `Transparent` and `Unspecified`), `FontFamily` or `R.font.*`
+outside `ui/theme`. See `MoneyColors` (KDoc) and plan §3.3. `ColorContrastTest` pins every pair at
+WCAG 4.5:1, sweeping greys over light tones 87 to 100 and dark tones 0 to 24, and asserts every
+Graphite surface role lies inside that band. Light `surfaceContainerLowest` is white: never use it as a
+card, sheet or dialog fill. Never draw money text on `surfaceVariant`:
 dark `negative` on it is 4.23:1. `ColorContrastTest` pins two things: the sweep excludes
 `surfaceVariant` on purpose (a test asserts the ratio is still below 4.5, so the exclusion is not
 dropped by accident), and the backgrounds DS5 components draw money on (`groupedSectionColor`, every
@@ -370,7 +380,7 @@ scale, so each page is one golden. Goldens are in `app/src/test/screenshots/`:
 Screenshot rules:
 
 - Native graphics (`@GraphicsMode(NATIVE)`), qualifiers `w393dp-h851dp-xxhdpi`, light and `+night`,
-  font scale 1.0 and 2.0, brand colours (dynamic off) so goldens are deterministic.
+  font scale 1.0 and 2.0, Graphite (dynamic off) so goldens are deterministic.
 - `roborazzi.test.verify=true` in `gradle.properties`: `./gradlew check` verifies against the
   committed goldens on both unit-test variants (debug and release).
 - Record deliberately: `./gradlew :app:recordRoborazziDebug`, then review every changed PNG in the
@@ -438,8 +448,8 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 
 `docs/plans/2026-10-30-m1a-premium-look.md` (owner decisions of 2026-10-30) changes several things on this page. Each DS6 slice updates the sections it touches as it lands; until then, the sections above describe what is built.
 
-- **Colour.** `BrandColors` (ink indigo) is retired. Four curated palettes replace it, with GRAPHITE as the default and light and dark chosen independently. Dynamic colour becomes opt-in. Money colours are unchanged.
+- **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently. Money colours are unchanged.
 - **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas.
 - **Header.** An optional glow, off by default, never under money. Actions are icon-only, through `HeaderIconButton`.
 - **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB.
-- **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this.
+- **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this (built in DS6a).

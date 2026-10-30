@@ -833,3 +833,13 @@ Decisions recorded here that revise earlier owner decisions (for the owner's awa
 - UI-2 (Figtree default).
 - UI-3 / Q10 (`EDITORIAL` option; hero-only stays the default).
 - Q5 (ink indigo retired).
+
+## 13. Deviations from the plan, by slice
+
+**DS6a (Graphite default; dynamic opt-in; `BrandColors` retired)**
+- **Base moved.** The slice was briefed on `ca11f41`; `feat/m1a-foundation` had since moved to `df458d2` (PR #27, A4b SQLCipher), and the branch is cut from that.
+- **Counts.** The plan said "8 files name `BrandColors`" and "30 goldens". The eight code and resource files that named it were `PftTheme`, `ThemePrefs`, both `colors.xml`, `WindowThemeTest`, `ColorContrastTest`, `PftThemeModeTest` and `ThemeResolutionTest`; the rest were `BrandColors.kt` itself, `app/README.md` and the docs. Comments in `MoneyColors` and four screenshot tests said "brand scheme" without the name and were reworded. There are 48 goldens (DS3 to DS5 added most), all re-recorded.
+- **No pinned value needed a tone change.** Every mockup value passed `ColorContrastTest` and `AccentHueTest` as approved. Three values are not mockup tokens but keep the pinned ones coherent, and none changes a hue: `surfaceTint` equals the pinned `primary`; dark `surfaceDim` equals the pinned dark `surface` (tone 5, not the ladder's 6); dark `surfaceContainerLow` is neutral tone 7 (`#151618`, not the ladder's 10) so the dark ladder stays ordered under the pinned `surfaceContainer` (tone 9). They are listed in `GraphitePalette`'s KDoc.
+- **Generation API.** material-color-utilities 0.3.0 can build a scheme from custom palettes: `new DynamicScheme({ ..., primaryPalette, secondaryPalette, tertiaryPalette, neutralPalette, neutralVariantPalette })` with `TonalPalette.fromHueAndChroma`; the `Variant` enum is not exported from the package root, so the tonal-spot variant is passed as its value, 2. The surface roles were then read from the neutral palette at the M3 1.3 ladder (the 0.3.0 `MaterialDynamicColors` surface-container roles were not used).
+- **The scanner found nothing to move.** `ThemeLiteralScanTest` passes on the tree as it stands (DS3 to DS5 added no colour or font literal outside `ui/theme`), so no literal was moved and nothing is allowlisted.
+- **Commit shape.** The palette switch and the 48 re-recorded goldens are one commit, because `check` verifies goldens and they cannot be green apart from it. `ThemePrefs.dynamicColor = false` is its own commit, because every screenshot test already passed `dynamicColor = false`.

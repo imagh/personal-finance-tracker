@@ -21,7 +21,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Golden screenshots of the scaffold's two header styles, expanded and collapsed, and of the
- * bottom action bar, in light and dark, on a 393x851dp xxhdpi screen with the committed brand
+ * bottom action bar, in light and dark, on a 393x851dp xxhdpi screen with the committed Graphite
  * colours (dynamic colour off, so the goldens are deterministic). The samples are the same
  * composables the previews and the debug catalogue show; fake data only.
  *

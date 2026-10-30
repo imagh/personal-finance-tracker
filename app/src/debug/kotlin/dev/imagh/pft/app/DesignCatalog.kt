@@ -46,8 +46,8 @@ import dev.imagh.pft.app.ui.theme.TokenSheet
  * emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
  *
- * Each toggle row is a set of single-choice chips. Dynamic colour is on, as in the real app, so
- * the accent follows the wallpaper while the money colours stay fixed.
+ * Each toggle row is a set of single-choice chips. The catalogue renders the default scheme,
+ * Graphite (dynamic colour is off, as in the real app's default), and the money colours stay fixed.
  */
 @Composable
 internal fun DesignCatalog() {

@@ -88,7 +88,7 @@ own rules (the reuse-by-layer table is in `docs/architecture/code-structure.md`)
 ## UI layer
 
 All UI is Compose in `:app` and is wrapped in `PftTheme` (`ui/theme`): light/dark resolution,
-dynamic or brand colour, and fixed money colours, provided through Compose CompositionLocals (no
+opt-in dynamic colour or the default Graphite scheme, and fixed money colours, provided through Compose CompositionLocals (no
 new interfaces). Shared components live in `ui/common`. The design system (tokens, one-hand
 layout, motion, icons) is specified in `docs/plans/2026-10-29-m1a-design-system.md`; what is built
 is documented in `docs/architecture/design-system.md`. Slice DS1 delivered the colour tokens,
