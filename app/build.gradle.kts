@@ -96,6 +96,8 @@ dependencies {
     // Business logic and the repository interfaces this module implements (CLAUDE.md §3.1).
     implementation(project(":core:ledger"))
     implementation(libs.room.runtime)
+    // Encrypts pft.db (SEC-1); loaded by DatabaseFactory, keyed by DbKeyManager.
+    implementation(libs.sqlcipher.android)
     ksp(libs.room.compiler)
 
     testImplementation(platform(libs.junit.bom))

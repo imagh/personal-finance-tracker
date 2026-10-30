@@ -7,6 +7,8 @@ agp = "8.7.3"
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
 room = "2.7.1"
+# SQLCipher for Android (A4b); bundles its own SQLite. Pairing with Room 2.7.1 is proven by the instrumented EncryptedDatabaseTest.
+sqlcipher = "4.7.2"
 composeBom = "2024.10.01"
 activityCompose = "1.9.3"
 junitBom = "5.11.3"
@@ -42,10 +44,11 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
-# Persistence (plan §3.3). Room is plaintext until A4b adds SQLCipher. Its compiler runs through KSP.
+# Persistence (plan §3.3). Room runs over SQLCipher (A4b). Its compiler runs through KSP.
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 
 # Tests.
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junitBom" }
