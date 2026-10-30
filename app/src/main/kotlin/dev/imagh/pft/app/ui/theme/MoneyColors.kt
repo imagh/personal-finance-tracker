@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * The colours that carry financial meaning. They are fixed tokens: the same in the dynamic and
- * the brand scheme, and **never derived from the accent**, so a wallpaper that happens to be
+ * the Graphite scheme, and **never derived from the accent**, so a wallpaper that happens to be
  * green or red cannot make chrome look like income or expense (UI-5, UI-8).
  *
  * Colour is never the only cue (WCAG 1.4.1): the light [positive] and [negative] are nearly equal

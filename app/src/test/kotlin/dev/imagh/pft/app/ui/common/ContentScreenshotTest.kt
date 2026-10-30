@@ -24,7 +24,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Golden screenshots of the DS5 content primitives (`MoneyText`, `StatusChip`, `GroupedSection`,
  * `EmptyState`) in light and dark, and `MoneyText` also at font scale 2.0, on a 393x851dp xxhdpi
- * screen with the committed brand colours (dynamic colour off, so the goldens are deterministic).
+ * screen with the committed Graphite scheme (dynamic colour off, so the goldens are deterministic).
  * Each shows the same `*Samples` composable as the preview and the debug catalogue, captured by
  * the bounds of the sample, on `surface`. Fake data only.
  *

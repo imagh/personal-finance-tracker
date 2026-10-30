@@ -42,28 +42,30 @@ class ThemeResolutionTest {
     }
 
     @Test
-    fun `dynamic off resolves to the brand schemes`() {
+    fun `dynamic off resolves the Graphite scheme in each mode`() {
         val light = resolveColorScheme(dark = false, dynamic = false, context = context)
         val dark = resolveColorScheme(dark = true, dynamic = false, context = context)
-        assertEquals(BrandColors.light.roles(), light.roles())
-        assertEquals(BrandColors.dark.roles(), dark.roles())
+        assertEquals(GraphitePalette.light.scheme.roles(), light.roles())
+        assertEquals(GraphitePalette.dark.scheme.roles(), dark.roles())
     }
 
     @Test
-    fun `the dynamic scheme is distinguishable from the brand scheme`() {
-        // Guards the tests above: if Robolectric's system palette equalled the brand palette they
-        // could not tell the two branches apart.
+    fun `the dynamic scheme is distinguishable from the Graphite scheme`() {
+        // Guards the tests above: if Robolectric's system palette equalled Graphite they could not
+        // tell the two branches apart.
         assertNotEquals(
-            BrandColors.light.primary,
+            GraphitePalette.light.scheme.primary,
             resolveColorScheme(dark = false, dynamic = true, context = context).primary,
         )
     }
 
     @Test
-    fun `brand fallback is the owner-approved ink indigo`() {
-        // Seed #4A55B8 (plan §12 Q5); tone 40 of its tonal-spot palette is the light primary.
-        assertEquals(Color(0xFF4954B7), BrandColors.light.primary)
-        assertEquals(Color(0xFFBDC2FF), BrandColors.dark.primary)
+    fun `Graphite primary is the owner-approved platinum`() {
+        // The mockup's `primary` for Graphite (plan §3.1), pinned over the generated role.
+        assertEquals(Color(0xFF3B4350), GraphitePalette.light.scheme.primary)
+        assertEquals(Color(0xFFC9CED8), GraphitePalette.dark.scheme.primary)
+        assertEquals(Color(0xFF3B4350), resolveColorScheme(dark = false, dynamic = false, context = context).primary)
+        assertEquals(Color(0xFFC9CED8), resolveColorScheme(dark = true, dynamic = false, context = context).primary)
     }
 
     @Test

@@ -17,9 +17,9 @@ import androidx.compose.ui.text.font.FontFamily
 /**
  * Picks the colour scheme for the resolved theme.
  *
- * With [dynamic] on, the scheme comes from the system's Material You palette. That needs API 31
- * and the app's minSdk is 33, so there is no version fallback. With it off, the committed
- * [BrandColors] are used.
+ * With [dynamic] on (opt-in), the scheme comes from the system's Material You palette. That needs
+ * API 31 and the app's minSdk is 33, so there is no version fallback. With it off, the committed
+ * [GraphitePalette] is the scheme.
  *
  * @param dark the already-resolved dark/light decision (see [ThemeMode]).
  */
@@ -31,8 +31,8 @@ fun resolveColorScheme(
     when {
         dynamic && dark -> dynamicDarkColorScheme(context)
         dynamic -> dynamicLightColorScheme(context)
-        dark -> BrandColors.dark
-        else -> BrandColors.light
+        dark -> GraphitePalette.dark.scheme
+        else -> GraphitePalette.light.scheme
     }
 
 /**

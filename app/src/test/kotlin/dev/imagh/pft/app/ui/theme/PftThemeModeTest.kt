@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 
 /**
  * [ThemeMode] against the system's night configuration (UI-4). Dynamic colour is off throughout
- * so the expected values are the committed brand schemes.
+ * so the expected values are the committed Graphite schemes.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -31,30 +31,30 @@ class PftThemeModeTest {
         return surface
     }
 
-    private val brandOnly = ThemePrefs(dynamicColor = false)
+    private val graphiteOnly = ThemePrefs(dynamicColor = false)
 
     @Test
     @Config(qualifiers = "+night")
     fun `SYSTEM follows a dark system`() {
-        assertEquals(BrandColors.dark.surface, surfaceUnder(brandOnly.copy(mode = ThemeMode.SYSTEM)))
+        assertEquals(GraphitePalette.dark.scheme.surface, surfaceUnder(graphiteOnly.copy(mode = ThemeMode.SYSTEM)))
     }
 
     @Test
     @Config(qualifiers = "+night")
     fun `LIGHT overrides a dark system`() {
-        assertEquals(BrandColors.light.surface, surfaceUnder(brandOnly.copy(mode = ThemeMode.LIGHT)))
+        assertEquals(GraphitePalette.light.scheme.surface, surfaceUnder(graphiteOnly.copy(mode = ThemeMode.LIGHT)))
     }
 
     @Test
     @Config(qualifiers = "+notnight")
     fun `SYSTEM follows a light system`() {
-        assertEquals(BrandColors.light.surface, surfaceUnder(brandOnly.copy(mode = ThemeMode.SYSTEM)))
+        assertEquals(GraphitePalette.light.scheme.surface, surfaceUnder(graphiteOnly.copy(mode = ThemeMode.SYSTEM)))
     }
 
     @Test
     @Config(qualifiers = "+notnight")
     fun `DARK overrides a light system`() {
-        assertEquals(BrandColors.dark.surface, surfaceUnder(brandOnly.copy(mode = ThemeMode.DARK)))
+        assertEquals(GraphitePalette.dark.scheme.surface, surfaceUnder(graphiteOnly.copy(mode = ThemeMode.DARK)))
     }
 
     @Test
@@ -66,15 +66,15 @@ class PftThemeModeTest {
     @Test
     @Config(qualifiers = "+notnight")
     fun `changing the mode recomposes the theme`() {
-        var prefs by mutableStateOf(brandOnly.copy(mode = ThemeMode.LIGHT))
+        var prefs by mutableStateOf(graphiteOnly.copy(mode = ThemeMode.LIGHT))
         var surface = Color.Unspecified
         compose.setContent { PftTheme(prefs) { surface = MaterialTheme.colorScheme.surface } }
         compose.waitForIdle()
-        assertEquals(BrandColors.light.surface, surface)
+        assertEquals(GraphitePalette.light.scheme.surface, surface)
 
         prefs = prefs.copy(mode = ThemeMode.DARK)
         compose.waitForIdle()
-        assertEquals(BrandColors.dark.surface, surface)
+        assertEquals(GraphitePalette.dark.scheme.surface, surface)
     }
 
     @Test

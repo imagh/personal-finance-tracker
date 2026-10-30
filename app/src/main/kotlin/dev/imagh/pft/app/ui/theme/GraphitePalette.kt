@@ -21,7 +21,7 @@ internal data class PaletteColors(
 
 /**
  * Graphite + platinum: the default colour scheme (owner decision 2026-10-30; supersedes the ink
- * indigo `BrandColors` of DS1). Used whenever dynamic colour is off, and always in screenshot
+ * indigo brand scheme of DS1, since deleted). Used whenever dynamic colour is off, and always in screenshot
  * tests, so goldens are deterministic.
  *
  * **Provenance.** Generated once, offline, on 2026-10-30 with `@material/material-color-utilities`
