@@ -1,15 +1,22 @@
 package dev.imagh.pft.app.ui.common
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.TextUnit
 import dev.imagh.pft.R
+import dev.imagh.pft.app.ui.theme.HeroSizeSteps
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.money.Paise
 import dev.imagh.pft.money.PaiseFormat
@@ -69,21 +76,66 @@ fun MoneyText(
     val text = moneySign(semantic, amount) + figure
     val description = "${directionLabel(semantic, amount)}, $figure"
     val color = toneColor(moneyTone(semantic, amount, inRow = size == MoneySize.Row))
-    Text(
-        text,
-        modifier.semantics { contentDescription = description },
-        color = color,
-        style = style(size),
-    )
+    if (size == MoneySize.Hero) {
+        HeroText(text, description, color, modifier)
+    } else {
+        Text(
+            text,
+            modifier.semantics { contentDescription = description },
+            color = color,
+            style = if (size == MoneySize.Large) PftTheme.type.amountLarge else PftTheme.type.amountRow,
+        )
+    }
 }
 
+/**
+ * The hero figure, set on one line at the largest of [HeroSizeSteps] (48sp down to 12sp) that fits
+ * the width it is given, so a long amount shrinks instead of wrapping or clipping. If it is
+ * measured with an unbounded width it takes the first (largest) step. If even the smallest step
+ * does not fit (an extreme amount at 200% font scale on a very narrow window) it wraps there
+ * instead: a money figure is never cut off, because a truncated amount would misreport the money.
+ */
 @Composable
-private fun style(size: MoneySize): TextStyle =
-    when (size) {
-        MoneySize.Hero -> PftTheme.type.amountHero
-        MoneySize.Large -> PftTheme.type.amountLarge
-        MoneySize.Row -> PftTheme.type.amountRow
+private fun HeroText(
+    text: String,
+    description: String,
+    color: Color,
+    modifier: Modifier,
+) {
+    val measurer = rememberTextMeasurer()
+    val base = PftTheme.type.amountHero
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier.semantics(mergeDescendants = true) { contentDescription = description }) {
+        val available = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
+        val fit = remember(text, available, base, density) { fitHero(measurer, text, base, available) }
+        Text(text, color = color, style = fit.style, maxLines = if (fit.fits) 1 else Int.MAX_VALUE)
     }
+}
+
+/** The hero style chosen for a width, and whether [style] really fits it on one line. */
+private class HeroFit(
+    val style: TextStyle,
+    val fits: Boolean,
+)
+
+/** [base] at the largest step whose single-line [text] is at most [maxWidthPx] wide, else the smallest step. */
+private fun fitHero(
+    measurer: TextMeasurer,
+    text: String,
+    base: TextStyle,
+    maxWidthPx: Int,
+): HeroFit {
+    val candidates = HeroSizeSteps.map { base.atSize(it) }
+    val fitting =
+        candidates.firstOrNull {
+            measurer.measure(text, it, softWrap = false, maxLines = 1).size.width <= maxWidthPx
+        }
+    return HeroFit(fitting ?: candidates.last(), fits = fitting != null)
+}
+
+/** The style at [size], with the line height scaled in proportion (the letter spacing is in em and scales itself). */
+private fun TextStyle.atSize(size: TextUnit): TextStyle =
+    copy(fontSize = size, lineHeight = lineHeight * (size.value / fontSize.value))
 
 /** The colour of [tone]: a `PftTheme.money` token, or `onSurface` for neutral. Never derived from the accent. */
 @Composable

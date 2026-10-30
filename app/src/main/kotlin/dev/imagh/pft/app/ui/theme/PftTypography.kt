@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import dev.imagh.pft.R
@@ -42,6 +43,18 @@ data class PftTypography(
 private val HeroFontSize = 48.sp
 private const val HERO_LINE_HEIGHT_RATIO = 1.25f
 private val HeroLetterSpacing = 0.01.em
+
+/**
+ * The sizes the hero amount steps down through to fit its width: 48, 40, 34, 28sp (design plan
+ * §3.3), then 24, 20, 16 and 12sp. `MoneyText` picks the largest that fits; the first is
+ * [amountHero]'s own size. The plan stopped at 28sp, but its example amount (Rs 1e10) is one digit
+ * group shorter than the real limit (Rs 1e11, `Paise.MAX_AMOUNT`): at 200% font scale that amount
+ * needs 16sp on a 393dp window and 12sp on a 320dp one (the sp-to-dp scaling is non-linear, so
+ * 12sp is still about 24dp tall there). The optical size stays at the 48sp display cut for every
+ * step (DS2 deviations) and the line height scales with the size.
+ */
+internal val HeroSizeSteps: List<TextUnit> =
+    listOf(HeroFontSize, 40.sp, 34.sp, 28.sp, 24.sp, 20.sp, 16.sp, 12.sp)
 
 // opsz is Newsreader's optical-size axis (6 to 72). The hero is a display size, so use the display cut.
 private val HeroOpticalSize = HeroFontSize
