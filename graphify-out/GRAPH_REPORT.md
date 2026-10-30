@@ -1,7 +1,7 @@
 # Graph Report - personal-finance-tracker  (2026-10-30)
 
 ## Corpus Check
-- 231 files · ~162,099 words
+- 231 files · ~162,196 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 122 file(s) not represented in the graph (top: .xml 102, .lockfile 8, (none) 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7c419c2e`
+- Built from commit: `4b6f1304`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -478,15 +478,15 @@ Nodes (4): `:core:ledger` — the ledger foundations, Data it owns, Dependencies
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `How to run and test` connect `How to run and test` to `ManifestHardeningTest`, `MoneyTextTest`, `ColorContrastTest`, `NavTransitionTest.kt`, `PftSymbol`, `CollapsingHeaderScaffoldTest`, `Previews, the token sheet and screenshot goldens`, `TokenSheetScreenshotTest.kt`, `BottomActionBarTest.kt`, `DbKeyManagerJvmTest`, `PftTypographyTest`, `UserId`, `PftShapesTest.kt`, `6.1 Design-system slice: PRs into `feat/m1a-foundation``, `PftMotion.kt`, `CategoryGlyphScreenshotTest`, `DesignCatalogTest.kt`, `RoomAuditColumnsTest`, `EntityMeta`, `MainActivity`, `DbKeyManagerTest`, `MoneyText`, `AuditEntryMapperTest.kt`, `PftSymbolTest`, `PftSpacingTest`, `SampleThing.kt`, `3.4 Reuse by layer (owner decision, 2026-10-28)`, `PftThemeModeTest`, `ThemePrefs`, `AuditTriggersTest`, `expandedHeaderHeight`, `MigrationTestSupport`, `PreMigrationBackupTest`, `SampleId`, `ContentScreenshotTest`, `GroupedSectionTest.kt`, `StatusChipTest.kt`, `PressScaleTest.kt`, `Paise`, `DatabaseStartupTest.kt`, `DbKeyManagerWiringTest.kt`, `CategoryPaletteTest`, `BundledSymbolsLicenceTest`, `BundledFontTest`, `.format`, `KeyUnavailableScreenTest.kt`, `MainActivityStartupTest.kt`, `PftDatabase`?**
-  _High betweenness centrality (0.285) - this node is a cross-community bridge._
+  _High betweenness centrality (0.289) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `PftSymbol` (e.g. with `How to run and test` and ``ui/common` (shared components, DS3, DS4 and DS5)`) actually correct?**
   _`PftSymbol` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `TOKENS`, `MOTION`, `BOTTOM_BAR` to the rest of the system?**
   _184 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `redact.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1476923076923077 - nodes in this community are weakly interconnected._
-- **Why does `6.1 Design-system slice: PRs into `feat/m1a-foundation`` connect `6.1 Design-system slice: PRs into `feat/m1a-foundation`` to `ManifestHardeningTest`, `MoneyTextTest.kt`, `MoneyTextTest`, `ColorContrastTest`, `MoneyTone`, `PftSymbol`, `CollapsingHeaderScaffoldTest`, `TokenSheetScreenshotTest.kt`, `BottomActionBarTest.kt`, `PftTypographyTest`, `PftShapesTest.kt`, `PftMotion.kt`, `CategoryGlyphScreenshotTest`, `PftTypography.kt`, `HostedComposeRule`, `DesignCatalogTest.kt`, `BottomActionBar`, `MainActivity`, `MoneyText`, `PftSymbolTest`, `PftSpacingTest`, `GroupedSection.kt`, `3.4 Reuse by layer (owner decision, 2026-10-28)`, `PftThemeModeTest`, `DesignCatalog.kt`, `ThemePrefs`, `ContentScreenshotTest`, `GroupedSectionTest.kt`, `StatusChipTest.kt`, `PressScaleTest.kt`, `Paise`, `CollapsingHeaderScaffold`, `CategoryPaletteTest`, `BundledSymbolsLicenceTest`, `BundledFontTest`, `PftTheme.kt`, `.format`, `MoneyColors`?**
-  _High betweenness centrality (0.109) - this node is a cross-community bridge._
+- **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Collecting and Redacting Sample Messages Guide`, ``:core:ledger` — the ledger foundations`, `Automatic capture from SMS (S-1..S-13)`, ``build-logic` — convention plugins`, `.format`, `CLAUDE.md Development Constitution`, `Layered Modular Architecture (core vs app)`, `Personal Finance Tracker PRD`?**
+  _High betweenness centrality (0.102) - this node is a cross-community bridge._
 - **Are the 14 inferred relationships involving `Paise` (e.g. with ``ui/common` (shared components, DS3, DS4 and DS5)` and `Behaviours worth knowing`) actually correct?**
   _`Paise` has 14 INFERRED edges - model-reasoned connections that need verification._
 - **Should `docs/TECHNICAL.md` be split into smaller, more focused modules?**
