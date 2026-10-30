@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The colour of the window before Compose draws the first frame. Must equal GraphitePalette.light.scheme.surface
-         (Graphite, the default scheme); WindowThemeTest fails if the two drift. DS6c moves it to Graphite's canvas. -->
-    <color name="pft_window_background">#F3F4F5</color>
+    <!-- The colour of the window before Compose draws the first frame. Must equal GraphitePalette.light.canvas
+         (Graphite, the default palette; the default background is tonal); WindowThemeTest fails if the two drift.
+         SyncWindowBackground makes it exact once Compose runs, and WindowFlashToneTest bounds every other palette. -->
+    <color name="pft_window_background">#E4E6E9</color>
 </resources>

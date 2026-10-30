@@ -2,10 +2,14 @@ package dev.imagh.pft.app
 
 import android.app.Activity
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.os.Looper
 import android.view.WindowManager
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 import dev.imagh.pft.app.ui.theme.GraphitePalette
+import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.app.ui.theme.pftSurfaces
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,10 +17,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The window theme (`values` / `values-night`) matches the default (Graphite) surface, so a dark launch never
+ * The window theme (`values` / `values-night`) matches the default (Graphite) canvas, so a dark launch never
  * flashes a light window before Compose draws, and the activity is edge-to-edge (UI-4, SEC-2).
  *
  * Under Robolectric the only observable trace of `enableEdgeToEdge()` is the bar icon appearance
@@ -41,9 +46,9 @@ class WindowThemeTest {
 
     @Test
     @Config(qualifiers = "+night")
-    fun `dark system paints the dark surface behind the first frame`() {
+    fun `dark system paints the dark canvas behind the first frame`() {
         assertEquals(
-            GraphitePalette.dark.scheme.surface
+            GraphitePalette.dark.canvas
                 .toArgb(),
             launch().windowBackgroundColor(),
         )
@@ -51,9 +56,9 @@ class WindowThemeTest {
 
     @Test
     @Config(qualifiers = "+notnight")
-    fun `light system paints the light surface behind the first frame`() {
+    fun `light system paints the light canvas behind the first frame`() {
         assertEquals(
-            GraphitePalette.light.scheme.surface
+            GraphitePalette.light.canvas
                 .toArgb(),
             launch().windowBackgroundColor(),
         )
@@ -90,5 +95,17 @@ class WindowThemeTest {
     fun `FLAG_SECURE is still set`() {
         val flags = launch().window.attributes.flags
         assertTrue("FLAG_SECURE must survive the theme work", flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
+    }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun `MainActivity syncs its window to the canvas once Compose has drawn`() {
+        val activity = launch()
+        shadowOf(Looper.getMainLooper()).idle()
+        val background = activity.window.decorView.background
+        assertTrue("window background is $background", background is ColorDrawable)
+        // The default prefs: Graphite, in whichever background style is the default.
+        val canvas = pftSurfaces(GraphitePalette.light, ThemePrefs.Default.background, dark = false).canvas
+        assertEquals(canvas.toArgb(), (background as ColorDrawable).color)
     }
 }
