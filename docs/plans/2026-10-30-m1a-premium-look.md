@@ -436,7 +436,7 @@ DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans a
     val headerGlow: Boolean = false,                          // DS6d
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF, // existing
     val typePairing: TypePairing = TypePairing.HERO_ONLY,     // DS6g
-    val sansFont: SansFont = SansFont.FIGTREE,                // DS6h (DS6i adds three entries)
+    val sansFont: SansFont = SansFont.FIGTREE,                // DS6h (DS6i adds one entry: PLUS_JAKARTA_SANS)
 )
 ```
 
@@ -658,7 +658,7 @@ DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans a
   - Re-record every golden (all the text changes).
 - **Refactor:** `design-system.md` third-party table. `README.md`.
 - **Pick-ups from DS6f (apply in DS6h and DS6i):**
-  - **Weights are set explicitly.** Figtree's `wght` axis runs 300-900 with a **default of 300**, so declare one `Font(R.font.figtree, FontWeight(w), variationSettings = FontVariation.Settings(FontWeight(w)))` for each of 400, 500 and 600 (proven on the device). That is the form verified on the device. Roles asking for a weight that is not declared (for example bold) fall to the nearest declared one, so declare any weight a role uses.
+  - **Weights are set explicitly.** Figtree's `wght` axis runs 300-900 with a **default of 300**, so declare one `Font(R.font.figtree, FontWeight(w), variationSettings = FontVariation.Settings(FontWeight(w)))` for each of 400, 500 and 600; that is the form verified on the device. Roles asking for a weight that is not declared (for example bold) fall to the nearest declared one, so declare any weight a role uses.
   - **Digits are proportional by default** in Figtree and Plus Jakarta Sans; only `tnum` makes them equal (620/1000 and 600/1000). `TabularFiguresTest` must apply `tnum` through the amount styles, and plain body text in these fonts keeps proportional digits by design. Neither font has `lnum`, so the `lnum` in `"tnum, lnum"` is a harmless no-op, as with Newsreader.
   - **Reference every font directly as `R.font.<name>`** so release resource shrinking keeps it (§3.7 R8 gotcha), and check the `res/*.ttf` entries in the release APK (§11 step 4).
   - **Pin from the DS6f table:** file name, bytes, sha256, the google/fonts commit, and the upstream `OFL.txt` hash. The shipped OFL text may differ from upstream only by trailing whitespace and a final newline (as for Newsreader).
@@ -667,7 +667,7 @@ DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans a
   - **Budget:** the kept set is 690,664 B of 3,145,728 B; `FontBudgetTest` pins the sum of `R.font.*` file sizes.
   - **Baseline:** the release APK before fonts is 21,241,278 B; expect about +114 KB after Figtree and Plus Jakarta Sans.
 
-**DS6i: the other three sans fonts**
+**DS6i: Plus Jakarta Sans**
 - **Red:** the same `BundledFontTest`, `TabularFiguresTest` and `FontBudgetTest` cases, now over `PLUS_JAKARTA_SANS` (the only sans left; DS6f dropped `GOOGLE_SANS_FLEX` and `DM_SANS`). `PftTypographyTest` checks that each entry maps to its family.
 - **Green:**
   - `plus_jakarta_sans.ttf` (176,288 B), its OFL text and the enum entry. Nothing else: the other two candidates were dropped by DS6f.
@@ -856,7 +856,8 @@ No mocks; the platform shadows are the only fakes.
 
 ## 12. Open questions
 
-**None open.** The one decision that was open (hero weight) was taken at the DS6f review.
+**No blocking question.** The one decision that was open (hero weight) was taken at the DS6f review. One minor owner item is open and not decided here:
+- **Fold DS6i into DS6h?** DS6f left DS6i with a single font (Plus Jakarta Sans, 176,288 B). The owner may bundle it in DS6h or keep it as its own small PR (§6.2).
 
 **Decided (owner, 2026-10-30, DS6f device check):**
 1. **Hero weight: 400** (owner, verbatim: "400"). The mockup's 350 is not adopted.
@@ -865,7 +866,7 @@ No mocks; the platform shadows are the only fakes.
 4. **Google Sans Flex: dropped "for now"** (owner, verbatim: "drop for now"). Revisitable later as a new `SansFont` value; the wght-only instance is not shipped.
 
 **Decided (owner, 2026-10-30, second round):**
-- **Font size budget:** at most 3 MiB for all of `res/font`, with a path-scoped exception to the 500 KB hook for `app/src/main/res/font/` (§3.7).
+- **Font size budget:** at most 3 MiB for all of `res/font`, with a path-scoped exception to the 500 KB hook for `app/src/main/res/font/` as a **fallback only**: DS6f measured that the kept fonts need no exception (§3.7).
 - **All serif:** deferred. `TypePairing` is `{ HERO_ONLY, EDITORIAL }`; all serif can return later as a third value without a migration (§3.6).
 - **Scope:** app-wide, through the theme and the shared components (§3.9).
 
