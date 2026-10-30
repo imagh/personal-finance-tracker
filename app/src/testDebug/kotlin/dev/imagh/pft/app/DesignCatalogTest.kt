@@ -115,4 +115,12 @@ class DesignCatalogTest {
         compose.onNodeWithText("Cancel").assertIsDisplayed()
         compose.onNodeWithText("Continue").assertIsNotEnabled()
     }
+
+    @Test
+    fun `the Chips section shows a chip for each tone`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Chips").performClick()
+        compose.onNodeWithText("Chips").assertIsSelected()
+        listOf("Unverified", "Overdue", "Under", "Paused").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+    }
 }
