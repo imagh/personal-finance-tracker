@@ -149,6 +149,9 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * expanded area and there is no lower band. The top row holds only the secondary [actions]. On
  * collapse the title cross-fades and scales into the bar's title and the lower band fades out.
  *
+ * **Background.** The header and the list background are `PftTheme.surfaces.canvas` (tonal, or the
+ * flat `surface`); cards on it are [GroupedSection] islands.
+ *
  * **Insets.** Edge-to-edge with `WindowInsets.safeDrawing`; the [bottomBar] is `imePadding()`-aware
  * so a Save button rides above the keyboard, and without a bar the list and the FAB are padded by
  * the bottom inset. Nothing waits for an animation to end.
@@ -229,7 +232,7 @@ fun CollapsingHeaderScaffold(
         // nothing, so with no bar it must emit nothing (not an empty wrapper).
         bottomBar = { if (bottomBar != null) Box(Modifier.imePadding()) { bottomBar() } },
         floatingActionButton = floatingActionButton,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = PftTheme.surfaces.canvas,
         contentWindowInsets = WindowInsets.safeDrawing,
     ) { padding ->
         LazyColumn(
@@ -323,9 +326,8 @@ private fun CollapsingHeader(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                ).then(swipe)
+                .background(PftTheme.surfaces.canvas)
+                .then(swipe)
                 .testTag(HeaderTags.HEADER),
         measurePolicy = policy,
     )

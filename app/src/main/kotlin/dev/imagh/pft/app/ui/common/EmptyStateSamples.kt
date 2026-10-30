@@ -50,5 +50,5 @@ private fun GlyphPlaceholder() {
 @PreviewLightDark
 @Composable
 internal fun EmptyStatePreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { EmptyStateSamples() } }
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { EmptyStateSamples() } }
 }

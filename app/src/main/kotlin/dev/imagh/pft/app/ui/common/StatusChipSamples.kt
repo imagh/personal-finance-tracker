@@ -35,5 +35,5 @@ internal fun StatusChipSamples() {
 @PreviewLightDark
 @Composable
 internal fun StatusChipPreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { StatusChipSamples() } }
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { StatusChipSamples() } }
 }

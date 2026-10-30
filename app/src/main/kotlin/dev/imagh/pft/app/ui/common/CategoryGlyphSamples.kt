@@ -93,7 +93,7 @@ private fun SampleRow(
 @Composable
 internal fun CategoryGlyphPreview() {
     PftTheme(ThemePrefs(dynamicColor = false)) {
-        Surface {
+        Surface(color = PftTheme.surfaces.canvas) {
             Column(verticalArrangement = Arrangement.spacedBy(PftTheme.spacing.xl)) {
                 CategoryGlyphSamples()
                 CategoryGlyphSymbolSamples("teal")

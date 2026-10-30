@@ -17,7 +17,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, ThemePalette (+ colors(dark)), GraphitePalette (+ PaletteColors), MidnightPalette,
                                          # IvoryPalette, AuberginePalette (DS6b: one generated, pinned object per palette), PaletteSamples
-                                         # (the four-palette swatch page), MoneyColors, PftTypography, PftShapes,
+                                         # (the four-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces
+                                         # and LocalPftSurfaces, DS6c), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography, PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
                                          # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), HeaderIconButton (the only control
@@ -93,6 +94,8 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/theme`) | `PftTheme`, `ThemePrefs`/`ThemeMode`, `MoneyColors` (colour tokens, CompositionLocals) | every screen | DS1 |
 | app UI (`ui/theme`) | `GraphitePalette` / `PaletteColors` (the default scheme; replaces the deleted `BrandColors`) | `resolveColorScheme` | DS6a |
 | app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette` (the other three curated palettes; the names are persisted by AP1) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, the debug catalogue toggles | DS6b |
+| app UI (`ui/theme`) | `PftSurfaces` / `BackgroundStyle` / `pftSurfaces` / `LocalPftSurfaces` (tonal or flat canvas, island, edge, highlight; `PaletteColors.canvas` and `island`; `dynamicPaletteColors`) | `CollapsingHeaderScaffold`, `BottomActionBar`, `GroupedSection`, `MainActivity`, the debug catalogue toggle | DS6c |
+| app UI (`ui/theme`) | `WindowBackground` (`SyncWindowBackground(window)`, with `pft_window_background` in `res/values{,-night}`) | `MainActivity` | DS6c |
 | app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont` | every screen | DS2 |
 | core (`:core:ledger`) | `EntityMeta<Id>` + `LedgerEntity<Id, Self>` (id, timestamps, user/device attribution, tombstone and archive state), composed into every model | every entity (account, category, tag, transaction, budget, recurring rule, loan, goal) | A3 |
 | core | `Auditable` (`auditFields()`) + `AuditDiff` (generic field diff, no reflection) + `AuditEntry`/`AuditLog` | about 10 models, identity, settings | A3 |

@@ -56,6 +56,9 @@ as they land (`data/common`, `ui/common`).
 |---|---|
 | `PftTheme(prefs: ThemePrefs = ThemePrefs.Default) { ... }` | Wraps the UI. Resolves dark/light from `prefs.mode`, picks the colour scheme, applies `MaterialTheme` and provides the extended tokens |
 | `PftTheme.money` | `MoneyColors` for the current theme (read inside `PftTheme`) |
+| `PftTheme.surfaces` | `PftSurfaces(canvas, island, islandEdge, islandHighlight)` (DS6c): the screen/header/bottom-bar background, the card fill, its 1 px edge and the dark top highlight, from the palette, the mode and `ThemePrefs.background`. Screens take their background and card colours from here, never `surface`/`surfaceContainer` directly |
+| `BackgroundStyle { TONAL, FLAT }` | How surfaces are painted. The names are persisted by AP1 (`ui_background`): never rename or remove one. `TONAL` is the default; `FLAT` is the pre-DS6c look |
+| `SyncWindowBackground(window)` | Keeps the window background equal to the live canvas (a `SideEffect`); `MainActivity` calls it once inside `PftTheme` |
 | `PftTheme.type` | `PftTypography`: `amountHero` (48/60, display font, `tnum`+`lnum`), `amountLarge` (32/40, sans), `amountRow` (16/24, sans, `tnum`) |
 | `PftTheme.shapes`, `MaterialTheme.shapes` | `PftShapes.glyph` (category badge, 30% corners); M3 shapes are 6/10/16/24/32dp |
 | `PftTheme.spacing` | `PftSpacing`: `xxs` 2, `xs` 4, `sm` 8, `md` 12, `lg` 16, `gutter` 20, `xl` 24, `xxl` 32, `huge` 48 dp |
@@ -66,7 +69,7 @@ as they land (`data/common`, `ui/common`).
 | `PftSymbol` (`key`, `res`), `PftSymbol.fromKey(key)` | The icon registry: 92 Material Symbols Rounded vector drawables (`res/drawable/sym_<key>.xml`; chrome: `back`, `forward`, `add`, `close`, `check`, `search`, `filter`, `overflow`, `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar`, ...; the rest are category symbols). **Keys are permanent** (persisted in `category.icon_key`): add, never rename or remove; `src/test/resources/pft-symbol-keys.txt` pins them. `fromKey` is exact-match and null for anything unknown. Draw one with `Icon(painterResource(symbol.res), contentDescription = ..., tint = ...)`: the drawable is black. `androidx.compose.material.icons.*` is banned in app code (detekt `ForbiddenImport`). The full list and the how-to are in `docs/architecture/design-system.md` |
 | `PftTheme.palette`, `CategoryPalette[key]`, `categoryPalette(dark)`, `CategoryColors(container, content)` | The 12 named category hues (`rose, coral, amber, olive, emerald, teal, sky, blue, indigo, violet, magenta, slate`), light and dark, for glyph badges only (never money). An unknown or null name gives `slate`. Content is at least 4.5:1 on container |
 | `GlyphSize { Chip 28, Row 40, Hero 56 }` | The badge sides, fixed dp |
-| `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, lightPalette: ThemePalette, darkPalette: ThemePalette, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour **off** (opt-in), `GRAPHITE` for both `lightPalette` and `darkPalette`, bundled serif |
+| `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, lightPalette: ThemePalette, darkPalette: ThemePalette, background: BackgroundStyle, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour **off** (opt-in), `GRAPHITE` for both `lightPalette` and `darkPalette`, `TONAL` background, bundled serif |
 | `ThemePalette { GRAPHITE, MIDNIGHT, IVORY, AUBERGINE }` | The palettes a user can pick, light and dark independently. **The names are persisted by AP1: never rename or remove one, never depend on the order.** `ThemePalette.colors(dark)` (internal) is its `PaletteColors` |
 | `DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }` | Font of the hero number only; the serif is never used for titles (owner decision Q10) |
 | `ThemeMode { SYSTEM, LIGHT, DARK }` | `SYSTEM` follows the system night mode |
@@ -98,7 +101,7 @@ that reason). Colour is never the only cue: every amount carries a sign and ever
 | `MoneySemantic { Income, Expense, Transfer, Balance, Budget(state) }`, `BudgetState { UNDER, AT_THRESHOLD, OVER }`, `MoneySize { Hero, Large, Row }` | What an amount means and which `PftTheme.type.amount*` style it uses. `Row` is the only size where an expense is neutral (Q2); `Balance` is the only semantic that may be negative |
 | `MoneyTone { Neutral, Positive, Negative, Warning }`, `moneyTone(semantic, amount, inRow)` | The pure mapping: income Positive; expense Negative in totals and Neutral in rows (Q2); balance Neutral unless negative (Q3); budget Positive, Warning or Negative by state |
 | `StatusChip(label, tone: MoneyTone, modifier)` | A labelled pill (Unverified, Overdue, Paused, Over, 80%). The label is required (blank is rejected): colour is never the only cue. Colours are the money container tokens, or `surfaceContainerHighest` for Neutral (`chipColors`) |
-| `GroupedSection(modifier) { row(onClick?) { ... } }`, `GroupedSectionDefaults.listItemColors()` | An inset (20dp gutter), rounded (`large`) island of rows on `surfaceContainer`, with a one-pixel divider, inset 16dp from the start, between rows only (N rows, N-1 dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. Give M3 `ListItem`s `listItemColors()` (transparent container) |
+| `GroupedSection(modifier) { row(onClick?) { ... } }`, `GroupedSectionDefaults.listItemColors()` | An inset (20dp gutter), rounded (`large`) island of rows filled with `PftTheme.surfaces.island` (TONAL adds a one-pixel edge, lit along the top in dark mode), with a one-pixel divider, inset 16dp from the start, between rows only (N rows, N-1 dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. Give M3 `ListItem`s `listItemColors()` (transparent container) |
 | `CategoryGlyph(source: GlyphSource, name, colourKey, modifier, size = Row, onClick = null)` | The category/account badge: a soft-square tile in a palette colour holding a symbol, one emoji or a letter. One image node announced as `name` (never the key); fixed dp size; emoji clipped to one line; with `onClick` it is a button (48dp touch target, press scale) |
 | `GlyphSource { Symbol(PftSymbol), Emoji(text), Letter(letter) }` (`Letter` holds one code point as a string, with a `Char` constructor), `GlyphSource.fromIconKey(iconKey, name)`, `GlyphSource.letterFor(name)` | The UI model of `category.icon_key`. `fromIconKey` is the **boundary parser** (untrusted input): `sym:<key>` with key `[a-z0-9_]{1,40}` naming a registered symbol, or `emoji:<value>` of 1 to 16 UTF-16 units, well-formed, no whitespace, control or invisible format characters (ZWJ and tag characters allowed). Anything else (null, no prefix, oversized, malformed, unknown) is `Letter` of the name's first letter or digit by code point (a combining mark or unpaired surrogate never counts, a letter outside the basic plane does), upper-cased (`?` if none); it never throws. `Emoji` itself rejects an invalid value (`IllegalArgumentException`) |
 | `EmptyState(message, modifier, glyph, actionLabel, onAction)` | A centred glyph slot, message and optional tonal-button action; the label and callback must be given together |
@@ -112,8 +115,8 @@ catalogue and `HeaderScreenshotTest`; DS5 adds one file per component (`MoneyTex
 consumers and `ContentScreenshotTest`. Each `*Samples` file is listed in `mustBeRemoved` of
 `verifyReleaseShrink`, so R8 is shown to drop it from the release APK.
 
-Money text never sits on `surfaceVariant`: `GroupedSection` and `StatusChip` use `surfaceContainer`
-steps, and `ColorContrastTest` sweeps both and pins that the sweep still excludes `surfaceVariant`. The test cannot stop
+Money text never sits on `surfaceVariant`: `GroupedSection` uses the island and `StatusChip` a `surfaceContainer`
+step, and `ColorContrastTest` sweeps both (and the canvas and island of every palette) and pins that the sweep still excludes `surfaceVariant`. The test cannot stop
 a future component using it: that is a review rule, and a new money surface should add its colour to the test.
 
 **Icons and emoji (DS3).** All icons come from `PftSymbol`; emoji are drawn by the system emoji font (they can look different
@@ -160,12 +163,14 @@ Design, key file format and the fail-closed table: [`docs/architecture/persisten
 
 ### Window theme
 
-`res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint the Graphite surface
-behind the first frame (`pft_window_background`, which must equal `GraphitePalette.*.scheme.surface`; `WindowThemeTest` fails on drift), keep
+`res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint Graphite's canvas
+behind the first frame (`pft_window_background`, which must equal `GraphitePalette.*.canvas`; `WindowThemeTest` fails on drift), keep
 the system bars transparent and colour the launch splash, so a dark launch does not flash a light
-window. `MainActivity` then calls `enableEdgeToEdge()` (after the `FLAG_SECURE` line). The window
-colour is the Graphite surface even when dynamic colour is on, because the dynamic palette is not
-known before Compose runs; the difference is a few tones of a near-neutral.
+window. `MainActivity` then calls `enableEdgeToEdge()` (after the `FLAG_SECURE` line). The resource
+colour is Graphite's canvas whatever the user picked, because the palette is not known before Compose
+runs; every palette's canvas and flat surface, and the derived dynamic ones, stay within 8 tones of it
+(`WindowFlashToneTest`, `ThemeResolutionTest`), and `SyncWindowBackground` makes the window colour exact
+once Compose is running.
 
 **Known limitation, AP1 must address:** plain `enableEdgeToEdge()`, the window theme
 (`values`/`values-night`) and the splash follow the *system* night mode. Once AP1 lets the user
@@ -205,8 +210,8 @@ criterion, plan A5), so every instant core produces is storable.
 Static, build-time: `applicationId`/`namespace` `dev.imagh.pft` (**permanent**: changing it or the
 release signing key installs as a new app with an empty database; plan §12 Q4), minSdk 33,
 target/compile SDK 35, JDK 17. Pinned versions are in `gradle/libs.versions.toml`.
-Runtime appearance (`ThemePrefs`: mode, dynamic colour, light palette, dark palette, display font) is a plain value that defaults to
-`SYSTEM` + dynamic colour off + Graphite for both light and dark + bundled serif; the settings screen and its `app_setting` storage arrive in AP1, so today
+Runtime appearance (`ThemePrefs`: mode, dynamic colour, light palette, dark palette, background, display font) is a plain value that defaults to
+`SYSTEM` + dynamic colour off + Graphite for both light and dark + tonal background + bundled serif; the settings screen and its `app_setting` storage arrive in AP1, so today
 nothing reads or writes a setting. Colours, like all design tokens, are static code constants, and screens never hardcode them: `ThemeLiteralScanTest` fails on any `Color(...)`, named `Color.*` (except `Transparent` and `Unspecified`), `FontFamily` or `R.font.*` outside `ui/theme`.
 
 ## Dependencies
@@ -278,7 +283,7 @@ on both the debug and release unit-test variants. After an intended visual chang
 and diff images land in `app/build/outputs/roborazzi/`.
 
 Design-token tests: `ColorContrastTest` (JUnit 5, WCAG contrast of every colour pair, for every palette in light and dark), `AccentHueTest` and `ChipColorsTest` (every palette), `ThemePaletteTest` (the pinned mockup values), `ThemePrefsTest`, `PaletteScreenshotTest` (the `palettes-<light|dark>` goldens),
-`ThemeResolutionTest`, `PftThemeModeTest` (needs the `+night` qualifier), `WindowThemeTest`,
+`ThemeResolutionTest`, `PftThemeModeTest` (needs the `+night` qualifier), `WindowThemeTest`, `WindowBackgroundTest`, `WindowFlashToneTest`, `PftSurfacesTest` (DS6c; the surfaces table, the flash bound and the window sync), `GroupedSectionColorsTest`, `BottomActionBarSurfaceTest`,
 `PftTypographyTest`, `PftShapesTest`, `PftSpacingTest`, `BundledFontTest` (font hash and OFL text) and
 `TokenSheetScreenshotTest` (all Robolectric). DS4 adds `PftMotionTest` and `HeaderHeightTest` (JUnit 5, pure),
 `NavTransitionTest`, `PressScaleTest`, `CollapsingHeaderScaffoldTest` (real nested scroll, clock stepped by hand),

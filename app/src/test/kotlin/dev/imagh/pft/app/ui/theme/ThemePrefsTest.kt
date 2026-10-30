@@ -15,6 +15,12 @@ class ThemePrefsTest {
     }
 
     @Test
+    fun `the background defaults to tonal`() {
+        assertEquals(BackgroundStyle.TONAL, ThemePrefs().background)
+        assertEquals(BackgroundStyle.TONAL, ThemePrefs.Default.background)
+    }
+
+    @Test
     fun `the other defaults are system mode and dynamic colour off`() {
         assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
         assertFalse(ThemePrefs.Default.dynamicColor)

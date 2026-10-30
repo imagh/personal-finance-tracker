@@ -33,6 +33,7 @@ import dev.imagh.pft.app.ui.common.GroupedSectionSamples
 import dev.imagh.pft.app.ui.common.MoneyTextSamples
 import dev.imagh.pft.app.ui.common.StandardHeaderSample
 import dev.imagh.pft.app.ui.common.StatusChipSamples
+import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.PaletteSwatches
 import dev.imagh.pft.app.ui.theme.PftTheme
@@ -46,7 +47,7 @@ import dev.imagh.pft.app.ui.theme.displayName
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
  * the one-hand layout components (both header styles and `BottomActionBar`) and the content
  * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
- * light/dark, the light palette, the dark palette, dynamic colour, the hero font and the font
+ * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the hero font and the font
  * scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
  *
@@ -60,6 +61,7 @@ internal fun DesignCatalog() {
     var lightPalette by rememberSaveable { mutableStateOf(ThemePalette.GRAPHITE) }
     var darkPalette by rememberSaveable { mutableStateOf(ThemePalette.GRAPHITE) }
     var dynamicColor by rememberSaveable { mutableStateOf(false) }
+    var background by rememberSaveable { mutableStateOf(ThemePrefs.Default.background) }
     var displayFont by rememberSaveable { mutableStateOf(DisplayFont.BUNDLED_SERIF) }
     var fontScale by rememberSaveable { mutableStateOf(1f) }
     var section by rememberSaveable { mutableStateOf(CatalogSection.TOKENS) }
@@ -72,10 +74,11 @@ internal fun DesignCatalog() {
                 dynamicColor = dynamicColor,
                 lightPalette = lightPalette,
                 darkPalette = darkPalette,
+                background = background,
                 displayFont = displayFont,
             ),
         ) {
-            Surface(Modifier.fillMaxSize()) {
+            Surface(Modifier.fillMaxSize(), color = PftTheme.surfaces.canvas) {
                 Column(Modifier.statusBarsPadding()) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         ChoiceRow(
@@ -102,6 +105,15 @@ internal fun DesignCatalog() {
                             options = listOf("Dynamic off" to false, "Dynamic on" to true),
                             selected = dynamicColor,
                             onSelect = { dynamicColor = it },
+                        )
+                        ChoiceRow(
+                            options =
+                                listOf(
+                                    "Background: Tonal" to BackgroundStyle.TONAL,
+                                    "Background: Flat" to BackgroundStyle.FLAT,
+                                ),
+                            selected = background,
+                            onSelect = { background = it },
                         )
                         ChoiceRow(
                             options =

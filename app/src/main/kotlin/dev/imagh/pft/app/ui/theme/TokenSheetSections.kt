@@ -160,6 +160,8 @@ internal fun MoneyTokensSection() {
     val surfaces: List<Pair<String, Color>> =
         listOf(
             "surface" to scheme.surface,
+            "canvas" to PftTheme.surfaces.canvas,
+            "island" to PftTheme.surfaces.island,
             "surfaceContainerHighest" to scheme.surfaceContainerHighest,
         )
     Column(verticalArrangement = Arrangement.spacedBy(PftTheme.spacing.sm)) {

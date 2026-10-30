@@ -7,16 +7,22 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
 /**
- * One curated palette in one mode. Today it carries the M3 roles only; the tones M3 has no role
- * for (canvas, island, header wash) join this class with the slices that first read them (DS6c,
- * DS6d), so each field arrives with its consumer.
+ * One curated palette in one mode: the M3 roles plus the tones M3 has no role for. The header
+ * wash joins this class with the slice that first reads it (DS6d), so each field arrives with its
+ * consumer.
  *
  * @property scheme every M3 colour role. Money colours are deliberately not part of it: see
  *   [MoneyColors].
+ * @property canvas the tonal screen background (header, list, bottom bar): a step off
+ *   `scheme.surface`, which is the flat background. Mockup token `canvas`.
+ * @property island the tonal card fill (`PftSurfaces.island`): a step lighter than [canvas] in both
+ *   modes, never white. Mockup token `island`.
  */
 @Immutable
 internal data class PaletteColors(
     val scheme: ColorScheme,
+    val canvas: Color,
+    val island: Color,
 )
 
 /**
@@ -48,6 +54,8 @@ internal data class PaletteColors(
  *    | `onvar` | `onSurfaceVariant` | #50545C | #A8ACB3 |
  *    | `line` | `outlineVariant` | #D1D4D9 | #25282C |
  *    | `primary` | `primary` | #3B4350 | #C9CED8 |
+ *    | `canvas` | `canvas` (DS6c) | #E4E6E9 | #0B0C0E |
+ *    | `island` | `island` (DS6c) | #EFF0F2 | #141618 |
  *
  * 4. Three follow-on adjustments keep the pinned values coherent (not mockup values, none of them
  *    changes a hue): `surfaceTint` equals the pinned `primary`, as in M3; dark `surfaceDim` equals
@@ -105,6 +113,8 @@ internal object GraphitePalette {
                 surfaceContainerLow = Color(0xFFF3F3F6),
                 surfaceContainerLowest = Color(0xFFFFFFFF),
             ),
+            canvas = Color(0xFFE4E6E9),
+            island = Color(0xFFEFF0F2),
         )
 
     /** Dark roles. */
@@ -148,5 +158,7 @@ internal object GraphitePalette {
                 surfaceContainerLow = Color(0xFF151618),
                 surfaceContainerLowest = Color(0xFF0D0E10),
             ),
+            canvas = Color(0xFF0B0C0E),
+            island = Color(0xFF141618),
         )
 }

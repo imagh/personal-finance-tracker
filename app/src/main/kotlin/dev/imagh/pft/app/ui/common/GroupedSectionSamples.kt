@@ -71,5 +71,5 @@ internal fun GroupedSectionSamples() {
 @PreviewLightDark
 @Composable
 internal fun GroupedSectionPreview() {
-    PftTheme(ThemePrefs(dynamicColor = false)) { Surface { GroupedSectionSamples() } }
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { GroupedSectionSamples() } }
 }

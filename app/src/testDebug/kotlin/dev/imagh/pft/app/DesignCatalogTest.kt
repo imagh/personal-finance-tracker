@@ -14,7 +14,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.ThemePrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -78,6 +80,21 @@ class DesignCatalogTest {
         compose.onNodeWithText("Dynamic on").assertIsSelected()
         compose.onNodeWithText("Light: Graphite").assertIsNotSelected()
         compose.onNodeWithText("Dark: Graphite").assertIsNotSelected()
+    }
+
+    @Test
+    fun `the background toggle starts on the default style and selecting the other one moves the selection`() {
+        compose.setContent { PftTheme { DevContent() } }
+        val default = if (ThemePrefs.Default.background == BackgroundStyle.TONAL) "Tonal" else "Flat"
+        val other = if (default == "Tonal") "Flat" else "Tonal"
+        compose.onNodeWithText("Background: $default").assertIsSelected()
+        compose.onNodeWithText("Background: $other").assertIsNotSelected()
+
+        compose.onNodeWithText("Background: $other").performClick()
+        compose.onNodeWithText("Background: $other").assertIsSelected()
+        compose.onNodeWithText("Background: $default").assertIsNotSelected()
+        compose.onNodeWithText("Background: $default").performClick()
+        compose.onNodeWithText("Background: $default").assertIsSelected()
     }
 
     @Test
@@ -186,8 +203,11 @@ class DesignCatalogTest {
         compose.setContent { PftTheme { DevContent() } }
         compose.onNodeWithText("Sections").performClick()
         compose.onNodeWithText("Sections").assertIsSelected()
-        compose.onNodeWithText("Everyday account").assertIsDisplayed()
-        compose.onNodeWithText("Monthly, from the 1st").assertIsDisplayed()
+        // The toggle rows above the page take most of a phone's height, so the page scrolls to its rows.
+        listOf("Everyday account", "Monthly, from the 1st").forEach { text ->
+            compose.onNode(hasScrollAction()).performScrollToNode(hasText(text))
+            compose.onNodeWithText(text).assertIsDisplayed()
+        }
     }
 
     @Test

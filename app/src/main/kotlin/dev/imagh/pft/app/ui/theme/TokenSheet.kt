@@ -25,6 +25,6 @@ internal fun TokenSheet(modifier: Modifier = Modifier) {
 @Composable
 internal fun TokenSheetPreview() {
     PftTheme(ThemePrefs(dynamicColor = false)) {
-        Surface { TokenSheet() }
+        Surface(color = PftTheme.surfaces.canvas) { TokenSheet() }
     }
 }

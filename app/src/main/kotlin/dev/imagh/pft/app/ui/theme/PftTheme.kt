@@ -15,25 +15,57 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 
 /**
- * Picks the colour scheme for the resolved theme.
+ * Picks the colours for the resolved theme: the M3 scheme plus the canvas and island.
  *
  * With [ThemePrefs.dynamicColor] on (opt-in), the scheme comes from the system's Material You
- * palette and the palette fields are ignored. That needs API 31 and the app's minSdk is 33, so
- * there is no version fallback. With it off, the scheme is the committed palette the user picked
- * for this mode: [ThemePrefs.darkPalette] in dark, [ThemePrefs.lightPalette] in light.
+ * palette, the palette fields are ignored, and the canvas and island are derived from that scheme
+ * by [dynamicPaletteColors]. That needs API 31 and the app's minSdk is 33, so there is no version
+ * fallback. With it off, the colours are the committed palette the user picked for this mode:
+ * [ThemePrefs.darkPalette] in dark, [ThemePrefs.lightPalette] in light.
  *
  * @param dark the already-resolved dark/light decision (see [ThemeMode]).
+ */
+internal fun resolvePaletteColors(
+    prefs: ThemePrefs,
+    dark: Boolean,
+    context: Context,
+): PaletteColors =
+    when {
+        prefs.dynamicColor && dark -> dynamicPaletteColors(dynamicDarkColorScheme(context), dark = true)
+        prefs.dynamicColor -> dynamicPaletteColors(dynamicLightColorScheme(context), dark = false)
+        else -> prefs.paletteFor(dark).colors(dark)
+    }
+
+/**
+ * The colour scheme of [resolvePaletteColors]: what `MaterialTheme` is given. Kept public for the
+ * tests and callers that only need the M3 roles.
  */
 fun resolveColorScheme(
     prefs: ThemePrefs,
     dark: Boolean,
     context: Context,
-): ColorScheme =
-    when {
-        prefs.dynamicColor && dark -> dynamicDarkColorScheme(context)
-        prefs.dynamicColor -> dynamicLightColorScheme(context)
-        else -> prefs.paletteFor(dark).colors(dark).scheme
-    }
+): ColorScheme = resolvePaletteColors(prefs, dark, context).scheme
+
+/**
+ * The canvas and island for a dynamic [scheme], which has no such roles. Each is a surface
+ * container step, chosen so the island still lifts off the canvas (plan §3.1):
+ *
+ * | Token | Light | Dark |
+ * |---|---|---|
+ * | canvas | `surfaceContainerHigh` (tone 92) | `surfaceContainerLowest` (tone 4) |
+ * | island | `surfaceContainerLow` (tone 96) | `surfaceContainerLow` (tone 10) |
+ *
+ * Pure, so the tests can pin it. Light `surfaceContainerLowest` (white) is never used.
+ */
+internal fun dynamicPaletteColors(
+    scheme: ColorScheme,
+    dark: Boolean,
+): PaletteColors =
+    PaletteColors(
+        scheme = scheme,
+        canvas = if (dark) scheme.surfaceContainerLowest else scheme.surfaceContainerHigh,
+        island = scheme.surfaceContainerLow,
+    )
 
 /**
  * Wraps the app's UI: resolves dark or light from [prefs], picks the colour scheme with
@@ -56,7 +88,8 @@ fun PftTheme(
             ThemeMode.LIGHT -> false
             ThemeMode.DARK -> true
         }
-    val colorScheme = resolveColorScheme(prefs, dark, LocalContext.current)
+    val palette = resolvePaletteColors(prefs, dark, LocalContext.current)
+    val colorScheme = palette.scheme
     // The text family is the system font until custom-font import (AP2) adds a choice.
     val textFamily = FontFamily.Default
     val typography = remember(textFamily) { pftMaterialTypography(textFamily) }
@@ -66,6 +99,7 @@ fun PftTheme(
         LocalMoneyColors provides moneyColors(dark),
         LocalCategoryPalette provides categoryPalette(dark),
         LocalPftTypography provides pftType,
+        LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -93,6 +127,12 @@ object PftTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalCategoryPalette.current
+
+    /** The screen canvas, card island and island edge for the current palette, mode and [BackgroundStyle]. */
+    val surfaces: PftSurfaces
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalPftSurfaces.current
 
     /** The amount text styles ([PftTypography]); every other text role is `MaterialTheme.typography`. */
     val type: PftTypography

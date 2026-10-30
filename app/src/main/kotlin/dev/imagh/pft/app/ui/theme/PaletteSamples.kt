@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +26,7 @@ import androidx.compose.ui.unit.sp
 /**
  * The four palettes' role swatches side by side, in [dark] or light, whatever theme surrounds
  * them: each column is drawn from its own palette's colours, so one page compares every option.
- * Each column shows `surface` with its text colours, a `surfaceContainer` island with its
+ * Each column shows the tonal `canvas` with its text colours, the `island` with its
  * `outlineVariant` hairline, and the `primary` and `primaryContainer` fills with their text. The
  * single source for the preview and the goldens. Release builds drop it (R8; see
  * `verifyReleaseShrink`).
@@ -40,7 +39,7 @@ internal fun PaletteSwatches(dark: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         ThemePalette.entries.forEach { palette ->
-            PaletteColumn(palette, palette.colors(dark).scheme, Modifier.weight(1f))
+            PaletteColumn(palette, palette.colors(dark), Modifier.weight(1f))
         }
     }
 }
@@ -48,15 +47,16 @@ internal fun PaletteSwatches(dark: Boolean) {
 @Composable
 private fun PaletteColumn(
     palette: ThemePalette,
-    scheme: ColorScheme,
+    colors: PaletteColors,
     modifier: Modifier,
 ) {
+    val scheme = colors.scheme
     val spacing = PftTheme.spacing
     val shape = RoundedCornerShape(spacing.md)
     Column(
         modifier
             .testTag("swatches-${palette.name}")
-            .background(scheme.surface, shape)
+            .background(colors.canvas, shape)
             .border(BorderStroke(1.dp, scheme.outlineVariant), shape)
             .padding(spacing.sm),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
@@ -69,7 +69,7 @@ private fun PaletteColumn(
         )
         Text("Text", color = scheme.onSurface, fontSize = 11.sp)
         Text("Variant", color = scheme.onSurfaceVariant, fontSize = 11.sp)
-        Swatch("Island", scheme.onSurface, scheme.surfaceContainer, scheme.outlineVariant)
+        Swatch("Island", scheme.onSurface, colors.island, scheme.outlineVariant)
         Swatch("Primary", scheme.onPrimary, scheme.primary, scheme.primary)
         Swatch("Tinted", scheme.onPrimaryContainer, scheme.primaryContainer, scheme.primaryContainer)
         Swatch("Bright", scheme.onSurface, scheme.surfaceBright, scheme.outlineVariant)
@@ -102,6 +102,6 @@ private fun Swatch(
 @Composable
 internal fun PaletteSwatchesPreview() {
     PftTheme(ThemePrefs(dynamicColor = false)) {
-        Surface { PaletteSwatches(dark = isSystemInDarkTheme()) }
+        Surface(color = PftTheme.surfaces.canvas) { PaletteSwatches(dark = isSystemInDarkTheme()) }
     }
 }

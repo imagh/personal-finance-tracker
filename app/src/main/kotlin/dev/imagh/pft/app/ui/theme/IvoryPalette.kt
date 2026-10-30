@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.Color
  *    | `onvar` | `onSurfaceVariant` | #5A5548 | #AFA896 |
  *    | `line` | `outlineVariant` | #D9D2C2 | #2B2923 |
  *    | `primary` | `primary` | #2E3A59 | #AEB9DA |
+ *    | `canvas` | `canvas` (DS6c) | #E9E4D8 | #12110E |
+ *    | `island` | `island` (DS6c) | #F3EFE5 | #1A1915 |
  *
  * 4. `surfaceTint` equals the pinned `primary`, as in M3. `onPrimary` is the primary palette's tone
  *    100 (light) and tone 20 (dark), as generated. No other role was adjusted: the generated ladder
@@ -86,6 +88,8 @@ internal object IvoryPalette {
                 surfaceContainerLow = Color(0xFFF7F3EA),
                 surfaceContainerLowest = Color(0xFFFFFFFF),
             ),
+            canvas = Color(0xFFE9E4D8),
+            island = Color(0xFFF3EFE5),
         )
 
     /** Dark roles. */
@@ -129,5 +133,7 @@ internal object IvoryPalette {
                 surfaceContainerLow = Color(0xFF1D1C18),
                 surfaceContainerLowest = Color(0xFF0F0E0B),
             ),
+            canvas = Color(0xFF12110E),
+            island = Color(0xFF1A1915),
         )
 }
