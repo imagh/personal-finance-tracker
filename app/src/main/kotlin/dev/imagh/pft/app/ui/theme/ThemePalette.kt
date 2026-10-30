@@ -12,6 +12,9 @@ package dev.imagh.pft.app.ui.theme
 enum class ThemePalette {
     /** Graphite and platinum: the default. */
     GRAPHITE,
+
+    /** Midnight navy with a brass accent (champagne in dark). */
+    MIDNIGHT,
 }
 
 /**
@@ -21,4 +24,5 @@ enum class ThemePalette {
 internal fun ThemePalette.colors(dark: Boolean): PaletteColors =
     when (this) {
         ThemePalette.GRAPHITE -> if (dark) GraphitePalette.dark else GraphitePalette.light
+        ThemePalette.MIDNIGHT -> if (dark) MidnightPalette.dark else MidnightPalette.light
     }
