@@ -19,8 +19,9 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
  * and tests alike): it adds the migrations and the callback that installs and repairs the audit
- * triggers, so the audit trail cannot end up unprotected. Until A4b the file is plaintext (tests use
- * it in memory); A4b opens it through SQLCipher by passing its open-helper factory to [create].
+ * triggers, so the audit trail cannot end up unprotected. In the app the file is encrypted:
+ * [DatabaseFactory] passes SQLCipher's open-helper factory to [create]. Tests use the framework's
+ * SQLite in memory (Robolectric), and the instrumented `EncryptedDatabaseTest` covers SQLCipher.
  */
 @Database(
     entities = [
@@ -45,8 +46,8 @@ abstract class PftDatabase : RoomDatabase() {
          * callback ([AuditTriggers.callback]).
          *
          * @param name the database file, or null for an in-memory database (tests).
-         * @param openHelperFactory a custom open helper, for example SQLCipher's (A4b); null uses the
-         *   framework's.
+         * @param openHelperFactory a custom open helper, SQLCipher's in the app ([DatabaseFactory]);
+         *   null uses the framework's.
          */
         fun create(
             context: Context,

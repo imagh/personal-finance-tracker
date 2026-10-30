@@ -28,7 +28,9 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * **Using the key.** [useKey] hands the raw key to a block and wipes it (fills it with zeros) when
  * the block returns or throws, so there is no way to get the key without the wipe. Open the database
- * inside the block; do not keep the array or a copy of it.
+ * inside the block; do not keep the array or a copy of it. The one exception is the array SQLCipher's
+ * open helper is given: it keeps that array and re-keys every later connection with it, so
+ * `DatabaseFactory` hands it a copy that lives as long as the database (see its class doc).
  *
  * **Fail closed.** The decision is made from what is on disk, never from a caller's flag:
  * - the key file exists: unwrap it. Any problem (malformed or altered file, KEK missing, invalidated
