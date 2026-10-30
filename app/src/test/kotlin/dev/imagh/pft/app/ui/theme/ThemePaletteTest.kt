@@ -1,8 +1,10 @@
 package dev.imagh.pft.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** [ThemePalette] and [colors]: the choice of palette and mode picks exactly one [PaletteColors]. */
@@ -52,6 +54,41 @@ class ThemePaletteTest {
         val darkPins = Pins(0xFF181713, 0xFF201F1A, 0xFFECE6D8, 0xFFAFA896, 0xFF2B2923, 0xFFAEB9DA)
         assertPinned(ThemePalette.IVORY, dark = false, lightPins)
         assertPinned(ThemePalette.IVORY, dark = true, darkPins)
+    }
+
+    @Test
+    fun `Aubergine pins the owner-approved mockup values`() {
+        val lightPins = Pins(0xFFF7F2F7, 0xFFF0E9F0, 0xFF1D141D, 0xFF594C58, 0xFFDACFD9, 0xFF5B2A66)
+        val darkPins = Pins(0xFF140D15, 0xFF1D141E, 0xFFEDE3EC, 0xFFB3A5B2, 0xFF2E2030, 0xFFD9BE8A)
+        assertPinned(ThemePalette.AUBERGINE, dark = false, lightPins)
+        assertPinned(ThemePalette.AUBERGINE, dark = true, darkPins)
+    }
+
+    @Test
+    fun `the persisted names are permanent`() {
+        // AP1 stores `name`, so a rename or removal would silently reset a user's choice. Adding is fine.
+        val names = ThemePalette.entries.map { it.name }
+        listOf("GRAPHITE", "MIDNIGHT", "IVORY", "AUBERGINE").forEach {
+            assertTrue(it in names, "$it must stay a ThemePalette entry")
+        }
+    }
+
+    @Test
+    fun `the dark surface ladder stays ordered around the pinned surface in every palette`() {
+        // Aubergine's pinned dark surface is darker than the M3 ladder assumes, so its low and lowest
+        // steps are adjusted; this guards the order for all palettes: lowest < surface < low < container.
+        for (palette in ThemePalette.entries) {
+            val s = palette.colors(dark = true).scheme
+            val luminance =
+                listOf(s.surfaceContainerLowest, s.surface, s.surfaceContainerLow, s.surfaceContainer)
+                    .map { it.luminance() }
+            assertEquals(luminance.sorted(), luminance, "$palette dark ladder is out of order")
+            assertTrue(
+                s.surfaceContainer.luminance() < s.surfaceContainerHigh.luminance(),
+                "$palette container >= high",
+            )
+            assertTrue(s.surfaceDim.luminance() <= s.surface.luminance(), "$palette dim is lighter than surface")
+        }
     }
 
     @Test
