@@ -12,7 +12,7 @@ gradle/                 # libs.versions.toml (all pins), wrapper, daemon JVM, ve
 config/detekt/          # detekt rule overrides (ktlint rules live in the root .editorconfig)
 build-logic/            # included build: pft.kotlin-core + pft.lint convention plugins
 app/                    # thin Android layer (Compose, Room/SQLCipher impls, Keystore, ...)
-  proguard-rules.pro                     # R8 keep rules for release (none yet; each rule must say why)
+  proguard-rules.pro                     # R8 keep rules for release (SQLCipher's JNI surface; each rule says why)
   schemas/                               # exported Room schemas, one JSON per version (committed; served to migration tests as debug assets)
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors, PftTypography, PftShapes,
@@ -26,11 +26,19 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
       common/                                  # MetaColumns, MetaMapper, BaseDao, EntityMapper, RoomEntityRepository (shared by every entity)
       identity/ settings/ audit/               # entities, DAOs, Room repositories: users+devices, app settings, the audit trail (RoomAuditLog, AuditEntryMapper)
+      DatabaseFactory, PreMigrationBackup      # A4b: opens pft.db through SQLCipher (key first, backup, eager open); the pre-migration copy
+      DatabaseStartup                          # how opening ended: Ready(db) or KeyUnavailable(reason)
+    security/                            # A4b: DbKeyManager (wrapped SQLCipher key, fail closed), DbKeyUnavailable, KekSource +
+                                         # AndroidKeystoreKek (the Keystore KEK), WrappedKeyFormat (66-byte file, format v1)
+    ui/startup/                          # KeyUnavailableScreen (the fail-closed screen)
+    PftApplication, MainActivity         # PftApplication.startup opens the database once; MainActivity shows the app or the fail-closed screen
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
   src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL)
   src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section and empty-state pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
+  src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),
+                                         # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
                                          # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
     testing/                             # test support: TestDatabase, RoomTestKit, MigrationTestSupport, AuditColumnsCheck + AuditedTables,
@@ -53,7 +61,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 
 | Module | Owns | Responsibility |
 |--------|------|----------------|
-| `:app` | `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1, DAOs, the Room implementations of the core repositories, runner and audit log); later: UI, Keystore, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
+| `:app` | `PftApplication`, `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1 over SQLCipher, `DatabaseFactory`, `PreMigrationBackup`, DAOs, the Room implementations of the core repositories, runner and audit log); `security/` (Keystore-wrapped database key); `ui/startup/` (fail-closed screen); later: UI, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
 | `:core:money` | `Paise`, `PaiseParser`, `PaiseFormat` (package `dev.imagh.pft.money`) | Integer-paise money: exact arithmetic, strict parsing of amount text, sign-free Indian-grouped formatting |
 | `:core:ledger` | `ids/` (`Uuid7`, `NameBasedId`, typed ids), `entity/` (`EntityMeta`, `LedgerEntity`, `Auditable`, `EntityRepository`), `audit/` (`AuditEntry`, `AuditDiff`, `AuditLog`, `AuditRecorder`, `AuditedWriter`), `tx/` (`TransactionRunner`), `validation/` (`LedgerError`, `LedgerLimits`, `Validation`), `identity/` (`IdentityService`, `UserProfile`, `Device`, `IdentityRepository`), `settings/` (`SettingsService`, `AppSettingsRepository`); test fixtures in `fakes/` and `matchers/` (package `dev.imagh.pft.ledger`) | Ledger foundations: ids, identity, the audit trail and its single audited write path, atomic transactions, validation, runtime settings. Later slices add accounts, categories, tags, transactions, loans, goals |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |
@@ -87,7 +95,8 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app data | `EpochMillis` (`of`: the one instant -> epoch-ms conversion, refuses sub-millisecond; `clock()`: the millisecond `Clock` the app gives core) | every mapper, the settings repository, A5's container | A4a |
 | app data | `BaseDao<E>` (insert, update returning the row count, `byId`) | every entity DAO | A4a |
 | app data | `EntityMapper<T, E>` + `RoomEntityRepository<T, E, Id>` (get, getLive, insert, update; supplies `entityType`, refuses another kind, fails an update that matched no row) | every Room repository | A4a |
-| app data | `RoomTransactionRunner`, `RoomAuditLog` (+ `AuditEntryMapper`), `PftDatabase.create` (the only database builder; adds the migrations and `AuditTriggers.callback`, which re-installs the audit triggers on every open) | every service (runner, audit); every database (A4b passes only its SQLCipher factory) | A4a |
+| app data | `RoomTransactionRunner`, `RoomAuditLog` (+ `AuditEntryMapper`), `PftDatabase.create` (the only database builder; adds the migrations and `AuditTriggers.callback`, which re-installs the audit triggers on every open) | every service (runner, audit); every database (`DatabaseFactory` passes only its SQLCipher factory) | A4a |
+| app data | `DbKeyManager.useKey` (the only way to get the database key; wipes it after the block) | `DatabaseFactory` (A4b); M1c sync and the export/import key wrapping later | A4b |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
 | app tests | `AuditColumnsCheck` + `AuditedTables` (every column audited or allowlisted) | every entity table; each slice registers its table | A4a |

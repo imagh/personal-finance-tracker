@@ -2,7 +2,7 @@
 
 A private, offline-first Android app for tracking a household's expenses, budgets, loans (EMIs) and goals. It logs transactions automatically from SMS and email, parsed on-device, with local encrypted SQLite storage. Personal use for two people; accuracy, integrity, privacy and security come first.
 
-**Status:** Gradle skeleton and quality gates in place (M1a slice A1), `core/money`, the `core/ledger` foundations (A3) and the plaintext Room database v1 with its core adapters (A4a) built; no user-visible features yet. Current milestone: M1a (core ledger).
+**Status:** Gradle skeleton and quality gates in place (M1a slice A1), `core/money`, the `core/ledger` foundations (A3) the Room database v1 with its core adapters (A4a), and its SQLCipher encryption with the Keystore-wrapped key and pre-migration backup (A4b) built; no user-visible features yet. Current milestone: M1a (core ledger).
 
 | Read | For |
 |---|---|
@@ -17,7 +17,7 @@ A private, offline-first Android app for tracking a household's expenses, budget
 
 | Path | What |
 |---|---|
-| `app/` | Thin Android layer (Compose, Room database and core adapters; later SQLCipher, Keystore). See [app/README.md](app/README.md) |
+| `app/` | Thin Android layer (Compose, encrypted Room database and core adapters, Keystore-wrapped key). See [app/README.md](app/README.md) |
 | `core/money/` | Pure Kotlin integer-paise money: `Paise`, strict `PaiseParser`, Indian-grouping `PaiseFormat`. See [core/money/README.md](core/money/README.md) |
 | `core/ledger/` | Pure Kotlin ledger foundations: UUIDv7 ids, identity, the audit trail and `AuditedWriter`, `TransactionRunner`, validation, runtime settings, plus shared test fixtures. See [core/ledger/README.md](core/ledger/README.md) |
 | `core/<module>/` | Further pure-Kotlin modules (budget, recurring) are added by their slices |
