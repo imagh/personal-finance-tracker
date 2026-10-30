@@ -239,12 +239,14 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 - **Also (acceptance criterion carried over from A4a):** `AppContainerTest` asserts that the clock the container gives core yields only whole milliseconds (`EpochMillis.clock()`), and a first-run flow over the real container writes and re-reads without an `IllegalArgumentException`.
 - **Green:** `app/.../log/{SafeLog,LogEvent}.kt`, `app/.../di/AppContainer.kt` (builds its `Clock` with `EpochMillis.clock()`), `app/.../ui/common/{UiState,FormState,EditFormScaffold,NameField}.kt` (§3.4; setup is the first consumer), `app/.../ui/setup/{SetupScreen,SetupViewModel}.kt`, `app/.../ui/nav/PftNavHost.kt` (start destination depends on identity).
 - **Refactor:** none.
+- **Follow-up (A4b): open off the main thread.** The database opens on the main thread today (Keystore work, key derivation of about 75 ms per connection, and the backup copy risk an ANR). `AppContainer` opens it off the main thread; `AppContainerTest` shows the UI thread is not blocked while the open runs (a slow fake `DatabaseFactory`), and `PftApplication.startup` is retired.
 
 ### Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`)
 
 **B1 — Accounts core + Room (v2)**
 - **Red:** `AccountServiceTest`: create (name required ≤ limit, type, opening balance signed, currency fixed INR, optional last-4 must be 4 digits) gives an audited CREATE. Rename/edit gives an UPDATE with a field diff. Archive hides the account from `activeAccounts()` while `allAccounts()` still includes it. `delete` of an account with live transactions → `AccountInUse` (C1 adds that test once transactions exist; here delete succeeds and is a tombstone). `restore` reverses a delete. `RoomAccountIntegrationTest` covers the same through Room. `MigrationTest.migrate1To2` (MigrationTestHelper) creates v1 with a user row, migrates, and shows the `account` table exists with the user row intact.
 - **Green:** `core/ledger/.../account/{Account,AccountType,AccountRepository,AccountService}.kt`; `app/.../data/account/*`; `Migrations.kt` `MIGRATION_1_2`.
+- **Follow-up (A4b): the first real migration exercises the backup.** An instrumented `migrate1To2` runs on the encrypted file, and `pre-migration-v1.db` exists after the upgrade. Also fix the orphan: if the `.db` copy fails after the `-wal` copy, `PreMigrationBackup.prune()` never removes `pre-migration-vN.db-wal` (add a failing-copy test, then remove the stray log on failure or in `prune()`).
 
 **B2 — Accounts UI**
 - **Red:** `AccountsFlowTest` (Robolectric Compose): add a "HDFC Savings" BANK account and it appears in the list; archive it and it moves to the Archived section; invalid last-4 shows an error.
@@ -275,6 +277,7 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 **C3 — Queries, search, balances (L-7, v5)**
 - **Red:** `TransactionQueriesIntegrationTest` (Room): `month(2026-10, filter)` returns only that month in Asia/Kolkata (a row at 2026-10-31T23:30 IST is included; 2026-11-01T00:10 IST is excluded). Filters cover account(s), category (the parent includes its sub-categories), tag, amount min/max, state, type, and the text query (FTS: "swiggy" matches title "Swiggy order"). Tombstones are excluded. Search results are capped at the limit. `accountBalance(id)` = opening + Σ IN − Σ OUT over live rows, and is correct for a credit card (spend makes it negative). `spendingBetween(range)` returns EXPENSE only (no transfers, no income). Core `TransactionFilterTest` covers filter validation (min ≤ max, range order). `migrate4To5` backfills FTS for existing rows.
 - **Green:** `core/ledger/.../query/{TransactionFilter,TransactionQueries}.kt` (interface implemented in app), `app/.../data/transaction/TransactionQueryDao.kt` (single parameterised query), FTS entity, `MIGRATION_4_5`.
+- **Follow-up (A4b): re-check the bundled SQLite before user text reaches FTS.** sqlcipher-android 4.7.2 bundles SQLite 3.49.1 (FTS5 CVEs fixed in 3.50.3; CVE-2025-6965 in 3.50.2). Before the `MATCH` query ships, confirm the bundled version is fixed (see the H3 bump and Q8) or that the FTS input is only a bound, operator-stripped parameter; record the reachability check in the PR security review.
 
 **C4 — Transaction list and add/edit UI**
 - **Red:** `TransactionsFlowTest`: on Home, tap +, enter ₹250, pick account, category and tags, then save; the row shows in this month's list with "₹250.00", and month totals (expense/income, excluding transfers) update. Switching to Transfer shows a destination-account field, and saving shows paired legs. Editing changes the amount. Delete gives an Undo snackbar that restores the row. Bad amount text shows an inline error and saves nothing.
@@ -359,12 +362,15 @@ Adds `:core:recurring`.
 **H2 — Diagnostics screen (§3.7)**
 - **Red:** `DiagnosticsViewModelTest`: shows schema version, row counts per table, last catch-up time, app version and DB encryption = on, and the rendered text contains no amounts or names (asserted against seeded data containing a known payee and amount).
 - **Green:** `ui/diagnostics/*`, `DiagnosticsQueries`.
+- **Follow-up (A4b): startup-failure screen.** A failed pre-migration backup (`PreMigrationBackupFailed`) or a database SQLCipher cannot open is a crash loop with no explanation today (only `DbKeyUnavailable` has a screen). Add a screen with a fixed code, as `KeyUnavailableScreen` has, and a test that it shows no path or content; it may link to the diagnostics screen.
 
 **H3 — Release build and M1a acceptance**
 - **Red:** a `./gradlew assembleRelease` without the signing env vars **fails** with a clear message (fail closed; checked by running it, documented in the PR). `ReleaseSmokeTest` (instrumented, on the release build, which is minified since 2026-10-30; fall back to a manual checklist only if that is infeasible): the app launches, the encrypted DB opens and the R8 keep rules for SQLCipher hold. It is also the only test that proves `FLAG_SECURE` survives R8 (the JVM tests run unminified).
 - **Green:** `app/build.gradle.kts` `signingConfigs.release` from `ANDROID_KEYSTORE_*`; R8 rules (`-keep class net.zetetic.database.** { *; }` is a blanket rule: narrow it to what SQLCipher's JNI needs when it is written); `local.properties.example` lists names only.
 - **Refactor:** run the 50k-row responsiveness check on the emulator (§11) and record the numbers in learnings.
 - **Amendment (2026-10-30, owner decision):** R8 (`isMinifyEnabled`, `isShrinkResources`, `proguard-rules.pro`) was brought forward and is already on, so sample and preview code (`TokenSheet`, DS4's `HeaderSamples`) does not ship in release; it is guarded by `:app:verifyReleaseShrink` in `check`. H3 keeps the release `signingConfigs`, the SQLCipher/Room keep rule (added when those dependencies reach the runtime classpath) and `ReleaseSmokeTest`.
+- **Follow-up (A4b): SQLCipher bump (owner decision Q8).** Before release, bump sqlcipher-android to 4.10.0 (bundles SQLite 3.50.4; 4.7.2 has 3.49.1, below the 3.50.2 fix for CVE-2025-6965, invisible to the scanner). Re-run `EncryptedDatabaseTest` (the Room pairing and the key-array behaviour) and `ReleaseSmokeTest`, refresh locks and checksums, and revisit the `androidx.sqlite` suppression. Not bumped in A4b.
+- **Follow-up (A4b): release size.** The release APK is about 21 MB because `libsqlcipher.so` ships for four ABIs; consider an `abiFilters` for `arm64-v8a` (the owner's phone and `pft35`), measure, and record it.
 
 ### PR breakdown (incremental — required)
 
@@ -490,6 +496,7 @@ About 32 slice PRs and 8 integration PRs, each sized for one session (TECHNICAL.
 | Pinned Kotlin 2.1.0 is affected by CVE-2026-53914 (compiler build-cache deserialization; fixed in 2.4.20), and the old AGP device-test tooling carries ~60 grpc/netty/protobuf CVEs | build-machine exposure only; nothing ships | scan gates only shipped classpaths, `-PscanAll` reports tooling; Kotlin CVE suppressed until 2027-01-31 with no remote build cache; **follow-up architect plan for a toolchain bump** (Kotlin ≥ 2.4.20 with a matching AGP/Gradle) before that date |
 | applicationId or release signing key change | a sideloaded app with a new ID or key is a new install, so all data is lost | **blocked** until a full export/import of all data exists and its round-trip tests pass (see Q4) |
 | Shared building blocks grow into a framework | abstraction hell, hard-to-follow call paths | §3.4 rules: two named consumers, composition first, one level of generic base, no generic service; enforced in review |
+| M1b: `noBackupFilesDir` is credential-encrypted storage, so the database key file is unreadable after a reboot until the first unlock (Direct Boot) | the M1b SMS receiver cannot open the database before first unlock and could drop or fail a message | out of M1a scope; M1b must wait for `ACTION_USER_UNLOCKED` or queue to device-protected storage, with a test (see `docs/architecture/persistence-and-security.md`) |
 
 ## 11. Rollout & verification
 
@@ -519,3 +526,4 @@ Per slice: `./gradlew check` (unit + Robolectric + coverage gate + ktlint + dete
 | Q5 | Include **opening balance + computed account balance** in M1a (useful for a real month, L-4 says balance *from email* is M2)? | Include |
 | Q6 | Recurring AUTO items: created as **UNVERIFIED** (consistent with "auto-logged") rather than VERIFIED? | UNVERIFIED |
 | Q7 | Budget scope with both categories and tags: **union (OR)**? | Union |
+| Q8 | Bump sqlcipher-android 4.7.2 to 4.10.0 (SQLite 3.49.1 to 3.50.4, CVE-2025-6965) before release, and re-run the pairing tests? | **Pending owner approval**; planned in H3, not done in A4b |
