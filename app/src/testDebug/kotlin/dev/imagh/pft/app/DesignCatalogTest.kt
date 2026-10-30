@@ -2,6 +2,7 @@ package dev.imagh.pft.app
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
@@ -56,6 +57,49 @@ class DesignCatalogTest {
         compose.onNodeWithText("Dark").assertIsSelected()
         compose.onNodeWithText("Same as text").performClick()
         compose.onNodeWithText("Same as text").assertIsSelected()
+    }
+
+    @Test
+    fun `the palette and dynamic colour toggles start on Graphite with dynamic colour off`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Light: Graphite").assertIsSelected()
+        compose.onNodeWithText("Dark: Graphite").assertIsSelected()
+        compose.onNodeWithText("Dynamic off").assertIsSelected()
+    }
+
+    @Test
+    fun `the light and dark palette rows are independent, and dynamic colour toggles`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Light: Ivory").performClick()
+        compose.onNodeWithText("Dark: Midnight").performClick()
+        compose.onNodeWithText("Dynamic on").performClick()
+        compose.onNodeWithText("Light: Ivory").assertIsSelected()
+        compose.onNodeWithText("Dark: Midnight").assertIsSelected()
+        compose.onNodeWithText("Dynamic on").assertIsSelected()
+        compose.onNodeWithText("Light: Graphite").assertIsNotSelected()
+        compose.onNodeWithText("Dark: Graphite").assertIsNotSelected()
+    }
+
+    @Test
+    fun `every palette can be picked for light and for dark`() {
+        compose.setContent { PftTheme { DevContent() } }
+        listOf("Graphite", "Midnight", "Ivory", "Aubergine").forEach { name ->
+            compose.onNodeWithText("Light: $name").performClick()
+            compose.onNodeWithText("Light: $name").assertIsSelected()
+            compose.onNodeWithText("Dark: $name").performClick()
+            compose.onNodeWithText("Dark: $name").assertIsSelected()
+        }
+    }
+
+    @Test
+    fun `the Accent section shows an Unverified pill beside a selected navigation item and the FAB`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Accent").performClick()
+        compose.onNodeWithText("Accent").assertIsSelected()
+        compose.onNodeWithText("Unverified").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Add").assertIsDisplayed()
+        compose.onNodeWithText("Budgets").assertIsSelected()
+        compose.onNodeWithText("Accounts").assertIsNotSelected()
     }
 
     @Test

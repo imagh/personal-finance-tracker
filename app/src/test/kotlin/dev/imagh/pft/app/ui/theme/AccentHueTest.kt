@@ -16,22 +16,20 @@ class AccentHueTest {
         const val MIN_ACCENT_HUE_DISTANCE = 40.0
     }
 
-    private fun primaries() =
-        mapOf(
-            "light" to (GraphitePalette.light.scheme.primary to moneyColors(dark = false)),
-            "dark" to (GraphitePalette.dark.scheme.primary to moneyColors(dark = true)),
-        )
-
     @Test
-    fun `Graphite primary is at least 40 degrees of CIELAB hue from money positive and negative in each mode`() {
-        for ((mode, pair) in primaries()) {
-            val (primary, money) = pair
-            for ((name, token) in mapOf("positive" to money.positive, "negative" to money.negative)) {
-                val distance = hueDistance(labHue(primary), labHue(token))
-                assertTrue(
-                    distance >= MIN_ACCENT_HUE_DISTANCE,
-                    "$mode primary is ${"%.1f".format(distance)} degrees from money $name, below the minimum",
-                )
+    fun `every palette primary is at least 40 degrees of CIELAB hue from money positive and negative in each mode`() {
+        for (palette in ThemePalette.entries) {
+            for (dark in listOf(false, true)) {
+                val primary = palette.colors(dark).scheme.primary
+                val money = moneyColors(dark)
+                for ((name, token) in mapOf("positive" to money.positive, "negative" to money.negative)) {
+                    val distance = hueDistance(labHue(primary), labHue(token))
+                    assertTrue(
+                        distance >= MIN_ACCENT_HUE_DISTANCE,
+                        "$palette ${if (dark) "dark" else "light"} primary is ${"%.1f".format(distance)} " +
+                            "degrees from money $name, below the minimum",
+                    )
+                }
             }
         }
     }

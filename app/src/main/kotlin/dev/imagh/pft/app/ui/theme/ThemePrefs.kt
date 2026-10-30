@@ -38,16 +38,25 @@ enum class DisplayFont {
  * @property mode light, dark or follow the system.
  * @property dynamicColor use the system's Material You palette instead of the app's own scheme.
  *   Opt-in: it is off by default (UI-8, revised). Money colours are the same either way.
+ * @property lightPalette the colour palette used when the resolved theme is light (UI-11).
+ *   Ignored while [dynamicColor] is on.
+ * @property darkPalette the colour palette used when the resolved theme is dark. Chosen
+ *   independently of [lightPalette]. Ignored while [dynamicColor] is on.
  * @property displayFont the font of the hero number (`amountHero`); see [DisplayFont].
  */
 @Immutable
 data class ThemePrefs(
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
+    val lightPalette: ThemePalette = ThemePalette.GRAPHITE,
+    val darkPalette: ThemePalette = ThemePalette.GRAPHITE,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
 ) {
     companion object {
-        /** System light/dark, dynamic colour off. */
+        /** System light/dark, dynamic colour off, Graphite in both modes. */
         val Default = ThemePrefs()
     }
 }
+
+/** The palette in use for the resolved theme: [ThemePrefs.darkPalette] in dark, else [ThemePrefs.lightPalette]. */
+internal fun ThemePrefs.paletteFor(dark: Boolean): ThemePalette = if (dark) darkPalette else lightPalette

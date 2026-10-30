@@ -1,0 +1,29 @@
+package dev.imagh.pft.app.ui.theme
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Test
+
+/** The defaults of [ThemePrefs]: what the app looks like before the user chooses anything. */
+class ThemePrefsTest {
+    @Test
+    fun `both palettes default to Graphite`() {
+        assertEquals(ThemePalette.GRAPHITE, ThemePrefs().lightPalette)
+        assertEquals(ThemePalette.GRAPHITE, ThemePrefs().darkPalette)
+        assertEquals(ThemePalette.GRAPHITE, ThemePrefs.Default.lightPalette)
+        assertEquals(ThemePalette.GRAPHITE, ThemePrefs.Default.darkPalette)
+    }
+
+    @Test
+    fun `the other defaults are system mode and dynamic colour off`() {
+        assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
+        assertFalse(ThemePrefs.Default.dynamicColor)
+    }
+
+    @Test
+    fun `the palette in use is the light one in light and the dark one in dark`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.AUBERGINE)
+        assertEquals(ThemePalette.IVORY, prefs.paletteFor(dark = false))
+        assertEquals(ThemePalette.AUBERGINE, prefs.paletteFor(dark = true))
+    }
+}

@@ -57,6 +57,42 @@ class PftThemeModeTest {
         assertEquals(GraphitePalette.dark.scheme.surface, surfaceUnder(graphiteOnly.copy(mode = ThemeMode.DARK)))
     }
 
+    private val ivoryByDayMidnightByNight =
+        ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.MIDNIGHT)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun `SYSTEM on a dark system takes the dark palette`() {
+        assertEquals(
+            ThemePalette.MIDNIGHT
+                .colors(dark = true)
+                .scheme.surface,
+            surfaceUnder(ivoryByDayMidnightByNight.copy(mode = ThemeMode.SYSTEM)),
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun `a forced light mode takes the light palette on a dark system`() {
+        assertEquals(
+            ThemePalette.IVORY
+                .colors(dark = false)
+                .scheme.surface,
+            surfaceUnder(ivoryByDayMidnightByNight.copy(mode = ThemeMode.LIGHT)),
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun `a forced dark mode takes the dark palette on a light system`() {
+        assertEquals(
+            ThemePalette.MIDNIGHT
+                .colors(dark = true)
+                .scheme.surface,
+            surfaceUnder(ivoryByDayMidnightByNight.copy(mode = ThemeMode.DARK)),
+        )
+    }
+
     @Test
     fun `the default prefs are system mode with dynamic colour off`() {
         assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
