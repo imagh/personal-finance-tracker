@@ -15,7 +15,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   proguard-rules.pro                     # R8 keep rules for release (SQLCipher's JNI surface; each rule says why)
   schemas/                               # exported Room schemas, one JSON per version (committed; served to migration tests as debug assets)
   src/main/kotlin/dev/imagh/pft/app/     # production code
-    ui/theme/                            # PftTheme, ThemePrefs, GraphitePalette (+ PaletteColors), MoneyColors, PftTypography, PftShapes,
+    ui/theme/                            # PftTheme, ThemePrefs, ThemePalette (+ colors(dark)), GraphitePalette (+ PaletteColors), MidnightPalette,
+                                         # IvoryPalette, AuberginePalette (DS6b: one generated, pinned object per palette), PaletteSamples
+                                         # (the four-palette swatch page), MoneyColors, PftTypography, PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
                                          # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), HeaderIconButton (the only control
@@ -39,7 +41,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
   src/main/res/drawable/                 # sym_<key>.xml: 92 Material Symbols Rounded vector drawables (Apache-2.0), imported by tools/material-symbols
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Material Symbols Apache-2.0)
-  src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section and empty-state pages, toggles), manifest removing ui-tooling's PreviewActivity
+  src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
   src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),
                                          # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file)
@@ -90,6 +92,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | build | `pft.lint` convention plugin (ktlint + detekt) | `pft.kotlin-core`, `:app`, root project (lints `build-logic` and build scripts) | A1 |
 | app UI (`ui/theme`) | `PftTheme`, `ThemePrefs`/`ThemeMode`, `MoneyColors` (colour tokens, CompositionLocals) | every screen | DS1 |
 | app UI (`ui/theme`) | `GraphitePalette` / `PaletteColors` (the default scheme; replaces the deleted `BrandColors`) | `resolveColorScheme` | DS6a |
+| app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette` (the other three curated palettes; the names are persisted by AP1) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, the debug catalogue toggles | DS6b |
 | app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont` | every screen | DS2 |
 | core (`:core:ledger`) | `EntityMeta<Id>` + `LedgerEntity<Id, Self>` (id, timestamps, user/device attribution, tombstone and archive state), composed into every model | every entity (account, category, tag, transaction, budget, recurring rule, loan, goal) | A3 |
 | core | `Auditable` (`auditFields()`) + `AuditDiff` (generic field diff, no reflection) + `AuditEntry`/`AuditLog` | about 10 models, identity, settings | A3 |

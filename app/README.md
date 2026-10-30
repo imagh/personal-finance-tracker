@@ -66,11 +66,13 @@ as they land (`data/common`, `ui/common`).
 | `PftSymbol` (`key`, `res`), `PftSymbol.fromKey(key)` | The icon registry: 92 Material Symbols Rounded vector drawables (`res/drawable/sym_<key>.xml`; chrome: `back`, `forward`, `add`, `close`, `check`, `search`, `filter`, `overflow`, `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar`, ...; the rest are category symbols). **Keys are permanent** (persisted in `category.icon_key`): add, never rename or remove; `src/test/resources/pft-symbol-keys.txt` pins them. `fromKey` is exact-match and null for anything unknown. Draw one with `Icon(painterResource(symbol.res), contentDescription = ..., tint = ...)`: the drawable is black. `androidx.compose.material.icons.*` is banned in app code (detekt `ForbiddenImport`). The full list and the how-to are in `docs/architecture/design-system.md` |
 | `PftTheme.palette`, `CategoryPalette[key]`, `categoryPalette(dark)`, `CategoryColors(container, content)` | The 12 named category hues (`rose, coral, amber, olive, emerald, teal, sky, blue, indigo, violet, magenta, slate`), light and dark, for glyph badges only (never money). An unknown or null name gives `slate`. Content is at least 4.5:1 on container |
 | `GlyphSize { Chip 28, Row 40, Hero 56 }` | The badge sides, fixed dp |
-| `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour **off** (opt-in), bundled serif |
+| `ThemePrefs(mode: ThemeMode, dynamicColor: Boolean, lightPalette: ThemePalette, darkPalette: ThemePalette, displayFont: DisplayFont)`, `ThemePrefs.Default` | The user's appearance. `Default` is `SYSTEM`, dynamic colour **off** (opt-in), `GRAPHITE` for both `lightPalette` and `darkPalette`, bundled serif |
+| `ThemePalette { GRAPHITE, MIDNIGHT, IVORY, AUBERGINE }` | The palettes a user can pick, light and dark independently. **The names are persisted by AP1: never rename or remove one, never depend on the order.** `ThemePalette.colors(dark)` (internal) is its `PaletteColors` |
 | `DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }` | Font of the hero number only; the serif is never used for titles (owner decision Q10) |
 | `ThemeMode { SYSTEM, LIGHT, DARK }` | `SYSTEM` follows the system night mode |
-| `resolveColorScheme(dark, dynamic, context)` | Dynamic (Material You) scheme when `dynamic` (opt-in), else `GraphitePalette` |
-| `GraphitePalette.light` / `.dark` (`PaletteColors(scheme)`, internal) | The default scheme, Graphite + platinum: generated offline with material-color-utilities 0.3.0 from custom tonal palettes, the owner-approved mockup values pinned over the generated roles (provenance and every override are in its KDoc), committed as constants. Used whenever dynamic colour is off, and in screenshot tests. It replaces the ink-indigo `BrandColors`, which is deleted. Canvas, island and wash join `PaletteColors` in DS6c and DS6d |
+| `resolveColorScheme(prefs, dark, context)` | Dynamic (Material You) scheme when `prefs.dynamicColor` (opt-in; the palette fields are then ignored), else the scheme of `prefs.darkPalette` in dark or `prefs.lightPalette` in light |
+| `GraphitePalette.light` / `.dark` (`PaletteColors(scheme)`, internal) | The default scheme, Graphite + platinum: generated offline with material-color-utilities 0.3.0 from custom tonal palettes, the owner-approved mockup values pinned over the generated roles (provenance and every override are in its KDoc), committed as constants. Used whenever dynamic colour is off and Graphite is chosen, and in screenshot tests. It replaces the ink-indigo `BrandColors`, which is deleted. Canvas, island and wash join `PaletteColors` in DS6c and DS6d |
+| `MidnightPalette`, `IvoryPalette`, `AuberginePalette` (`.light` / `.dark`, internal) | The other three curated palettes (DS6b), generated and pinned the same way as Graphite; each KDoc records its provenance and every override |
 | `MoneyColors`, `moneyColors(dark)` | Fixed green/red/amber tokens for amounts and status. **Never derived from the accent**; the same in the dynamic and the Graphite scheme. Positive balances are neutral by owner decision (`MoneyTone` in `ui/common` maps meaning to these tokens) |
 
 The bundled serif is Newsreader (`res/font/newsreader.ttf`, OFL-1.1, unmodified upstream; licence in
@@ -174,7 +176,7 @@ pre-Compose window colour would be wrong. AP1 fixes this with `UiModeManager.set
 ### Debug and release source sets
 
 `DevContent()` is what `MainActivity` shows until A5 brings the navigation host. In `src/debug` it
-shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, hero font and font scale (use it
+shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font and font scale, plus an Accent page for the manual amber check and a Palettes page (use it
 to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
 twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
 (`ui/theme`) so the screenshot tests can render it on both unit-test variants; it is unreferenced by
@@ -203,8 +205,8 @@ criterion, plan A5), so every instant core produces is storable.
 Static, build-time: `applicationId`/`namespace` `dev.imagh.pft` (**permanent**: changing it or the
 release signing key installs as a new app with an empty database; plan §12 Q4), minSdk 33,
 target/compile SDK 35, JDK 17. Pinned versions are in `gradle/libs.versions.toml`.
-Runtime appearance (`ThemePrefs`: mode, dynamic colour, display font) is a plain value that defaults to
-`SYSTEM` + dynamic colour off (Graphite) + bundled serif; the settings screen and its `app_setting` storage arrive in AP1, so today
+Runtime appearance (`ThemePrefs`: mode, dynamic colour, light palette, dark palette, display font) is a plain value that defaults to
+`SYSTEM` + dynamic colour off + Graphite for both light and dark + bundled serif; the settings screen and its `app_setting` storage arrive in AP1, so today
 nothing reads or writes a setting. Colours, like all design tokens, are static code constants, and screens never hardcode them: `ThemeLiteralScanTest` fails on any `Color(...)`, named `Color.*` (except `Transparent` and `Unspecified`), `FontFamily` or `R.font.*` outside `ui/theme`.
 
 ## Dependencies
@@ -275,7 +277,7 @@ on both the debug and release unit-test variants. After an intended visual chang
 `:app:recordRoborazziDebug`, review every changed PNG and commit them with the code. Failing actual
 and diff images land in `app/build/outputs/roborazzi/`.
 
-Design-token tests: `ColorContrastTest` (JUnit 5, WCAG contrast of every colour pair, light and dark),
+Design-token tests: `ColorContrastTest` (JUnit 5, WCAG contrast of every colour pair, for every palette in light and dark), `AccentHueTest` and `ChipColorsTest` (every palette), `ThemePaletteTest` (the pinned mockup values), `ThemePrefsTest`, `PaletteScreenshotTest` (the `palettes-<light|dark>` goldens),
 `ThemeResolutionTest`, `PftThemeModeTest` (needs the `+night` qualifier), `WindowThemeTest`,
 `PftTypographyTest`, `PftShapesTest`, `PftSpacingTest`, `BundledFontTest` (font hash and OFL text) and
 `TokenSheetScreenshotTest` (all Robolectric). DS4 adds `PftMotionTest` and `HeaderHeightTest` (JUnit 5, pure),

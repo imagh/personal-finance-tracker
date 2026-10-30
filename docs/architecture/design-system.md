@@ -31,13 +31,13 @@ Rules, enforced in review (detekt has no type resolution, so it cannot check the
 
 `PftTheme(prefs: ThemePrefs = ThemePrefs.Default) { ... }` in `ui/theme` is the only theme entry
 point. It resolves dark or light from `ThemePrefs.mode`, picks the colour scheme (dynamic Material
-You, opt-in, or the committed Graphite palette, the default), applies `MaterialTheme(colorScheme, typography, shapes)` and
+You, opt-in, or the committed palette the user picked for the resolved mode, Graphite by default), applies `MaterialTheme(colorScheme, typography, shapes)` and
 provides the extended tokens through `staticCompositionLocalOf`. Read them through the `PftTheme`
 object:
 
 | Accessor | Type | Provided how |
 |---|---|---|
-| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the `GraphitePalette` scheme by default; dynamic when `ThemePrefs.dynamicColor` is on |
+| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the chosen palette's scheme (Graphite by default); dynamic when `ThemePrefs.dynamicColor` is on, which ignores the palette |
 | `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
@@ -46,7 +46,7 @@ object:
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
 | `PftTheme.motion` | `PftMotion` | four springs, navigation transitions, press scale; a constant, the same in every theme |
 
-`ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `displayFont`). Until the appearance
+`ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `lightPalette`, `darkPalette`, `displayFont`). Until the appearance
 settings (AP1) the app always passes the defaults. Tokens are static code constants; per-user
 choices will live in the database (CLAUDE.md §3.5).
 
@@ -86,6 +86,34 @@ digits; that is accepted.
 `xxl` 32, `huge` 48 dp.
 
 ### Colour
+
+There are four curated palettes (`ThemePalette`, DS6b), each an `object` in `ui/theme` with a light and a dark
+`PaletteColors`, generated offline and pinned to the owner-approved mockup values (each file's KDoc lists the
+provenance and every override). **The user picks the light palette and the dark palette independently**
+(`ThemePrefs.lightPalette`, `ThemePrefs.darkPalette`, both `GRAPHITE` by default); `PftTheme` uses
+`if (dark) darkPalette else lightPalette` by the *resolved* mode, so a forced mode on a system of the other kind still
+gets the right one. Dynamic colour ignores both. The `ThemePalette` names are persisted by AP1, so they are permanent:
+never rename or remove one, and never depend on the order of the entries.
+
+| Palette | `ThemePalette` | Primary, light | Primary, dark | Look | CIELAB hue distance from money red / green (light, then dark) |
+|---|---|---|---|---|---|
+| Graphite (default) | `GRAPHITE` | `#3B4350` | `#C9CED8` | grey with a platinum accent | 125.7 / 116.6, 118.3 / 116.3 |
+| Midnight | `MIDNIGHT` | `#7D5F26` | `#D4B572` | navy with a brass (light) or champagne (dark) accent | 44.7 / 73.0, 56.1 / 69.3 |
+| Ivory | `IVORY` | `#2E3A59` | `#AEB9DA` | warm paper with an ink-navy (light) or periwinkle (dark) accent | 113.6 / 128.7, 110.4 / 124.2 |
+| Aubergine | `AUBERGINE` | `#5B2A66` | `#D9BE8A` | deep plum with a champagne accent in dark | 74.8 / 167.5, 55.4 / 70.0 |
+
+To pick: choose the light palette for daytime use and the dark palette for night, independently (for example Ivory by
+day and Midnight by night). Add a palette by adding one `<Name>Palette.kt` (the Graphite procedure), one `ThemePalette`
+entry, its pins in `ThemePaletteTest`, and re-running the loops in `ColorContrastTest`, `AccentHueTest` and
+`ChipColorsTest`, which cover every entry automatically.
+
+**Accent safety.** The accent is for interactive chrome only (FAB, selected navigation item, buttons, switches, focus),
+never for status or meters. Hue separates it from money green and red (at least 40 degrees of CIELAB hue,
+`AccentHueTest`, every palette). It does **not** separate it from warning amber: brass and champagne sit 1 to 7 degrees
+from it, by the owner's choice, so the hue rule exempts amber on purpose. What keeps a warning from reading as an accent
+is that a `StatusChip` always carries a word, and that its colours come from `MoneyColors`, identical under every palette
+(`ChipColorsTest`). The debug catalogue's Accent page puts an Unverified pill beside a selected navigation item and the
+FAB for the manual check in Midnight dark and Aubergine dark.
 
 The default scheme is **Graphite + platinum** (`GraphitePalette`, owner decision 2026-10-30). It was
 generated offline with material-color-utilities 0.3.0 from custom tonal palettes, with the
@@ -366,7 +394,8 @@ three consumers, so they cannot drift:
 
 - the Studio preview (`@PreviewLightDark`),
 - the debug-only design catalogue (`src/debug/.../DesignCatalog.kt`, shown by `DevContent()`),
-  which adds toggles for light/dark, hero font and font scale,
+  which adds toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font and font scale,
+  and an Accent page for the amber check,
 - the Roborazzi goldens (`TokenSheetScreenshotTest`).
 
 Component goldens (DS4) come from `HeaderScreenshotTest`, using the same `StandardHeaderSample`,
@@ -379,6 +408,10 @@ Content goldens (DS5) come from `ContentScreenshotTest`, captured by the bounds 
 composable on `surface` (393dp wide): `money-text-<light|dark>[-2x].png` (the 2x ones at font scale
 2.0), `status-chip-`, `grouped-section-` and `empty-state-<light|dark>.png`, 19 to 170 KB each. The
 Dashboard header sample uses a `MoneyText` hero, so its two expanded goldens show the money red.
+
+Palette goldens (DS6b) come from `PaletteScreenshotTest`: `palettes-<light|dark>.png`, the four palettes' role swatches
+side by side (`PaletteSwatches`, each column drawn from its own palette's colours, 393dp wide, about 130 KB each). They
+render byte-identically on the debug and release unit-test variants.
 
 Glyph goldens (DS3) come from `CategoryGlyphScreenshotTest`: every `PftSymbol` on a teal, an amber and a violet badge
 (`category-glyph-symbols-<teal|amber|violet>-<light|dark>.png`, about 175 KB each) and the emoji, letter and fallback sources
@@ -460,7 +493,7 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 
 `docs/plans/2026-10-30-m1a-premium-look.md` (owner decisions of 2026-10-30) changes several things on this page. Each DS6 slice updates the sections it touches as it lands; until then, the sections above describe what is built.
 
-- **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently. Money colours are unchanged.
+- **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently (done; see "Colour"). Money colours are unchanged.
 - **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas.
 - **Header.** An optional glow, off by default, never under money. (Icon-only actions through `HeaderIconButton` are done: DS6e.)
 - **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB.
