@@ -7,11 +7,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.test.core.app.ApplicationProvider
 import dev.imagh.pft.app.ui.HostedComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -155,5 +157,53 @@ class ThemeResolutionTest {
         assertEquals(Color(0xFF6FD99E), dark.positive)
         assertEquals(Color(0xFFFF8F85), dark.negative)
         assertEquals(Color(0xFFF2C14E), dark.warning)
+    }
+
+    @Test
+    fun `dynamic canvas and island are derived from the dynamic scheme's surface containers`() {
+        val light = dynamicLightColorScheme(context)
+        val dark = dynamicDarkColorScheme(context)
+        val lightColors = resolvePaletteColors(dynamicPrefs, dark = false, context = context)
+        val darkColors = resolvePaletteColors(dynamicPrefs, dark = true, context = context)
+        assertEquals(light.surfaceContainerHigh, lightColors.canvas)
+        assertEquals(light.surfaceContainerLow, lightColors.island)
+        assertEquals(dark.surfaceContainerLowest, darkColors.canvas)
+        assertEquals(dark.surfaceContainerLow, darkColors.island)
+        assertEquals(light.roles(), lightColors.scheme.roles())
+        assertEquals(dark.roles(), darkColors.scheme.roles())
+    }
+
+    @Test
+    fun `dynamic off resolves the palette's own canvas and island`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.MIDNIGHT)
+        assertEquals(ThemePalette.IVORY.colors(dark = false).canvas, resolvePaletteColors(prefs, false, context).canvas)
+        assertEquals(
+            ThemePalette.MIDNIGHT.colors(dark = true).island,
+            resolvePaletteColors(prefs, true, context).island,
+        )
+    }
+
+    @Test
+    fun `the derived dynamic canvas, island and surface stay near the window colour and inside the swept band`() {
+        // First-frame flash (UI-18): the window starts as Graphite's canvas, whatever dynamic colour derives.
+        for (dark in listOf(false, true)) {
+            val colors = resolvePaletteColors(dynamicPrefs, dark, context)
+            val window = GraphitePalette.let { if (dark) it.dark else it.light }.canvas
+            val low = greyAtTone(sweptTones(dark).first).luminance()
+            val high = greyAtTone(sweptTones(dark).last).luminance()
+            val derived =
+                mapOf("canvas" to colors.canvas, "island" to colors.island, "surface" to colors.scheme.surface)
+            for ((name, color) in derived) {
+                val delta = kotlin.math.abs(toneOf(color) - toneOf(window))
+                assertTrue(
+                    "dynamic dark=$dark $name is $delta tones from the window colour",
+                    delta <= WINDOW_FLASH_MAX_TONE_DELTA,
+                )
+                assertTrue(
+                    "dynamic dark=$dark $name luminance ${color.luminance()} is outside the swept band",
+                    color.luminance() in (low - 0.002f)..(high + 0.002f),
+                )
+            }
+        }
     }
 }

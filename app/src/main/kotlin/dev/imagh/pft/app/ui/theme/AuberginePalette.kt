@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.Color
  *    | `onvar` | `onSurfaceVariant` | #594C58 | #B3A5B2 |
  *    | `line` | `outlineVariant` | #DACFD9 | #2E2030 |
  *    | `primary` | `primary` | #5B2A66 | #D9BE8A |
+ *    | `canvas` | `canvas` (DS6c) | #EAE3EA | #0E080F |
+ *    | `island` | `island` (DS6c) | #F4EFF4 | #181018 |
  *
  * 4. Follow-on adjustments keep the pinned dark values coherent (not mockup values, none of them
  *    changes a hue). `surfaceTint` equals the pinned `primary`, as in M3. The pinned dark `surface`
@@ -90,6 +92,8 @@ internal object AuberginePalette {
                 surfaceContainerLow = Color(0xFFF7F2F7),
                 surfaceContainerLowest = Color(0xFFFFFFFF),
             ),
+            canvas = Color(0xFFEAE3EA),
+            island = Color(0xFFF4EFF4),
         )
 
     /** Dark roles. */
@@ -133,5 +137,7 @@ internal object AuberginePalette {
                 surfaceContainerLow = Color(0xFF181119),
                 surfaceContainerLowest = Color(0xFF0F0911),
             ),
+            canvas = Color(0xFF0E080F),
+            island = Color(0xFF181018),
         )
 }

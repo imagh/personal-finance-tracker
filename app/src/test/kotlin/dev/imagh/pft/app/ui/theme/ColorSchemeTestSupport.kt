@@ -2,6 +2,7 @@ package dev.imagh.pft.app.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import kotlin.math.atan2
 import kotlin.math.cbrt
 import kotlin.math.pow
@@ -104,3 +105,27 @@ internal fun hueDistance(
     val d = kotlin.math.abs(a - b) % 360.0
     return if (d > 180.0) 360.0 - d else d
 }
+
+/**
+ * How far, in tones (CIE L*), any colour the window can be repainted with may sit from the window's
+ * resource colour (Graphite's canvas) without a visible first-frame flash (plan §3.3, UI-18).
+ */
+internal const val WINDOW_FLASH_MAX_TONE_DELTA = 8.0
+
+/** The tone (CIE L*, 0 black to 100 white) of [color]; a function of its luminance alone. */
+internal fun toneOf(color: Color): Double {
+    val y = color.luminance().toDouble()
+    val f = if (y > 216.0 / 24389.0) cbrt(y) else (24389.0 / 27.0 * y + 16.0) / 116.0
+    return 116.0 * f - 16.0
+}
+
+/** The neutral grey of CIE L* [tone], i.e. what M3 tonal palettes call "tone N" at zero chroma. */
+internal fun greyAtTone(tone: Int): Color {
+    val fy = (tone + 16.0) / 116.0
+    val y = if (tone > 8) fy * fy * fy else tone / 903.2962962962963
+    val encoded = if (y <= 0.0031308) 12.92 * y else 1.055 * y.pow(1.0 / 2.4) - 0.055
+    return Color(encoded.toFloat(), encoded.toFloat(), encoded.toFloat())
+}
+
+/** The tones a surface role can take: light 87 (surfaceDim) to 100, dark 0 to 24 (surfaceBright). */
+internal fun sweptTones(dark: Boolean): IntRange = if (dark) 0..24 else 87..100

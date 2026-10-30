@@ -8,7 +8,6 @@ import dev.imagh.pft.app.ui.common.groupedSectionColor
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.math.pow
 
 /**
  * WCAG 2.x contrast for every colour pair the design system promises (plan §3.3, UI-5), checked
@@ -40,25 +39,20 @@ class ColorContrastTest {
         return (maxOf(l1, l2) + 0.05) / (minOf(l1, l2) + 0.05)
     }
 
-    /** The neutral grey of CIE L* [tone], i.e. what M3 tonal palettes call "tone N" at zero chroma. */
-    private fun greyAtTone(tone: Int): Color {
-        val fy = (tone + 16.0) / 116.0
-        val y = if (tone > 8) fy * fy * fy else tone / 903.2962962962963
-        val encoded = if (y <= 0.0031308) 12.92 * y else 1.055 * y.pow(1.0 / 2.4) - 0.055
-        return Color(encoded.toFloat(), encoded.toFloat(), encoded.toFloat())
-    }
-
-    /** The tones a surface role can take: light 87 (surfaceDim) to 100, dark 0 to 24 (surfaceBright). */
-    private fun sweptTones(theme: Theme) = if (theme == Theme.LIGHT) 87..100 else 0..24
-
     /**
      * Dynamic surfaces are low-chroma, so they are tested as greys across [sweptTones]. The dark
      * band starts at black because the dark canvas and flat surfaces sit at tones 3 to 8.
      */
     private fun surfaceGreys(case: Case): Map<String, Color> =
-        sweptTones(case.theme).associate { "grey tone $it" to greyAtTone(it) }
+        sweptTones(case.theme == Theme.DARK).associate { "grey tone $it" to greyAtTone(it) }
 
     private fun scheme(case: Case) = case.palette.colors(dark = case.theme == Theme.DARK).scheme
+
+    /** The palette's tonal screen background and card fill (DS6c), named like the scheme's surface roles. */
+    private fun tonalSurfaces(case: Case): Map<String, Color> {
+        val colors = case.palette.colors(dark = case.theme == Theme.DARK)
+        return mapOf("canvas" to colors.canvas, "island" to colors.island)
+    }
 
     private fun money(case: Case) = moneyColors(dark = case.theme == Theme.DARK)
 
@@ -75,7 +69,7 @@ class ColorContrastTest {
     @Test
     fun `money text tokens clear 4_5 on every surface role and every grey surface tone`() {
         for (case in cases) {
-            val surfaces = scheme(case).surfaceRoles() + surfaceGreys(case)
+            val surfaces = scheme(case).surfaceRoles() + tonalSurfaces(case) + surfaceGreys(case)
             val m = money(case)
             val tokens = mapOf("positive" to m.positive, "negative" to m.negative, "warning" to m.warning)
             for ((tokenName, token) in tokens) {
@@ -169,9 +163,18 @@ class ColorContrastTest {
     fun `onSurface and onSurfaceVariant clear 4_5 on every surface role`() {
         for (case in cases) {
             val s = scheme(case)
-            for ((surfaceName, surface) in s.surfaceRoles()) {
+            for ((surfaceName, surface) in s.surfaceRoles() + tonalSurfaces(case)) {
                 assertAtLeast(textMin, "$case onSurface on $surfaceName", s.onSurface, surface)
                 assertAtLeast(textMin, "$case onSurfaceVariant on $surfaceName", s.onSurfaceVariant, surface)
+            }
+        }
+    }
+
+    @Test
+    fun `the accent clears 3 to 1 on the canvas and the island`() {
+        for (case in cases) {
+            for ((name, surface) in tonalSurfaces(case)) {
+                assertAtLeast(nonTextMin, "$case primary on $name", scheme(case).primary, surface)
             }
         }
     }
@@ -200,10 +203,10 @@ class ColorContrastTest {
         // when its luminance is between the band's end greys. If one drifts out, the grey sweep
         // above no longer brackets the real surfaces and must be widened.
         for (case in cases) {
-            val tones = sweptTones(case.theme)
+            val tones = sweptTones(case.theme == Theme.DARK)
             val low = greyAtTone(tones.first).luminance()
             val high = greyAtTone(tones.last).luminance()
-            for ((name, role) in scheme(case).surfaceRoles()) {
+            for ((name, role) in scheme(case).surfaceRoles() + tonalSurfaces(case)) {
                 val l = role.luminance()
                 assertTrue(
                     l in (low - 0.002f)..(high + 0.002f),
