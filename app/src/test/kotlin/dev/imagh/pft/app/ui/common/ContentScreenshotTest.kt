@@ -78,4 +78,12 @@ class ContentScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun moneyTextDarkFont200() = capture("money-text-dark-2x", fontScale = 2f) { MoneyTextSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun groupedSectionLight() = capture("grouped-section-light") { GroupedSectionSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun groupedSectionDark() = capture("grouped-section-dark") { GroupedSectionSamples() }
 }

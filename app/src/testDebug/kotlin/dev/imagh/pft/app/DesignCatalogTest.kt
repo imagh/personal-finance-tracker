@@ -134,4 +134,13 @@ class DesignCatalogTest {
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("+₹1,25,000.00"))
         compose.onNodeWithText("+₹1,25,000.00").assertIsDisplayed()
     }
+
+    @Test
+    fun `the Sections section shows islands of rows`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Sections").performClick()
+        compose.onNodeWithText("Sections").assertIsSelected()
+        compose.onNodeWithText("Everyday account").assertIsDisplayed()
+        compose.onNodeWithText("Monthly, from the 1st").assertIsDisplayed()
+    }
 }
