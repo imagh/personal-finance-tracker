@@ -13,6 +13,21 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-10-30 — Premium-look plan (DS6): facts found while planning
+- **Learning:**
+  1. `SettingsService` accepts only keys matching `[a-z][a-z0-9_]*`, so the design-system plan's dotted AP1 keys (`ui.theme_mode`) would have thrown `InvalidSettingKey`. AP1 uses `ui_theme_mode` and similar.
+  2. The bundled Newsreader, read directly (cmap/GSUB/fvar/hmtx with a Python standard-library probe, no fontTools), has ₹ U+20B9, − U+2212, `tnum` and `pnum`, but **no `lnum`**. Its default digits are already equal-width (1100 units). Its `opsz` default is 18, not 48.
+  3. By CAM16 and CIELAB hue, money warning amber is about 72–86°, not about 40°. Brass and champagne accents sit 1–9° from it, so hue cannot separate them; labels and palette-independent pill colours must.
+  4. Dark tonal canvases reach tone 2.7, below the old contrast sweep floor of tone 4. Some light glow tints blend to tone 86.5, below its floor of 87. Sweep those colours by contrast, not by tone band.
+  5. A git ref cannot be both a branch and a directory, so DS6 slices use `feat/m1a-foundation-ds6<x>-<slug>`, one worktree per slice.
+  6. Owner, second round: the font budget is 3 MiB for all of `res/font`. An all-serif pairing was liked in the mockup but deferred; it can be added later as a new enum value with no migration, because unknown setting values read as the default. Keep persisted enums additive for exactly this reason.
+- **Why:** each would have surfaced late, in AP1, in a red contrast test, or as a reviewer's "is tnum really there?".
+- **How to apply:**
+  - Validate setting keys against `SettingsService.KEY_PATTERN` when you design them.
+  - Read font facts from the file before you depend on them, and still confirm the rendering on the emulator.
+  - When you add a surface colour, add it to `ColorContrastTest` by value.
+  - Do not assume a hue; compute it.
+
 ### 2026-10-30 — R8 on for release, early, with a shrink guard in `check`
 - **Learning:** (1) Owner decision: minify the release build instead of moving sample and preview code to `src/debug`. R8 (`isMinifyEnabled` + `isShrinkResources`) is on from now; it was planned for H3. Signing, the SQLCipher keep rule and `ReleaseSmokeTest` stay in H3, and there is still no release `signingConfig` (fail closed). (2) `:app:verifyReleaseShrink` (in `app/build.gradle.kts`, wired into `check`) builds `assembleRelease`, reads `build/outputs/mapping/release/mapping.txt` and fails if `MainActivity` is missing or any `dev.imagh.pft.app.ui.theme.TokenSheet*` class survives. It was seen failing with minify off ("no R8 mapping") and with a deliberate `-keep` on `TokenSheetKt` (lists the leaked classes). (3) `proguard-rules.pro` has no keep rules: the release runtime classpath is only Compose and activity-compose, and the manifest-referenced `MainActivity` is kept by AGP. (4) Size: release APK 18,271,448 bytes unminified, 1,385,868 bytes with R8 (about 13x smaller). (5) Timing: cold `check --no-build-cache` took 24 s without the guard and 26-31 s with it; `assembleRelease` itself is about 15 s cold. (6) Smoke recipe on `pft35`: boot headless (`emulator -avd pft35 -no-window -no-audio -no-snapshot-save`, poll `sys.boot_completed`), `assembleRelease`, sign a **copy** of the unsigned APK in the scratchpad with `~/.android/debug.keystore` and build-tools 34.0.0 `apksigner` (one-off, never wired into the build), `adb install`, `am start -n dev.imagh.pft/dev.imagh.pft.app.MainActivity` (the class is in `dev.imagh.pft.app`, not the namespace root), then `pidof` after 6 s and a logcat grep (that pid) for `FATAL EXCEPTION|ClassNotFoundException|NoSuchMethodError`. Result: alive, no matches. Finish with `adb uninstall` and `adb emu kill`.
 - **Why:** unminified release APKs shipped the token sheet and its `@Preview`; R8 errors for missing classes are cheaper to meet now than at the end of M1a.
