@@ -852,5 +852,6 @@ Decisions recorded here that revise earlier owner decisions (for the owner's awa
 - **A `HeaderTags.ACTIONS` test tag was added** on the actions row (semantics only) so the test can scope "every node under the actions row".
 - **The existing `actions sit in the top row` test** now uses a `HeaderIconButton` instead of an `IconButton` holding text, so no test models the pattern the rule forbids.
 - **Release APK delta is 0 bytes.** No release code reaches the scaffold or `HeaderIconButton` yet (only `HeaderSamples`, which R8 removes), so the release APK is byte-identical to the base (SHA-256 equal) and no drawable survives. The first real consumer (A5 and later) is when the symbols start to count; DS3's learning already records the +87 KB worst case.
+- **LTR only.** The app is LTR-only, so symbols are not auto-mirrored: `CHEVRON_LEFT` is always "previous" and `BACK` is unmirrored, although the scaffold's swipe already flips under RTL. Revisit (autoMirrored drawables or swapped chevrons) if RTL is ever supported. It is also in the `HeaderPeriod` and `PeriodStepper` KDoc.
 - **No new `*Samples.kt`**, so `mustBeRemoved` is unchanged.
 - **Commit shape.** The stepper change and its two expanded Dashboard goldens are one commit; the samples change and all 8 header goldens are the next (the Dashboard-expanded pair is therefore recorded twice).

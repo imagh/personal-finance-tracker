@@ -77,6 +77,10 @@ enum class HeaderStyle {
  * The period control of a [HeaderStyle.Dashboard] header: the scaffold draws a chevron stepper at the
  * end of the caption row and also steps when the expanded header is swiped sideways.
  *
+ * **LTR only.** The app is left-to-right only, so the symbols are not auto-mirrored: the left
+ * chevron is always "previous" and the right one "next", while the swipe already flips under RTL.
+ * Revisit (autoMirrored drawables or swapped chevrons) if RTL is ever supported.
+ *
  * @property onPrevious show the previous period (swipe right in a left-to-right layout, or the left chevron).
  * @property onNext show the next period (swipe left in a left-to-right layout, or the right chevron).
  */
@@ -583,7 +587,10 @@ private fun HeaderTitle(
     )
 }
 
-/** The previous and next period buttons: chevron symbols ([HeaderIconButton]), labelled for TalkBack. */
+/**
+ * The previous and next period buttons: chevron symbols ([HeaderIconButton]), labelled for TalkBack.
+ * The app is LTR-only, so the chevrons are not mirrored (see [HeaderPeriod]).
+ */
 @Composable
 private fun PeriodStepper(period: HeaderPeriod) {
     Row(Modifier.testTag(HeaderTags.PERIOD_STEPPER)) {
