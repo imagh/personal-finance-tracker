@@ -15,24 +15,30 @@ import dev.imagh.pft.ledger.identity.Identity
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
+import java.time.Clock
 
 /**
  * The core object graph wired over a real [PftDatabase], the Room twin of core's `LedgerTestKit`
  * (which wires the in-memory fakes). An integration test starts with
  * `RoomTestKit(TestDatabase.create())` and drives the real services through Room.
  *
+ * @param wrapClock wraps the test clock before the services see it, to give them a millisecond clock.
  * @param auditLog where audit entries go; defaults to the real [RoomAuditLog]. Pass a wrapper that
  *   fails to prove a failed audit write rolls the change back.
  */
 class RoomTestKit(
     val database: PftDatabase,
     val auditLog: AuditLog = RoomAuditLog(database.auditDao()),
+    wrapClock: (Clock) -> Clock = { it },
 ) {
-    /** The clock behind every timestamp and id; advance it to test ordering. */
+    /** The test clock; advance or set it to test ordering and precision. */
     val clock = TestClock()
 
-    /** Id generator on [clock]. */
-    val ids = Uuid7(clock)
+    /** The clock the services use: [clock] as given, or wrapped by [wrapClock] (for example `EpochMillis.clock`). */
+    private val appClock: Clock = wrapClock(clock)
+
+    /** Id generator on [appClock]. */
+    val ids = Uuid7(appClock)
 
     /** The Room transaction runner. */
     val runner = RoomTransactionRunner(database)
@@ -44,16 +50,16 @@ class RoomTestKit(
     val settingsRepository = RoomAppSettingsRepository(database.appSettingDao())
 
     /** Builds audit entries into [auditLog]. */
-    val recorder = AuditRecorder(auditLog, ids, clock)
+    val recorder = AuditRecorder(auditLog, ids, appClock)
 
     /** First-run setup and current identity. */
-    val identity = IdentityService(runner, identityRepository, settingsRepository, recorder, ids, clock)
+    val identity = IdentityService(runner, identityRepository, settingsRepository, recorder, ids, appClock)
 
     /** Audited runtime settings. */
-    val settings = SettingsService(runner, settingsRepository, identity, recorder, clock)
+    val settings = SettingsService(runner, settingsRepository, identity, recorder, appClock)
 
     /** The audited write path every service uses. */
-    val writer = AuditedWriter(runner, identity, recorder, clock)
+    val writer = AuditedWriter(runner, identity, recorder, appClock)
 
     /** Performs first-run setup as `Akash` on `Pixel` and returns that identity. */
     suspend fun initialise(): Identity = identity.initialise("Akash", "Pixel")

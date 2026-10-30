@@ -8,20 +8,20 @@ import java.time.Instant
 
 /**
  * The one mapping between core's [EntityMeta] and the shared [MetaColumns], used by every entity's
- * mapper. Times are stored as epoch milliseconds, so finer precision is dropped; the app's clock
- * is millisecond-resolution, which keeps a stored entity equal to the one that was written.
+ * mapper. Times go through [EpochMillis], which stores epoch milliseconds exactly and refuses anything finer
+ * (`IllegalArgumentException`), so a stored entity always equals the one that was written.
  */
 object MetaMapper {
     /** The columns for [meta]. */
     fun <Id : EntityId> toColumns(meta: EntityMeta<Id>): MetaColumns =
         MetaColumns(
             id = meta.id.value,
-            createdAt = meta.createdAt.toEpochMilli(),
-            updatedAt = meta.updatedAt.toEpochMilli(),
+            createdAt = EpochMillis.of(meta.createdAt),
+            updatedAt = EpochMillis.of(meta.updatedAt),
             createdByUserId = meta.createdByUserId.value,
             createdOnDeviceId = meta.createdOnDeviceId.value,
-            deletedAt = meta.deletedAt?.toEpochMilli(),
-            archivedAt = meta.archivedAt?.toEpochMilli(),
+            deletedAt = meta.deletedAt?.let(EpochMillis::of),
+            archivedAt = meta.archivedAt?.let(EpochMillis::of),
         )
 
     /** The meta stored in [columns]; [toId] builds the entity's typed id from its text. */

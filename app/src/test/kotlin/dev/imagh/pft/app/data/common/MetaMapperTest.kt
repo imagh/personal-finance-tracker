@@ -4,6 +4,7 @@ import dev.imagh.pft.app.testing.SampleId
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.ids.DeviceId
 import dev.imagh.pft.ledger.ids.UserId
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import java.time.Instant
@@ -48,5 +49,17 @@ class MetaMapperTest {
         columns.deletedAt shouldBe created.plusSeconds(5).toEpochMilli()
         columns.archivedAt shouldBe created.plusSeconds(3).toEpochMilli()
         MetaMapper.toMeta(columns, ::SampleId) shouldBe both
+    }
+
+    @Test
+    fun `any time with sub-millisecond precision is refused rather than silently rounded`() {
+        val fine = created.plusNanos(1)
+
+        listOf(
+            meta.copy(createdAt = fine),
+            meta.copy(updatedAt = fine),
+            meta.copy(deletedAt = fine),
+            meta.copy(archivedAt = fine),
+        ).forEach { shouldThrow<IllegalArgumentException> { MetaMapper.toColumns(it) } }
     }
 }

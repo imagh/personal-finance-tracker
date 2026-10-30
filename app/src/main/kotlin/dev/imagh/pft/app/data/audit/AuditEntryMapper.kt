@@ -1,5 +1,6 @@
 package dev.imagh.pft.app.data.audit
 
+import dev.imagh.pft.app.data.common.EpochMillis
 import dev.imagh.pft.ledger.audit.AuditAction
 import dev.imagh.pft.ledger.audit.AuditEntry
 import dev.imagh.pft.ledger.audit.AuditSource
@@ -18,8 +19,7 @@ import java.time.Instant
  * serialised with the platform's `org.json` so core stays dependency-free. Unset sides are JSON
  * `null`, which is different from the text `"null"`. The shape is a contract: rows written by one
  * device are read by the other once sync exists, so change it only with a versioned migration.
- * Time is stored as epoch milliseconds, so finer precision is dropped (the app's clock is
- * millisecond-resolution).
+ * Time goes through [EpochMillis]: epoch milliseconds, exactly; a finer instant is refused.
  *
  * Reading fails closed: a row that cannot be parsed throws an [IllegalStateException] whose message
  * holds no row content (an audit row may contain names and amounts, CLAUDE.md §3.7).
@@ -39,7 +39,7 @@ object AuditEntryMapper {
             userId = entry.userId.value,
             deviceId = entry.deviceId.value,
             source = entry.source.name,
-            at = entry.at.toEpochMilli(),
+            at = EpochMillis.of(entry.at),
         )
 
     /**

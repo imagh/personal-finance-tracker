@@ -103,10 +103,10 @@ class AuditEntryMapperTest {
     }
 
     @Test
-    fun `time is stored as milliseconds, so finer precision is dropped`() {
+    fun `time with sub-millisecond precision is refused rather than silently rounded`() {
         val fine = entry.copy(at = Instant.parse("2026-11-01T10:00:00.123456789Z"))
 
-        AuditEntryMapper.toModel(AuditEntryMapper.toEntity(fine)).at shouldBe Instant.parse("2026-11-01T10:00:00.123Z")
+        shouldThrow<IllegalArgumentException> { AuditEntryMapper.toEntity(fine) }
     }
 
     @Test

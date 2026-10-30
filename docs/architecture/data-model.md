@@ -15,7 +15,7 @@ are mapped one-to-one to them, and core never sees them (CLAUDE.md §3.3).
 |---|---|
 | Money | `INTEGER` paise, never floating point. Amounts on transactions are positive; the sign comes from `direction` |
 | Ids | 36-character UUID text (`Uuid7` or `NameBasedId`), primary key `id TEXT` |
-| Time | epoch **milliseconds** UTC, `INTEGER`. Finer precision is dropped on write, so the app's clock must be millisecond-resolution (A5's container) for a stored entity to equal the one that was written |
+| Time | epoch **milliseconds** UTC, `INTEGER`, stored exactly: `EpochMillis.of` refuses a finer instant instead of rounding it (so a stored entity always equals the one written, and `updated_at` equals the audit `at`). The app builds core's `Clock` with `EpochMillis.clock()` (A5) |
 | Column names | explicit snake_case `@ColumnInfo(name = ...)`, equal to the keys of the model's `auditFields()` |
 | Shared columns | `id`, `created_at`, `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at NULL`, `archived_at NULL` on every ledger entity table (`MetaColumns`, `@Embedded`). Entities declare `primaryKeys = ["id"]` themselves (Room does not count a key inside `@Embedded`) |
 | Delete | soft delete only (`deleted_at`), hard delete never happens (INT-3) |

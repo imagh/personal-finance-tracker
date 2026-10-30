@@ -143,8 +143,10 @@ release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 The Room database `pft.db` (schema v1: `user_profile`, `device`, `app_setting`, `audit_entry`; see
 [`docs/architecture/data-model.md`](../docs/architecture/data-model.md)). It is plaintext and not opened
 by the running app yet: A4b adds SQLCipher, the Keystore-wrapped key and the pre-migration backup, and
-A5 the `AppContainer` that opens it. Times are stored as epoch milliseconds, so the clock the app
-gives `AuditedWriter` must be millisecond-resolution (A5).
+A5 the `AppContainer` that opens it. Times are stored as epoch milliseconds **exactly**: every
+time goes through `EpochMillis.of`, which refuses a finer instant (`IllegalArgumentException`) instead of
+rounding it. The app must build the `Clock` it gives core with `EpochMillis.clock()` (A5 acceptance
+criterion, plan A5), so every instant core produces is storable.
 
 ## Configuration
 

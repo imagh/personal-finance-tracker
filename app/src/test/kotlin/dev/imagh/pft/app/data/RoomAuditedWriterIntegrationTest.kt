@@ -1,6 +1,7 @@
 package dev.imagh.pft.app.data
 
 import android.database.sqlite.SQLiteConstraintException
+import dev.imagh.pft.app.data.common.EpochMillis
 import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.SampleId
 import dev.imagh.pft.app.testing.SampleThing
@@ -23,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Duration
+import java.time.Instant
 
 /**
  * `AuditedWriter` over Room (INT-2, INT-3, INT-4): the entity row and its audit entry are written
@@ -215,5 +217,35 @@ class RoomAuditedWriterIntegrationTest {
             }
 
             trail().size shouldBe 1
+        }
+
+    @Test
+    fun `with a millisecond clock over a nanosecond source, what is written equals what is read back`() =
+        runSuspending {
+            val msKit = RoomTestKit(database, wrapClock = EpochMillis::clock)
+            msKit.clock.set(Instant.parse("2026-11-01T10:00:00.123456789Z"))
+            msKit.initialise()
+
+            val created = create(writer = msKit.writer)
+            msKit.clock.set(Instant.parse("2026-11-01T10:05:00.987654321Z"))
+            val updated = msKit.writer.update(things, id) { it.copy(name = "Coffee") }
+
+            things.get(id) shouldBe updated
+            created.meta.createdAt shouldBe Instant.parse("2026-11-01T10:00:00.123Z")
+            updated.meta.updatedAt shouldBe Instant.parse("2026-11-01T10:05:00.987Z")
+            msKit.trailOf("sample_thing", id.value).map { it.at } shouldBe
+                listOf(created.meta.createdAt, updated.meta.updatedAt)
+        }
+
+    @Test
+    fun `a clock finer than a millisecond is refused and nothing is written`() =
+        runSuspending {
+            kit.initialise()
+            kit.clock.set(Instant.parse("2026-11-01T10:00:00.123456789Z"))
+
+            shouldThrow<IllegalArgumentException> { create() }
+
+            things.get(id) shouldBe null
+            trail() shouldBe emptyList()
         }
 }

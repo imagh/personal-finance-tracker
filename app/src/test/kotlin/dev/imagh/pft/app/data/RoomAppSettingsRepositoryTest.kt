@@ -4,6 +4,7 @@ import dev.imagh.pft.app.data.settings.RoomAppSettingsRepository
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.runSuspending
 import dev.imagh.pft.ledger.settings.AppSetting
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.After
 import org.junit.Test
@@ -58,5 +59,13 @@ class RoomAppSettingsRepositoryTest {
 
             repository.get("a")?.value shouldBe "1"
             repository.get("b")?.value shouldBe "2"
+        }
+
+    @Test
+    fun `a time with sub-millisecond precision is refused and nothing is stored`() =
+        runSuspending {
+            shouldThrow<IllegalArgumentException> { repository.put(AppSetting("a", "1", at.plusNanos(1))) }
+
+            repository.get("a") shouldBe null
         }
 }
