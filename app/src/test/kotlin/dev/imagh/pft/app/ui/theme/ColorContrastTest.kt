@@ -155,11 +155,12 @@ class ColorContrastTest {
 
     @Test
     fun `every category palette content colour clears 4_5 on its container, so the letter fallback is legible`() {
-        for (case in cases) {
-            val palette = categoryPalette(dark = case.theme == Theme.DARK)
+        // The category palette depends on the mode only, never on the chosen ThemePalette.
+        for (theme in Theme.entries) {
+            val palette = categoryPalette(dark = theme == Theme.DARK)
             for (key in CategoryPalette.keys) {
                 val colors = palette[key]
-                assertAtLeast(textMin, "$case $key content on container", colors.content, colors.container)
+                assertAtLeast(textMin, "$theme $key content on container", colors.content, colors.container)
             }
         }
     }
