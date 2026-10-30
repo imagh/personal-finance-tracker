@@ -4,7 +4,9 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import dev.imagh.pft.app.data.audit.AuditEntryEntity
 import dev.imagh.pft.app.data.identity.DeviceEntity
+import dev.imagh.pft.app.data.identity.IdentityDao
 import dev.imagh.pft.app.data.identity.UserProfileEntity
+import dev.imagh.pft.app.data.settings.AppSettingDao
 import dev.imagh.pft.app.data.settings.AppSettingEntity
 
 /**
@@ -25,4 +27,10 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
     version = 1,
     exportSchema = true,
 )
-abstract class PftDatabase : RoomDatabase()
+abstract class PftDatabase : RoomDatabase() {
+    /** Users and devices. */
+    abstract fun identityDao(): IdentityDao
+
+    /** Runtime settings. */
+    abstract fun appSettingDao(): AppSettingDao
+}
