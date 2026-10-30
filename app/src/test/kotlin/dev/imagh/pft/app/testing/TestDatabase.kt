@@ -21,4 +21,11 @@ object TestDatabase {
             .inMemoryDatabaseBuilder(context, PftDatabase::class.java)
             .installAuditTriggers()
             .build()
+
+    /** [PftDatabase] plus the throwaway `sample_thing` table (see `SampleThing`), for the shared-block tests. */
+    fun createWithSample(context: Context = ApplicationProvider.getApplicationContext()): SampleDatabase =
+        Room
+            .inMemoryDatabaseBuilder(context, SampleDatabase::class.java)
+            .installAuditTriggers()
+            .build()
 }

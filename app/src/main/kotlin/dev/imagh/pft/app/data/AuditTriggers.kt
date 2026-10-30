@@ -45,7 +45,7 @@ object AuditTriggers {
  * Makes the database create the audit triggers when its file is first created. Every builder of a
  * [PftDatabase] (the production factory and the tests' `TestDatabase`) must call this.
  */
-fun RoomDatabase.Builder<PftDatabase>.installAuditTriggers(): RoomDatabase.Builder<PftDatabase> =
+fun <T : RoomDatabase> RoomDatabase.Builder<T>.installAuditTriggers(): RoomDatabase.Builder<T> =
     addCallback(
         object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) = AuditTriggers.install(db)
