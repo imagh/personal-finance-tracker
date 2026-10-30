@@ -18,8 +18,10 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
  * tables; each later slice adds its tables through its own migration and a migration test.
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
- * and tests alike): it adds the migrations and the callback that installs and repairs the audit
- * triggers, so the audit trail cannot end up unprotected. In the app the file is encrypted:
+ * and tests alike), which is `internal` to the app module: the only production caller is
+ * [DatabaseFactory], so no other code can build an unkeyed (plaintext) database. It adds the
+ * migrations and the callback that installs and repairs the audit triggers, so the audit trail
+ * cannot end up unprotected. In the app the file is encrypted:
  * [DatabaseFactory] passes SQLCipher's open-helper factory to [create]. Tests use the framework's
  * SQLite in memory (Robolectric), and the instrumented `EncryptedDatabaseTest` covers SQLCipher.
  */
@@ -43,13 +45,14 @@ abstract class PftDatabase : RoomDatabase() {
 
         /**
          * The one way to build a [PftDatabase]. Registers [Migrations.ALL] and the audit-trigger
-         * callback ([AuditTriggers.callback]).
+         * callback ([AuditTriggers.callback]). `internal` on purpose: with a null [openHelperFactory]
+         * the database is plaintext, so only [DatabaseFactory] (and the app's tests) may call it.
          *
          * @param name the database file, or null for an in-memory database (tests).
          * @param openHelperFactory a custom open helper, SQLCipher's in the app ([DatabaseFactory]);
          *   null uses the framework's.
          */
-        fun create(
+        internal fun create(
             context: Context,
             name: String? = NAME,
             openHelperFactory: SupportSQLiteOpenHelper.Factory? = null,

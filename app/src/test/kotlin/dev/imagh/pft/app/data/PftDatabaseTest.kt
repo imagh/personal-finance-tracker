@@ -108,4 +108,14 @@ class PftDatabaseTest {
             it.getInt(0) shouldBe 1
         }
     }
+
+    @Test
+    fun `no public way to build the database exists outside the app module`() {
+        // Kotlin compiles an internal function to a public method with a mangled name (create$app_debug), so
+        // a public `create` or `build` would be a method with exactly that name. Only DatabaseFactory may
+        // build the database, because a caller without a key factory would get a plaintext one.
+        val publicNames = PftDatabase.Companion::class.java.methods.map { it.name }
+
+        publicNames.filter { it == "create" || it == "build" } shouldBe emptyList()
+    }
 }
