@@ -123,8 +123,15 @@ val verifyReleaseShrink by tasks.registering {
     dependsOn("assembleRelease")
     val mappingFile = layout.buildDirectory.file("outputs/mapping/release/mapping.txt")
     val preShrinkClasses = layout.buildDirectory.dir("tmp/kotlin-classes/release")
-    // Kept, and unobfuscated (the manifest references it), so it must map to its own name.
-    val mustBeKept = listOf("dev.imagh.pft.app.MainActivity")
+    // Kept, and unobfuscated, so each must map to its own name. MainActivity: the manifest names it.
+    // PftDatabase_Impl: Room's generated database is created by name through reflection
+    // (Room.getGeneratedImplementation); room-runtime's consumer rule keeps it and its constructor,
+    // and nothing in this module references it yet, so only that rule stops R8 removing it.
+    val mustBeKept =
+        listOf(
+            "dev.imagh.pft.app.MainActivity",
+            "dev.imagh.pft.app.data.PftDatabase_Impl",
+        )
     // Compiled names (look them up in build/tmp/kotlin-classes/release if a file is renamed):
     // TokenSheetKt holds the @PreviewLightDark TokenSheetPreview; the rest is the token sheet.
     // HeaderSamplesKt holds DS4's fake-data header samples and their @PreviewLightDark previews.
