@@ -115,6 +115,8 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.theme.ComposableSingletons\$TokenSheet",
             "dev.imagh.pft.app.ui.common.HeaderSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$HeaderSamples",
+            "dev.imagh.pft.app.ui.common.EmptyStateSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$EmptyStateSamples",
             "dev.imagh.pft.app.ui.common.GroupedSectionSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$GroupedSectionSamples",
             "dev.imagh.pft.app.ui.common.MoneyTextSamples",

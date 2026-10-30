@@ -86,4 +86,12 @@ class ContentScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun groupedSectionDark() = capture("grouped-section-dark") { GroupedSectionSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun emptyStateLight() = capture("empty-state-light") { EmptyStateSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun emptyStateDark() = capture("empty-state-dark") { EmptyStateSamples() }
 }

@@ -143,4 +143,13 @@ class DesignCatalogTest {
         compose.onNodeWithText("Everyday account").assertIsDisplayed()
         compose.onNodeWithText("Monthly, from the 1st").assertIsDisplayed()
     }
+
+    @Test
+    fun `the Empty section shows the empty state with its action`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Empty").performClick()
+        compose.onNodeWithText("Empty").assertIsSelected()
+        compose.onNodeWithText("Add account").assertIsDisplayed()
+        compose.onNodeWithText("Nothing matches your search.").assertIsDisplayed()
+    }
 }

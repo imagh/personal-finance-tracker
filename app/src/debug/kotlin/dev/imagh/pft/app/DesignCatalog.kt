@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import dev.imagh.pft.app.ui.common.BottomActionBarSamples
 import dev.imagh.pft.app.ui.common.DashboardHeaderSample
+import dev.imagh.pft.app.ui.common.EmptyStateSamples
 import dev.imagh.pft.app.ui.common.GroupedSectionSamples
 import dev.imagh.pft.app.ui.common.MoneyTextSamples
 import dev.imagh.pft.app.ui.common.StandardHeaderSample
@@ -114,6 +115,7 @@ private enum class CatalogSection(
     MONEY("Money"),
     CHIPS("Chips"),
     SECTIONS("Sections"),
+    EMPTY("Empty"),
 }
 
 /**
@@ -132,6 +134,7 @@ private fun SectionContent(section: CatalogSection) {
                     CatalogSection.BOTTOM_BAR -> BottomActionBarSamples()
                     CatalogSection.MONEY -> Box(Modifier.padding(16.dp)) { MoneyTextSamples() }
                     CatalogSection.SECTIONS -> Box(Modifier.padding(vertical = 16.dp)) { GroupedSectionSamples() }
+                    CatalogSection.EMPTY -> EmptyStateSamples()
                     CatalogSection.CHIPS -> Box(Modifier.padding(16.dp)) { StatusChipSamples() }
                     else -> TokenSheet()
                 }
