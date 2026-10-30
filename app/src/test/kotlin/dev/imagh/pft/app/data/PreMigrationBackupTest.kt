@@ -6,6 +6,7 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -241,4 +242,43 @@ class PreMigrationBackupTest {
 
         backup(currentVersion = 2).backUpIfOlder().shouldBeNull()
     }
+
+    @Test
+    fun `a version record that cannot be written fails closed, with no path anywhere in the failure`() {
+        withMarker(1)
+        // A directory where the temp file must go: opening it for writing fails with a path in its message.
+        File(versionFile.path + ".tmp").mkdirs()
+
+        val failure = shouldThrow<PreMigrationBackupFailed> { backup(currentVersion = 2).recordOpened() }
+
+        failure.cause.shouldBeNull()
+        failure.message.orEmpty() shouldNotContain temp.root.path
+        failure.stackTraceToString() shouldNotContain temp.root.path
+        backup(currentVersion = 2).lastOpenedVersion() shouldBe 1
+    }
+
+    @Test
+    fun `a version record whose directory cannot be created fails closed without a path`() {
+        versionFile.parentFile!!.writeBytes(byteArrayOf(0)) // a plain file where the directory must go
+
+        val failure = shouldThrow<PreMigrationBackupFailed> { backup(currentVersion = 2).recordOpened() }
+
+        failure.stackTraceToString() shouldNotContain temp.root.path
+    }
+
+    @Test
+    fun `a version record that cannot be read counts as unknown, so the database is backed up`() {
+        assumeTrue("root can read any file", !isRoot())
+        database.writeBytes(byteArrayOf(4, 2))
+        withMarker(2)
+        versionFile.setReadable(false)
+
+        backup(currentVersion = 2).lastOpenedVersion().shouldBeNull()
+        val copy = backup(currentVersion = 2).backUpIfOlder()
+
+        copy.shouldNotBeNull().name shouldBe "pre-migration-v0.db"
+        database.readBytes() shouldBe byteArrayOf(4, 2)
+    }
+
+    private fun isRoot() = System.getProperty("user.name") == "root"
 }

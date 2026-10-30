@@ -93,23 +93,43 @@ class PreMigrationBackup(
         return target
     }
 
-    /** Records that the database opened (and migrated) at [currentVersion]. */
+    /**
+     * Records that the database opened (and migrated) at [currentVersion].
+     *
+     * @throws PreMigrationBackupFailed if the record cannot be written. The database stays as it is;
+     *   the next start sees the old record and backs up again (an existing copy is kept).
+     */
     fun recordOpened() {
-        versionFile.parentFile?.mkdirs()
         val temp = File(versionFile.path + TEMP_SUFFIX)
-        FileOutputStream(temp).use { out ->
-            out.write("$currentVersion\n".toByteArray())
-            out.fd.sync()
+        try {
+            versionFile.parentFile?.mkdirs()
+            FileOutputStream(temp).use { out ->
+                out.write("$currentVersion\n".toByteArray())
+                out.fd.sync()
+            }
+            Files.move(temp.toPath(), versionFile.toPath(), StandardCopyOption.ATOMIC_MOVE)
+        } catch (e: IOException) {
+            temp.delete()
+            failed(e)
         }
-        Files.move(temp.toPath(), versionFile.toPath(), StandardCopyOption.ATOMIC_MOVE)
     }
 
-    /** The schema version of the last successful open, or null if none is recorded or it is unreadable. */
+    /**
+     * The schema version of the last successful open, or null if none is recorded or it cannot be
+     * read. A record that cannot be read is "unknown", which [backUpIfOlder] treats as oldest, so
+     * it costs an extra backup and never a missing one; this never throws.
+     */
     fun lastOpenedVersion(): Int? {
-        if (!versionFile.isFile || versionFile.length() > MAX_VERSION_FILE_BYTES) return null
-        val version = versionFile.readText().trim().toIntOrNull()
-        return version?.takeIf { it >= 1 }
+        val text = if (versionFile.isFile && versionFile.length() <= MAX_VERSION_FILE_BYTES) readVersionText() else null
+        return text?.trim()?.toIntOrNull()?.takeIf { it >= 1 }
     }
+
+    private fun readVersionText(): String? =
+        try {
+            versionFile.readText()
+        } catch (ignored: IOException) {
+            null // unknown, see lastOpenedVersion; the error names a path, so it is not reported
+        }
 
     /** Throws [PreMigrationBackupFailed], naming only the failure's class (never its message). */
     private fun failed(cause: IOException): Nothing = throw PreMigrationBackupFailed(cause.javaClass.simpleName)

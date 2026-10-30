@@ -188,4 +188,15 @@ class DatabaseFactoryTest {
         keyFile.exists() shouldBe false
         databaseFile.exists() shouldBe false
     }
+
+    @Test
+    fun `a version record that cannot be written stops the start with the fixed failure and wipes the key`() {
+        File(dir, "schema_version.tmp").mkdirs() // a directory where the record's temp file must go
+
+        val failure = shouldThrow<PreMigrationBackupFailed> { factory().open() }
+
+        failure.stackTraceToString().contains(context.noBackupFilesDir.path) shouldBe false
+        handoffs.single().key.all { it == 0.toByte() } shouldBe true
+        backup.lastOpenedVersion() shouldBe null
+    }
 }
