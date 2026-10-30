@@ -324,9 +324,12 @@ DS6e depends on the chrome keys `back`, `search`, `filter`, `overflow`, `chevron
 3. Download into a **new empty directory** and convert (the script treats each SVG as untrusted: it accepts only one `<svg>` with one
    `<path>` and the expected `viewBox`, rejects DOCTYPE, scripts, external references and oversized files, and keeps only the path data):
    `python3 -I tools/material-symbols/import_symbols.py --download-dir <new empty dir> --res-dir app/src/main/res/drawable`.
-   It re-creates every drawable from the pinned commit (`COMMIT` in the script) and rewrites `tools/material-symbols/svg-sha256.txt`;
-   `git diff` must show only the new drawable and one new hash line. To move to a newer upstream commit, change `COMMIT`
-   deliberately and review every changed drawable.
+   It re-creates every drawable from the pinned commit (`COMMIT` in the script). `tools/material-symbols/svg-sha256.txt` is a check, not
+   just a record: every file is downloaded, validated and compared with its committed hash **before anything is written**. A
+   mismatch for an already-listed key aborts with exit code 1 and a message naming the key, and writes no drawable and no hash. A key
+   not yet listed has its hash recorded. `git diff` must show only the new drawable and one new hash line. To move to a newer
+   upstream commit, change `COMMIT` deliberately and re-run with `--update-hashes`, which accepts changed sources and overwrites their
+   hashes; then review every changed drawable and hash.
 4. Add the entry to `PftSymbol` (`KEY("key", R.drawable.sym_key)`) and the key to `pft-symbol-keys.txt`.
 5. Run `./gradlew :app:testDebugUnitTest --tests '*PftSymbolTest'`, then re-record the symbol goldens
    (`./gradlew :app:recordRoborazziDebug`) and review the PNG diff. Update the list above.

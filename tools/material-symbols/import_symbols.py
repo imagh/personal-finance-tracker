@@ -8,6 +8,10 @@ Stdlib only. Source: google/material-design-icons (Apache-2.0), pinned to COMMIT
     python3 -I tools/material-symbols/import_symbols.py \\
         --download-dir <NEW EMPTY DIR> --res-dir app/src/main/res/drawable
 
+The committed svg-sha256.txt is a check, not just a record: a downloaded file whose hash differs
+from its committed one aborts the run before anything is written (exit 1), a key not yet listed
+has its hash recorded, and a changed hash is only accepted with --update-hashes.
+
 Every downloaded SVG is untrusted data. It is accepted only if it is exactly one <svg> holding
 one <path>, with the expected viewBox and a path-data string of path-command characters. Only
 that path data is kept; nothing else from the file reaches the drawable. Output files are
@@ -106,28 +110,72 @@ def download(name: str) -> bytes:
         raise SystemExit(f"could not download {name!r} from {url}: {e}") from e
 
 
-def main() -> int:
+HASH_LINE_RE = re.compile(r"([0-9a-f]{64})  ([a-z0-9_]{1,40})  ([a-z0-9_]{1,60})")
+
+
+def parse_hashes(text: str) -> dict[str, str]:
+    """`<sha256>  <key>  <name>` per line (the committed svg-sha256.txt), as key -> sha256."""
+    hashes: dict[str, str] = {}
+    for line in text.splitlines():
+        match = HASH_LINE_RE.fullmatch(line)
+        if not match or match[2] in hashes:
+            raise ValueError(f"bad or duplicate line in the hashes file: {line!r}")
+        hashes[match[2]] = match[1]
+    return hashes
+
+
+def main(argv: list[str] | None = None, fetch=download) -> int:
+    """Returns 0 on success, 1 if a source file is unsafe or does not match its committed hash
+    (nothing is written), 2 for a bad invocation. Every file is fetched, validated and hash-checked
+    before the first drawable is written."""
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--download-dir", type=Path, required=True, help="a new, empty directory for the raw SVGs")
     parser.add_argument("--res-dir", type=Path, required=True, help="app/src/main/res/drawable")
     parser.add_argument("--manifest", type=Path, default=here / "symbols.txt")
-    args = parser.parse_args()
+    parser.add_argument("--hashes", type=Path, default=here / "svg-sha256.txt", help="the committed source hashes")
+    parser.add_argument(
+        "--update-hashes",
+        action="store_true",
+        help="accept a changed source file and overwrite its committed hash (review the diff!)",
+    )
+    args = parser.parse_args(argv)
 
-    args.download_dir.mkdir(parents=True, exist_ok=True)
-    if any(args.download_dir.iterdir()):
+    if args.download_dir.exists() and any(args.download_dir.iterdir()):
         print("--download-dir must be empty", file=sys.stderr)
         return 2
     entries = parse_manifest(args.manifest.read_text(encoding="utf-8"))
-    hashes = []
+    try:
+        committed = parse_hashes(args.hashes.read_text(encoding="utf-8")) if args.hashes.exists() else {}
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+
+    fetched: list[tuple[str, str, bytes, str, str]] = []  # key, name, svg bytes, sha256, drawable xml
+    problems: list[str] = []
     for key, name in entries:
-        data = download(name)
+        data = fetch(name)
+        try:
+            xml = to_vector_drawable(parse_svg(data))
+        except UnsafeSvg as e:
+            problems.append(f"{key} ({name}): unsafe SVG, {e}")
+            continue
+        digest = hashlib.sha256(data).hexdigest()
+        if key in committed and committed[key] != digest and not args.update_hashes:
+            problems.append(f"{key} ({name}): source changed, committed {committed[key]} but got {digest}")
+        fetched.append((key, name, data, digest, xml))
+    if problems:
+        print("nothing written:\n  " + "\n  ".join(problems), file=sys.stderr)
+        print("If the change is intended, review it and re-run with --update-hashes.", file=sys.stderr)
+        return 1
+
+    args.download_dir.mkdir(parents=True, exist_ok=True)
+    for key, name, data, _, xml in fetched:
         (args.download_dir / f"{name}.svg").write_bytes(data)
-        out = to_vector_drawable(parse_svg(data))
-        (args.res_dir / f"sym_{key}.xml").write_text(out, encoding="utf-8")
-        hashes.append(f"{hashlib.sha256(data).hexdigest()}  {key}  {name}")
-    (here / "svg-sha256.txt").write_text("\n".join(hashes) + "\n", encoding="utf-8")
-    print(f"wrote {len(entries)} drawables from commit {COMMIT}")
+        (args.res_dir / f"sym_{key}.xml").write_text(xml, encoding="utf-8")
+    lines = [f"{digest}  {key}  {name}" for key, name, _, digest, _ in fetched]
+    args.hashes.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"wrote {len(fetched)} drawables from commit {COMMIT}")
     return 0
 
 
