@@ -13,19 +13,28 @@ config/detekt/          # detekt rule overrides (ktlint rules live in the root .
 build-logic/            # included build: pft.kotlin-core + pft.lint convention plugins
 app/                    # thin Android layer (Compose, Room/SQLCipher impls, Keystore, ...)
   proguard-rules.pro                     # R8 keep rules for release (none yet; each rule must say why)
+  schemas/                               # exported Room schemas, one JSON per version (committed; served to migration tests as debug assets)
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, BrandColors, MoneyColors, PftTypography, PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), BottomActionBar
                                          # (+ BottomBarAction); HeaderSamples (previews, catalogue and goldens share them)
+    data/                                # Room persistence (package dev.imagh.pft.app.data)
+      PftDatabase, Migrations, AuditTriggers   # the database (v1), its migration list, the audit_entry immutability triggers
+      RoomTransactionRunner                    # core TransactionRunner over withTransaction
+      common/                                  # MetaColumns, MetaMapper, BaseDao, EntityMapper, RoomEntityRepository (shared by every entity)
+      identity/ settings/ audit/               # entities, DAOs, Room repositories: users+devices, app settings, the audit trail (RoomAuditLog, AuditEntryMapper)
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
   src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL)
   src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header and bottom-bar pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
-  src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components)
+  src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
+                                         # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
+    testing/                             # test support: TestDatabase, RoomTestKit, MigrationTestSupport, AuditColumnsCheck + AuditedTables,
+                                         # RunSuspending, SampleThing (throwaway entity for the shared-block tests)
   src/test/screenshots/                  # committed Roborazzi goldens (fake data only), verified by `check`
-  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest)
+  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest) and MigrationTest (needs the debug-only schema assets)
 core/
   <module>/             # pure Kotlin/JVM, no Android imports
     README.md           # module doc (Purpose · Boundaries · Interface · Data · Config · Deps · Run/test)
@@ -42,7 +51,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 
 | Module | Owns | Responsibility |
 |--------|------|----------------|
-| `:app` | `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); later: UI, Room entities/DAOs, Keystore, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
+| `:app` | `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1, DAOs, the Room implementations of the core repositories, runner and audit log); later: UI, Keystore, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
 | `:core:money` | `Paise`, `PaiseParser`, `PaiseFormat` (package `dev.imagh.pft.money`) | Integer-paise money: exact arithmetic, strict parsing of amount text, sign-free Indian-grouped formatting |
 | `:core:ledger` | `ids/` (`Uuid7`, `NameBasedId`, typed ids), `entity/` (`EntityMeta`, `LedgerEntity`, `Auditable`, `EntityRepository`), `audit/` (`AuditEntry`, `AuditDiff`, `AuditLog`, `AuditRecorder`, `AuditedWriter`), `tx/` (`TransactionRunner`), `validation/` (`LedgerError`, `LedgerLimits`, `Validation`), `identity/` (`IdentityService`, `UserProfile`, `Device`, `IdentityRepository`), `settings/` (`SettingsService`, `AppSettingsRepository`); test fixtures in `fakes/` and `matchers/` (package `dev.imagh.pft.ledger`) | Ledger foundations: ids, identity, the audit trail and its single audited write path, atomic transactions, validation, runtime settings. Later slices add accounts, categories, tags, transactions, loans, goals |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |
@@ -72,10 +81,18 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | core | `LedgerError` + `Validation` (`requireName`, `requireAmount`, `requireLive`) + `LedgerLimits` | every service | A3 |
 | core | `Uuid7` (time-sortable ids) and `NameBasedId` (deterministic UUIDv5 ids) | every entity; recurring-generated transactions | A3 |
 | core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `LedgerTestKit`, `TestClock`, `AuditFieldsCheck` (every entity's `auditFields()` is complete, checked on each fake write), and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
+| app data | `MetaColumns` (`@Embedded` shared columns, explicit snake_case names) + `MetaMapper` (`EntityMeta` <-> columns, the one mapping) | every Room entity | A4a |
+| app data | `EpochMillis` (`of`: the one instant -> epoch-ms conversion, refuses sub-millisecond; `clock()`: the millisecond `Clock` the app gives core) | every mapper, the settings repository, A5's container | A4a |
+| app data | `BaseDao<E>` (insert, update returning the row count, `byId`) | every entity DAO | A4a |
+| app data | `EntityMapper<T, E>` + `RoomEntityRepository<T, E, Id>` (get, getLive, insert, update; supplies `entityType`, refuses another kind, fails an update that matched no row) | every Room repository | A4a |
+| app data | `RoomTransactionRunner`, `RoomAuditLog` (+ `AuditEntryMapper`), `PftDatabase.create` (the only database builder; adds the migrations and `AuditTriggers.callback`, which re-installs the audit triggers on every open) | every service (runner, audit); every database (A4b passes only its SQLCipher factory) | A4a |
+| app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
+| app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
+| app tests | `AuditColumnsCheck` + `AuditedTables` (every column audited or allowlisted) | every entity table; each slice registers its table | A4a |
 | app UI (`ui/theme`) | `TokenSheet` / `TokenSheetPages` (one sheet of every token) | Studio preview, debug `DesignCatalog`, `TokenSheetScreenshotTest` goldens | DS2 |
 | app UI (`ui/theme`) | `PftMotion` (four springs, nav transitions, `iosSpring`, `Modifier.pressScale`) | every screen; A5 nav host, C4 rows and keypad, DS5 rolling digits | DS4 |
 | app UI (`ui/common`) | `CollapsingHeaderScaffold` (`HeaderStyle`, `HeaderPeriod`) | A5 setup and `EditFormScaffold`, B2 `EntityListScreen`, C4 Home, D4, AP1/H1 settings | DS4 |
 | app UI (`ui/common`) | `BottomActionBar` (`BottomBarAction`) | A5 `EditFormScaffold` (all forms) and setup, C5 detail | DS4 |
 
-The app-data and remaining app-UI building blocks (`RoomEntityRepository`, `EntityListScreen`, ...)
-are added to this table by A4a, A5, B2 and C5.
+The remaining app-UI building blocks (`EntityListScreen`, `AmountField`, `AuditHistoryList`, ...) are
+added to this table by A5, B2 and C5.

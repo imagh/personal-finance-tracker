@@ -5,5 +5,10 @@
 # ship their own consumer rules. Add a rule only for something R8 reports as missing or the
 # release smoke test shows broken, and comment it with the reason.
 #
-# Not here yet, on purpose: the SQLCipher/Room rules arrive with those dependencies (slice A4a;
-# plan 2026-10-28-m1a-core-ledger.md, H3).
+# Room (A4a) needs none: room-runtime's consumer rule keeps every RoomDatabase subclass and its
+# constructor (Room loads the generated PftDatabase_Impl by name), and verifyReleaseShrink checks
+# that PftDatabase_Impl really survives under its own name. Room entities and DAOs are reached
+# through generated code that R8 can see, so they need no rule.
+#
+# Not here yet, on purpose: the SQLCipher rules arrive with that dependency (A4b; narrowed in H3,
+# plan 2026-10-28-m1a-core-ledger.md).
