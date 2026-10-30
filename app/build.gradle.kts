@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.roborazzi)
     id("pft.lint")
 }
@@ -50,6 +51,12 @@ android {
         disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
     }
 
+    sourceSets {
+        // MigrationTestHelper reads the exported schemas (app/schemas/<db class>/<version>.json)
+        // as assets, so the Robolectric unit tests get that folder as test assets.
+        getByName("test").assets.srcDir("$projectDir/schemas")
+    }
+
     testOptions {
         unitTests {
             // Robolectric needs the merged manifest and resources.
@@ -58,6 +65,12 @@ android {
             all { it.useJUnitPlatform() }
         }
     }
+}
+
+// Room exports one JSON schema per database version. They are committed: the migration tests
+// replay them and a reviewer sees every schema change as a diff (docs/TECHNICAL.md §6).
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 // Screenshot goldens are committed and verified by `check` (roborazzi.test.verify=true in
@@ -74,6 +87,11 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.compose)
 
+    // Business logic and the repository interfaces this module implements (CLAUDE.md §3.1).
+    implementation(project(":core:ledger"))
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.vintage.engine)
@@ -81,6 +99,11 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.compose.ui.test.junit4)
+    // The in-memory fakes, TestClock and Kotest assertions that core publishes once (plan §3.2 #14).
+    testImplementation(testFixtures(project(":core:ledger")))
+    testImplementation(libs.room.testing)
+    // Room entities for the shared-block tests (a throwaway database, never shipped).
+    kspTest(libs.room.compiler)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
