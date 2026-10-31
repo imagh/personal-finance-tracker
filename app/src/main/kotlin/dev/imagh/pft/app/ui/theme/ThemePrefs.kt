@@ -15,9 +15,9 @@ enum class ThemeMode {
 }
 
 /**
- * Where the hero number's font comes from (UI-2, UI-3). Only `PftTheme.type.amountHero` is set in
- * the display font; every other text role is the system sans. A custom font file joins this enum
- * with the import feature (AP2).
+ * What the display family is (UI-2, UI-3). [TypePairing] chooses which roles use it: by default
+ * only `PftTheme.type.amountHero`, every other text role being the system sans. A custom font file
+ * joins this enum with the import feature (AP2).
  */
 enum class DisplayFont {
     /** The bundled Newsreader serif (the default). */
