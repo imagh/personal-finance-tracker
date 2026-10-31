@@ -39,6 +39,18 @@ class ThemePrefsTest {
     }
 
     @Test
+    fun `the sans font defaults to the bundled Figtree`() {
+        assertEquals(SansFont.FIGTREE, ThemePrefs().sansFont)
+        assertEquals(SansFont.FIGTREE, ThemePrefs.Default.sansFont)
+    }
+
+    @Test
+    fun `the persisted sans font names are permanent`() {
+        // AP1 stores these names; DS6i adds PLUS_JAKARTA_SANS and AP2 adds CUSTOM, only ever added.
+        assertEquals(listOf("FIGTREE", "SYSTEM"), SansFont.entries.map { it.name })
+    }
+
+    @Test
     fun `the other defaults are system mode and dynamic colour off`() {
         assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
         assertFalse(ThemePrefs.Default.dynamicColor)

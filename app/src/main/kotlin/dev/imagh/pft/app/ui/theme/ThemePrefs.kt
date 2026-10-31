@@ -51,8 +51,28 @@ enum class TypePairing {
 }
 
 /**
+ * What the sans text family is (UI-2, UI-16): the family of every role that is not in the display
+ * font, so body, labels, row amounts and, by default, all titles. `sansFamily(SansFont)` maps each
+ * entry to its `FontFamily`.
+ *
+ * The enum names are persisted by the appearance settings (AP1), so they are permanent: never
+ * rename or remove one, only add. DS6i adds `PLUS_JAKARTA_SANS` and AP2 adds `CUSTOM` (an imported
+ * font file), both without a migration, because an unknown stored value reads as the default.
+ */
+enum class SansFont {
+    /** The bundled Figtree variable font (OFL-1.1, the default). */
+    FIGTREE,
+
+    /**
+     * The platform's default family (Roboto on stock Android, the vendor font elsewhere).
+     * Tabular figures there depend on the device font; that is accepted.
+     */
+    SYSTEM,
+}
+
+/**
  * The user-chosen appearance. A plain value, not a service: until the appearance settings screen
- * (AP1) the app always passes [Default]. A text-font choice joins this class with custom-font
+ * (AP1) the app always passes [Default]. A custom-font choice joins [SansFont] and [DisplayFont] with
  * import (AP2), and an accent override only if the owner asks for one (design plan §3.2).
  *
  * @property mode light, dark or follow the system.
@@ -69,6 +89,8 @@ enum class TypePairing {
  *   [TypePairing.EDITORIAL], of the other serif roles; see [DisplayFont].
  * @property typePairing which roles use the display family; see [TypePairing]. [TypePairing.HERO_ONLY]
  *   by default, the look before the pairing existed.
+ * @property sansFont the sans text family: the bundled Figtree by default, or the system font; see
+ *   [SansFont].
  */
 @Immutable
 data class ThemePrefs(
@@ -80,9 +102,13 @@ data class ThemePrefs(
     val headerGlow: Boolean = false,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
     val typePairing: TypePairing = TypePairing.HERO_ONLY,
+    val sansFont: SansFont = SansFont.FIGTREE,
 ) {
     companion object {
-        /** System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces, no glow, hero-only type. */
+        /**
+         * System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces, no glow,
+         * hero-only type, Figtree sans.
+         */
         val Default = ThemePrefs()
     }
 }

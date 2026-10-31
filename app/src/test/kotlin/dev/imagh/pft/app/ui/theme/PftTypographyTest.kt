@@ -340,6 +340,40 @@ class PftTypographyTest {
         }
     }
 
+    // --- the sans family (UI-2, UI-16, DS6h) ------------------------------------------------
+
+    /** The `wght` axis pinned on one bundled Figtree [ResourceFont]. */
+    private fun ResourceFont.wght(): Float? =
+        variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }["wght"]
+
+    @Test
+    fun `FIGTREE declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+        val fonts = (sansFamily(SansFont.FIGTREE) as FontListFontFamily).fonts.map { it as ResourceFont }
+        assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
+        // Figtree's own wght default is 300, so an undeclared axis would render every role too light.
+        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        fonts.forEach { assertEquals(R.font.figtree, it.resId) }
+    }
+
+    @Test
+    fun `SYSTEM is the platform default family`() {
+        assertEquals(FontFamily.Default, sansFamily(SansFont.SYSTEM))
+    }
+
+    @Test
+    fun `every weight a role asks of the sans is one Figtree declares`() {
+        val figtree = sansFamily(SansFont.FIGTREE)
+        val declared = (figtree as FontListFontFamily).fonts.map { it.weight }.toSet()
+        TypePairing.entries.forEach { pairing ->
+            val m3 = pftMaterialTypography(figtree, DisplayFont.TEXT, pairing)
+            val type = pftType(DisplayFont.TEXT, figtree, pairing)
+            (m3.roles().values + listOf(type.amountHero, type.amountLarge, type.amountRow)).forEach { style ->
+                val weight = style.fontWeight ?: FontWeight.Normal
+                assertTrue("$weight is declared", weight in declared)
+            }
+        }
+    }
+
     @Test
     fun `the hero shrink steps start at the plan's 48, 40, 34, 28sp and only ever go down`() {
         val sizes = HeroSizeSteps.map { it.value }
