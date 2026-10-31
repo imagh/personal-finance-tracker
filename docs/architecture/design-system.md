@@ -2,8 +2,8 @@
 
 Status: **DS1 (colour, `PftTheme`, window themes), DS2 (type, shape, spacing, bundled serif,
 screenshot harness, debug catalogue), DS3 (icons, category palette, `CategoryGlyph`, emoji policy), DS4 (motion tokens,
-`CollapsingHeaderScaffold`, `BottomActionBar`), DS5 (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`) and DS6e
-(`HeaderIconButton`, icon-only header actions) are built.**
+`CollapsingHeaderScaffold`, `BottomActionBar`), DS5 (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), DS6e
+(`HeaderIconButton`, icon-only header actions) and DS6g (the type pairing and per-role optical size) are built.**
 
 The plan is the spec; this page records what is built and how to extend it.
 
@@ -38,7 +38,7 @@ object:
 | Accessor | Type | Provided how |
 |---|---|---|
 | `MaterialTheme.colorScheme` | M3 `ColorScheme` | the chosen palette's scheme (Graphite by default); dynamic when `ThemePrefs.dynamicColor` is on, which ignores the palette |
-| `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family |
+| `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family; under `EDITORIAL`, `display*`, `headline*`, `titleLarge` and `titleMedium` are in the display family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
 | `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge, top highlight and header glow tint (null while the glow is off) for the palette, mode, `BackgroundStyle` and `ThemePrefs.headerGlow` (DS6c, DS6d); see "Surfaces and window colour" and "One-hand layout" |
@@ -47,32 +47,50 @@ object:
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
 | `PftTheme.motion` | `PftMotion` | four springs, navigation transitions, press scale; a constant, the same in every theme |
 
-`ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `lightPalette`, `darkPalette`, `background`, `displayFont`). Until the appearance
+`ThemePrefs` is a plain data class (`mode`, `dynamicColor`, `lightPalette`, `darkPalette`, `background`, `headerGlow`, `displayFont`, `typePairing`). Until the appearance
 settings (AP1) the app always passes the defaults. Tokens are static code constants; per-user
 choices will live in the database (CLAUDE.md §3.5).
 
 ## Tokens
 
-### Typography (UI-2, UI-3, owner decision Q10)
+### Typography (UI-2, UI-3, UI-15, owner decision Q10)
 
-The serif (Newsreader) sets **only** `amountHero`. Every M3 role, titles included, is the sans text
-family (`FontFamily.Default`, the device's system font). `amountLarge` and `amountRow` are sans.
+Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the display family is:
+`BUNDLED_SERIF` (Newsreader, the default), `SYSTEM_SERIF` or `TEXT` ("same as text").
+`ThemePrefs.typePairing` chooses **which roles** use it. The text family is the device's system sans
+(`FontFamily.Default`) until a bundled sans arrives (DS6h).
 
-| Role | Family | Size / line (sp) | Weight | Features |
-|---|---|---|---|---|
-| `PftTheme.type.amountHero` | display font (Newsreader by default) | 48/60, +0.01em | 400 | `tnum`, `lnum` |
-| `headlineLarge` | text | 32/40 | 600 | |
-| `titleLarge` | text | 22/28 | 500 | |
-| other M3 `display*`, `headline*`, `title*`, `body*`, `label*` | text | M3 defaults | M3 | |
-| `PftTheme.type.amountLarge` | text | 32/40 | 500 | `tnum`, `lnum` |
-| `PftTheme.type.amountRow` | text | 16/24 | 500 | `tnum` |
+| Role | `HERO_ONLY` (default) | `EDITORIAL` | Size / line (sp) | Weight | Features |
+|---|---|---|---|---|---|
+| `PftTheme.type.amountHero` | display | display | 48/60, +0.01em | 400 | `tnum`, `lnum` |
+| `PftTheme.type.amountLarge` | text | display | 32/40 | 500 | `tnum`, `lnum` |
+| `PftTheme.type.amountRow` | text | text | 16/24 | 500 | `tnum` |
+| `display*` | text | display | M3 (57, 45, 36) | M3 | |
+| `headlineLarge` | text | display | 32/40 | 600 | |
+| `headlineMedium`, `headlineSmall` | text | display | M3 (28, 24) | M3 | |
+| `titleLarge` | text | display | 22/28 | 500 | |
+| `titleMedium` | text | display | 16/24 | 500 | |
+| `titleSmall` (tab labels, which are controls) | text | text | M3 | M3 | |
+| `body*`, `label*` | text | text | M3 | M3 | |
 
-`ThemePrefs.displayFont` chooses the hero's family: `BUNDLED_SERIF` (default), `SYSTEM_SERIF` or
-`TEXT` ("same as text"). The hero spacing (1.25x line height, +0.01em) comes from the owner (Q1)
-and is a named constant in `PftTypography.kt`, to be tuned on the debug catalogue on the phone
-before goldens are re-recorded. Newsreader is a variable font; the hero is pinned to weight 400
-and the 48sp optical size (`opsz` axis). A custom font without `tnum` falls back to proportional
-digits; that is accepted.
+- **`HERO_ONLY` is the default and is today's look**: the serif is `amountHero` only (owner decision Q10),
+  and no golden changed when the pairing arrived.
+- **`displayFont = TEXT` with `EDITORIAL` is all sans**: the pairing picks the roles, the font picks what
+  they are set in, and "same as text" is the text family. `SYSTEM_SERIF` gives `FontFamily.Serif`.
+- **Optical size per role.** Newsreader is a variable font with a weight axis (`wght`) and an
+  optical-size axis (`opsz`, 6 to 72). `newsreader(weight, size)` builds a family pinned to the role's
+  weight and cut for the role's own size (the size clamped to 6 to 72), so `titleMedium` is `wght` 500 at
+  `opsz` 16, `displayLarge` is 400 at 57 and the hero is 400 at 48. It is called only for the serif roles
+  of the chosen pairing. The variation settings apply to the bundled Newsreader only; the system serif
+  and the text family get none. The hero keeps the 48sp cut at every shrink step.
+- **The hero weight is 400** (owner decision after the DS6f device check); the mockup's 350 was not adopted.
+- `tnum` stays on all three amount roles in every pairing.
+- `TypePairing` is `{ HERO_ONLY, EDITORIAL }`; its names are persisted by AP1. An all-serif value can be
+  added later without a migration, because an unknown stored value reads as the default.
+- The hero spacing (1.25x line height, +0.01em) comes from the owner (Q1) and is a named constant in
+  `PftTypography.kt`. A custom font without `tnum` falls back to proportional digits; that is accepted.
+- Pixels: `token-sheet-type-*-light-1x-editorial.png` and the dark twins show the two type pages under
+  `EDITORIAL`; the token sheet's page titles still say "(sans)" because the existing goldens carry that text.
 
 ### Shapes
 
@@ -243,8 +261,10 @@ primary action.
     (and over the flat surface), for every palette and mode, by contrast and not by the tone band (Ivory and
     Aubergine light fall to tone 86.5 to 86.9 there). The dynamic wash is swept by tone, because
     Robolectric's synthetic system palette puts `primaryContainer` at tone 49 to 60, which no device does.
-- **Header layout rule (owner decision Q10).** All titles are sans; the serif is the hero number
-  only. The title is read-only (no click action), horizontally centred, in the upper band, with an
+- **Header layout rule (owner decision Q10).** Under the default `HERO_ONLY` pairing all titles are
+  sans and the serif is the hero number only; under `EDITORIAL` the titles (`headlineLarge` on a
+  `Standard` header, `titleLarge` on a `Dashboard` header and on the collapsed bar) are in the display
+  family and the subtitle stays sans. The title is read-only (no click action), horizontally centred, in the upper band, with an
   optional one-line subtitle under it.
 
   | Style | Title | Lower band (thumb zone) |
@@ -559,5 +579,5 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 - **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently (done; see "Colour"). Money colours are unchanged.
 - **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas (done in DS6c; see "Surfaces and window colour").
 - **Header.** An optional glow, off by default, never under money (done in DS6d; see "One-hand layout"). (Icon-only actions through `HeaderIconButton` are done: DS6e.)
-- **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB. The DS6f spike (plan §3.7) measured the candidates: only Figtree and Plus Jakarta Sans (both variable) will be bundled, 0.66 MiB with Newsreader; none is bundled yet, so the table has no rows for them until DS6h and DS6i.
+- **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option (done in DS6g; see "Typography"). Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB. The DS6f spike (plan §3.7) measured the candidates: only Figtree and Plus Jakarta Sans (both variable) will be bundled, 0.66 MiB with Newsreader; none is bundled yet, so the table has no rows for them until DS6h and DS6i.
 - **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this (built in DS6a).

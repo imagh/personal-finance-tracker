@@ -1,10 +1,10 @@
-# Appearance: colour palettes, dynamic colour and background
+# Appearance: colour palettes, dynamic colour, background and type
 
 Status: palettes and dynamic colour are built in the M1a premium-look slice DS6b, the background
-in DS6c and the header glow in DS6d; the settings screen that lets you change them arrives in AP1,
+in DS6c, the header glow in DS6d and the type pairing in DS6g; the settings screen that lets you change them arrives in AP1,
 so until then the app always uses the defaults below (the debug catalogue can already try every
-combination). The type pairing and fonts (DS6g to DS6i) will be added to this page as they land.
-PRD: UI-11, UI-12, UI-13, UI-8, UI-18.
+combination). The bundled sans fonts (DS6h and DS6i) will be added to this page as they land.
+PRD: UI-11, UI-12, UI-13, UI-15, UI-8, UI-18.
 Technical design: [design-system.md](../architecture/design-system.md) and the plan
 [2026-10-30-m1a-premium-look.md](../plans/2026-10-30-m1a-premium-look.md).
 
@@ -32,6 +32,14 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
   tinted area. It is capped, so the title and buttons stay readable, and it fades away as you scroll
   the header down to the small bar. Screens without a big figure get the tint over the top 60% of
   the header. With dynamic colour the tint comes from your wallpaper colours.
+- **The type pairing is hero only or editorial.** With **Hero only** (the default) the big
+  figure is set in a serif and everything else is in the plain sans, which is how the app has always
+  looked. With **Editorial** the serif also sets the titles (screen titles, the title on the small
+  bar, section titles) and the amount on the add and detail screens, so a screen reads like a
+  printed page. Tab labels, body text, labels and the amounts in list rows stay sans, so anything you
+  tap or scan quickly stays plain. Each serif size gets the cut of the font made for that size, so a
+  small title is sturdier and a large heading finer. The digits stay tabular, so columns of amounts
+  line up. If you pick "Same as text" as the figure font, Editorial is all sans.
 - **The window matches the screen.** The bar behind the app (what shows briefly while the app
   opens, or during a back swipe) uses the same background colour as the screen, so there is no
   flash of a different colour. The colour it shows before the app has drawn is the default
@@ -49,6 +57,7 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
 | Dynamic colour | off |
 | Background | Tonal |
 | Header glow | off |
+| Type pairing | Hero only |
 
 Once the settings are stored (AP1), a value the app does not recognise (for example one saved by a
 newer version) will be read as the default for that setting alone, so a choice can never leave the
@@ -70,6 +79,10 @@ of hue, checked by a test for every palette in light and dark).
   to.
 - The background choice is stored as `TONAL` or `FLAT` (permanent names, like the palettes) when the
   settings screen arrives.
+- The type pairing is stored as `HERO_ONLY` or `EDITORIAL` (permanent names) when the settings
+  screen arrives. A third value (all serif) can be added later without a migration. Tests check each
+  serif role's weight and optical size straight from the font settings, that the other roles stay
+  sans, and that the system serif and "Same as text" get no variation settings.
 - The header glow is stored as `true` or `false` when the settings screen arrives. Its tint colours
   are the values the owner approved in the mockup (`pc`); tests check that the title, the buttons and
   the money colours stay at least 4.5:1 against the tint at its strongest in every palette, and that
