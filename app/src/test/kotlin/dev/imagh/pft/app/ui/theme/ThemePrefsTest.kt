@@ -27,6 +27,18 @@ class ThemePrefsTest {
     }
 
     @Test
+    fun `the type pairing defaults to hero only, today's look`() {
+        assertEquals(TypePairing.HERO_ONLY, ThemePrefs().typePairing)
+        assertEquals(TypePairing.HERO_ONLY, ThemePrefs.Default.typePairing)
+    }
+
+    @Test
+    fun `the persisted type pairing names are permanent`() {
+        // AP1 stores these names; a rename would silently reset every user's choice.
+        assertEquals(listOf("HERO_ONLY", "EDITORIAL"), TypePairing.entries.map { it.name })
+    }
+
+    @Test
     fun `the other defaults are system mode and dynamic colour off`() {
         assertEquals(ThemeMode.SYSTEM, ThemePrefs.Default.mode)
         assertFalse(ThemePrefs.Default.dynamicColor)
