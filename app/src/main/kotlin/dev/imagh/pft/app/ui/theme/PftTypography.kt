@@ -70,6 +70,10 @@ private const val NEWSREADER_MAX_OPSZ = 72f
  * to 72 range), so a 16sp title gets the sturdier small cut and a 57sp display line the finer
  * large one. Built only for the serif roles that need it; `SYSTEM_SERIF` and "Same as text" get
  * no variation settings.
+ *
+ * The family holds a single [Font] with one pinned `wght`. A caller that overrides `fontWeight` on
+ * a style using it still gets the pinned weight (possibly with synthetic bold); to change the
+ * weight, build a new `newsreader(weight, size)`.
  */
 internal fun newsreader(
     weight: FontWeight,

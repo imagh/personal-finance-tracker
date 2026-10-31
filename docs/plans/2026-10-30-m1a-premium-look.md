@@ -666,6 +666,7 @@ DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans a
   - **Enum and settings:** `SansFont` is `FIGTREE`, `PLUS_JAKARTA_SANS`, `SYSTEM`; AP1's Appearance screen offers three sans options (§6.3).
   - **Budget:** the kept set is 690,664 B of 3,145,728 B; `FontBudgetTest` pins the sum of `R.font.*` file sizes.
   - **Baseline:** the release APK before fonts is 21,241,278 B; expect about +114 KB after Figtree and Plus Jakarta Sans.
+  - **Pick-up from DS6g (apply in DS6h):** the token sheet's type page titles (`Type scale: display, headline (sans)` and `Type scale: title, body, label (sans)`) still say "(sans)", which is wrong under `EDITORIAL`. DS6h re-records every golden anyway, so it should correct them then (see the §13 DS6g deviation "The page titles still say \"(sans)\"").
 
 **DS6i: Plus Jakarta Sans**
 - **Red:** the same `BundledFontTest`, `TabularFiguresTest` and `FontBudgetTest` cases, now over `PLUS_JAKARTA_SANS` (the only sans left; DS6f dropped `GOOGLE_SANS_FLEX` and `DM_SANS`). `PftTypographyTest` checks that each entry maps to its family.
