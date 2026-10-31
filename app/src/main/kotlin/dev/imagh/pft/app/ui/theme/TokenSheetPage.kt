@@ -17,10 +17,8 @@ internal class TokenSheetPage(
  */
 internal val TokenSheetPages: List<TokenSheetPage> =
     listOf(
-        TokenSheetPage(
-            "type-display-headline",
-        ) { TypeScale("Type scale: display, headline (sans)", DisplayAndHeadline) },
-        TokenSheetPage("type-title-body-label") { TypeScale("Type scale: title, body, label (sans)", TitleBodyLabel) },
+        TokenSheetPage("type-display-headline") { TypeScale("Type scale: display, headline", DisplayAndHeadline) },
+        TokenSheetPage("type-title-body-label") { TypeScale("Type scale: title, body, label", TitleBodyLabel) },
         TokenSheetPage("amounts") { AmountStylesSection() },
         TokenSheetPage("shapes-spacing") { ShapesAndSpacing() },
         TokenSheetPage("money") { MoneyTokensSection() },

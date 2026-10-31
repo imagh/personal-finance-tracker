@@ -1,10 +1,10 @@
 # Appearance: colour palettes, dynamic colour, background and type
 
 Status: palettes and dynamic colour are built in the M1a premium-look slice DS6b, the background
-in DS6c, the header glow in DS6d and the type pairing in DS6g; the settings screen that lets you change them arrives in AP1,
+in DS6c, the header glow in DS6d, the type pairing in DS6g and the sans font in DS6h; the settings screen that lets you change them arrives in AP1,
 so until then the app always uses the defaults below (the debug catalogue can already try every
-combination). The bundled sans fonts (DS6h and DS6i) will be added to this page as they land.
-PRD: UI-11, UI-12, UI-13, UI-15, UI-8, UI-18.
+combination). The second bundled sans font (DS6i) will be added to this page when it lands.
+PRD: UI-11, UI-12, UI-13, UI-15, UI-16, UI-2, UI-8, UI-18.
 Technical design: [design-system.md](../architecture/design-system.md) and the plan
 [2026-10-30-m1a-premium-look.md](../plans/2026-10-30-m1a-premium-look.md).
 
@@ -40,6 +40,15 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
   tap or scan quickly stays plain. Each serif size gets the cut of the font made for that size, so a
   small title is sturdier and a large heading finer. The digits stay tabular, so columns of amounts
   line up. If you pick "Same as text" as the figure font, Editorial is all sans.
+- **The text font is Figtree by default.** Every piece of text that is not in the serif (body text,
+  labels, tab labels, list rows and, unless you choose Editorial, all titles) is set in **Figtree**, a
+  friendly geometric sans that ships inside the app, so the app looks the same on every phone. You can
+  switch to **System font** instead, which is whatever your phone uses (Roboto on a Pixel, the maker's
+  font on other phones). Amounts keep their digits the same width in Figtree and in the serif, so
+  columns of amounts line up; in the system font that depends on the phone's font. Ordinary text
+  digits (a date, a count) keep their natural widths. Figtree is free software under the SIL Open
+  Font License, and the licence text ships with the app. Plus Jakarta Sans will join as a third
+  choice in a later step.
 - **The window matches the screen.** The bar behind the app (what shows briefly while the app
   opens, or during a back swipe) uses the same background colour as the screen, so there is no
   flash of a different colour. The colour it shows before the app has drawn is the default
@@ -58,6 +67,7 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
 | Background | Tonal |
 | Header glow | off |
 | Type pairing | Hero only |
+| Text font | Figtree |
 
 Once the settings are stored (AP1), a value the app does not recognise (for example one saved by a
 newer version) will be read as the default for that setting alone, so a choice can never leave the
@@ -83,6 +93,13 @@ of hue, checked by a test for every palette in light and dark).
   screen arrives. A third value (all serif) can be added later without a migration. Tests check each
   serif role's weight and optical size straight from the font settings, that the other roles stay
   sans, and that the system serif and "Same as text" get no variation settings.
+- The text font is stored as `FIGTREE` or `SYSTEM` (permanent names) when the settings screen arrives;
+  Plus Jakarta Sans and an imported font are added later without a migration. Figtree is one variable
+  font file (62,712 bytes, checked by hash) with the weights 400, 500 and 600 declared, because its own
+  default weight is lighter than any text style asks for. Tests check each declared weight's axis, that
+  the system font choice gives the platform default, that the serif roles stay Newsreader, that amounts
+  measure equal widths for different digits (and that the same check fails without tabular figures),
+  and that all bundled fonts stay under 3 MiB.
 - The header glow is stored as `true` or `false` when the settings screen arrives. Its tint colours
   are the values the owner approved in the mockup (`pc`); tests check that the title, the buttons and
   the money colours stay at least 4.5:1 against the tint at its strongest in every palette, and that

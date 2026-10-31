@@ -37,6 +37,7 @@ import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.PaletteSwatches
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.SansFont
 import dev.imagh.pft.app.ui.theme.ThemeMode
 import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
@@ -48,8 +49,8 @@ import dev.imagh.pft.app.ui.theme.displayName
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
  * the one-hand layout components (both header styles and `BottomActionBar`) and the content
  * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
- * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the header glow (off or on), the hero font, the type pairing (hero only or editorial) and the font
- * scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
+ * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the header glow (off or on), the hero font, the type pairing (hero only or editorial), the sans font
+ * (Figtree or the system font) and the font scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
  *
  * Each toggle row is a set of single-choice chips. The catalogue starts on the default scheme,
@@ -66,6 +67,7 @@ internal fun DesignCatalog() {
     var headerGlow by rememberSaveable { mutableStateOf(ThemePrefs.Default.headerGlow) }
     var displayFont by rememberSaveable { mutableStateOf(DisplayFont.BUNDLED_SERIF) }
     var typePairing by rememberSaveable { mutableStateOf(ThemePrefs.Default.typePairing) }
+    var sansFont by rememberSaveable { mutableStateOf(ThemePrefs.Default.sansFont) }
     var fontScale by rememberSaveable { mutableStateOf(1f) }
     var section by rememberSaveable { mutableStateOf(CatalogSection.TOKENS) }
     val density = LocalDensity.current
@@ -81,6 +83,7 @@ internal fun DesignCatalog() {
                 headerGlow = headerGlow,
                 displayFont = displayFont,
                 typePairing = typePairing,
+                sansFont = sansFont,
             ),
         ) {
             Surface(Modifier.fillMaxSize(), color = PftTheme.surfaces.canvas) {
@@ -143,6 +146,15 @@ internal fun DesignCatalog() {
                                 ),
                             selected = typePairing,
                             onSelect = { typePairing = it },
+                        )
+                        ChoiceRow(
+                            options =
+                                listOf(
+                                    "Sans: Figtree" to SansFont.FIGTREE,
+                                    "Sans: System font" to SansFont.SYSTEM,
+                                ),
+                            selected = sansFont,
+                            onSelect = { sansFont = it },
                         )
                         ChoiceRow(
                             options = listOf("Font 1.0" to 1f, "Font 1.3" to 1.3f, "Font 2.0" to 2f),

@@ -33,6 +33,9 @@ class PftTypographyTest {
     @get:Rule
     val compose = HostedComposeRule()
 
+    /** The default sans (UI-2): the bundled Figtree. */
+    private val figtree = sansFamily(SansFont.FIGTREE)
+
     private class Resolved(
         val m3: Typography,
         val type: PftTypography,
@@ -108,23 +111,23 @@ class PftTypographyTest {
     }
 
     @Test
-    fun `every M3 role uses the system sans family, titles included`() {
+    fun `every M3 role uses the bundled Figtree, titles included`() {
         val roles = resolve().m3.roles()
         assertEquals(15, roles.size)
-        roles.forEach { (name, style) -> assertEquals("$name family", FontFamily.Default, style.fontFamily) }
+        roles.forEach { (name, style) -> assertEquals("$name family", figtree, style.fontFamily) }
     }
 
     @Test
-    fun `the amount roles other than the hero are sans`() {
+    fun `the amount roles other than the hero are Figtree`() {
         val type = resolve().type
-        assertEquals(FontFamily.Default, type.amountLarge.fontFamily)
-        assertEquals(FontFamily.Default, type.amountRow.fontFamily)
+        assertEquals(figtree, type.amountLarge.fontFamily)
+        assertEquals(figtree, type.amountRow.fontFamily)
     }
 
     @Test
-    fun `displayFont TEXT puts the hero in the text family`() {
+    fun `displayFont TEXT puts the hero in Figtree`() {
         val type = resolve(ThemePrefs(displayFont = DisplayFont.TEXT, dynamicColor = false)).type
-        assertEquals(FontFamily.Default, type.amountHero.fontFamily)
+        assertEquals(figtree, type.amountHero.fontFamily)
     }
 
     @Test
@@ -206,8 +209,8 @@ class PftTypographyTest {
         pairing: TypePairing,
         displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
     ) = Resolved(
-        pftMaterialTypography(FontFamily.Default, displayFont, pairing),
-        pftType(displayFont, FontFamily.Default, pairing),
+        pftMaterialTypography(figtree, displayFont, pairing),
+        pftType(displayFont, figtree, pairing),
     )
 
     @Test
@@ -219,10 +222,10 @@ class PftTypographyTest {
         )
         assertEquals(400f, resolved.type.amountHero.axis("wght"))
         assertEquals(48f, resolved.type.amountHero.axis("opsz"))
-        assertEquals(FontFamily.Default, resolved.type.amountLarge.fontFamily)
-        assertEquals(FontFamily.Default, resolved.type.amountRow.fontFamily)
+        assertEquals(figtree, resolved.type.amountLarge.fontFamily)
+        assertEquals(figtree, resolved.type.amountRow.fontFamily)
         resolved.m3.roles().forEach { (name, style) ->
-            assertEquals("$name family", FontFamily.Default, style.fontFamily)
+            assertEquals("$name family", figtree, style.fontFamily)
         }
     }
 
@@ -241,15 +244,15 @@ class PftTypographyTest {
             if (name in editorialM3Roles) {
                 assertTrue("$name is Newsreader", style.fontFamily.isBundledNewsreader())
             } else {
-                assertEquals("$name family", FontFamily.Default, style.fontFamily)
+                assertEquals("$name family", figtree, style.fontFamily)
             }
         }
     }
 
     @Test
-    fun `EDITORIAL keeps tab labels, body, label text and row amounts in the sans text family`() {
+    fun `EDITORIAL keeps tab labels, body, label text and row amounts in Figtree`() {
         val resolved = pairing(TypePairing.EDITORIAL)
-        assertEquals(FontFamily.Default, resolved.type.amountRow.fontFamily)
+        assertEquals(figtree, resolved.type.amountRow.fontFamily)
         listOf(
             resolved.m3.titleSmall,
             resolved.m3.bodyLarge,
@@ -258,7 +261,7 @@ class PftTypographyTest {
             resolved.m3.labelLarge,
             resolved.m3.labelMedium,
             resolved.m3.labelSmall,
-        ).forEach { assertEquals(FontFamily.Default, it.fontFamily) }
+        ).forEach { assertEquals(figtree, it.fontFamily) }
     }
 
     @Test
@@ -309,7 +312,7 @@ class PftTypographyTest {
         val every =
             resolved.m3.roles().values +
                 listOf(resolved.type.amountHero, resolved.type.amountLarge, resolved.type.amountRow)
-        every.forEach { assertEquals(FontFamily.Default, it.fontFamily) }
+        every.forEach { assertEquals(figtree, it.fontFamily) }
     }
 
     @Test
@@ -325,7 +328,7 @@ class PftTypographyTest {
             assertEquals(FontFamily.Serif, it.fontFamily)
             assertFalse("system serif is not a bundled font list", it.fontFamily is FontListFontFamily)
         }
-        assertEquals(FontFamily.Default, resolved.m3.bodyLarge.fontFamily)
+        assertEquals(figtree, resolved.m3.bodyLarge.fontFamily)
     }
 
     @Test
@@ -336,6 +339,75 @@ class PftTypographyTest {
                 listOf(type.amountHero, type.amountLarge, type.amountRow).forEach { style ->
                     assertTrue("tnum in $choice/$font", style.fontFeatureSettings.orEmpty().contains("tnum"))
                 }
+            }
+        }
+    }
+
+    // --- the sans family (UI-2, UI-16, DS6h) ------------------------------------------------
+
+    /** The `wght` axis pinned on one bundled Figtree [ResourceFont]. */
+    private fun ResourceFont.wght(): Float? =
+        variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }["wght"]
+
+    @Test
+    fun `FIGTREE declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+        val fonts = (sansFamily(SansFont.FIGTREE) as FontListFontFamily).fonts.map { it as ResourceFont }
+        assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
+        // Figtree's own wght default is 300, so an undeclared axis would render every role too light.
+        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        fonts.forEach { assertEquals(R.font.figtree, it.resId) }
+    }
+
+    @Test
+    fun `SYSTEM is the platform default family`() {
+        assertEquals(FontFamily.Default, sansFamily(SansFont.SYSTEM))
+    }
+
+    @Test
+    fun `SansFont SYSTEM puts every sans role in the platform default, the serif roles unchanged`() {
+        val resolved =
+            resolve(ThemePrefs(dynamicColor = false, sansFont = SansFont.SYSTEM, typePairing = TypePairing.EDITORIAL))
+        resolved.m3.roles().forEach { (name, style) ->
+            if (name in editorialM3Roles) {
+                assertTrue("$name stays Newsreader", style.fontFamily.isBundledNewsreader())
+            } else {
+                assertEquals("$name family", FontFamily.Default, style.fontFamily)
+            }
+        }
+        assertEquals(FontFamily.Default, resolved.type.amountRow.fontFamily)
+        assertTrue(
+            resolved.type.amountHero.fontFamily
+                .isBundledNewsreader(),
+        )
+    }
+
+    @Test
+    fun `displayFont TEXT with SYSTEM sans puts every role, the hero included, in the platform default`() {
+        val resolved =
+            resolve(
+                ThemePrefs(
+                    dynamicColor = false,
+                    sansFont = SansFont.SYSTEM,
+                    displayFont = DisplayFont.TEXT,
+                    typePairing = TypePairing.EDITORIAL,
+                ),
+            )
+        val every =
+            resolved.m3.roles().values +
+                listOf(resolved.type.amountHero, resolved.type.amountLarge, resolved.type.amountRow)
+        every.forEach { assertEquals(FontFamily.Default, it.fontFamily) }
+    }
+
+    @Test
+    fun `every weight a role asks of the sans is one Figtree declares`() {
+        val figtree = sansFamily(SansFont.FIGTREE)
+        val declared = (figtree as FontListFontFamily).fonts.map { it.weight }.toSet()
+        TypePairing.entries.forEach { pairing ->
+            val m3 = pftMaterialTypography(figtree, DisplayFont.TEXT, pairing)
+            val type = pftType(DisplayFont.TEXT, figtree, pairing)
+            (m3.roles().values + listOf(type.amountHero, type.amountLarge, type.amountRow)).forEach { style ->
+                val weight = style.fontWeight ?: FontWeight.Normal
+                assertTrue("$weight is declared", weight in declared)
             }
         }
     }

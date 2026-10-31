@@ -23,6 +23,7 @@ import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.SansFont
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.app.ui.theme.TypePairing
 import org.junit.Assert.assertEquals
@@ -46,8 +47,8 @@ class DesignCatalogTest {
         compose.setContent { PftTheme { DevContent() } }
         val scroller = hasScrollAction()
         listOf(
-            "Type scale: display, headline (sans)",
-            "Type scale: title, body, label (sans)",
+            "Type scale: display, headline",
+            "Type scale: title, body, label",
             "Amount styles (tabular figures)",
             "Shapes (dp)",
             "Spacing (dp)",
@@ -139,7 +140,30 @@ class DesignCatalogTest {
         assertFalse(compose.onNodeWithText("titleLarge").usesNewsreader())
     }
 
-    private fun SemanticsNodeInteraction.usesNewsreader(): Boolean {
+    @Test
+    fun `the sans toggle starts on Figtree and System puts the body samples in the platform font`() {
+        compose.setContent { PftTheme { DevContent() } }
+        val default = if (ThemePrefs.Default.sansFont == SansFont.FIGTREE) "Figtree" else "System font"
+        compose.onNodeWithText("Sans: $default").assertIsSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
+        assertTrue(compose.onNodeWithText("bodyLarge").usesFigtree())
+
+        compose.onNodeWithText("Sans: System font").performClick()
+        compose.onNodeWithText("Sans: System font").assertIsSelected()
+        compose.onNodeWithText("Sans: Figtree").assertIsNotSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
+        assertFalse(compose.onNodeWithText("bodyLarge").usesFigtree())
+
+        compose.onNodeWithText("Sans: Figtree").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
+        assertTrue(compose.onNodeWithText("bodyLarge").usesFigtree())
+    }
+
+    private fun SemanticsNodeInteraction.usesFigtree(): Boolean = usesFont(R.font.figtree)
+
+    private fun SemanticsNodeInteraction.usesNewsreader(): Boolean = usesFont(R.font.newsreader)
+
+    private fun SemanticsNodeInteraction.usesFont(resId: Int): Boolean {
         val results = mutableListOf<TextLayoutResult>()
         fetchSemanticsNode()
             .config
@@ -152,7 +176,7 @@ class DesignCatalogTest {
                 .layoutInput.style.fontFamily
         return (family as? FontListFontFamily)?.fonts.orEmpty().any {
             it is ResourceFont &&
-                it.resId == R.font.newsreader
+                it.resId == resId
         }
     }
 
