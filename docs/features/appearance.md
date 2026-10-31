@@ -1,6 +1,6 @@
 # Appearance: colour palettes, dynamic colour and background
 
-Status: palettes and dynamic colour are built in the M1a premium-look slice DS6b , the background
+Status: palettes and dynamic colour are built in the M1a premium-look slice DS6b, the background
 in DS6c and the header glow in DS6d; the settings screen that lets you change them arrives in AP1,
 so until then the app always uses the defaults below (the debug catalogue can already try every
 combination). The type pairing and fonts (DS6g to DS6i) will be added to this page as they land.
