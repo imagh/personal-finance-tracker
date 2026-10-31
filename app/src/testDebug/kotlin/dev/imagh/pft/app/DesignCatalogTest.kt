@@ -141,25 +141,39 @@ class DesignCatalogTest {
     }
 
     @Test
-    fun `the sans toggle starts on Figtree and System puts the body samples in the platform font`() {
+    fun `the sans toggle starts on Figtree and each other option switches the body samples to its font`() {
         compose.setContent { PftTheme { DevContent() } }
-        val default = if (ThemePrefs.Default.sansFont == SansFont.FIGTREE) "Figtree" else "System font"
-        compose.onNodeWithText("Sans: $default").assertIsSelected()
+        assertEquals(SansFont.FIGTREE, ThemePrefs.Default.sansFont)
+        compose.onNodeWithText("Sans: Figtree").assertIsSelected()
+        compose.onNodeWithText("Sans: Plus Jakarta Sans").assertIsNotSelected()
+        compose.onNodeWithText("Sans: System font").assertIsNotSelected()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
         assertTrue(compose.onNodeWithText("bodyLarge").usesFigtree())
+        assertFalse(compose.onNodeWithText("bodyLarge").usesPlusJakartaSans())
+
+        compose.onNodeWithText("Sans: Plus Jakarta Sans").performClick()
+        compose.onNodeWithText("Sans: Plus Jakarta Sans").assertIsSelected()
+        compose.onNodeWithText("Sans: Figtree").assertIsNotSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
+        assertTrue(compose.onNodeWithText("bodyLarge").usesPlusJakartaSans())
+        assertFalse(compose.onNodeWithText("bodyLarge").usesFigtree())
 
         compose.onNodeWithText("Sans: System font").performClick()
         compose.onNodeWithText("Sans: System font").assertIsSelected()
-        compose.onNodeWithText("Sans: Figtree").assertIsNotSelected()
+        compose.onNodeWithText("Sans: Plus Jakarta Sans").assertIsNotSelected()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
         assertFalse(compose.onNodeWithText("bodyLarge").usesFigtree())
+        assertFalse(compose.onNodeWithText("bodyLarge").usesPlusJakartaSans())
 
         compose.onNodeWithText("Sans: Figtree").performClick()
+        compose.onNodeWithText("Sans: Figtree").assertIsSelected()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
         assertTrue(compose.onNodeWithText("bodyLarge").usesFigtree())
     }
 
     private fun SemanticsNodeInteraction.usesFigtree(): Boolean = usesFont(R.font.figtree)
+
+    private fun SemanticsNodeInteraction.usesPlusJakartaSans(): Boolean = usesFont(R.font.plus_jakarta_sans)
 
     private fun SemanticsNodeInteraction.usesNewsreader(): Boolean = usesFont(R.font.newsreader)
 
