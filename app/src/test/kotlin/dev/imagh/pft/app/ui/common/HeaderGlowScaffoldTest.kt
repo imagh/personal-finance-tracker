@@ -165,15 +165,25 @@ class HeaderGlowScaffoldTest {
         assertNear(washTop, pixel, "top-centre")
     }
 
-    @Test
-    fun `glow on, every pixel on the hero's top edge is plain canvas, across the whole width`() {
+    private fun assertHeroRowIsCanvas(expectedCanvas: Color) {
         show(HeaderStyle.Dashboard, glowOn, sampleHero)
         val heroTop = tag(HeaderTags.HERO).bounds().top.toInt()
         val header = tag(HeaderTags.HEADER).bounds()
         val row = (header.left.toInt() until header.right.toInt()).map { x -> pixelAt(x, heroTop) }
         assertTrue("hero row is ${row.size} pixels wide", row.size > 1000)
-        assertEquals("every hero-row pixel is the canvas", setOf(canvas), row.toSet())
+        assertEquals("every hero-row pixel is the canvas", setOf(expectedCanvas), row.toSet())
+        // The glow really is on: the top-centre pixel is not the canvas.
+        assertNotEquals(expectedCanvas, topCentre())
     }
+
+    @Test
+    fun `glow on, every pixel on the hero's top edge is plain canvas, across the whole width`() =
+        assertHeroRowIsCanvas(canvas)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun `glow on in dark, every pixel on the hero's top edge is plain canvas, across the whole width`() =
+        assertHeroRowIsCanvas(GraphitePalette.dark.canvas)
 
     @Test
     fun `glow on, the tint fades with depth and is gone by the hero`() {
