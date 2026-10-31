@@ -98,6 +98,21 @@ class DesignCatalogTest {
     }
 
     @Test
+    fun `the header glow toggle starts on the default and selecting the other one moves the selection`() {
+        compose.setContent { PftTheme { DevContent() } }
+        val default = if (ThemePrefs.Default.headerGlow) "Glow on" else "Glow off"
+        val other = if (ThemePrefs.Default.headerGlow) "Glow off" else "Glow on"
+        compose.onNodeWithText(default).assertIsSelected()
+        compose.onNodeWithText(other).assertIsNotSelected()
+
+        compose.onNodeWithText(other).performClick()
+        compose.onNodeWithText(other).assertIsSelected()
+        compose.onNodeWithText(default).assertIsNotSelected()
+        compose.onNodeWithText(default).performClick()
+        compose.onNodeWithText(default).assertIsSelected()
+    }
+
+    @Test
     fun `every palette can be picked for light and for dark`() {
         compose.setContent { PftTheme { DevContent() } }
         listOf("Graphite", "Midnight", "Ivory", "Aubergine").forEach { name ->
@@ -215,8 +230,11 @@ class DesignCatalogTest {
         compose.setContent { PftTheme { DevContent() } }
         compose.onNodeWithText("Empty").performClick()
         compose.onNodeWithText("Empty").assertIsSelected()
-        compose.onNodeWithText("Add account").assertIsDisplayed()
-        compose.onNodeWithText("Nothing matches your search.").assertIsDisplayed()
+        // The toggle rows above the page take most of a phone's height, so the page scrolls to its content.
+        listOf("Add account", "Nothing matches your search.").forEach { text ->
+            compose.onNode(hasScrollAction()).performScrollToNode(hasText(text))
+            compose.onNodeWithText(text).assertIsDisplayed()
+        }
     }
 
     @Test

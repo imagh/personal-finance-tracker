@@ -22,6 +22,7 @@ class ThemePaletteTest {
         val primary: Long,
         val canvas: Long,
         val island: Long,
+        val wash: Long,
     )
 
     private fun assertPinned(
@@ -43,14 +44,35 @@ class ThemePaletteTest {
         assertEquals(Color(pins.primary), s.surfaceTint, "$where surfaceTint follows primary")
         assertEquals(Color(pins.canvas), colors.canvas, "$where canvas")
         assertEquals(Color(pins.island), colors.island, "$where island")
+        assertEquals(Color(pins.wash), colors.wash, "$where pc -> wash")
     }
 
     @Test
     fun `Graphite pins the owner-approved mockup values`() {
         val lightPins =
-            Pins(0xFFF3F4F5, 0xFFEBEDEF, 0xFF14161A, 0xFF50545C, 0xFFD1D4D9, 0xFF3B4350, 0xFFE4E6E9, 0xFFEFF0F2)
+            Pins(
+                0xFFF3F4F5,
+                0xFFEBEDEF,
+                0xFF14161A,
+                0xFF50545C,
+                0xFFD1D4D9,
+                0xFF3B4350,
+                0xFFE4E6E9,
+                0xFFEFF0F2,
+                0xFFD5DAE3,
+            )
         val darkPins =
-            Pins(0xFF101113, 0xFF181A1D, 0xFFE6E7EA, 0xFFA8ACB3, 0xFF25282C, 0xFFC9CED8, 0xFF0B0C0E, 0xFF141618)
+            Pins(
+                0xFF101113,
+                0xFF181A1D,
+                0xFFE6E7EA,
+                0xFFA8ACB3,
+                0xFF25282C,
+                0xFFC9CED8,
+                0xFF0B0C0E,
+                0xFF141618,
+                0xFF2A2F38,
+            )
         assertPinned(ThemePalette.GRAPHITE, dark = false, lightPins)
         assertPinned(ThemePalette.GRAPHITE, dark = true, darkPins)
     }
@@ -58,9 +80,29 @@ class ThemePaletteTest {
     @Test
     fun `Midnight pins the owner-approved mockup values`() {
         val lightPins =
-            Pins(0xFFF4F5F9, 0xFFECEFF5, 0xFF11172A, 0xFF4A5266, 0xFFD2D7E3, 0xFF7D5F26, 0xFFE6E9F0, 0xFFF0F2F7)
+            Pins(
+                0xFFF4F5F9,
+                0xFFECEFF5,
+                0xFF11172A,
+                0xFF4A5266,
+                0xFFD2D7E3,
+                0xFF7D5F26,
+                0xFFE6E9F0,
+                0xFFF0F2F7,
+                0xFFE9DDC2,
+            )
         val darkPins =
-            Pins(0xFF0F1424, 0xFF161C30, 0xFFE6E8EF, 0xFFA5ACBF, 0xFF222B42, 0xFFD4B572, 0xFF0A0E1A, 0xFF121929)
+            Pins(
+                0xFF0F1424,
+                0xFF161C30,
+                0xFFE6E8EF,
+                0xFFA5ACBF,
+                0xFF222B42,
+                0xFFD4B572,
+                0xFF0A0E1A,
+                0xFF121929,
+                0xFF33291A,
+            )
         assertPinned(ThemePalette.MIDNIGHT, dark = false, lightPins)
         assertPinned(ThemePalette.MIDNIGHT, dark = true, darkPins)
     }
@@ -68,9 +110,29 @@ class ThemePaletteTest {
     @Test
     fun `Ivory pins the owner-approved mockup values`() {
         val lightPins =
-            Pins(0xFFF6F2E9, 0xFFEFEADF, 0xFF1F1D18, 0xFF5A5548, 0xFFD9D2C2, 0xFF2E3A59, 0xFFE9E4D8, 0xFFF3EFE5)
+            Pins(
+                0xFFF6F2E9,
+                0xFFEFEADF,
+                0xFF1F1D18,
+                0xFF5A5548,
+                0xFFD9D2C2,
+                0xFF2E3A59,
+                0xFFE9E4D8,
+                0xFFF3EFE5,
+                0xFFDCD3BC,
+            )
         val darkPins =
-            Pins(0xFF181713, 0xFF201F1A, 0xFFECE6D8, 0xFFAFA896, 0xFF2B2923, 0xFFAEB9DA, 0xFF12110E, 0xFF1A1915)
+            Pins(
+                0xFF181713,
+                0xFF201F1A,
+                0xFFECE6D8,
+                0xFFAFA896,
+                0xFF2B2923,
+                0xFFAEB9DA,
+                0xFF12110E,
+                0xFF1A1915,
+                0xFF2A2C38,
+            )
         assertPinned(ThemePalette.IVORY, dark = false, lightPins)
         assertPinned(ThemePalette.IVORY, dark = true, darkPins)
     }
@@ -78,9 +140,29 @@ class ThemePaletteTest {
     @Test
     fun `Aubergine pins the owner-approved mockup values`() {
         val lightPins =
-            Pins(0xFFF7F2F7, 0xFFF0E9F0, 0xFF1D141D, 0xFF594C58, 0xFFDACFD9, 0xFF5B2A66, 0xFFEAE3EA, 0xFFF4EFF4)
+            Pins(
+                0xFFF7F2F7,
+                0xFFF0E9F0,
+                0xFF1D141D,
+                0xFF594C58,
+                0xFFDACFD9,
+                0xFF5B2A66,
+                0xFFEAE3EA,
+                0xFFF4EFF4,
+                0xFFE2D0E4,
+            )
         val darkPins =
-            Pins(0xFF140D15, 0xFF1D141E, 0xFFEDE3EC, 0xFFB3A5B2, 0xFF2E2030, 0xFFD9BE8A, 0xFF0E080F, 0xFF181018)
+            Pins(
+                0xFF140D15,
+                0xFF1D141E,
+                0xFFEDE3EC,
+                0xFFB3A5B2,
+                0xFF2E2030,
+                0xFFD9BE8A,
+                0xFF0E080F,
+                0xFF181018,
+                0xFF3B2540,
+            )
         assertPinned(ThemePalette.AUBERGINE, dark = false, lightPins)
         assertPinned(ThemePalette.AUBERGINE, dark = true, darkPins)
     }

@@ -15,10 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 
 /**
- * Picks the colours for the resolved theme: the M3 scheme plus the canvas and island.
+ * Picks the colours for the resolved theme: the M3 scheme plus the canvas, island and wash.
  *
  * With [ThemePrefs.dynamicColor] on (opt-in), the scheme comes from the system's Material You
- * palette, the palette fields are ignored, and the canvas and island are derived from that scheme
+ * palette, the palette fields are ignored, and the canvas, island and wash are derived from that scheme
  * by [dynamicPaletteColors]. That needs API 31 and the app's minSdk is 33, so there is no version
  * fallback. With it off, the colours are the committed palette the user picked for this mode:
  * [ThemePrefs.darkPalette] in dark, [ThemePrefs.lightPalette] in light.
@@ -47,13 +47,15 @@ fun resolveColorScheme(
 ): ColorScheme = resolvePaletteColors(prefs, dark, context).scheme
 
 /**
- * The canvas and island for a dynamic [scheme], which has no such roles. Each is a surface
- * container step, chosen so the island still lifts off the canvas (plan §3.1):
+ * The canvas, island and wash for a dynamic [scheme], which has no such roles. The canvas and
+ * island are surface container steps, chosen so the island still lifts off the canvas (plan §3.1);
+ * the wash is the scheme's own primary container, a tint of the user's wallpaper colour:
  *
  * | Token | Light | Dark |
  * |---|---|---|
  * | canvas | `surfaceContainerHigh` (tone 92) | `surfaceContainerLowest` (tone 4) |
  * | island | `surfaceContainerLow` (tone 96) | `surfaceContainerLow` (tone 10) |
+ * | wash | `primaryContainer` (tone 90) | `primaryContainer` (tone 30) |
  *
  * Pure, so the tests can pin it. Light `surfaceContainerLowest` (white) is never used.
  */
@@ -65,6 +67,7 @@ internal fun dynamicPaletteColors(
         scheme = scheme,
         canvas = if (dark) scheme.surfaceContainerLowest else scheme.surfaceContainerHigh,
         island = scheme.surfaceContainerLow,
+        wash = scheme.primaryContainer,
     )
 
 /**
@@ -99,7 +102,7 @@ fun PftTheme(
         LocalMoneyColors provides moneyColors(dark),
         LocalCategoryPalette provides categoryPalette(dark),
         LocalPftTypography provides pftType,
-        LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark),
+        LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark, prefs.headerGlow),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -128,7 +131,7 @@ object PftTheme {
         @ReadOnlyComposable
         get() = LocalCategoryPalette.current
 
-    /** The screen canvas, card island and island edge for the current palette, mode and [BackgroundStyle]. */
+    /** The canvas, island, island edge and header glow for the current palette, mode and prefs. */
     val surfaces: PftSurfaces
         @Composable
         @ReadOnlyComposable

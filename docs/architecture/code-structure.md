@@ -17,12 +17,13 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, ThemePalette (+ colors(dark)), GraphitePalette (+ PaletteColors), MidnightPalette,
                                          # IvoryPalette, AuberginePalette (DS6b: one generated, pinned object per palette), PaletteSamples
-                                         # (the four-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces
-                                         # and LocalPftSurfaces, DS6c), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography, PftShapes,
+                                         # (the four-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces,
+                                         # the glow tint and LocalPftSurfaces, DS6c, DS6d), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography, PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
                                          # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), HeaderIconButton (the only control
-                                         # allowed in the header's `actions`), BottomActionBar
+                                         # allowed in the header's `actions`), HeaderGlow (DS6d: the glow's pure rules and
+                                         # `Modifier.headerGlow`), BottomActionBar
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
                                          # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
@@ -116,6 +117,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/theme`) | `TokenSheet` / `TokenSheetPages` (one sheet of every token) | Studio preview, debug `DesignCatalog`, `TokenSheetScreenshotTest` goldens | DS2 |
 | app UI (`ui/theme`) | `PftMotion` (four springs, nav transitions, `iosSpring`, `Modifier.pressScale`) | every screen; A5 nav host, C4 rows and keypad, DS5 rolling digits | DS4 |
 | app UI (`ui/common`) | `CollapsingHeaderScaffold` (`HeaderStyle`, `HeaderPeriod`) | A5 setup and `EditFormScaffold`, B2 `EntityListScreen`, C4 Home, D4, AP1/H1 settings | DS4 |
+| app UI (`ui/common`) | `glowAlpha` / `glowEnd` / `glowStrength` / `Modifier.headerGlow` (`HeaderGlow.kt`; `PaletteColors.wash`, `PftSurfaces.glow`, `ThemePrefs.headerGlow`) | `CollapsingHeaderScaffold` (the only caller); the debug catalogue toggle | DS6d |
 | app UI (`ui/common`) | `HeaderIconButton(symbol, label, onClick)` (a `PftSymbol`, a mandatory label) | the scaffold's period stepper; every header's `actions` (Home search and filter, list and settings back, budget-detail overflow) | DS6e |
 | app UI (`ui/common`) | `BottomActionBar` (`BottomBarAction`) | A5 `EditFormScaffold` (all forms) and setup, C5 detail | DS4 |
 | app UI (`ui/common`) | `MoneyText` (`MoneySemantic`, `MoneyTone`, `MoneySize`) on `:core:money` `PaiseFormat` | B2, C4, C5, D4, F3, G2 | DS5 |

@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
  *    | `primary` | `primary` | #2E3A59 | #AEB9DA |
  *    | `canvas` | `canvas` (DS6c) | #E9E4D8 | #12110E |
  *    | `island` | `island` (DS6c) | #F3EFE5 | #1A1915 |
+ *    | `pc` | `wash` (DS6d) | #DCD3BC | #2A2C38 |
  *
  * 4. `surfaceTint` equals the pinned `primary`, as in M3. `onPrimary` is the primary palette's tone
  *    100 (light) and tone 20 (dark), as generated. No other role was adjusted: the generated ladder
@@ -42,6 +43,10 @@ import androidx.compose.ui.graphics.Color
  * `surfaceContainerHigh` (tone 92); the order is kept, the gap is small. Light
  * `surfaceContainerLowest` is tone 100, i.e. white: it must not be used as a card, sheet or
  * dialog fill.
+ *
+ * `wash` (DS6d) is the mockup `pc`, pinned as approved over nothing (M3 has no such role). It passed
+ * the header-glow contrast sweep in `ColorContrastTest` (the wash at 72% over the canvas, with
+ * `onSurface`, `onSurfaceVariant` and the money tokens at 4.5:1) with no tone change.
  *
  * To change a value, regenerate or edit it, then re-run `ColorContrastTest` and `AccentHueTest`
  * and re-record the goldens.
@@ -90,6 +95,7 @@ internal object IvoryPalette {
             ),
             canvas = Color(0xFFE9E4D8),
             island = Color(0xFFF3EFE5),
+            wash = Color(0xFFDCD3BC),
         )
 
     /** Dark roles. */
@@ -135,5 +141,6 @@ internal object IvoryPalette {
             ),
             canvas = Color(0xFF12110E),
             island = Color(0xFF1A1915),
+            wash = Color(0xFF2A2C38),
         )
 }

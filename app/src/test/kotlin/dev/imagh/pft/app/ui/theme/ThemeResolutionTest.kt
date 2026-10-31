@@ -174,6 +174,21 @@ class ThemeResolutionTest {
     }
 
     @Test
+    fun `the dynamic wash is the dynamic scheme's primary container`() {
+        val light = dynamicLightColorScheme(context)
+        val dark = dynamicDarkColorScheme(context)
+        assertEquals(light.primaryContainer, resolvePaletteColors(dynamicPrefs, dark = false, context = context).wash)
+        assertEquals(dark.primaryContainer, resolvePaletteColors(dynamicPrefs, dark = true, context = context).wash)
+    }
+
+    @Test
+    fun `dynamic off resolves the palette's own wash`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.MIDNIGHT)
+        assertEquals(ThemePalette.IVORY.colors(dark = false).wash, resolvePaletteColors(prefs, false, context).wash)
+        assertEquals(ThemePalette.MIDNIGHT.colors(dark = true).wash, resolvePaletteColors(prefs, true, context).wash)
+    }
+
+    @Test
     fun `dynamic off resolves the palette's own canvas and island`() {
         val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, darkPalette = ThemePalette.MIDNIGHT)
         assertEquals(ThemePalette.IVORY.colors(dark = false).canvas, resolvePaletteColors(prefs, false, context).canvas)
@@ -221,6 +236,33 @@ class ThemeResolutionTest {
             ThemePrefs(mode = ThemeMode.DARK, darkPalette = ThemePalette.MIDNIGHT, background = BackgroundStyle.TONAL)
         compose.waitForIdle()
         assertEquals(pftSurfaces(MidnightPalette.dark, BackgroundStyle.TONAL, dark = true), surfaces)
+    }
+
+    @Test
+    fun `PftTheme provides the glow only while the header glow pref is on`() {
+        var prefs by mutableStateOf(ThemePrefs(mode = ThemeMode.LIGHT, lightPalette = ThemePalette.IVORY))
+        lateinit var surfaces: PftSurfaces
+        compose.setContent { PftTheme(prefs) { surfaces = PftTheme.surfaces } }
+        compose.waitForIdle()
+        assertEquals(null, surfaces.glow)
+        prefs = prefs.copy(headerGlow = true)
+        compose.waitForIdle()
+        assertEquals(IvoryPalette.light.wash, surfaces.glow)
+        prefs = prefs.copy(headerGlow = false)
+        compose.waitForIdle()
+        assertEquals(null, surfaces.glow)
+    }
+
+    @Test
+    fun `dynamic colour with the glow on tints with the dynamic wash`() {
+        var surfaces: PftSurfaces? = null
+        compose.setContent {
+            PftTheme(ThemePrefs(mode = ThemeMode.DARK, dynamicColor = true, headerGlow = true)) {
+                surfaces = PftTheme.surfaces
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(dynamicDarkColorScheme(context).primaryContainer, surfaces?.glow)
     }
 
     @Test

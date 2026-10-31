@@ -43,6 +43,8 @@ enum class DisplayFont {
  * @property darkPalette the colour palette used when the resolved theme is dark. Chosen
  *   independently of [lightPalette]. Ignored while [dynamicColor] is on.
  * @property background tonal or flat screen and card surfaces ([BackgroundStyle]); see [PftSurfaces].
+ * @property headerGlow draw a soft tint of the palette's wash behind the header (UI-13). Off by
+ *   default; it never reaches the hero row, so money is never drawn on it. See `Modifier.headerGlow`.
  * @property displayFont the font of the hero number (`amountHero`); see [DisplayFont].
  */
 @Immutable
@@ -52,10 +54,11 @@ data class ThemePrefs(
     val lightPalette: ThemePalette = ThemePalette.GRAPHITE,
     val darkPalette: ThemePalette = ThemePalette.GRAPHITE,
     val background: BackgroundStyle = BackgroundStyle.TONAL,
+    val headerGlow: Boolean = false,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
 ) {
     companion object {
-        /** System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces. */
+        /** System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces, no header glow. */
         val Default = ThemePrefs()
     }
 }

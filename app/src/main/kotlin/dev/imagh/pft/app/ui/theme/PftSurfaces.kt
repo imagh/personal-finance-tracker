@@ -29,6 +29,9 @@ enum class BackgroundStyle {
  * @property islandEdge the 1 physical pixel edge around an island; [Color.Transparent] when FLAT.
  * @property islandHighlight a faint line lit along the top of an island, dark TONAL only (a card
  *   catching the light); [Color.Transparent] otherwise.
+ * @property glow the tint of the header glow (the palette's wash) while the user has turned the
+ *   glow on ([ThemePrefs.headerGlow]); null, the default, means "draw no glow". Whatever the
+ *   [BackgroundStyle]. See `Modifier.headerGlow`.
  */
 @Immutable
 data class PftSurfaces(
@@ -36,6 +39,7 @@ data class PftSurfaces(
     val island: Color,
     val islandEdge: Color,
     val islandHighlight: Color,
+    val glow: Color?,
 )
 
 /** Mockup `rgba(255,255,255,.045)`: the dark island's top highlight. */
@@ -52,11 +56,14 @@ private const val DARK_HIGHLIGHT_ALPHA = 0.045f
  * `FLAT` reproduces the pre-DS6c look exactly, in the chosen palette.
  *
  * @param dark the resolved dark/light decision (the highlight is dark-only).
+ * @param glow whether the header glow is on ([ThemePrefs.headerGlow]): then [PftSurfaces.glow] is
+ *   `p.wash`, else null. Defaulted off, so a caller that does not ask for the glow never gets it.
  */
 internal fun pftSurfaces(
     p: PaletteColors,
     style: BackgroundStyle,
     dark: Boolean,
+    glow: Boolean = false,
 ): PftSurfaces =
     when (style) {
         BackgroundStyle.TONAL ->
@@ -65,6 +72,7 @@ internal fun pftSurfaces(
                 island = p.island,
                 islandEdge = p.scheme.outlineVariant,
                 islandHighlight = if (dark) Color.White.copy(alpha = DARK_HIGHLIGHT_ALPHA) else Color.Transparent,
+                glow = p.wash.takeIf { glow },
             )
         BackgroundStyle.FLAT ->
             PftSurfaces(
@@ -72,6 +80,7 @@ internal fun pftSurfaces(
                 island = p.scheme.surfaceContainer,
                 islandEdge = Color.Transparent,
                 islandHighlight = Color.Transparent,
+                glow = p.wash.takeIf { glow },
             )
     }
 

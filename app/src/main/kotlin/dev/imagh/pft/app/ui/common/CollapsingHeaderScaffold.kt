@@ -24,9 +24,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -312,6 +314,8 @@ private fun CollapsingHeader(
         } else {
             Modifier
         }
+    // Written by the layout, read only by the glow's draw lambda: a scroll frame redraws, never recomposes.
+    val heroTop = remember { mutableFloatStateOf(NO_HERO_TOP) }
     val policy =
         remember(state, sizes, content.dashboard) {
             HeaderPolicy(
@@ -319,6 +323,7 @@ private fun CollapsingHeader(
                 sizes,
                 content.dashboard,
                 typography.titleLarge.fontSize.value / largeStyle.fontSize.value,
+                heroTop,
             )
         }
     Layout(
@@ -327,7 +332,11 @@ private fun CollapsingHeader(
             Modifier
                 .fillMaxWidth()
                 .background(PftTheme.surfaces.canvas)
-                .then(swipe)
+                .headerGlow(
+                    PftTheme.surfaces.glow,
+                    heroTop = { heroTop.floatValue.asHeroTop() },
+                    collapsedFraction = { if (sizes.alwaysCollapsed) 1f else state.collapsedFraction },
+                ).then(swipe)
                 .testTag(HeaderTags.HEADER),
         measurePolicy = policy,
     )
@@ -427,13 +436,16 @@ private fun Modifier.periodSwipe(period: HeaderPeriod?): Modifier {
 /**
  * Measures and places the header's parts from the live scroll state. It reads
  * `state.heightOffset` and `collapsedFraction` in the layout phase, so scrolling re-runs only
- * layout and layer work, never composition.
+ * layout and layer work, never composition. It also writes where the hero's top edge is into
+ * [heroTop] (or [NO_HERO_TOP]); only the glow's draw lambda reads that, so it costs a redraw, never a
+ * recomposition.
  */
 private class HeaderPolicy(
     private val state: TopAppBarState,
     private val sizes: HeaderSizes,
     private val dashboard: Boolean,
     private val barTitleScale: Float,
+    private val heroTop: MutableFloatState,
 ) : MeasurePolicy {
     /** The measured parts and the spacing in px that placing needs. */
     @Suppress("LongParameterList") // a plain holder: one field per part
@@ -554,10 +566,13 @@ private class HeaderPolicy(
             cursor -= it.height
             it.placeRelativeWithLayer(parts.bandStartX, cursor) { alpha = fade }
         }
+        var top = NO_HERO_TOP
         parts.hero?.let {
             cursor -= it.height
             it.placeRelativeWithLayer(parts.bandStartX, cursor) { alpha = fade }
+            top = cursor.toFloat()
         }
+        heroTop.floatValue = top // one write, so an unmoved hero does not invalidate the glow's draw
     }
 
     private fun centredX(

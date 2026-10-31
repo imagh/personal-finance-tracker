@@ -21,8 +21,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Golden screenshots of the scaffold's two header styles, expanded and collapsed, and of the
- * bottom action bar, in light and dark, on a 393x851dp xxhdpi screen with the committed Graphite
- * colours (dynamic colour off, so the goldens are deterministic). The samples are the same
+ * bottom action bar, in light and dark (and the expanded Dashboard header with the glow on), on a
+ * 393x851dp xxhdpi screen with the committed Graphite colours (dynamic colour off, so the goldens
+ * are deterministic). The samples are the same
  * composables the previews and the debug catalogue show; fake data only.
  *
  * `./gradlew check` verifies against `src/test/screenshots`; after a deliberate visual change run
@@ -36,12 +37,16 @@ class HeaderScreenshotTest {
     @get:Rule
     val compose = HostedComposeRule()
 
+    /** The header glow is off by default, so its goldens turn it on explicitly (the others stay untinted). */
+    private val glowOn = ThemePrefs(dynamicColor = false, headerGlow = true)
+
     private fun capture(
         name: String,
         collapse: Boolean = false,
+        prefs: ThemePrefs = ThemePrefs(dynamicColor = false),
         sample: @Composable () -> Unit,
     ) {
-        compose.setContent { PftTheme(ThemePrefs(dynamicColor = false)) { sample() } }
+        compose.setContent { PftTheme(prefs) { sample() } }
         compose.waitForIdle()
         if (collapse) {
             compose.onNodeWithTag(HeaderTags.LIST).performTouchInput { swipeUp() }
@@ -94,6 +99,16 @@ class HeaderScreenshotTest {
     @Config(qualifiers = "+night")
     fun dashboardCollapsedDark() =
         capture("header-dashboard-collapsed-dark", collapse = true) { DashboardHeaderSample() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun dashboardExpandedGlowLight() =
+        capture("header-dashboard-expanded-glow-light", prefs = glowOn) { DashboardHeaderSample() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun dashboardExpandedGlowDark() =
+        capture("header-dashboard-expanded-glow-dark", prefs = glowOn) { DashboardHeaderSample() }
 
     @Test
     @Config(qualifiers = "+notnight")
