@@ -8,6 +8,7 @@ import dev.imagh.pft.app.ui.common.groupedSectionColors
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.math.abs
 
 /**
  * WCAG 2.x contrast for every colour pair the design system promises (plan §3.3, UI-5), checked
@@ -228,7 +229,7 @@ class ColorContrastTest {
             val colors = case.palette.colors(dark = case.theme == Theme.DARK)
             assertTrue(colors.wash != colors.canvas, "$case wash equals the canvas")
             assertTrue(
-                kotlin.math.abs(toneOf(washTop(colors.wash, colors.canvas)) - toneOf(colors.canvas)) >= 2.0,
+                abs(toneOf(washTop(colors.wash, colors.canvas)) - toneOf(colors.canvas)) >= 2.0,
                 "$case glow top is less than 2 tones from the canvas",
             )
         }
