@@ -41,7 +41,7 @@ object:
 | `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
-| `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge and top highlight for the palette, mode and `BackgroundStyle` (DS6c); see "Surfaces and window colour" |
+| `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge, top highlight and header glow tint (null while the glow is off) for the palette, mode, `BackgroundStyle` and `ThemePrefs.headerGlow` (DS6c, DS6d); see "Surfaces and window colour" and "One-hand layout" |
 | `PftTheme.type` | `PftTypography` | the three amount styles |
 | `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge) |
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
@@ -137,7 +137,7 @@ surface should add its colour to this test.
 
 ### Surfaces and window colour (DS6c, UI-12, UI-18)
 
-`PftTheme.surfaces` (`PftSurfaces`, from the pure `pftSurfaces(palette, style, dark)`; a
+`PftTheme.surfaces` (`PftSurfaces`, from the pure `pftSurfaces(palette, style, dark, glow)`; a
 `staticCompositionLocalOf`, so a palette change recomposes the whole tree, which only happens when the user
 changes a setting) is the one place a screen gets its background and card colours. `BackgroundStyle` has two
 persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
@@ -146,6 +146,8 @@ persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
 |---|---|---|---|---|
 | `TONAL` | `PaletteColors.canvas` | `PaletteColors.island` | `outlineVariant`, 1 physical px | dark: white at 4.5% alpha; light: transparent |
 | `FLAT` | `scheme.surface` | `scheme.surfaceContainer` | transparent | transparent |
+
+`PftSurfaces.glow` (DS6d) is the palette's `wash` while `ThemePrefs.headerGlow` is on, else `null`, in either style (the glow itself is described under "One-hand layout").
 
 - The canvas and island of each palette are the owner-approved mockup values (`canvas`, `island`), pinned in the
   palette files; the island is lighter than the canvas in every palette and both modes, and never white.
@@ -172,7 +174,7 @@ persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
   back, IME gaps and configuration changes show the canvas. `FLAG_SECURE` stays the first line of `onCreate`,
   followed by `enableEdgeToEdge()`. A forced light or dark mode against the system's night mode is AP1's
   `setApplicationNightMode` item.
-- **The debug catalogue** has a Background (Tonal / Flat) row.
+- **The debug catalogue** has a Background (Tonal / Flat) row and a Glow (off / on) row.
 
 ### Motion (UI-10)
 
@@ -221,6 +223,26 @@ primary action.
   bar title, lower band) is composition state, so a scroll frame does no recomposition of the header itself. (M3's `Scaffold` still hands the list a
   new content padding as the header height changes, as in every M3 collapsing bar; whether that costs
   frames is for the release-build jank check, deferred to C4.)
+- **Header glow (UI-13, DS6d).** An optional soft tint behind the header, **off by default**
+  (`ThemePrefs.headerGlow`, `PftTheme.surfaces.glow == null`). With it on, `Modifier.headerGlow`
+  (`ui/common/HeaderGlow.kt`) draws a radial gradient of `PaletteColors.wash` (the mockup's `pc`;
+  with dynamic colour, `primaryContainer`) centred on the header's top-centre point.
+  - **Shape.** `glowAlpha(distance, end)`: 72% (`MAX_GLOW_ALPHA`) at the top edge, about 28% at 38% of the
+    reach (the mockup's stops), exactly 0 from `end` on, never increasing. Its whole strength is multiplied
+    by `1 - collapsedFraction` (`glowStrength`), so the 64dp bar is plain canvas.
+  - **Reach.** `glowEnd(heroTop, bodyHeight)` is `heroTop - 24dp` (clamped at 0) for a Dashboard header
+    with a hero, and 0.6 x the header height for one without. The gradient is a circle on the top edge,
+    so **the hero row is always untinted**: money is never drawn on the glow, and a test checks every
+    pixel of the hero's top row equals the canvas.
+  - **No recomposition.** `HeaderPolicy` writes the hero's measured top into a float state that only the
+    draw lambda reads, and the draw lambda reads `collapsedFraction` too, so a scroll frame redraws the
+    header but never recomposes it (the DS4 rule). `HeaderGlowScaffoldTest` counts the recomposer's
+    changes across scroll frames.
+  - **Contrast.** The title, actions and (defensively) money sit on the tint, so `onSurface`,
+    `onSurfaceVariant` and the three money tokens are swept at 4.5:1 against the wash at 72% over the canvas
+    (and over the flat surface), for every palette and mode, by contrast and not by the tone band (Ivory and
+    Aubergine light fall to tone 86.5 to 86.9 there). The dynamic wash is swept by tone, because
+    Robolectric's synthetic system palette puts `primaryContainer` at tone 49 to 60, which no device does.
 - **Header layout rule (owner decision Q10).** All titles are sans; the serif is the hero number
   only. The title is read-only (no click action), horizontally centred, in the upper band, with an
   optional one-line subtitle under it.
@@ -536,6 +558,6 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 
 - **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently (done; see "Colour"). Money colours are unchanged.
 - **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas (done in DS6c; see "Surfaces and window colour").
-- **Header.** An optional glow, off by default, never under money. (Icon-only actions through `HeaderIconButton` are done: DS6e.)
+- **Header.** An optional glow, off by default, never under money (done in DS6d; see "One-hand layout"). (Icon-only actions through `HeaderIconButton` are done: DS6e.)
 - **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option. Bundled Figtree becomes the default sans. The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB. The DS6f spike (plan §3.7) measured the candidates: only Figtree and Plus Jakarta Sans (both variable) will be bundled, 0.66 MiB with Newsreader; none is bundled yet, so the table has no rows for them until DS6h and DS6i.
 - **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this (built in DS6a).

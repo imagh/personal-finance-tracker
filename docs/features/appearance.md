@@ -1,10 +1,10 @@
 # Appearance: colour palettes, dynamic colour and background
 
-Status: palettes and dynamic colour are built in the M1a premium-look slice DS6b and the background
-in DS6c; the settings screen that lets you change them arrives in AP1, so until then the app always
-uses the defaults below (the debug catalogue can already try every combination). The header glow,
-type pairing and fonts (DS6d to DS6i) will be added to this page as they land. PRD: UI-11, UI-12,
-UI-8, UI-18.
+Status: palettes and dynamic colour are built in the M1a premium-look slice DS6b , the background
+in DS6c and the header glow in DS6d; the settings screen that lets you change them arrives in AP1,
+so until then the app always uses the defaults below (the debug catalogue can already try every
+combination). The type pairing and fonts (DS6g to DS6i) will be added to this page as they land.
+PRD: UI-11, UI-12, UI-13, UI-8, UI-18.
 Technical design: [design-system.md](../architecture/design-system.md) and the plan
 [2026-10-30-m1a-premium-look.md](../plans/2026-10-30-m1a-premium-look.md).
 
@@ -26,6 +26,12 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
   runs along the top of each panel. The panels are never white. With **Flat** the screen and the
   panels are the plain surface colours, as before. Both follow the palette you picked (or the
   wallpaper colours, with dynamic colour on).
+- **The header glow is optional and off by default.** Turn it on and the top of each screen gets a
+  soft tint of the palette's accent family behind the title (the "wash"), strongest at the very top
+  and fading out well before the big figure on a home-style screen, so an amount is never drawn on a
+  tinted area. It is capped, so the title and buttons stay readable, and it fades away as you scroll
+  the header down to the small bar. Screens without a big figure get the tint over the top 60% of
+  the header. With dynamic colour the tint comes from your wallpaper colours.
 - **The window matches the screen.** The bar behind the app (what shows briefly while the app
   opens, or during a back swipe) uses the same background colour as the screen, so there is no
   flash of a different colour. The colour it shows before the app has drawn is the default
@@ -42,6 +48,7 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
 | Dark palette | Graphite |
 | Dynamic colour | off |
 | Background | Tonal |
+| Header glow | off |
 
 Once the settings are stored (AP1), a value the app does not recognise (for example one saved by a
 newer version) will be read as the default for that setting alone, so a choice can never leave the
@@ -63,6 +70,10 @@ of hue, checked by a test for every palette in light and dark).
   to.
 - The background choice is stored as `TONAL` or `FLAT` (permanent names, like the palettes) when the
   settings screen arrives.
+- The header glow is stored as `true` or `false` when the settings screen arrives. Its tint colours
+  are the values the owner approved in the mockup (`pc`); tests check that the title, the buttons and
+  the money colours stay at least 4.5:1 against the tint at its strongest in every palette, and that
+  the pixels on the big figure's top edge are plain background.
 - Every pair of colours is checked for contrast in each palette (text at 4.5:1, the accent
   against the background at 3:1) so each palette stays readable.
 - The background and panel colours of each palette are the values the owner approved in the
