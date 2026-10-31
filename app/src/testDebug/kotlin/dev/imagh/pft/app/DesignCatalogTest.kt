@@ -1,5 +1,8 @@
 package dev.imagh.pft.app
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
@@ -13,11 +16,17 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontListFontFamily
+import androidx.compose.ui.text.font.ResourceFont
+import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.app.ui.theme.TypePairing
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -113,6 +122,41 @@ class DesignCatalogTest {
     }
 
     @Test
+    fun `the type pairing toggle starts on the default and Editorial sets the title roles in the serif`() {
+        compose.setContent { PftTheme { DevContent() } }
+        val default = if (ThemePrefs.Default.typePairing == TypePairing.HERO_ONLY) "Hero only" else "Editorial"
+        compose.onNodeWithText("Pairing: $default").assertIsSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("titleLarge"))
+        assertFalse(compose.onNodeWithText("titleLarge").usesNewsreader())
+
+        compose.onNodeWithText("Pairing: Editorial").performClick()
+        compose.onNodeWithText("Pairing: Editorial").assertIsSelected()
+        compose.onNodeWithText("Pairing: Hero only").assertIsNotSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("titleLarge"))
+        assertTrue(compose.onNodeWithText("titleLarge").usesNewsreader())
+        compose.onNodeWithText("Pairing: Hero only").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("titleLarge"))
+        assertFalse(compose.onNodeWithText("titleLarge").usesNewsreader())
+    }
+
+    private fun SemanticsNodeInteraction.usesNewsreader(): Boolean {
+        val results = mutableListOf<TextLayoutResult>()
+        fetchSemanticsNode()
+            .config
+            .getOrNull(SemanticsActions.GetTextLayoutResult)
+            ?.action
+            ?.invoke(results)
+        val family =
+            results
+                .single()
+                .layoutInput.style.fontFamily
+        return (family as? FontListFontFamily)?.fonts.orEmpty().any {
+            it is ResourceFont &&
+                it.resId == R.font.newsreader
+        }
+    }
+
+    @Test
     fun `every palette can be picked for light and for dark`() {
         compose.setContent { PftTheme { DevContent() } }
         listOf("Graphite", "Midnight", "Ivory", "Aubergine").forEach { name ->
@@ -177,7 +221,10 @@ class DesignCatalogTest {
     }
 
     @Test
+    @Config(qualifiers = "+h1000dp")
     fun `the header sections show the real scaffold in each style`() {
+        // The toggle rows above the page take about 40% of a phone-height window, and a header in a
+        // window under 560dp starts collapsed (no hero or period), so this page is checked on a taller one.
         compose.setContent { PftTheme { DevContent() } }
         compose.onNodeWithText("Standard header").performClick()
         compose.onNodeWithText("Budgets").assertIsDisplayed()
