@@ -315,7 +315,7 @@ private fun CollapsingHeader(
             Modifier
         }
     // Written by the layout, read only by the glow's draw lambda: a scroll frame redraws, never recomposes.
-    val heroTop = remember { mutableFloatStateOf(NO_HERO) }
+    val heroTop = remember { mutableFloatStateOf(NO_HERO_TOP) }
     val policy =
         remember(state, sizes, content.dashboard) {
             HeaderPolicy(
@@ -334,16 +334,13 @@ private fun CollapsingHeader(
                 .background(PftTheme.surfaces.canvas)
                 .headerGlow(
                     PftTheme.surfaces.glow,
-                    heroTop = { heroTop.floatValue.takeIf { it != NO_HERO } },
+                    heroTop = { heroTop.floatValue.asHeroTop() },
                     collapsedFraction = { if (sizes.alwaysCollapsed) 1f else state.collapsedFraction },
                 ).then(swipe)
                 .testTag(HeaderTags.HEADER),
         measurePolicy = policy,
     )
 }
-
-/** "No hero is placed": the value of the hero-top state while the header has no hero (never a real top). */
-private const val NO_HERO = -1f
 
 /** The parts of the header that exist in [phase]; each carries a [HeaderSlot] id for the layout. */
 @Composable
@@ -440,7 +437,7 @@ private fun Modifier.periodSwipe(period: HeaderPeriod?): Modifier {
  * Measures and places the header's parts from the live scroll state. It reads
  * `state.heightOffset` and `collapsedFraction` in the layout phase, so scrolling re-runs only
  * layout and layer work, never composition. It also writes where the hero's top edge is into
- * [heroTop] (or [NO_HERO]); only the glow's draw lambda reads that, so it costs a redraw, never a
+ * [heroTop] (or [NO_HERO_TOP]); only the glow's draw lambda reads that, so it costs a redraw, never a
  * recomposition.
  */
 private class HeaderPolicy(
@@ -569,7 +566,7 @@ private class HeaderPolicy(
             cursor -= it.height
             it.placeRelativeWithLayer(parts.bandStartX, cursor) { alpha = fade }
         }
-        var top = NO_HERO
+        var top = NO_HERO_TOP
         parts.hero?.let {
             cursor -= it.height
             it.placeRelativeWithLayer(parts.bandStartX, cursor) { alpha = fade }

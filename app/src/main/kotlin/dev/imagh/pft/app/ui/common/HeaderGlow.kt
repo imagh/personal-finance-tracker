@@ -114,3 +114,13 @@ internal fun Modifier.headerGlow(
 
 /** The gradient's stops as fractions of the reach: the top, the mockup's middle stop, and the end. */
 private val GLOW_STOPS = listOf(0f, MID_GLOW_STOP, 1f)
+
+/**
+ * The stored hero top that means "this header has no hero". Negative infinity, because a real top
+ * is an integer position that goes negative as the header collapses, so no finite value is safe,
+ * and (unlike `NaN`) it compares equal to itself, so an unchanged state does not invalidate the draw.
+ */
+internal const val NO_HERO_TOP = Float.NEGATIVE_INFINITY
+
+/** The hero top a header stored: null for [NO_HERO_TOP], else its top edge in px (negative mid-collapse). */
+internal fun Float.asHeroTop(): Float? = takeIf { it != NO_HERO_TOP }

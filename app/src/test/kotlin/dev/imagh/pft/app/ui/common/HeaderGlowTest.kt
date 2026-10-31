@@ -73,6 +73,21 @@ class HeaderGlowTest {
     }
 
     @Test
+    fun `a hero top of minus one pixel mid-collapse is still a hero, so it gives no glow, not the Standard reach`() {
+        // The hero's top goes negative as the header collapses, so no real position may mean "no hero".
+        val density = Density(3f)
+        val stored = -1f
+        assertEquals(-1f, stored.asHeroTop())
+        assertEquals(0f, with(density) { glowEnd(stored.asHeroTop(), bodyHeight = 1000f) }, 0f)
+    }
+
+    @Test
+    fun `the no-hero marker reads as no hero, and no position equals it`() {
+        assertEquals(null, NO_HERO_TOP.asHeroTop())
+        for (position in listOf(-1000f, -1f, 0f, 1f, 500f)) assertEquals(position, position.asHeroTop())
+    }
+
+    @Test
     fun `without a hero the glow ends 60 percent down the header`() {
         assertEquals(600f, with(Density(3f)) { glowEnd(heroTop = null, bodyHeight = 1000f) }, 0.001f)
         assertEquals(0f, with(Density(3f)) { glowEnd(heroTop = null, bodyHeight = 0f) }, 0f)
