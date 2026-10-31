@@ -65,6 +65,7 @@ import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.app.ui.theme.TypePairing
 import dev.imagh.pft.money.Paise
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -310,8 +311,13 @@ class CollapsingHeaderScaffoldTest {
     }
 
     @Test
-    fun `every title and the subtitle use the sans text family, never the serif (Q10)`() {
-        show(style = HeaderStyle.Standard, subtitle = "October - 3 days left")
+    fun `under HERO_ONLY every title and the subtitle use the sans text family, never the serif (Q10)`() {
+        // The editorial counterpart is HeaderTypePairingTest.
+        show(
+            style = HeaderStyle.Standard,
+            subtitle = "October - 3 days left",
+            prefs = ThemePrefs(dynamicColor = false, typePairing = TypePairing.HERO_ONLY),
+        )
         assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_LARGE).textStyleFamily())
         assertEquals(FontFamily.Default, tag(HeaderTags.SUBTITLE).textStyleFamily())
         swipeListUp()
