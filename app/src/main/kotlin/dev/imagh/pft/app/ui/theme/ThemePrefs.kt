@@ -56,12 +56,15 @@ enum class TypePairing {
  * entry to its `FontFamily`.
  *
  * The enum names are persisted by the appearance settings (AP1), so they are permanent: never
- * rename or remove one, only add. DS6i adds `PLUS_JAKARTA_SANS` and AP2 adds `CUSTOM` (an imported
- * font file), both without a migration, because an unknown stored value reads as the default.
+ * rename or remove one, only add. AP2 adds `CUSTOM` (an imported font file) without a migration,
+ * because an unknown stored value reads as the default.
  */
 enum class SansFont {
     /** The bundled Figtree variable font (OFL-1.1, the default). */
     FIGTREE,
+
+    /** The bundled Plus Jakarta Sans variable font (OFL-1.1). */
+    PLUS_JAKARTA_SANS,
 
     /**
      * The platform's default family (Roboto on stock Android, the vendor font elsewhere).
@@ -89,8 +92,8 @@ enum class SansFont {
  *   [TypePairing.EDITORIAL], of the other serif roles; see [DisplayFont].
  * @property typePairing which roles use the display family; see [TypePairing]. [TypePairing.HERO_ONLY]
  *   by default, the look before the pairing existed.
- * @property sansFont the sans text family: the bundled Figtree by default, or the system font; see
- *   [SansFont].
+ * @property sansFont the sans text family: the bundled Figtree by default, the bundled Plus Jakarta
+ *   Sans, or the system font; see [SansFont].
  */
 @Immutable
 data class ThemePrefs(

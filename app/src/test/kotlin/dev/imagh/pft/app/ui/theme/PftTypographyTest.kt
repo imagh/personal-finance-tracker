@@ -345,7 +345,7 @@ class PftTypographyTest {
 
     // --- the sans family (UI-2, UI-16, DS6h) ------------------------------------------------
 
-    /** The `wght` axis pinned on one bundled Figtree [ResourceFont]. */
+    /** The `wght` axis pinned on one bundled [ResourceFont]. */
     private fun ResourceFont.wght(): Float? =
         variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }["wght"]
 
@@ -356,6 +356,64 @@ class PftTypographyTest {
         // Figtree's own wght default is 300, so an undeclared axis would render every role too light.
         assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
         fonts.forEach { assertEquals(R.font.figtree, it.resId) }
+    }
+
+    @Test
+    fun `PLUS_JAKARTA_SANS declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+        val fonts = (sansFamily(SansFont.PLUS_JAKARTA_SANS) as FontListFontFamily).fonts.map { it as ResourceFont }
+        assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
+        // The font's wght default is 400 but the axis is still set, so each weight really is its own cut.
+        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        fonts.forEach { assertEquals(R.font.plus_jakarta_sans, it.resId) }
+    }
+
+    @Test
+    fun `each SansFont entry maps to its own family`() {
+        fun FontFamily.resIds() = (this as FontListFontFamily).fonts.map { (it as ResourceFont).resId }.toSet()
+        SansFont.entries.forEach { choice ->
+            val family = sansFamily(choice)
+            when (choice) {
+                SansFont.FIGTREE -> assertEquals(setOf(R.font.figtree), family.resIds())
+                SansFont.PLUS_JAKARTA_SANS -> assertEquals(setOf(R.font.plus_jakarta_sans), family.resIds())
+                SansFont.SYSTEM -> assertEquals(FontFamily.Default, family)
+            }
+        }
+        assertEquals(
+            SansFont.entries.size,
+            SansFont.entries
+                .map { sansFamily(it) }
+                .toSet()
+                .size,
+        )
+    }
+
+    @Test
+    fun `SansFont PLUS_JAKARTA_SANS puts every sans role in Plus Jakarta Sans, the serif roles stay Newsreader`() {
+        val jakarta = sansFamily(SansFont.PLUS_JAKARTA_SANS)
+        val resolved =
+            resolve(
+                ThemePrefs(
+                    dynamicColor = false,
+                    sansFont = SansFont.PLUS_JAKARTA_SANS,
+                    typePairing = TypePairing.EDITORIAL,
+                ),
+            )
+        resolved.m3.roles().forEach { (name, style) ->
+            if (name in editorialM3Roles) {
+                assertTrue("$name stays Newsreader", style.fontFamily.isBundledNewsreader())
+            } else {
+                assertEquals("$name family", jakarta, style.fontFamily)
+            }
+        }
+        assertEquals(jakarta, resolved.type.amountRow.fontFamily)
+        assertTrue(
+            resolved.type.amountHero.fontFamily
+                .isBundledNewsreader(),
+        )
+        assertTrue(
+            resolved.type.amountLarge.fontFamily
+                .isBundledNewsreader(),
+        )
     }
 
     @Test
@@ -399,15 +457,17 @@ class PftTypographyTest {
     }
 
     @Test
-    fun `every weight a role asks of the sans is one Figtree declares`() {
-        val figtree = sansFamily(SansFont.FIGTREE)
-        val declared = (figtree as FontListFontFamily).fonts.map { it.weight }.toSet()
-        TypePairing.entries.forEach { pairing ->
-            val m3 = pftMaterialTypography(figtree, DisplayFont.TEXT, pairing)
-            val type = pftType(DisplayFont.TEXT, figtree, pairing)
-            (m3.roles().values + listOf(type.amountHero, type.amountLarge, type.amountRow)).forEach { style ->
-                val weight = style.fontWeight ?: FontWeight.Normal
-                assertTrue("$weight is declared", weight in declared)
+    fun `every weight a role asks of the sans is one each bundled sans declares`() {
+        listOf(SansFont.FIGTREE, SansFont.PLUS_JAKARTA_SANS).forEach { choice ->
+            val sans = sansFamily(choice)
+            val declared = (sans as FontListFontFamily).fonts.map { it.weight }.toSet()
+            TypePairing.entries.forEach { pairing ->
+                val m3 = pftMaterialTypography(sans, DisplayFont.TEXT, pairing)
+                val type = pftType(DisplayFont.TEXT, sans, pairing)
+                (m3.roles().values + listOf(type.amountHero, type.amountLarge, type.amountRow)).forEach { style ->
+                    val weight = style.fontWeight ?: FontWeight.Normal
+                    assertTrue("$weight is declared by $choice ($pairing)", weight in declared)
+                }
             }
         }
     }
