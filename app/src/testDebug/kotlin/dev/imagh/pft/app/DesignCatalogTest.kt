@@ -46,8 +46,8 @@ class DesignCatalogTest {
         compose.setContent { PftTheme { DevContent() } }
         val scroller = hasScrollAction()
         listOf(
-            "Type scale: display, headline (sans)",
-            "Type scale: title, body, label (sans)",
+            "Type scale: display, headline",
+            "Type scale: title, body, label",
             "Amount styles (tabular figures)",
             "Shapes (dp)",
             "Spacing (dp)",

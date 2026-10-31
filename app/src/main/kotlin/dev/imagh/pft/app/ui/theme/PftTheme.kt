@@ -12,7 +12,6 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 
 /**
  * Picks the colours for the resolved theme: the M3 scheme plus the canvas, island and wash.
@@ -76,7 +75,8 @@ internal fun dynamicPaletteColors(
  * (read them through the [PftTheme] object). This is the only theme entry point; M3 components
  * are styled from it, never wrapped to restyle them.
  *
- * The type scale is the sans text family except the roles [ThemePrefs.typePairing] sets in the
+ * The type scale is the sans text family ([ThemePrefs.sansFont], the bundled Figtree by default)
+ * except the roles [ThemePrefs.typePairing] sets in the
  * display font ([ThemePrefs.displayFont]): `PftTheme.type.amountHero` only (the default), or the
  * editorial set. Shapes come from [PftShapes]; the spacing scale is
  * [PftSpacing] (a fixed grid, so a plain constant, not a CompositionLocal), and so is [PftMotion].
@@ -94,14 +94,14 @@ fun PftTheme(
         }
     val palette = resolvePaletteColors(prefs, dark, LocalContext.current)
     val colorScheme = palette.scheme
-    // The text family is the system font until custom-font import (AP2) adds a choice.
-    val textFamily = FontFamily.Default
+    // The sans text family follows the pref: the bundled Figtree by default (custom import, AP2, adds a choice).
+    val textFamily = sansFamily(prefs.sansFont)
     val typography =
-        remember(textFamily, prefs.displayFont, prefs.typePairing) {
+        remember(prefs.sansFont, prefs.displayFont, prefs.typePairing) {
             pftMaterialTypography(textFamily, prefs.displayFont, prefs.typePairing)
         }
     val pftType =
-        remember(textFamily, prefs.displayFont, prefs.typePairing) {
+        remember(prefs.sansFont, prefs.displayFont, prefs.typePairing) {
             pftType(prefs.displayFont, textFamily, prefs.typePairing)
         }
     CompositionLocalProvider(
@@ -122,7 +122,9 @@ fun PftTheme(
 private val Spacing = PftSpacing()
 
 private val LocalPftTypography =
-    staticCompositionLocalOf { pftType(DisplayFont.BUNDLED_SERIF, FontFamily.Default, TypePairing.HERO_ONLY) }
+    staticCompositionLocalOf {
+        pftType(DisplayFont.BUNDLED_SERIF, sansFamily(SansFont.FIGTREE), TypePairing.HERO_ONLY)
+    }
 
 /** Accessors for the extended theme tokens provided by [PftTheme]. */
 object PftTheme {

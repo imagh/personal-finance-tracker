@@ -63,9 +63,11 @@ import dev.imagh.pft.app.ui.theme.HeroSizeSteps
 import dev.imagh.pft.app.ui.theme.IvoryPalette
 import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.SansFont
 import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.app.ui.theme.TypePairing
+import dev.imagh.pft.app.ui.theme.sansFamily
 import dev.imagh.pft.money.Paise
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -295,7 +297,7 @@ class CollapsingHeaderScaffoldTest {
     fun `on a Dashboard header the hero uses the display family and the title uses the text family`() {
         show(style = HeaderStyle.Dashboard, hero = sampleHero)
         assertTrue(tag("hero-text").textStyleFamily().isNewsreader())
-        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_LARGE).textStyleFamily())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_LARGE).textStyleFamily())
     }
 
     @Test
@@ -318,10 +320,10 @@ class CollapsingHeaderScaffoldTest {
             subtitle = "October - 3 days left",
             prefs = ThemePrefs(dynamicColor = false, typePairing = TypePairing.HERO_ONLY),
         )
-        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_LARGE).textStyleFamily())
-        assertEquals(FontFamily.Default, tag(HeaderTags.SUBTITLE).textStyleFamily())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_LARGE).textStyleFamily())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.SUBTITLE).textStyleFamily())
         swipeListUp()
-        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_BAR).textStyleFamily())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_BAR).textStyleFamily())
         assertEquals(22f, tag(HeaderTags.TITLE_BAR).fontSizeSp(), 0f)
     }
 
@@ -329,7 +331,7 @@ class CollapsingHeaderScaffoldTest {
     fun `the collapsed bar title is sans on a Dashboard header too`() {
         show(style = HeaderStyle.Dashboard, hero = sampleHero)
         swipeListUp()
-        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_BAR).textStyleFamily())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_BAR).textStyleFamily())
     }
 
     // --- header layout rule (Q10) ---------------------------------------------------------

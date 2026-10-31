@@ -28,8 +28,10 @@ import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.SansFont
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.app.ui.theme.TypePairing
+import dev.imagh.pft.app.ui.theme.sansFamily
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -125,7 +127,7 @@ class HeaderTypePairingTest {
     @Test
     fun `under EDITORIAL the subtitle stays in the sans text family`() {
         show(HeaderStyle.Standard, editorial(), subtitle = "October - 3 days left")
-        assertEquals(FontFamily.Default, tag(HeaderTags.SUBTITLE).family())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.SUBTITLE).family())
     }
 
     @Test
@@ -149,9 +151,9 @@ class HeaderTypePairingTest {
     @Test
     fun `EDITORIAL with Same as text leaves every title sans`() {
         show(HeaderStyle.Standard, editorial(DisplayFont.TEXT), subtitle = "October - 3 days left")
-        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_LARGE).family())
-        assertEquals(FontFamily.Default, tag(HeaderTags.SUBTITLE).family())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_LARGE).family())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.SUBTITLE).family())
         swipeListUp()
-        assertEquals(FontFamily.Default, tag(HeaderTags.TITLE_BAR).family())
+        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_BAR).family())
     }
 }
