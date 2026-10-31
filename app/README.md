@@ -62,7 +62,7 @@ as they land (`data/common`, `ui/common`).
 | `PftTheme.type` | `PftTypography`: `amountHero` (48/60, display font, `tnum`+`lnum`), `amountLarge` (32/40; sans, or the display font under `EDITORIAL`; `tnum`+`lnum`), `amountRow` (16/24, always sans, `tnum`) |
 | `PftTheme.shapes`, `MaterialTheme.shapes` | `PftShapes.glyph` (category badge, 30% corners); M3 shapes are 6/10/16/24/32dp |
 | `PftTheme.spacing` | `PftSpacing`: `xxs` 2, `xs` 4, `sm` 8, `md` 12, `lg` 16, `gutter` 20, `xl` 24, `xxl` 32, `huge` 48 dp |
-| `MaterialTheme.typography` | The M3 scale: **by default every role is in the sans text family** (`sansFamily(ThemePrefs.sansFont)`: the bundled Figtree, or `FontFamily.Default` for `SansFont.SYSTEM`); under `TypePairing.EDITORIAL`, `display*`, `headline*`, `titleLarge` and `titleMedium` are in the display font, each cut for its own size and weight (`titleSmall`, `body*`, `label*` stay sans). `headlineLarge` 32/40 semibold and `titleLarge` 22/28 medium are the header titles. |
+| `MaterialTheme.typography` | The M3 scale: **by default every role is in the sans text family** (`sansFamily(ThemePrefs.sansFont)`: the bundled Figtree or Plus Jakarta Sans, or `FontFamily.Default` for `SansFont.SYSTEM`); under `TypePairing.EDITORIAL`, `display*`, `headline*`, `titleLarge` and `titleMedium` are in the display font, each cut for its own size and weight (`titleSmall`, `body*`, `label*` stay sans). `headlineLarge` 32/40 semibold and `titleLarge` 22/28 medium are the header titles. |
 | `PftTheme.motion` | `PftMotion`: springs `snappy` (0.30 s, bounce 0.10), `smooth` (0.45 s, 0), `gentle` (0.60 s, 0), `bouncy` (0.50 s, 0.25) as `SpringSpec<Float>`; `navEnter`/`navExit`/`navPopEnter`/`navPopExit` (25% slide + fade on `smooth`); `PRESSED_SCALE` 0.97; `smoothOffset` is `smooth` over `IntOffset` for slide transitions (rolling digits). A constant, not a CompositionLocal |
 | `iosSpring<T>(durationMillis, bounce)` | Converts a SwiftUI-style spring to a `SpringSpec<T>` (`stiffness = (2π/duration)²`, `dampingRatio = 1 − bounce`); throws `IllegalArgumentException` for bounce outside `[0, 1)` or duration ≤ 0 |
 | `Modifier.pressScale()` | Scales to 0.97 with `snappy` while pressed; observes pointers only (does not consume). Put it before `clickable` |
@@ -73,8 +73,8 @@ as they land (`data/common`, `ui/common`).
 | `ThemePalette { GRAPHITE, MIDNIGHT, IVORY, AUBERGINE }` | The palettes a user can pick, light and dark independently. **The names are persisted by AP1: never rename or remove one, never depend on the order.** `ThemePalette.colors(dark)` (internal) is its `PaletteColors` |
 | `DisplayFont { BUNDLED_SERIF, SYSTEM_SERIF, TEXT }` | What the display family is (the roles that use it are chosen by `TypePairing`); `TEXT` is "same as text". Only the bundled serif gets variation settings |
 | `TypePairing { HERO_ONLY, EDITORIAL }` | Which roles use the display family (UI-15, DS6g): `HERO_ONLY` (default) is the hero only, today's look (owner decision Q10); `EDITORIAL` adds `amountLarge`, `display*`, `headline*`, `titleLarge` and `titleMedium`. `displayFont = TEXT` with `EDITORIAL` is all sans. **The names are persisted by AP1: never rename or remove one**; a third value (all serif) can be added later without a migration. `ThemePrefsTest` pins the names |
-| `SansFont { FIGTREE, SYSTEM }` | The sans text family (UI-2, UI-16, DS6h): `FIGTREE` (the default) is the bundled Figtree, `SYSTEM` the platform default. **The names are persisted by AP1: never rename or remove one**; DS6i adds `PLUS_JAKARTA_SANS` and AP2 `CUSTOM`, without a migration. `ThemePrefsTest` pins the names and the default. `ThemePrefs.sansFont` carries it |
-| `sansFamily(SansFont)` (internal) | `FIGTREE` is one `FontFamily` of three `Font(R.font.figtree, ...)`, weights 400, 500 and 600, each with its own `wght` axis (the font's default is 300, so every weight a role uses must be declared; `PftTypographyTest` checks this). `SYSTEM` is `FontFamily.Default`. Reference a font only as `R.font.<name>` here: release shrinking strips a font no reachable code names |
+| `SansFont { FIGTREE, PLUS_JAKARTA_SANS, SYSTEM }` | The sans text family (UI-2, UI-16, DS6h, DS6i): `FIGTREE` (the default) is the bundled Figtree, `PLUS_JAKARTA_SANS` the bundled Plus Jakarta Sans, `SYSTEM` the platform default. **The names are persisted by AP1: never rename or remove one**; AP2 adds `CUSTOM`, without a migration. `ThemePrefsTest` pins the names and the default. `ThemePrefs.sansFont` carries it |
+| `sansFamily(SansFont)` (internal) | `FIGTREE` and `PLUS_JAKARTA_SANS` are each one `FontFamily` of three `Font(R.font.figtree, ...)` / `Font(R.font.plus_jakarta_sans, ...)`, weights 400, 500 and 600, each with its own `wght` axis (Figtree's default is 300 and Plus Jakarta Sans's 400; the axis is set explicitly and every weight a role uses must be declared; `PftTypographyTest` checks this). `SYSTEM` is `FontFamily.Default`. Reference a font only as `R.font.<name>` here: release shrinking strips a font no reachable code names |
 | `newsreader(weight, size)` (internal) | A `FontFamily` of the bundled Newsreader pinned to `weight` on `wght` and cut for `size` on `opsz` (clamped to 6 to 72). Built only for the serif roles of the chosen pairing; replaces the single `NewsreaderFamily` (hero: weight 400, 48sp) |
 | `ThemeMode { SYSTEM, LIGHT, DARK }` | `SYSTEM` follows the system night mode |
 | `resolveColorScheme(prefs, dark, context)` | Dynamic (Material You) scheme when `prefs.dynamicColor` (opt-in; the palette fields are then ignored), else the scheme of `prefs.darkPalette` in dark or `prefs.lightPalette` in light |
@@ -85,8 +85,10 @@ as they land (`data/common`, `ui/common`).
 The bundled serif is Newsreader (`res/font/newsreader.ttf`, OFL-1.1, unmodified upstream; licence in
 `assets/licenses/newsreader-OFL.txt`; provenance and hash in `docs/architecture/design-system.md`).
 The default sans is Figtree (`res/font/figtree.ttf`, OFL-1.1, unmodified upstream, no Reserved Font Name;
-licence in `assets/licenses/figtree-OFL.txt`; provenance and hash in the same table). `BundledFontTest` pins
-both, and `FontBudgetTest` keeps all of `res/font` within 3 MiB.
+licence in `assets/licenses/figtree-OFL.txt`; provenance and hash in the same table). The second sans option is
+Plus Jakarta Sans (`res/font/plus_jakarta_sans.ttf`, OFL-1.1, unmodified upstream, no Reserved Font Name; licence in
+`assets/licenses/plus-jakarta-sans-OFL.txt`). `BundledFontTest` pins all three, and `FontBudgetTest` keeps all of
+`res/font` (690,664 B for the three) within 3 MiB.
 `TokenSheet` (internal) shows every token; it feeds the Studio preview, the debug catalogue and the
 screenshot goldens.
 
@@ -190,7 +192,7 @@ pre-Compose window colour would be wrong. AP1 fixes this with `UiModeManager.set
 ### Debug and release source sets
 
 `DevContent()` is what `MainActivity` shows until A5 brings the navigation host. In `src/debug` it
-shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font, sans font (Figtree or system) and font scale, plus an Accent page for the manual amber check and a Palettes page (use it
+shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font, sans font (Figtree, Plus Jakarta Sans or system) and font scale, plus an Accent page for the manual amber check and a Palettes page (use it
 to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
 twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
 (`ui/theme`) so the screenshot tests can render it on both unit-test variants; it is unreferenced by
