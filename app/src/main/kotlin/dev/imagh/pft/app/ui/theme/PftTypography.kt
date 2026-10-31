@@ -21,15 +21,18 @@ import dev.imagh.pft.R
  * (tabular figures) so columns of amounts line up and rolling digits do not jitter. Read them
  * through `PftTheme.type`.
  *
- * The serif is used for [amountHero] **only** (owner decision Q10): every M3 role, titles
- * included, is the sans text family, and so are [amountLarge] and [amountRow].
+ * Which of these (and which M3 roles) are set in the display family depends on
+ * [ThemePrefs.typePairing]. By default ([TypePairing.HERO_ONLY], owner decision Q10) the serif is
+ * [amountHero] **only**; under [TypePairing.EDITORIAL] [amountLarge] is serif too. [amountRow] is
+ * always the sans text family.
  *
  * @property amountHero the big figure on dashboards and reports (month total, budget detail,
  *   account totals): 48/60sp, regular weight, lining + tabular figures, set slightly looser than
  *   the font's default (+0.01em, 1.25x line height; owner decision Q1). Its family follows
  *   [ThemePrefs.displayFont]. The amount component shrinks it in steps (48, 40, 34, 28sp) to fit.
- * @property amountLarge the amount on add/edit and detail screens: 32/40sp, medium weight, sans.
- * @property amountRow the amount in list rows: 16/24sp, medium weight, sans.
+ * @property amountLarge the amount on add/edit and detail screens: 32/40sp, medium weight; sans,
+ *   or the display font under [TypePairing.EDITORIAL].
+ * @property amountRow the amount in list rows: 16/24sp, medium weight, always sans.
  */
 @Immutable
 data class PftTypography(
@@ -43,6 +46,7 @@ data class PftTypography(
 private val HeroFontSize = 48.sp
 private const val HERO_LINE_HEIGHT_RATIO = 1.25f
 private val HeroLetterSpacing = 0.01.em
+private val AmountLargeSize = 32.sp
 
 /**
  * The sizes the hero amount steps down through to fit its width: 48, 40, 34, 28sp (design plan
@@ -56,47 +60,69 @@ private val HeroLetterSpacing = 0.01.em
 internal val HeroSizeSteps: List<TextUnit> =
     listOf(HeroFontSize, 40.sp, 34.sp, 28.sp, 24.sp, 20.sp, 16.sp, 12.sp)
 
-// opsz is Newsreader's optical-size axis (6 to 72). The hero is a display size, so use the display cut.
-private val HeroOpticalSize = HeroFontSize
+/** The bundled Newsreader's optical-size axis (`opsz`) runs from 6 to 72. */
+private const val NEWSREADER_MIN_OPSZ = 6f
+private const val NEWSREADER_MAX_OPSZ = 72f
 
 /**
- * The bundled Newsreader (OFL-1.1, unmodified upstream variable font), pinned to regular weight
- * and the 48sp optical size. Used only for `amountHero`.
+ * The bundled Newsreader (OFL-1.1, unmodified upstream variable font) pinned to [weight] on its
+ * `wght` axis and cut for [size] on its optical-size axis (`opsz`, [size] clamped to the font's 6
+ * to 72 range), so a 16sp title gets the sturdier small cut and a 57sp display line the finer
+ * large one. Built only for the serif roles that need it; `SYSTEM_SERIF` and "Same as text" get
+ * no variation settings.
+ *
+ * The family holds a single [Font] with one pinned `wght`. A caller that overrides `fontWeight` on
+ * a style using it still gets the pinned weight (possibly with synthetic bold); to change the
+ * weight, build a new `newsreader(weight, size)`.
  */
-internal val NewsreaderFamily: FontFamily =
+internal fun newsreader(
+    weight: FontWeight,
+    size: TextUnit,
+): FontFamily =
     FontFamily(
         Font(
             R.font.newsreader,
-            weight = FontWeight.Normal,
+            weight = weight,
             variationSettings =
                 FontVariation.Settings(
-                    FontWeight.Normal,
+                    weight,
                     FontStyle.Normal,
-                    FontVariation.opticalSizing(HeroOpticalSize),
+                    FontVariation.opticalSizing(size.value.coerceIn(NEWSREADER_MIN_OPSZ, NEWSREADER_MAX_OPSZ).sp),
                 ),
         ),
     )
 
-/** Chooses the hero's family for [choice]; [text] is the sans family used for "Same as text". */
+/**
+ * The family for a role set in the display font at [weight] and [size]: the bundled Newsreader
+ * cut for that weight and size, the platform serif, or [text] ("Same as text"). Only the bundled
+ * serif gets variation settings.
+ */
 internal fun displayFamily(
     choice: DisplayFont,
     text: FontFamily,
+    weight: FontWeight,
+    size: TextUnit,
 ): FontFamily =
     when (choice) {
-        DisplayFont.BUNDLED_SERIF -> NewsreaderFamily
+        DisplayFont.BUNDLED_SERIF -> newsreader(weight, size)
         DisplayFont.SYSTEM_SERIF -> FontFamily.Serif
         DisplayFont.TEXT -> text
     }
 
-/** The three amount styles with the hero in [display] and the others in [text]. */
+/**
+ * The three amount styles. `amountHero` is always in the [display] font; `amountLarge` is too
+ * under [TypePairing.EDITORIAL] (medium weight, cut for 32sp); `amountRow` and, under
+ * [TypePairing.HERO_ONLY], `amountLarge` are in the [text] family. All carry `tnum`.
+ */
 internal fun pftType(
-    display: FontFamily,
+    display: DisplayFont,
     text: FontFamily,
+    pairing: TypePairing,
 ): PftTypography =
     PftTypography(
         amountHero =
             TextStyle(
-                fontFamily = display,
+                fontFamily = displayFamily(display, text, FontWeight.Normal, HeroFontSize),
                 fontWeight = FontWeight.Normal,
                 fontSize = HeroFontSize,
                 lineHeight = HeroFontSize * HERO_LINE_HEIGHT_RATIO,
@@ -105,9 +131,14 @@ internal fun pftType(
             ),
         amountLarge =
             TextStyle(
-                fontFamily = text,
+                fontFamily =
+                    if (pairing == TypePairing.EDITORIAL) {
+                        displayFamily(display, text, FontWeight.Medium, AmountLargeSize)
+                    } else {
+                        text
+                    },
                 fontWeight = FontWeight.Medium,
-                fontSize = 32.sp,
+                fontSize = AmountLargeSize,
                 lineHeight = 40.sp,
                 fontFeatureSettings = "tnum, lnum",
             ),
@@ -122,28 +153,51 @@ internal fun pftType(
     )
 
 /**
- * The M3 type scale with every role set in the [text] family (never the serif, Q10). Sizes are
- * the M3 defaults except the two header titles: `headlineLarge` (the title of a `Standard`
- * header) is 32/40 semibold and `titleLarge` (the title of a `Dashboard` header and of the
- * collapsed bar) is 22/28 medium.
+ * The M3 type scale. Sizes are the M3 defaults except the two header titles: `headlineLarge`
+ * (the title of a `Standard` header) is 32/40 semibold and `titleLarge` (the title of a
+ * `Dashboard` header and of the collapsed bar) is 22/28 medium.
+ *
+ * Under [TypePairing.HERO_ONLY] every role is the [text] family (never the serif, Q10). Under
+ * [TypePairing.EDITORIAL] `display*`, `headline*`, `titleLarge` and `titleMedium` are in the
+ * [display] font, each cut for its own size and weight (`titleMedium` is 16sp at weight 500);
+ * `titleSmall` (tab labels), `body*` and `label*` stay [text]. With [DisplayFont.TEXT] that is
+ * all sans.
  */
-internal fun pftMaterialTypography(text: FontFamily): Typography {
+internal fun pftMaterialTypography(
+    text: FontFamily,
+    display: DisplayFont,
+    pairing: TypePairing,
+): Typography {
     val base = Typography()
-    return base.copy(
-        displayLarge = base.displayLarge.copy(fontFamily = text),
-        displayMedium = base.displayMedium.copy(fontFamily = text),
-        displaySmall = base.displaySmall.copy(fontFamily = text),
-        headlineLarge = base.headlineLarge.copy(fontFamily = text, fontWeight = FontWeight.SemiBold),
-        headlineMedium = base.headlineMedium.copy(fontFamily = text),
-        headlineSmall = base.headlineSmall.copy(fontFamily = text),
-        titleLarge = base.titleLarge.copy(fontFamily = text, fontWeight = FontWeight.Medium),
-        titleMedium = base.titleMedium.copy(fontFamily = text),
-        titleSmall = base.titleSmall.copy(fontFamily = text),
-        bodyLarge = base.bodyLarge.copy(fontFamily = text),
-        bodyMedium = base.bodyMedium.copy(fontFamily = text),
-        bodySmall = base.bodySmall.copy(fontFamily = text),
-        labelLarge = base.labelLarge.copy(fontFamily = text),
-        labelMedium = base.labelMedium.copy(fontFamily = text),
-        labelSmall = base.labelSmall.copy(fontFamily = text),
+    val sans =
+        base.copy(
+            displayLarge = base.displayLarge.copy(fontFamily = text),
+            displayMedium = base.displayMedium.copy(fontFamily = text),
+            displaySmall = base.displaySmall.copy(fontFamily = text),
+            headlineLarge = base.headlineLarge.copy(fontFamily = text, fontWeight = FontWeight.SemiBold),
+            headlineMedium = base.headlineMedium.copy(fontFamily = text),
+            headlineSmall = base.headlineSmall.copy(fontFamily = text),
+            titleLarge = base.titleLarge.copy(fontFamily = text, fontWeight = FontWeight.Medium),
+            titleMedium = base.titleMedium.copy(fontFamily = text),
+            titleSmall = base.titleSmall.copy(fontFamily = text),
+            bodyLarge = base.bodyLarge.copy(fontFamily = text),
+            bodyMedium = base.bodyMedium.copy(fontFamily = text),
+            bodySmall = base.bodySmall.copy(fontFamily = text),
+            labelLarge = base.labelLarge.copy(fontFamily = text),
+            labelMedium = base.labelMedium.copy(fontFamily = text),
+            labelSmall = base.labelSmall.copy(fontFamily = text),
+        )
+    if (pairing == TypePairing.HERO_ONLY) return sans
+
+    fun TextStyle.serif() = copy(fontFamily = displayFamily(display, text, fontWeight ?: FontWeight.Normal, fontSize))
+    return sans.copy(
+        displayLarge = sans.displayLarge.serif(),
+        displayMedium = sans.displayMedium.serif(),
+        displaySmall = sans.displaySmall.serif(),
+        headlineLarge = sans.headlineLarge.serif(),
+        headlineMedium = sans.headlineMedium.serif(),
+        headlineSmall = sans.headlineSmall.serif(),
+        titleLarge = sans.titleLarge.serif(),
+        titleMedium = sans.titleMedium.serif(),
     )
 }

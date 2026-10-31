@@ -15,9 +15,9 @@ enum class ThemeMode {
 }
 
 /**
- * Where the hero number's font comes from (UI-2, UI-3). Only `PftTheme.type.amountHero` is set in
- * the display font; every other text role is the system sans. A custom font file joins this enum
- * with the import feature (AP2).
+ * What the display family is (UI-2, UI-3). [TypePairing] chooses which roles use it: by default
+ * only `PftTheme.type.amountHero`, every other text role being the system sans. A custom font file
+ * joins this enum with the import feature (AP2).
  */
 enum class DisplayFont {
     /** The bundled Newsreader serif (the default). */
@@ -28,6 +28,26 @@ enum class DisplayFont {
 
     /** "Same as text": the hero uses the sans text family too. */
     TEXT,
+}
+
+/**
+ * Which type roles are set in the display family (UI-15). [DisplayFont] chooses what the display
+ * family is; this chooses where it is used, so `displayFont = TEXT` with [EDITORIAL] is all sans.
+ *
+ * The enum names are persisted by the appearance settings (AP1), so they are permanent. A third
+ * value (all serif) can be added later without a migration: an unknown stored value reads as the
+ * default, and a new value is simply added.
+ */
+enum class TypePairing {
+    /** Only `amountHero` is in the display family; every other role is the sans text family (the default). */
+    HERO_ONLY,
+
+    /**
+     * The hero, `amountLarge`, `display*`, `headline*`, `titleLarge` and `titleMedium` (screen,
+     * bar and section titles) are in the display family; `titleSmall` (tab labels), `body*`,
+     * `label*` and `amountRow` stay sans.
+     */
+    EDITORIAL,
 }
 
 /**
@@ -45,7 +65,10 @@ enum class DisplayFont {
  * @property background tonal or flat screen and card surfaces ([BackgroundStyle]); see [PftSurfaces].
  * @property headerGlow draw a soft tint of the palette's wash behind the header (UI-13). Off by
  *   default; it never reaches the hero row, so money is never drawn on it. See `Modifier.headerGlow`.
- * @property displayFont the font of the hero number (`amountHero`); see [DisplayFont].
+ * @property displayFont the display family: the font of the hero number and, under
+ *   [TypePairing.EDITORIAL], of the other serif roles; see [DisplayFont].
+ * @property typePairing which roles use the display family; see [TypePairing]. [TypePairing.HERO_ONLY]
+ *   by default, the look before the pairing existed.
  */
 @Immutable
 data class ThemePrefs(
@@ -56,9 +79,10 @@ data class ThemePrefs(
     val background: BackgroundStyle = BackgroundStyle.TONAL,
     val headerGlow: Boolean = false,
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
+    val typePairing: TypePairing = TypePairing.HERO_ONLY,
 ) {
     companion object {
-        /** System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces, no header glow. */
+        /** System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces, no glow, hero-only type. */
         val Default = ThemePrefs()
     }
 }

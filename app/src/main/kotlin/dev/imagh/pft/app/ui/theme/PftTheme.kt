@@ -76,8 +76,9 @@ internal fun dynamicPaletteColors(
  * (read them through the [PftTheme] object). This is the only theme entry point; M3 components
  * are styled from it, never wrapped to restyle them.
  *
- * The M3 type scale is the sans text family throughout; only `PftTheme.type.amountHero` takes the
- * display font ([ThemePrefs.displayFont]). Shapes come from [PftShapes]; the spacing scale is
+ * The type scale is the sans text family except the roles [ThemePrefs.typePairing] sets in the
+ * display font ([ThemePrefs.displayFont]): `PftTheme.type.amountHero` only (the default), or the
+ * editorial set. Shapes come from [PftShapes]; the spacing scale is
  * [PftSpacing] (a fixed grid, so a plain constant, not a CompositionLocal), and so is [PftMotion].
  */
 @Composable
@@ -95,9 +96,14 @@ fun PftTheme(
     val colorScheme = palette.scheme
     // The text family is the system font until custom-font import (AP2) adds a choice.
     val textFamily = FontFamily.Default
-    val typography = remember(textFamily) { pftMaterialTypography(textFamily) }
+    val typography =
+        remember(textFamily, prefs.displayFont, prefs.typePairing) {
+            pftMaterialTypography(textFamily, prefs.displayFont, prefs.typePairing)
+        }
     val pftType =
-        remember(prefs.displayFont, textFamily) { pftType(displayFamily(prefs.displayFont, textFamily), textFamily) }
+        remember(textFamily, prefs.displayFont, prefs.typePairing) {
+            pftType(prefs.displayFont, textFamily, prefs.typePairing)
+        }
     CompositionLocalProvider(
         LocalMoneyColors provides moneyColors(dark),
         LocalCategoryPalette provides categoryPalette(dark),
@@ -115,7 +121,8 @@ fun PftTheme(
 
 private val Spacing = PftSpacing()
 
-private val LocalPftTypography = staticCompositionLocalOf { pftType(NewsreaderFamily, FontFamily.Default) }
+private val LocalPftTypography =
+    staticCompositionLocalOf { pftType(DisplayFont.BUNDLED_SERIF, FontFamily.Default, TypePairing.HERO_ONLY) }
 
 /** Accessors for the extended theme tokens provided by [PftTheme]. */
 object PftTheme {

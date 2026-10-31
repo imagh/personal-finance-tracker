@@ -39,22 +39,27 @@ class TokenSheetScreenshotTest {
         const val PAGE_TAG = "token-sheet-page"
     }
 
-    /** Captures every [TokenSheetPages] page as `token-sheet-<page>-<variant>.png`. */
+    /**
+     * Captures [pages] (every [TokenSheetPages] page by default) as `token-sheet-<page>-<variant>.png`,
+     * under [prefs] (the defaults, Graphite with hero-only type, unless a pairing is being checked).
+     */
     private fun captureAllPages(
         variant: String,
         fontScale: Float,
+        prefs: ThemePrefs = ThemePrefs(dynamicColor = false),
+        pages: List<TokenSheetPage> = TokenSheetPages,
     ) {
-        var page by mutableStateOf(TokenSheetPages.first())
+        var page by mutableStateOf(pages.first())
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                PftTheme(ThemePrefs(dynamicColor = false)) {
+                PftTheme(prefs) {
                     // Only the page's own bounds are captured, so the PNG is as tall as its content.
                     Surface(Modifier.testTag(PAGE_TAG), color = PftTheme.surfaces.canvas) { TokenSheetPageFrame(page) }
                 }
             }
         }
-        TokenSheetPages.forEach {
+        pages.forEach {
             page = it
             compose.waitForIdle()
             compose.onNodeWithTag(PAGE_TAG).captureRoboImage("src/test/screenshots/token-sheet-${it.slug}-$variant.png")
@@ -76,4 +81,22 @@ class TokenSheetScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun darkFontScale2() = captureAllPages("dark-2x", fontScale = 2f)
+
+    // The two type-scale pages under the editorial pairing (DS6g, UI-15): the display, headline and
+    // larger title roles in Newsreader, each cut for its own size; tab labels, body and label stay sans.
+    private fun captureEditorialTypePages(variant: String) =
+        captureAllPages(
+            variant = variant,
+            fontScale = 1f,
+            prefs = ThemePrefs(dynamicColor = false, typePairing = TypePairing.EDITORIAL),
+            pages = TokenSheetPages.filter { it.slug.startsWith("type-") },
+        )
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun editorialLightFontScale1() = captureEditorialTypePages("light-1x-editorial")
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun editorialDarkFontScale1() = captureEditorialTypePages("dark-1x-editorial")
 }

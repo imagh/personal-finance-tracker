@@ -18,7 +18,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/theme/                            # PftTheme, ThemePrefs, ThemePalette (+ colors(dark)), GraphitePalette (+ PaletteColors), MidnightPalette,
                                          # IvoryPalette, AuberginePalette (DS6b: one generated, pinned object per palette), PaletteSamples
                                          # (the four-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces,
-                                         # the glow tint and LocalPftSurfaces, DS6c, DS6d), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography, PftShapes,
+                                         # the glow tint and LocalPftSurfaces, DS6c, DS6d), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography (the type roles and, DS6g, `newsreader(weight, size)`), PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
                                          # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
     ui/common/                           # shared components: CollapsingHeaderScaffold (+ HeaderStyle, HeaderPeriod), HeaderIconButton (the only control
@@ -40,7 +40,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/startup/                          # KeyUnavailableScreen (the fail-closed screen)
     PftApplication, MainActivity         # PftApplication.startup opens the database once; MainActivity shows the app or the fail-closed screen
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
-  src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream)
+  src/main/res/font/                     # bundled Newsreader variable font (OFL-1.1, unmodified upstream; cut per role by `newsreader(weight, size)`)
   src/main/res/drawable/                 # sym_<key>.xml: 92 Material Symbols Rounded vector drawables (Apache-2.0), imported by tools/material-symbols
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Material Symbols Apache-2.0)
   src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
@@ -97,7 +97,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette` (the other three curated palettes; the names are persisted by AP1) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, the debug catalogue toggles | DS6b |
 | app UI (`ui/theme`) | `PftSurfaces` / `BackgroundStyle` / `pftSurfaces` / `LocalPftSurfaces` (tonal or flat canvas, island, edge, highlight; `PaletteColors.canvas` and `island`; `dynamicPaletteColors`) | `CollapsingHeaderScaffold`, `BottomActionBar`, `GroupedSection`, `MainActivity`, the debug catalogue toggle | DS6c |
 | app UI (`ui/theme`) | `WindowBackground` (`SyncWindowBackground(window)`, with `pft_window_background` in `res/values{,-night}`) | `MainActivity` | DS6c |
-| app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont` | every screen | DS2 |
+| app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont`, `TypePairing` | every screen | DS2 |
 | core (`:core:ledger`) | `EntityMeta<Id>` + `LedgerEntity<Id, Self>` (id, timestamps, user/device attribution, tombstone and archive state), composed into every model | every entity (account, category, tag, transaction, budget, recurring rule, loan, goal) | A3 |
 | core | `Auditable` (`auditFields()`) + `AuditDiff` (generic field diff, no reflection) + `AuditEntry`/`AuditLog` | about 10 models, identity, settings | A3 |
 | core | `AuditedWriter` (create, update, delete, restore, archive; one transaction, attribution, diff, audit append; a no-op writes nothing) + `AuditRecorder` | every service | A3 |

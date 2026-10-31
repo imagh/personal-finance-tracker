@@ -143,13 +143,15 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * stays expanded. In a window shorter than 560dp the header starts and stays collapsed. See
  * [expandedHeaderHeight].
  *
- * **Layout (owner decision Q10).** All titles are sans; the serif is the hero number only. The
- * title is read-only, horizontally centred, in the upper band, with an optional one-line
- * [subtitle]. For [HeaderStyle.Dashboard] it sits about 12% down the expanded header, and the
- * [hero], its [heroCaption] and the [period] stepper are in the lower band, just above the content,
- * where the thumb is. For [HeaderStyle.Standard] the larger title is centred in the middle of the
- * expanded area and there is no lower band. The top row holds only the secondary [actions]. On
- * collapse the title cross-fades and scales into the bar's title and the lower band fades out.
+ * **Layout (owner decision Q10).** Titles are sans and the serif is the hero number only, unless the
+ * `EDITORIAL` type pairing is on (`ThemePrefs.typePairing`), which sets the titles in the display
+ * family too (the subtitle stays sans). The title is read-only, horizontally centred, in the upper
+ * band, with an optional one-line [subtitle]. For [HeaderStyle.Dashboard] it sits about 12% down the
+ * expanded header, and the [hero], its [heroCaption] and the [period] stepper are in the lower band,
+ * just above the content, where the thumb is. For [HeaderStyle.Standard] the larger title is centred
+ * in the middle of the expanded area and there is no lower band. The top row holds only the
+ * secondary [actions]. On collapse the title cross-fades and scales into the bar's title and the
+ * lower band fades out.
  *
  * **Background.** The header and the list background are `PftTheme.surfaces.canvas` (tonal, or the
  * flat `surface`); cards on it are [GroupedSection] islands.
@@ -167,7 +169,7 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * sideways swipe does nothing. A window shorter than 560dp has no expanded state, so there the
  * Dashboard hero is hidden too (landscape, split screen), as the plan specifies.
  *
- * @param title the screen name (a sans title; one line, ellipsised).
+ * @param title the screen name (sans, or the display family under `EDITORIAL`; one line, ellipsised).
  * @param style how the expanded header is laid out.
  * @param subtitle an optional one-line caption under the title (for example "October - 3 days left").
  * @param hero Dashboard only: the figure, set in the hero style (display font), for example a
@@ -385,7 +387,7 @@ private fun LowerBand(
     period: HeaderPeriod?,
 ) {
     Box(Modifier.layoutId(HeaderSlot.Hero).testTag(HeaderTags.HERO)) {
-        // The hero slot defaults to the display font; the serif is for this number only.
+        // The hero slot defaults to the display font (the hero is serif in every pairing).
         ProvideTextStyle(PftTheme.type.amountHero, hero)
     }
     if (caption != null || period != null) {
