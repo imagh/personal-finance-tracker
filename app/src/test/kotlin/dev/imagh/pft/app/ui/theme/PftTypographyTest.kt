@@ -83,6 +83,27 @@ class PftTypographyTest {
         assertEquals(48f, axes["opsz"])
     }
 
+    /** The `wght` and `opsz` axes pinned on a bundled Newsreader family, read off its font. */
+    private fun FontFamily?.newsreaderAxes(): Map<String, Float> {
+        val font = (this as FontListFontFamily).fonts.single() as ResourceFont
+        return font.variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }
+    }
+
+    @Test
+    fun `newsreader pins the weight axis to the weight and the optical size to the font size`() {
+        val axes = newsreader(FontWeight.Medium, 16.sp).newsreaderAxes()
+        assertEquals(500f, axes["wght"])
+        assertEquals(16f, axes["opsz"])
+        assertTrue(newsreader(FontWeight.Medium, 16.sp).isBundledNewsreader())
+    }
+
+    @Test
+    fun `newsreader clamps the optical size to the font's 6 to 72 range`() {
+        assertEquals(6f, newsreader(FontWeight.Normal, 3.sp).newsreaderAxes()["opsz"])
+        assertEquals(72f, newsreader(FontWeight.Normal, 110.sp).newsreaderAxes()["opsz"])
+        assertEquals(57f, newsreader(FontWeight.Normal, 57.sp).newsreaderAxes()["opsz"])
+    }
+
     @Test
     fun `every M3 role uses the system sans family, titles included`() {
         val roles = resolve().m3.roles()

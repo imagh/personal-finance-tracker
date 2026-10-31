@@ -56,23 +56,30 @@ private val HeroLetterSpacing = 0.01.em
 internal val HeroSizeSteps: List<TextUnit> =
     listOf(HeroFontSize, 40.sp, 34.sp, 28.sp, 24.sp, 20.sp, 16.sp, 12.sp)
 
-// opsz is Newsreader's optical-size axis (6 to 72). The hero is a display size, so use the display cut.
-private val HeroOpticalSize = HeroFontSize
+/** The bundled Newsreader's optical-size axis (`opsz`) runs from 6 to 72. */
+private const val NEWSREADER_MIN_OPSZ = 6f
+private const val NEWSREADER_MAX_OPSZ = 72f
 
 /**
- * The bundled Newsreader (OFL-1.1, unmodified upstream variable font), pinned to regular weight
- * and the 48sp optical size. Used only for `amountHero`.
+ * The bundled Newsreader (OFL-1.1, unmodified upstream variable font) pinned to [weight] on its
+ * `wght` axis and cut for [size] on its optical-size axis (`opsz`, [size] clamped to the font's 6
+ * to 72 range), so a 16sp title gets the sturdier small cut and a 57sp display line the finer
+ * large one. Built only for the serif roles that need it; `SYSTEM_SERIF` and "Same as text" get
+ * no variation settings.
  */
-internal val NewsreaderFamily: FontFamily =
+internal fun newsreader(
+    weight: FontWeight,
+    size: TextUnit,
+): FontFamily =
     FontFamily(
         Font(
             R.font.newsreader,
-            weight = FontWeight.Normal,
+            weight = weight,
             variationSettings =
                 FontVariation.Settings(
-                    FontWeight.Normal,
+                    weight,
                     FontStyle.Normal,
-                    FontVariation.opticalSizing(HeroOpticalSize),
+                    FontVariation.opticalSizing(size.value.coerceIn(NEWSREADER_MIN_OPSZ, NEWSREADER_MAX_OPSZ).sp),
                 ),
         ),
     )
@@ -83,7 +90,7 @@ internal fun displayFamily(
     text: FontFamily,
 ): FontFamily =
     when (choice) {
-        DisplayFont.BUNDLED_SERIF -> NewsreaderFamily
+        DisplayFont.BUNDLED_SERIF -> newsreader(FontWeight.Normal, HeroFontSize)
         DisplayFont.SYSTEM_SERIF -> FontFamily.Serif
         DisplayFont.TEXT -> text
     }

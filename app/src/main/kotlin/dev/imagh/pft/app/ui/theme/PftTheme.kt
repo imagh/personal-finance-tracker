@@ -115,7 +115,13 @@ fun PftTheme(
 
 private val Spacing = PftSpacing()
 
-private val LocalPftTypography = staticCompositionLocalOf { pftType(NewsreaderFamily, FontFamily.Default) }
+private val LocalPftTypography =
+    staticCompositionLocalOf {
+        pftType(
+            displayFamily(DisplayFont.BUNDLED_SERIF, FontFamily.Default),
+            FontFamily.Default,
+        )
+    }
 
 /** Accessors for the extended theme tokens provided by [PftTheme]. */
 object PftTheme {
