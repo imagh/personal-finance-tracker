@@ -353,6 +353,14 @@ Adds `:core:recurring`.
 
 **G2 — UI**: `GoalsFlowTest`: create "Emergency fund ₹1,00,000", link a transfer, and the progress bar shows 10%.
 
+### Slice I — Cashew import (`feat/m1a-cashew-import`): tracking stub
+
+Added 2026-11-01: the owner un-deferred PRD D-1 (decision 32, roadmap R-2). This is not a detailed plan yet; the architect writes one before I1 starts. D-1 sets the rules (untrusted file, exact paise, source `import` plus audit, idempotent re-import, preview and review list, nothing silently dropped, the file never leaves the device).
+
+- **I0 — Format spike (docs only).** The owner exports from Cashew. The spike records the format (CSV columns and/or backup-database tables) and how amounts, dates, transfers, sub-categories and IDs are represented, then maps them onto M1a entities, in `docs/research/`. The real export stays outside the repo; only redacted fixtures are committed. It needs no code, so it can run at any time.
+- **I1 — Ledger import** (after C-final): accounts, categories, tags and transactions, with preview, report and idempotent re-import.
+- **Later PRs:** budgets, recurring/subscriptions, loans and goals, each after its slice (D–G) merges.
+
 ### Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)
 
 **H1 — App lock (SEC-2)**
@@ -396,6 +404,7 @@ Adds `:core:recurring`.
 | E1, E2, E3, E4 | engine; service; Room; UI+trigger | `feat/m1a-recurring` | C-final (parallel with D allowed) | |
 | F1, F2, F3 | loan core (+schedule via recurring); Room; UI | `feat/m1a-loans` | E-final | needs recurring for LN-4 |
 | G1, G2 | goals core+Room; UI | `feat/m1a-goals` | C-final | |
+| I0, I1, I2… | Cashew format spike (docs); ledger import; per-entity import | `feat/m1a-cashew-import` | I0: none; I1: C-final; later PRs: each of D–G | one import concern each (PRD D-1) |
 | H1, H2, H3 | app lock; diagnostics; release signing + acceptance | `feat/m1a-hardening` | all above | |
 | each X-final | slice → `main` | `main` | its slice PRs | one coherent capability |
 
