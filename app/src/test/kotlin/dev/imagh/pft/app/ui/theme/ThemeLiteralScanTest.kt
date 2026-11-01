@@ -1,5 +1,6 @@
 package dev.imagh.pft.app.ui.theme
 
+import dev.imagh.pft.app.testing.SourceScan
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -13,24 +14,11 @@ import java.io.File
  * screen, present and future, through the theme alone.
  *
  * It is a text scan, not a detekt rule: detekt runs here without type resolution, and banning a
- * constructor call would need a custom rule module. It is syntactic, so it has known limits that
- * review still covers:
- * - an alias import (`import ...Color as C`) slips past;
- * - the scan is per line, so a line break between `Color` and `(`, or before `.Red`, is missed;
- * - comment stripping is naive, so a line-comment or block-comment opener inside a string
- *   literal blanks the rest of that line (or a block) and can hide a literal;
- * - XML colour resources and `colorResource(...)` are not scanned.
- *
- * ktlint formatting keeps a call and its receiver on one line, which makes the line-break and
- * string-literal cases unlikely in practice.
+ * constructor call would need a custom rule module. The scanner is the shared [SourceScan], whose
+ * syntactic limits (alias imports, line breaks inside a call, comment openers inside strings) review
+ * still covers. XML colour resources and `colorResource(...)` are not scanned.
  */
 class ThemeLiteralScanTest {
-    /** One forbidden literal: its 1-based [line] and the offending [text]. */
-    private data class Violation(
-        val line: Int,
-        val text: String,
-    )
-
     private val forbidden =
         listOf(
             Regex("""\bColor\s*\("""),
@@ -40,17 +28,7 @@ class ThemeLiteralScanTest {
             Regex("""\bR\.font\.\w+"""),
         )
 
-    /** Blanks comments (keeping line numbers) so a KDoc that mentions `Color(0xFF...)` is not a hit. */
-    private fun stripComments(source: String): String {
-        val withoutBlocks =
-            Regex("""/\*[\s\S]*?\*/""").replace(source) { match -> match.value.filter { it == '\n' } }
-        return withoutBlocks.lines().joinToString("\n") { it.replace(Regex("""//.*$"""), "") }
-    }
-
-    private fun scan(source: String): List<Violation> =
-        stripComments(source).lines().flatMapIndexed { index, line ->
-            forbidden.mapNotNull { rule -> rule.find(line)?.let { Violation(index + 1, it.value) } }
-        }
+    private fun scan(source: String) = SourceScan.scan(source, forbidden)
 
     @Test
     fun `the scanner flags every forbidden colour and font literal`() {
@@ -80,16 +58,14 @@ class ThemeLiteralScanTest {
             val d = lightColorScheme(primary = tokens.accent)
             val e = ColorScheme.default
             """.trimIndent()
-        assertEquals(emptyList<Violation>(), scan(clean))
+        assertEquals(emptyList<SourceScan.Violation>(), scan(clean))
     }
 
     @Test
     fun `no source file outside ui theme hardcodes a colour or a font`() {
-        val roots = listOf(File("src/main/kotlin"), File("src/debug/kotlin"))
-        assertTrue(roots.all { it.isDirectory }, "run from the app module directory: ${File(".").absolutePath}")
         val files =
-            roots
-                .flatMap { root -> root.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList() }
+            SourceScan
+                .kotlinFiles(listOf(File("src/main/kotlin"), File("src/debug/kotlin")))
                 .filterNot { it.invariantSeparatorsPath.contains("/dev/imagh/pft/app/ui/theme/") }
         assertTrue(files.size > 10, "the scan found only ${files.size} files, so it is not looking at the source tree")
 
