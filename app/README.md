@@ -263,6 +263,14 @@ Icons: 92 vector drawables derived from Material Symbols (Apache-2.0, `assets/li
 no icon library is a dependency (`material-icons-core` is on the classpath through Compose but banned by detekt).
 Project: `:core:money` (`implementation`, DS5): `MoneyText` formats through `PaiseFormat`. It has no
 external dependencies, so the lockfiles and verification metadata did not change.
+
+A5c (pins only; no app code uses them yet): `androidx.navigation:navigation-compose` 2.8.4 (nav host; brings
+`navigation-runtime`/`-common` and, at runtime only, `kotlinx-serialization-core` 1.6.3: the serialization
+*compiler plugin* is not applied anywhere), `androidx.lifecycle:lifecycle-viewmodel-compose` and
+`lifecycle-runtime-compose` 2.8.7 (this moves the whole lifecycle family 2.8.3 to 2.8.7), and
+`kotlinx-coroutines-android` declared explicitly at 1.7.3, the version resolution already selected
+(declared, not bumped; `:core:*` still has no coroutines dependency).
+
 Test only: `:core:ledger` test fixtures (in-memory fakes, `TestClock`, Kotest assertions), `room-testing`
 (`MigrationTestHelper`), JUnit 5 Jupiter, JUnit Vintage + JUnit 4 (to run Robolectric), Robolectric 4.14.1,
 `androidx.test:core`, `androidx.compose.ui:ui-test-junit4` (via the BOM), Roborazzi 1.36.0
