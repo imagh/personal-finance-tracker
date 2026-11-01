@@ -568,3 +568,10 @@ Each PR carries its own KDoc, README, learnings and security-review section, and
 | Q2 | Prefill "This phone's name" with the device model (`Build.MODEL`, for example "Pixel 8")? It is stored in the encrypted database and in the audit trail, never logged. | **Yes**, editable |
 | Q3 | Should `SafeLog` also write in **release** builds? The events carry no text, and logcat is reachable only over adb, which the owner's phone never enables. | **Yes**, the same events in both builds. They help diagnose the emulator release smoke and M1b receiver issues |
 | Q4 | Ship A5 as **six PRs** (A5a–A5f) rather than M1a's single A5 PR? | **Six**, per CLAUDE.md §6 sizing. Merge order A5a, A5c, A5b, A5d, A5e, A5f; A5a, A5c and A5d can be reviewed in parallel |
+
+**Follow-ups recorded during A5b (not decisions; no code change in A5):**
+
+| # | Follow-up | Where it lands |
+|---|---|---|
+| F1 | `AppContainer` caches `KeyUnavailable` for the process lifetime. M1b's SMS receiver may trigger the first open at boot, before the Keystore is usable: consider re-attempting only on the `KeyUnavailable` value, keeping "never retry" for thrown failures (no second database over a failed first attempt). | M1b |
+| F2 | An unexpected exception from `container.open()` or `identity.currentIdentity()` inside `LaunchViewModel` is not caught, so it crashes every launch while the cause persists (fails closed, as documented in §8). Decide whether the user should see a screen instead, and with which fixed code. | A5f or H2 (diagnostics) |

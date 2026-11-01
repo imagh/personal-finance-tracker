@@ -38,13 +38,16 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     security/                            # A4b: DbKeyManager (wrapped SQLCipher key, fail closed), DbKeyUnavailable, KekSource +
                                          # AndroidKeystoreKek (the Keystore KEK), WrappedKeyFormat (66-byte file, format v1)
     log/                                 # A5a: SafeLog (the only logger) + LogEvent (typed, cannot hold text)
-    ui/startup/                          # KeyUnavailableScreen (the fail-closed screen)
-    PftApplication, MainActivity         # PftApplication.startup opens the database once; MainActivity shows the app or the fail-closed screen
+    di/                                  # A5b: AppContainer (opens the database once, off the main thread; open(): AppStart), AppStart (Ready(services) | KeyUnavailable),
+                                         # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
+    ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
+    ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
+    PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
   src/main/res/font/                     # bundled Newsreader (cut per role by `newsreader(weight, size)`), Figtree (default sans) and Plus Jakarta Sans (second sans option; weights declared by `sansFamily()`) variable fonts (OFL-1.1, unmodified upstream)
   src/main/res/drawable/                 # sym_<key>.xml: 92 Material Symbols Rounded vector drawables (Apache-2.0), imported by tools/material-symbols
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Figtree OFL, Plus Jakarta Sans OFL, Material Symbols Apache-2.0)
-  src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
+  src/debug/                             # debug-only: DevContent (shown by PftRoot for a ready database until A5f) -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
   src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),
                                          # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file)
@@ -55,7 +58,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # SourceScan (comment-stripping text scanner shared by ThemeLiteralScanTest and LoggingScanTest)
   src/test/resources/pft-symbol-keys.txt # the pinned, permanent PftSymbol keys (removal or rename fails PftSymbolTest)
   src/test/screenshots/                  # committed Roborazzi goldens (fake data only), verified by `check`
-  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest) and MigrationTest (needs the debug-only schema assets)
+  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest, PftRootReadyTest) and MigrationTest (needs the debug-only schema assets)
 core/
   <module>/             # pure Kotlin/JVM, no Android imports
     README.md           # module doc (Purpose · Boundaries · Interface · Data · Config · Deps · Run/test)
@@ -73,7 +76,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 
 | Module | Owns | Responsibility |
 |--------|------|----------------|
-| `:app` | `PftApplication`, `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1 over SQLCipher, `DatabaseFactory`, `PreMigrationBackup`, DAOs, the Room implementations of the core repositories, runner and audit log); `security/` (Keystore-wrapped database key); `log/` (SafeLog, LogEvent); `ui/startup/` (fail-closed screen); later: UI, app lock | Android layer; depends on `core`, never the reverse |
+| `:app` | `PftApplication`, `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1 over SQLCipher, `DatabaseFactory`, `PreMigrationBackup`, DAOs, the Room implementations of the core repositories, runner and audit log); `security/` (Keystore-wrapped database key); `log/` (SafeLog, LogEvent); `di/` (AppContainer, AppServices); `ui/` (LaunchViewModel, PftRoot); `ui/startup/` (fail-closed screen); later: UI, app lock | Android layer; depends on `core`, never the reverse |
 | `:core:money` | `Paise`, `PaiseParser`, `PaiseFormat` (package `dev.imagh.pft.money`) | Integer-paise money: exact arithmetic, strict parsing of amount text, sign-free Indian-grouped formatting |
 | `:core:ledger` | `ids/` (`Uuid7`, `NameBasedId`, typed ids), `entity/` (`EntityMeta`, `LedgerEntity`, `Auditable`, `EntityRepository`), `audit/` (`AuditEntry`, `AuditDiff`, `AuditLog`, `AuditRecorder`, `AuditedWriter`), `tx/` (`TransactionRunner`), `validation/` (`LedgerError`, `LedgerLimits`, `Validation`), `identity/` (`IdentityService`, `UserProfile`, `Device`, `IdentityRepository`), `settings/` (`SettingsService`, `AppSettingsRepository`); test fixtures in `fakes/` and `matchers/` (package `dev.imagh.pft.ledger`) | Ledger foundations: ids, identity, the audit trail and its single audited write path, atomic transactions, validation, runtime settings. Later slices add accounts, categories, tags, transactions, loans, goals |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |
@@ -108,11 +111,14 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | core | `Uuid7` (time-sortable ids) and `NameBasedId` (deterministic UUIDv5 ids) | every entity; recurring-generated transactions | A3 |
 | core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `LedgerTestKit`, `TestClock`, `AuditFieldsCheck` (every entity's `auditFields()` is complete, checked on each fake write), and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
 | app data | `MetaColumns` (`@Embedded` shared columns, explicit snake_case names) + `MetaMapper` (`EntityMeta` <-> columns, the one mapping) | every Room entity | A4a |
-| app data | `EpochMillis` (`of`: the one instant -> epoch-ms conversion, refuses sub-millisecond; `clock()`: the millisecond `Clock` the app gives core) | every mapper, the settings repository, A5's container | A4a |
+| app data | `EpochMillis` (`of`: the one instant -> epoch-ms conversion, refuses sub-millisecond; `clock()`: the millisecond `Clock` the app gives core) | every mapper, the settings repository, `AppContainer` | A4a |
 | app data | `BaseDao<E>` (insert, update returning the row count, `byId`) | every entity DAO | A4a |
 | app data | `EntityMapper<T, E>` + `RoomEntityRepository<T, E, Id>` (get, getLive, insert, update; supplies `entityType`, refuses another kind, fails an update that matched no row) | every Room repository | A4a |
 | app data | `RoomTransactionRunner`, `RoomAuditLog` (+ `AuditEntryMapper`), `PftDatabase.create` (the only database builder, `internal` to `:app` so only `DatabaseFactory` builds the production database; adds the migrations and `AuditTriggers.callback`, which re-installs the audit triggers on every open) | every service (runner, audit); every database (`DatabaseFactory` passes only its SQLCipher factory) | A4a |
 | app data | `DbKeyManager.useKey` (the only way to get the database key; wipes it after the block) | `DatabaseFactory` (A4b); M1c sync and the export/import key wrapping later | A4b |
+| app DI | `AppServices` (the core services wired over an open `PftDatabase`, on a millisecond clock, with an injectable `AuditLog`) | `AppContainer` (the app) and `RoomTestKit` (every Room integration test) | A5b |
+| app DI | `AppContainer.open()` (opens the database once, off the caller's thread; callers share the result) | `LaunchViewModel`; M1b's SMS receiver | A5b |
+| app UI (`ui/startup`) | `DataUnavailableScreen(cause)` + `DataUnavailableCause` | key unavailable (A4b), identity corrupt (A5b) | A5b |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
 | app tests | `AuditColumnsCheck` + `AuditedTables` (every column audited or allowlisted) | every entity table; each slice registers its table | A4a |
