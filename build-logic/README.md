@@ -129,7 +129,17 @@ empty `GRADLE_USER_HOME`. That produces the minimal set a fresh clone needs. Rem
 file only the entries missing from the minimal set, and check that every shared entry has the same
 sha256 (a difference means an artifact changed upstream: stop and investigate). Do not prune by
 guessing: for example the BouncyCastle 1.77 and 1.78.1 entries look stale but are required, because
-AGP's tooling configurations still resolve them.
+AGP's tooling configurations still resolve them. Use the minimal set only if that run ends in BUILD
+SUCCESSFUL: a failed run never resolves what its unrun tasks need, so its set is too small. The
+write command does not run the OWASP tasks, so finish with `check` and
+`dependencyCheckAggregate -PscanAll` against the pruned file (the scan resolves every configuration
+under verification). Repeated empty-cache runs can get a large jar rate-limited by Maven Central
+(HTTP 429, `retry-after` about 24 hours). If that happens, and only for a module already pinned in
+`verification-metadata.xml`, add an init script to the *scratch* `GRADLE_USER_HOME/init.d/` that
+serves just that module from Google's mirror
+(`https://maven-central.storage-download.googleapis.com/maven2/`, via `exclusiveContent`). Never add
+it to the project. The pinned sha256 still guards the bytes, so the mirror can never be the first
+source of a checksum.
 
 ### Vulnerability scan (not part of `check`)
 
