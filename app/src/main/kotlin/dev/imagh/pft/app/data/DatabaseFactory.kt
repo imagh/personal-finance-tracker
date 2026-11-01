@@ -31,8 +31,8 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
  * is wiped only if the open fails. Native SQLCipher keeps its derived key in memory for an open
  * database anyway, so this adds one array to a residual that cannot be removed.
  *
- * Opening takes SQLCipher's key derivation plus any migration, so call it off the UI thread once the
- * app has more than a placeholder screen (A5's container).
+ * Opening takes SQLCipher's key derivation plus any migration, so it must not run on the UI thread:
+ * `AppContainer` calls it on an IO dispatcher, once.
  *
  * @param name the database file name.
  * @param openHelperFactoryFor builds the open helper from the key; SQLCipher's in the app, and a

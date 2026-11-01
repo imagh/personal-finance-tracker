@@ -3,6 +3,7 @@ package dev.imagh.pft.app
 import android.app.Application
 import dev.imagh.pft.app.data.DatabaseFactory
 import dev.imagh.pft.app.data.DatabaseStartup
+import dev.imagh.pft.app.di.AppContainer
 
 /**
  * The application class. It owns the one opening of the encrypted database ([startup]); A5's
@@ -16,4 +17,7 @@ import dev.imagh.pft.app.data.DatabaseStartup
 class PftApplication : Application() {
     /** The result of opening the database; opened once, on first access. */
     val startup: DatabaseStartup by lazy { DatabaseStartup.open(DatabaseFactory.forApp(this)) }
+
+    /** The process-wide container that opens the database off the main thread and builds the services. */
+    val container: AppContainer by lazy { AppContainer.forApp(this) }
 }
