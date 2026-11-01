@@ -1,17 +1,17 @@
-# Graph Report - personal-finance-tracker  (2026-10-31)
+# Graph Report - personal-finance-tracker  (2026-11-01)
 
 ## Corpus Check
-- 258 files · ~196,148 words
+- 266 files · ~206,179 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 124 file(s) not represented in the graph (top: .xml 102, .lockfile 8, (none) 4)
 
 ## Summary
-- 3177 nodes · 8920 edges · 148 communities (79 shown, 69 thin omitted)
-- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 1278 edges (avg confidence: 0.92)
+- 3274 nodes · 9249 edges · 154 communities (86 shown, 68 thin omitted)
+- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 1436 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `99b15e52`
+- Built from commit: `ab67cb4e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -21,12 +21,12 @@
 - How to run and test
 - Personal Finance Tracker Learnings
 - Automatic capture from SMS (S-1..S-13)
-- WindowThemeTest
+- Slice A — Foundation (`feat/m1a-foundation`)
 - hooks
 - test_import_symbols.py
-- GroupedSection
-- ThemePrefs
-- Paise
+- GroupedSection.kt
+- ThemeResolutionTest
+- MoneyTextTest
 - `build-logic` — convention plugins
 - Data portability (D-1..D-3)
 - ColorContrastTest
@@ -34,13 +34,14 @@
 - 6.1 Design-system slice: PRs into `feat/m1a-foundation`
 - Catalog.kt
 - detekt.yml
-- PftThemeModeTest
+- BottomActionBarTest.kt
 - PftSymbol
 - CollapsingHeaderScaffoldTest
-- Previews, the token sheet and screenshot goldens
-- Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
+- RoomEntityRepositoryTest.kt
+- AuditAction
+- InMemoryEntityStore
 - CollapsingHeaderScaffold.kt
-- HeaderGlowScaffoldTest.kt
+- HeaderTypePairingTest.kt
 - DbKeyManagerJvmTest
 - TokenSheetSections.kt
 - MoneyTextSamples.kt
@@ -48,7 +49,7 @@
 - .of
 - PftShapesTest.kt
 - CategoryGlyph
-- AuditEntryMapperTest.kt
+- HeaderGlowScaffoldTest
 - Project README
 - UserId
 - PftMotion.kt
@@ -57,13 +58,13 @@
 - CLAUDE.md Development Constitution
 - PftTypography.kt
 - HostedComposeRule
-- MainActivity
-- HeaderTypePairingTest.kt
+- LogEvent
+- HeaderIconButtonTest.kt
 - AuditEntryEntity
 - RoomAuditColumnsTest
-- LedgerEntity
+- EntityMeta
 - ContentScreenshotTest
-- DbKeyManagerTest.kt
+- DbKeyManagerTest
 - MoneyText
 - Personal Finance Tracker PRD
 - AuditEntry
@@ -73,19 +74,19 @@
 - SampleThing.kt
 - Pseudo
 - AppSettingEntity
-- Public interface
+- IdentityService
 - Collecting and Redacting Sample Messages Guide
 - BottomActionBarTest.kt
-- GroupedSection.kt
+- PressScaleTest.kt
 - _Text
 - 3.4 Reuse by layer (owner decision, 2026-10-28)
 - import_symbols.py
-- RoomEntityRepository
+- BundledFontTest
 - HeaderPolicy
 - DesignCatalog.kt
-- TokenSheetScreenshotTest.kt
+- CategoryGlyph.kt
 - 7. Test plan
-- BundledFontTest
+- PftDatabaseTest
 - expandedHeaderHeight
 - Plan: M1a design system and visual direction (lands before A5)
 - UserProfileEntity
@@ -95,88 +96,92 @@
 - MotionSection.kt
 - PreMigrationBackupTest
 - TabularFiguresTest
-- .format
+- Paise
 - GlyphSourceTest
-- DbKeyUnavailable
-- Slice A — Foundation (`feat/m1a-foundation`)
+- TokenSheet
+- TestClock
 - GroupedSectionTest.kt
 - PftTheme
 - DbKeyManager
 - ThemePrefsTest
 - BottomActionBar.kt
-- CollapsingHeaderScaffold
-- DatabaseFactory
-- MoneyToneTest
+- PeriodStepper
+- DatabaseStartupTest.kt
+- Paise
 - Migrations.kt
 - KeyUnavailableScreenTest.kt
-- PressScaleTest.kt
+- CatalogSection
 - PaletteSamples.kt
-- AuditTriggersTest
+- SafeLogTest
 - parse_svg
-- BackgroundStyle
-- ThemeLiteralScanTest
+- 6.1 Slices
+- SafeLog
 - ImportRunTest
-- PaiseParserTest.kt
+- LogEventShapeTest
 - AndroidKeystoreKek.kt
 - ThemePaletteTest
-- AuditDaoTest.kt
+- Reason
 - Layered Modular Architecture (core vs app)
-- AppSetting
-- 3. Design & decision
+- RoomEntityRepository
+- DatabaseFactory
 - 13. Deviations from the plan, by slice
 - BottomActionBarSurfaceTest.kt
 - PaletteScreenshotTest.kt
 - EncryptedDatabaseTest.kt
 - DatabaseFactoryTest.kt
-- Leaky
-- PftDatabase
+- AuditedWriterTest.kt
+- LogEventTest
 - ManifestHardeningTest
 - modifier
 - 7. Test plan
-- Plan: M1a — Core ledger (manual-entry household tracker)
+- Appearance: colour palettes, dynamic colour, background and type
 - assertequals
 - .fromIconKey
 - PaiseParser
-- StatusChip
-- EmptyStateTest.kt
-- 6.1 Slices
-- DbKeyManagerWiringTest.kt
-- MainActivityStartupTest.kt
-- WindowBackgroundTest.kt
-- PreMigrationBackup
-- BaseDao
+- ThemePrefs
+- EmptyState
+- TypePairing
+- applicationprovider
+- ManifestHardeningTest
+- PftDatabase
+- Icons and emoji (DS3, UI-6)
 - PftSurfacesTest
 - PftSpacingTest
-- onnodewithtag
-- PftTheme.kt
+- PaletteSwatchesTest.kt
 - FontBudgetTest
-- TokenSheet
+- HeaderStyle
 - Security, privacy and integrity requirements (SEC/INT)
+- Plan: M1a — Core ledger (manual-entry household tracker)
 - MoneySize
+- LoggingScanTest
+- 6. Implementation steps (TDD-ordered)
+- BaseDao
+- CategoryPalette
+- 6. Implementation steps (TDD-ordered)
 
 ## God Nodes (most connected - your core abstractions)
 1. `PftTheme()` - 158 edges
 2. `ThemePrefs` - 131 edges
-3. `PftSymbol` - 120 edges
+3. `PftSymbol` - 123 edges
 4. `Paise` - 90 edges
 5. `CollapsingHeaderScaffoldTest` - 82 edges
-6. `6.1 Design-system slice: PRs into `feat/m1a-foundation`` - 71 edges
-7. `How to run and test` - 70 edges
-8. `HostedComposeRule` - 64 edges
-9. `UserId` - 57 edges
-10. `PftTypographyTest` - 56 edges
+6. `How to run and test` - 74 edges
+7. `6.1 Design-system slice: PRs into `feat/m1a-foundation`` - 71 edges
+8. `HostedComposeRule` - 69 edges
+9. `runSuspending()` - 57 edges
+10. `UserId` - 57 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `5. Flows` --references--> `MainActivity`  [INFERRED]
   docs/plans/2026-10-28-m1a-core-ledger.md → app/src/main/kotlin/dev/imagh/pft/app/MainActivity.kt
+- `Step 1 — `LogEvent` rendering (A5a)` --references--> `LogEvent`  [INFERRED]
+  docs/plans/2026-11-01-m1a-a5-first-run-setup.md → app/src/main/kotlin/dev/imagh/pft/app/log/LogEvent.kt
+- `Step 2 — `LogEvent` can hold no text (A5a)` --references--> `LogEvent`  [INFERRED]
+  docs/plans/2026-11-01-m1a-a5-first-run-setup.md → app/src/main/kotlin/dev/imagh/pft/app/log/LogEvent.kt
+- `3.5 Fonts: bundling, licensing, custom import` --references--> `SafeLog`  [INFERRED]
+  docs/plans/2026-10-29-m1a-design-system.md → app/src/main/kotlin/dev/imagh/pft/app/log/SafeLog.kt
 - `13. Deviations from the plan, by slice` --references--> `asHeroTop()`  [INFERRED]
   docs/plans/2026-10-30-m1a-premium-look.md → app/src/main/kotlin/dev/imagh/pft/app/ui/common/HeaderGlow.kt
-- ``StatusChip`` --references--> `StatusChip()`  [INFERRED]
-  docs/architecture/design-system.md → app/src/main/kotlin/dev/imagh/pft/app/ui/common/StatusChip.kt
-- `Adding an icon` --references--> `PftSymbol`  [INFERRED]
-  docs/architecture/design-system.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/PftSymbol.kt
-- `UI layer` --references--> `PftTheme()`  [INFERRED]
-  docs/architecture/overview.md → app/src/main/kotlin/dev/imagh/pft/app/ui/theme/PftTheme.kt
 
 ## Import Cycles
 - None detected.
@@ -190,7 +195,7 @@
 - **Secrets handling across constitution, technical rules and setup guide** — docs_technical_r2_no_secrets, docs_guides_local_setup_secrets_env [INFERRED 0.85]
 - **Untrusted message handling (templates, unverified flag, read-only)** — docs_prd_deterministic_parsing, docs_prd_untrusted_messages, docs_prd_unverified_state, docs_prd_read_only_messages [INFERRED 0.85]
 
-## Communities (148 total, 69 thin omitted)
+## Communities (154 total, 68 thin omitted)
 
 ### Community 0 - "redact.py"
 Cohesion: 0.15
@@ -202,7 +207,7 @@ Nodes (17): graphify Usage Rules, Tech Stack (Kotlin, Compose, Room+SQLCipher, G
 
 ### Community 2 - "How to run and test"
 Cohesion: 0.06
-Nodes (9): How to run and test, RoomEntityRepositoryTest, FailingOnNthAppend, IdentityRoomIntegrationTest, RoomAuditedWriterIntegrationTest, AuditLog, RoomTransactionRunnerTest, runSuspending() (+1 more)
+Nodes (8): How to run and test, FailingOnNthAppend, IdentityRoomIntegrationTest, RoomAppSettingsRepositoryTest, RoomAuditedWriterIntegrationTest, AuditLog, RoomTransactionRunnerTest, runSuspending()
 
 ### Community 3 - "Personal Finance Tracker Learnings"
 Cohesion: 0.15
@@ -212,21 +217,21 @@ Nodes (8): Personal Finance Tracker Learnings, graphify tool, Architect Plan Tem
 Cohesion: 0.16
 Nodes (12): Budgets (B-1..B-5), Parse log (S-11), Read-only SMS and email access (S-10), Sender alias registry (S-13), Automatic capture from SMS (S-1..S-13), Unverified vs verified transaction state, Research: Indian Bank SMS Formats, Generic Bank-Agnostic Parser (+4 more)
 
+### Community 5 - "Slice A — Foundation (`feat/m1a-foundation`)"
+Cohesion: 0.07
+Nodes (15): `:core:ledger` — the ledger foundations, Data it owns, Dependencies, How to run and test, Purpose, AuditDiffTest, Thing, EntityMetaTest (+7 more)
+
 ### Community 6 - "hooks"
 Cohesion: 0.14
 Nodes (13): always_run, entry, exclude, files, id, language, name, pass_filenames (+5 more)
 
-### Community 8 - "GroupedSection"
-Cohesion: 0.13
-Nodes (15): `ui/common` (shared components, DS3, DS4 and DS5), GroupedRow, GroupedSection(), GroupedSectionScope, GroupedSectionPreview(), GroupedSectionSamples(), Content primitives (DS5), `EmptyState` (+7 more)
+### Community 8 - "GroupedSection.kt"
+Cohesion: 0.11
+Nodes (13): GroupedRow, GroupedSection(), GroupedSectionColors, GroupedSectionDefaults, GroupedSectionScope, GroupedSectionTags, Content primitives (DS5), `EmptyState` (+5 more)
 
-### Community 9 - "ThemePrefs"
-Cohesion: 0.14
-Nodes (4): resolveColorScheme(), resolvePaletteColors(), ThemePrefs, ThemeResolutionTest
-
-### Community 10 - "Paise"
-Cohesion: 0.14
-Nodes (3): MoneyTextTest, Paise, Slice D — Budgets (`feat/m1a-budgets`)
+### Community 9 - "ThemeResolutionTest"
+Cohesion: 0.10
+Nodes (5): dynamicPaletteColors(), resolveColorScheme(), resolvePaletteColors(), ThemeResolutionTest, Surfaces and window colour (DS6c, UI-12, UI-18)
 
 ### Community 11 - "`build-logic` — convention plugins"
 Cohesion: 0.15
@@ -237,28 +242,28 @@ Cohesion: 0.08
 Nodes (16): AccentHueTest, Case, ColorContrastTest, Theme, DARK, LIGHT, contrast(), greyAtTone() (+8 more)
 
 ### Community 16 - "6.1 Design-system slice: PRs into `feat/m1a-foundation`"
-Cohesion: 0.16
-Nodes (23): moneySign(), Balance, Budget, BudgetState, AT_THRESHOLD, OVER, UNDER, Expense (+15 more)
+Cohesion: 0.12
+Nodes (24): moneySign(), Balance, Budget, BudgetState, AT_THRESHOLD, OVER, UNDER, Expense (+16 more)
 
 ### Community 18 - "detekt.yml"
 Cohesion: 0.15
 Nodes (12): complexity, LongParameterList, active, imports, ignoreAnnotated, ignoreDefaultParameters, excludes, naming (+4 more)
 
+### Community 26 - "BottomActionBarTest.kt"
+Cohesion: 0.09
+Nodes (3): NavTransitionTest, PftThemeModeTest, TokenSheetScreenshotTest
+
 ### Community 27 - "PftSymbol"
 Cohesion: 0.02
 Nodes (93): PftSymbol, ACCOUNT_BALANCE, ACCOUNT_BALANCE_WALLET, ADD, BACK, BAKERY_DINING, BEACH_ACCESS, BED (+85 more)
 
-### Community 28 - "CollapsingHeaderScaffoldTest"
+### Community 30 - "AuditAction"
+Cohesion: 0.10
+Nodes (15): Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...), AuditAction, ARCHIVE, CREATE, DELETE, RESTORE, UNARCHIVE, UPDATE (+7 more)
+
+### Community 33 - "HeaderTypePairingTest.kt"
 Cohesion: 0.08
-Nodes (4): BottomActionBar(), BottomBarAction, CollapsingHeaderScaffoldTest, Steps
-
-### Community 29 - "Previews, the token sheet and screenshot goldens"
-Cohesion: 0.17
-Nodes (6): DashboardHeaderPreview(), DashboardHeaderSample(), sampleRows(), StandardHeaderSample(), HeaderScreenshotTest, Previews, the token sheet and screenshot goldens
-
-### Community 31 - "Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)"
-Cohesion: 0.14
-Nodes (4): Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...), InMemoryAuditLog, InMemoryEntityStore, InMemoryLedgerStore
+Nodes (10): DashboardHeaderPreview(), DashboardHeaderSample(), sampleRows(), StandardHeaderSample(), HeaderScreenshotTest, HeaderTypePairingTest, assertShownInFull(), isShownInFull() (+2 more)
 
 ### Community 35 - "TokenSheetSections.kt"
 Cohesion: 0.24
@@ -268,77 +273,69 @@ Nodes (12): Row, TokenSheetPage, TokenSheetPageFrame(), AmountStylesSection(), M
 Cohesion: 0.67
 Nodes (4): AmountRow(), Caption(), MoneyTextPreview(), MoneyTextSamples()
 
-### Community 37 - "PftTypographyTest"
-Cohesion: 0.10
-Nodes (3): sansFamily(), PftTypographyTest, Resolved
-
 ### Community 38 - ".of"
-Cohesion: 0.16
+Cohesion: 0.18
 Nodes (9): Data it owns, EpochMillis, EpochMillisTest, NameBasedId, Conventions, Data model, The audit trail, Version 1 (A4a) (+1 more)
-
-### Community 40 - "CategoryGlyph"
-Cohesion: 0.06
-Nodes (25): CategoryGlyph(), HeaderIconButton(), CategoryColors, CategoryPalette, pair(), CategoryGlyphTest, HeaderIconButtonTest, Adding a token (+17 more)
 
 ### Community 42 - "Project README"
 Cohesion: 0.14
 Nodes (13): Code Structure Map, core/shared Shared Packages, Architecture overview, Build and quality gates, Call flow, Security posture of the shell, Shape, UI layer (+5 more)
 
 ### Community 43 - "UserId"
-Cohesion: 0.07
-Nodes (18): `data` (Room persistence, A4a), MetaColumns, MetaMapper, RoomIdentityRepository, MetaMapperTest, RoomIdentityRepositoryTest, AuditedTables, TestDatabase (+10 more)
+Cohesion: 0.08
+Nodes (7): RoomIdentityRepository, RoomIdentityRepositoryTest, Auditable, Device, IdentityRepository, UserProfile, InMemoryIdentityRepository
 
 ### Community 44 - "PftMotion.kt"
-Cohesion: 0.11
-Nodes (4): PftMotion, pressScale(), Principles, 3.7 Component inventory (UI-9)
+Cohesion: 0.10
+Nodes (5): PftMotion, pressScale(), Principles, 3.7 Component inventory (UI-9), 11. Rollout & verification
 
 ### Community 45 - "CategoryGlyphScreenshotTest"
-Cohesion: 0.23
+Cohesion: 0.24
 Nodes (5): CategoryGlyphPreview(), CategoryGlyphSamples(), CategoryGlyphSymbolSamples(), SampleRow(), CategoryGlyphScreenshotTest
 
 ### Community 46 - "MoneyColors"
-Cohesion: 0.13
-Nodes (6): ChipColors, MoneyColors, PftSpacing, colors(), ChipColorsTest, 3.3 Tokens
+Cohesion: 0.16
+Nodes (5): ChipColors, MoneyColors, PftSpacing, ChipColorsTest, 3.3 Tokens
 
 ### Community 47 - "CLAUDE.md Development Constitution"
 Cohesion: 0.10
 Nodes (24): architect Agent, Architect Plan (docs/plans/YYYY-MM-DD-slug.md), code-reviewer Agent, Compact Review Report (approve/minor/changes requested), senior-full-stack-dev Agent, /architect Command, /dev Command (implement then auto-review), /review-changes Command (+16 more)
 
 ### Community 48 - "PftTypography.kt"
-Cohesion: 0.17
-Nodes (12): displayFamily(), newsreader(), pftMaterialTypography(), pftType(), PftTypography, sansWeights(), DisplayFont, BUNDLED_SERIF (+4 more)
+Cohesion: 0.13
+Nodes (17): displayFamily(), newsreader(), pftMaterialTypography(), pftType(), PftTypography, sansWeights(), DisplayFont, BUNDLED_SERIF (+9 more)
 
 ### Community 49 - "HostedComposeRule"
 Cohesion: 0.24
 Nodes (3): HostedComposeRule, RegisterHostActivity, Statement
 
-### Community 50 - "MainActivity"
-Cohesion: 0.19
-Nodes (11): Debug and release source sets, Manifest security posture (SEC-2, SEC-3, SEC-6), Public interface, `security` and the encrypted open (A4b), Window theme, MainActivity, SyncWindowBackground(), 6.2 Appearance slice: base `feat/m1a-appearance` off `main`, after A-final (Q4) (+3 more)
+### Community 50 - "LogEvent"
+Cohesion: 0.24
+Nodes (7): `log` (safe logging, A5a), DbKeyUnavailable, DbOpened, LogEvent, LogValue, render(), PR breakdown (incremental — required)
 
-### Community 51 - "HeaderTypePairingTest.kt"
-Cohesion: 0.17
-Nodes (4): HeaderTypePairingTest, assertShownInFull(), isShownInFull(), layout()
+### Community 51 - "HeaderIconButtonTest.kt"
+Cohesion: 0.18
+Nodes (6): HeaderIconButton(), HeaderIconButtonTest, Adding a token, Build-time trust decisions, Design system, Planned: premium look (DS6)
 
 ### Community 53 - "RoomAuditColumnsTest"
 Cohesion: 0.14
-Nodes (4): Probe, RoomAuditColumnsTest, AuditColumnsCheck, AuditedTable
+Nodes (3): Probe, RoomAuditColumnsTest, AuditColumnsCheck
 
-### Community 54 - "LedgerEntity"
+### Community 54 - "EntityMeta"
 Cohesion: 0.06
-Nodes (18): LedgerEntity, AuditFieldsCheckTest, Complete, HasDerived, HasScratch, Kind, LARGE, SMALL (+10 more)
+Nodes (29): `data` (Room persistence, A4a), MetaColumns, MetaMapper, MetaMapperTest, AuditedTable, AuditedTables, EntityMeta, LedgerEntity (+21 more)
 
 ### Community 57 - "MoneyText"
-Cohesion: 0.15
-Nodes (13): `:app` — Android application, Configuration, Dependencies, Responsibilities and boundaries, atSize(), directionLabel(), Figure(), fitHero() (+5 more)
+Cohesion: 0.14
+Nodes (13): Dependencies, atSize(), directionLabel(), Figure(), fitHero(), HeroFit, HeroText(), MoneyText() (+5 more)
 
 ### Community 58 - "Personal Finance Tracker PRD"
 Cohesion: 0.08
 Nodes (32): Personal Finance Tracker PRD, Automatic discovery of accounts, cards and loans (AD-1..AD-8), Balance observations (L-10), Cashew (existing expense app), Client-side encrypted sync with passphrase-derived key (Y-3), Core ledger (L-1..L-10), Cross-source de-duplication (X-3, X-4), Automatic capture from Email (E-0..E-5) (+24 more)
 
 ### Community 59 - "AuditEntry"
-Cohesion: 0.08
-Nodes (25): FieldChange, AuditAction, ARCHIVE, CREATE, DELETE, RESTORE, UNARCHIVE, UPDATE (+17 more)
+Cohesion: 0.09
+Nodes (9): AuditEntryMapper, RoomAuditLog, AuditDaoTest, AuditEntryMapperTest, TestDatabase, FieldChange, AuditEntry, AuditLog (+1 more)
 
 ### Community 60 - "redact_text"
 Cohesion: 0.33
@@ -348,44 +345,44 @@ Nodes (4): mask_run(), redact_text(), amt(), hold()
 Cohesion: 0.21
 Nodes (6): SampleDatabase, SampleThing, SampleThingDao, SampleThingEntity, SampleThingMapper, SampleThingRepository
 
-### Community 66 - "Public interface"
-Cohesion: 0.08
-Nodes (22): RoomTransactionRunner, RoomTestKit, Configuration, How an entity step composes the blocks, Public interface, Responsibilities & boundaries, AuditDiff, AuditRecorder (+14 more)
+### Community 66 - "IdentityService"
+Cohesion: 0.05
+Nodes (53): RoomTransactionRunner, RoomAppSettingsRepository, SafeLog, RoomTestKit, Configuration, How an entity step composes the blocks, Public interface, Responsibilities & boundaries (+45 more)
 
 ### Community 67 - "Collecting and Redacting Sample Messages Guide"
 Cohesion: 0.43
 Nodes (6): Collecting and Redacting Sample Messages Guide, Email Export (.eml / Google Takeout mbox), fixtures/ Reviewed Redacted Samples, Local Redaction Procedure, SMS Export (SMS Backup & Restore / adb), Per-Bank Template Overrides
 
-### Community 69 - "GroupedSection.kt"
-Cohesion: 0.10
-Nodes (6): fixedSp(), GroupedSectionDefaults, GroupedSectionTags, GlyphSize, Chip, Hero
-
 ### Community 72 - "3.4 Reuse by layer (owner decision, 2026-10-28)"
-Cohesion: 0.14
-Nodes (8): Behaviours worth knowing, AuditedWriter, EntityRepository, IdentityCorrupt, InMemoryEntityRepository, 3.4 Reuse by layer (owner decision, 2026-10-28), Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`), Slice C — Transactions (`feat/m1a-transactions`)
+Cohesion: 0.13
+Nodes (11): Behaviours worth knowing, AuditedWriter, AuditSource, MANUAL, RECURRING, SYSTEM, EntityRepository, InMemoryEntityRepository (+3 more)
 
 ### Community 73 - "import_symbols.py"
 Cohesion: 0.14
 Nodes (6): main(), parse_hashes(), parse_manifest(), to_vector_drawable(), UnsafeSvg, ManifestTest
 
+### Community 75 - "HeaderPolicy"
+Cohesion: 0.15
+Nodes (7): HeaderPolicy, Parts, Motion (UI-10), One-hand layout (UI-7), Shapes, Spacing, Tokens
+
 ### Community 76 - "DesignCatalog.kt"
-Cohesion: 0.09
-Nodes (17): CatalogSection, ACCENT, BOTTOM_BAR, CHIPS, DASHBOARD_HEADER, EMPTY, GLYPHS, MONEY (+9 more)
+Cohesion: 0.13
+Nodes (8): ChoiceRow(), DesignCatalog(), SectionContent(), DevContent(), GroupedSectionPreview(), GroupedSectionSamples(), StatusChipPreview(), StatusChipSamples()
+
+### Community 77 - "CategoryGlyph.kt"
+Cohesion: 0.16
+Nodes (4): fixedSp(), GlyphSize, Chip, Hero
 
 ### Community 78 - "7. Test plan"
 Cohesion: 0.30
 Nodes (3): iosSpring(), PftMotionTest, 7. Test plan
 
-### Community 79 - "BundledFontTest"
-Cohesion: 0.07
-Nodes (3): PftDatabaseTest, BundledFontTest, BundledSymbolsLicenceTest
-
 ### Community 81 - "Plan: M1a design system and visual direction (lands before A5)"
-Cohesion: 0.14
-Nodes (14): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 4. Data model & schema, 5.1 Launch and theme resolution, 5.3 Collapsing header (+6 more)
+Cohesion: 0.15
+Nodes (13): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 4. Data model & schema, 5.1 Launch and theme resolution, 5.3 Collapsing header, 5.4 Custom font import (AP2) (+5 more)
 
 ### Community 82 - "UserProfileEntity"
-Cohesion: 0.19
+Cohesion: 0.22
 Nodes (3): IdentityDao, DeviceEntity, UserProfileEntity
 
 ### Community 83 - "HeaderSlot"
@@ -401,40 +398,40 @@ Cohesion: 0.10
 Nodes (4): AuditTriggers, MigrationTestSupport, MigrationTest, Audit triggers
 
 ### Community 86 - "MotionSection.kt"
+Cohesion: 0.08
+Nodes (7): AccentCheckSection(), MotionSection(), SpringTrack(), EmptyStatePreview(), EmptyStateSamples(), GlyphPlaceholder(), DevContent()
+
+### Community 89 - "Paise"
+Cohesion: 0.11
+Nodes (9): Configuration, `:core:money` — integer-paise money, Data it owns, Formatting and the sign (decision), Parsing grammar, Public interface, Purpose, Responsibilities & boundaries (+1 more)
+
+### Community 91 - "TokenSheet"
+Cohesion: 0.27
+Nodes (6): PreMigrationBackupFailed, TokenSheet(), TokenSheetPreview(), Pre-migration backup (INT-5), What logs may contain, Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)
+
+### Community 92 - "TestClock"
 Cohesion: 0.07
-Nodes (3): AccentCheckSection(), MotionSection(), SpringTrack()
-
-### Community 89 - ".format"
-Cohesion: 0.18
-Nodes (10): Configuration, `:core:money` — integer-paise money, Data it owns, Dependencies, Formatting and the sign (decision), Parsing grammar, Public interface, Purpose (+2 more)
-
-### Community 91 - "DbKeyUnavailable"
-Cohesion: 0.13
-Nodes (14): PreMigrationBackupFailed, DbKeyUnavailable, KeyUnavailableScreen(), Corruption handling, Fail closed, Persistence and security, Pre-migration backup (INT-5), SQLCipher (+6 more)
-
-### Community 92 - "Slice A — Foundation (`feat/m1a-foundation`)"
-Cohesion: 0.04
-Nodes (26): `:core:ledger` — the ledger foundations, Data it owns, Dependencies, How to run and test, Purpose, AlreadyInitialised, AmountNotPositive, AmountTooLarge (+18 more)
+Nodes (8): clockAt(), Uuid7Test, TestClock, How to run and test, PaiseFormatTest, PaiseParserTest, PaiseTest, 7. Test plan
 
 ### Community 95 - "DbKeyManager"
-Cohesion: 0.28
-Nodes (3): DbKeyManager, Decoded, WrappedKeyFormat
+Cohesion: 0.16
+Nodes (11): DbKeyManager, Decoded, WrappedKeyFormat, Corruption handling, Fail closed, Persistence and security, SQLCipher, The key and the KEK (+3 more)
 
 ### Community 97 - "BottomActionBar.kt"
-Cohesion: 0.16
-Nodes (4): BottomActionBarPreview(), BottomActionBarSamples(), StatusChipPreview(), StatusChipSamples()
+Cohesion: 0.17
+Nodes (4): BottomActionBar(), BottomActionBarPreview(), BottomActionBarSamples(), BottomBarAction
 
-### Community 98 - "CollapsingHeaderScaffold"
-Cohesion: 0.25
-Nodes (15): CollapsingHeader(), CollapsingHeaderScaffold(), HeaderChildren(), HeaderContent, HeaderPeriod, headerSizes(), HeaderStyle, Dashboard (+7 more)
+### Community 98 - "PeriodStepper"
+Cohesion: 0.27
+Nodes (14): `ui/common` (shared components, DS3, DS4 and DS5), CollapsingHeader(), CollapsingHeaderScaffold(), HeaderChildren(), HeaderContent, HeaderPeriod, headerSizes(), HeaderTitle() (+6 more)
 
-### Community 99 - "DatabaseFactory"
-Cohesion: 0.12
-Nodes (7): Purpose, DatabaseFactory, DatabaseStartup, KeyUnavailable, Ready, PftApplication, DatabaseStartupTest
+### Community 99 - "DatabaseStartupTest.kt"
+Cohesion: 0.17
+Nodes (4): DatabaseStartup, KeyUnavailable, Ready, DatabaseStartupTest
 
-### Community 102 - "KeyUnavailableScreenTest.kt"
+### Community 103 - "CatalogSection"
 Cohesion: 0.15
-Nodes (8): Reason, KEK_MISSING, KEK_UNUSABLE, KEY_FILE_AUTH_FAILED, KEY_FILE_IO, KEY_FILE_MALFORMED, KEY_FILE_MISSING, KeyUnavailableScreenTest
+Nodes (13): CatalogSection, ACCENT, BOTTOM_BAR, CHIPS, DASHBOARD_HEADER, EMPTY, GLYPHS, MONEY (+5 more)
 
 ### Community 104 - "PaletteSamples.kt"
 Cohesion: 0.42
@@ -444,25 +441,25 @@ Nodes (4): PaletteColumn(), PaletteSwatches(), PaletteSwatchesPreview(), Swatch(
 Cohesion: 0.31
 Nodes (3): parse_svg(), ParseSvgTest, svg()
 
-### Community 107 - "BackgroundStyle"
-Cohesion: 0.18
-Nodes (8): GroupedSectionColors, BackgroundStyle, FLAT, TONAL, PftSurfaces, Case, GroupedSectionColorsTest, 6.2 PR breakdown (incremental — required)
+### Community 107 - "6.1 Slices"
+Cohesion: 0.10
+Nodes (19): BackgroundStyle, FLAT, TONAL, PftSurfaces, colors(), ThemePalette, AUBERGINE, GRAPHITE (+11 more)
 
-### Community 111 - "PaiseParserTest.kt"
-Cohesion: 0.16
-Nodes (5): How to run and test, PaiseFormatTest, PaiseParserTest, PaiseTest, 7. Test plan
+### Community 108 - "SafeLog"
+Cohesion: 0.24
+Nodes (4): SourceScan, Violation, ThemeLiteralScanTest, Step 3 — `SafeLog` writes the line, and nothing else can log (A5a)
+
+### Community 114 - "Reason"
+Cohesion: 0.18
+Nodes (8): DbKeyUnavailable, Reason, KEK_MISSING, KEK_UNUSABLE, KEY_FILE_AUTH_FAILED, KEY_FILE_IO, KEY_FILE_MALFORMED, KEY_FILE_MISSING
 
 ### Community 115 - "Layered Modular Architecture (core vs app)"
 Cohesion: 0.40
 Nodes (3): app/ Thin Android Layer, core/<module> (money, ledger, parsing, discovery, matching, recurring, budget, sync), Planned Layout (app, core, tools/redact, fixtures)
 
-### Community 116 - "AppSetting"
-Cohesion: 0.14
-Nodes (4): RoomAppSettingsRepository, RoomAppSettingsRepositoryTest, AppSetting, InMemoryAppSettingsRepository
-
-### Community 117 - "3. Design & decision"
-Cohesion: 0.29
-Nodes (7): 3.1 Visual direction: "Cashew, but premium", 3.2 Theming architecture (no new abstraction), 3.4 One-hand layout (UI-7): `CollapsingHeaderScaffold`, 3.5 Fonts: bundling, licensing, custom import, 3.6 Icons and emoji (UI-6), 3.8 New dependencies (pinned, locked, checksum-verified; follow `build-logic/README.md` "Refreshing pins"), 3. Design & decision
+### Community 117 - "DatabaseFactory"
+Cohesion: 0.23
+Nodes (4): DatabaseFactory, PftApplication, Step 6 — `AppContainer` opens once, off the caller's thread (A5b), Step 8 — `PftRoot`, the generalised fail-closed screen and `MainActivity` (A5b)
 
 ### Community 118 - "13. Deviations from the plan, by slice"
 Cohesion: 0.22
@@ -473,59 +470,95 @@ Cohesion: 0.11
 Nodes (12): after(), backup(), cleanUp(), header(), keyCopy(), keys(), loadNativeLibraryAndClean(), open() (+4 more)
 
 ### Community 122 - "DatabaseFactoryTest.kt"
-Cohesion: 0.16
-Nodes (7): `a failed open wipes the key it was handed, and records no version`(), clean(), cleanUp(), Handoff, `on a fresh install the key exists before the database file is created, and the database is usable`(), open(), `the open helper gets the real key, and it is still intact once open returns`()
+Cohesion: 0.11
+Nodes (9): PreMigrationBackup, `a failed open wipes the key it was handed, and records no version`(), clean(), cleanUp(), factory(), Handoff, `on a fresh install the key exists before the database file is created, and the database is usable`(), open() (+1 more)
 
-### Community 123 - "Leaky"
-Cohesion: 0.24
-Nodes (5): Fixture, Leaky, LeakyRepository, Note, NoteId
+### Community 123 - "AuditedWriterTest.kt"
+Cohesion: 0.21
+Nodes (6): AuditedWriterTest, Fixture, Leaky, LeakyRepository, Note, NoteId
+
+### Community 125 - "ManifestHardeningTest"
+Cohesion: 0.10
+Nodes (3): SyncWindowBackground(), WindowBackgroundTest, WindowThemeTest
 
 ### Community 126 - "modifier"
-Cohesion: 0.18
-Nodes (4): EmptyStatePreview(), EmptyStateSamples(), GlyphPlaceholder(), DevContent()
+Cohesion: 0.09
+Nodes (13): `:app` — Android application, Configuration, Debug and release source sets, Manifest security posture (SEC-2, SEC-3, SEC-6), Public interface, Purpose, Responsibilities and boundaries, `security` and the encrypted open (A4b) (+5 more)
 
 ### Community 127 - "7. Test plan"
 Cohesion: 0.12
-Nodes (11): asHeroTop(), glowAlpha(), glowEnd(), glowStrength(), headerGlow(), HeaderGlowTest, Theming, 1. Requirement (+3 more)
+Nodes (10): asHeroTop(), glowAlpha(), glowEnd(), glowStrength(), headerGlow(), HeaderGlowTest, 1. Requirement, 3.4 Header glow (UI-13, DS6d) (+2 more)
 
-### Community 128 - "Plan: M1a — Core ledger (manual-entry household tracker)"
-Cohesion: 0.12
-Nodes (15): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 4. Data model & schema, 5. Flows, 6. Implementation steps (TDD-ordered) (+7 more)
+### Community 128 - "Appearance: colour palettes, dynamic colour, background and type"
+Cohesion: 0.20
+Nodes (5): Appearance: colour palettes, dynamic colour, background and type, Behind the scenes, Defaults, How the accent is kept from looking like a status, What it does for you
 
 ### Community 130 - ".fromIconKey"
-Cohesion: 0.25
-Nodes (5): Emoji, GlyphSource, isSymbolKey(), Letter, Symbol
+Cohesion: 0.29
+Nodes (6): Emoji, GlyphSource, isSymbolKey(), Letter, Symbol, 6.1 Design-system slice: PRs into `feat/m1a-foundation`
 
-### Community 134 - "6.1 Slices"
-Cohesion: 0.08
-Nodes (33): ThemePalette, AUBERGINE, GRAPHITE, IVORY, MIDNIGHT, paletteFor(), SansFont, FIGTREE (+25 more)
+### Community 133 - "EmptyState"
+Cohesion: 0.21
+Nodes (3): EmptyState(), ThemePrefs, EmptyStateTest
+
+### Community 134 - "TypePairing"
+Cohesion: 0.11
+Nodes (20): sansFamily(), SansFont, FIGTREE, PLUS_JAKARTA_SANS, SYSTEM, Third-party assets, 10. Risks & mitigations, 11. Rollout & verification (+12 more)
+
+### Community 136 - "ManifestHardeningTest"
+Cohesion: 0.06
+Nodes (11): MainActivityStartupTest, ManifestHardeningTest, BundledSymbolsLicenceTest, 3.1 Visual direction: "Cashew, but premium", 3.2 Theming architecture (no new abstraction), 3.4 One-hand layout (UI-7): `CollapsingHeaderScaffold`, 3.5 Fonts: bundling, licensing, custom import, 3.6 Icons and emoji (UI-6) (+3 more)
+
+### Community 139 - "Icons and emoji (DS3, UI-6)"
+Cohesion: 0.50
+Nodes (4): Adding an icon, Icons and emoji (DS3, UI-6), The curated list, download()
+
+### Community 145 - "HeaderStyle"
+Cohesion: 0.67
+Nodes (3): HeaderStyle, Dashboard, Standard
 
 ### Community 146 - "Security, privacy and integrity requirements (SEC/INT)"
 Cohesion: 0.40
 Nodes (6): Audit trail (INT-2), Client-Generated Time-Sortable IDs (UUIDv7/ULID), Money as integer paise, Security, privacy and integrity requirements (SEC/INT), SQLCipher encryption at rest and app lock, Platform and technology decisions (Kotlin, Compose, Room, SQLCipher, paise, UUIDv7)
 
+### Community 147 - "Plan: M1a — Core ledger (manual-entry household tracker)"
+Cohesion: 0.20
+Nodes (10): 10. Risks & mitigations, 11. Rollout & verification, 12. Open questions, 1. Requirement, 2. Current state, 4. Data model & schema, 5. Flows, 8. Security considerations (+2 more)
+
 ### Community 148 - "MoneySize"
 Cohesion: 0.40
 Nodes (4): MoneySize, Hero, Large, Spec
 
+### Community 150 - "6. Implementation steps (TDD-ordered)"
+Cohesion: 0.22
+Nodes (9): 6. Implementation steps (TDD-ordered), Step 11 — `NameField` and `EditFormScaffold` (A5d), Step 12 — `SetupViewModel` (A5e), Step 13 — `SetupScreen` (A5e), Step 14 — `PftNavHost`, Home placeholder, debug route, predictive back (A5f), Step 1 — `LogEvent` rendering (A5a), Step 2 — `LogEvent` can hold no text (A5a), Step 7 — `LaunchViewModel` decides the route (A5b) (+1 more)
+
+### Community 152 - "CategoryPalette"
+Cohesion: 0.52
+Nodes (3): CategoryColors, CategoryPalette, pair()
+
+### Community 153 - "6. Implementation steps (TDD-ordered)"
+Cohesion: 0.29
+Nodes (7): 6. Implementation steps (TDD-ordered), PR breakdown (incremental — required), Slice D — Budgets (`feat/m1a-budgets`), Slice E — Recurring and subscriptions (`feat/m1a-recurring`), Slice F — Loans and EMIs (`feat/m1a-loans`), Slice G — Goals (`feat/m1a-goals`), Slice I — Cashew import (`feat/m1a-cashew-import`): tracking stub
+
 ## Knowledge Gaps
-- **197 isolated node(s):** `TOKENS`, `MOTION`, `BOTTOM_BAR`, `STANDARD_HEADER`, `DASHBOARD_HEADER` (+192 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 584 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **69 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **196 isolated node(s):** `TOKENS`, `MOTION`, `BOTTOM_BAR`, `STANDARD_HEADER`, `DASHBOARD_HEADER` (+191 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 587 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **68 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `How to run and test` connect `How to run and test` to `assertequals`, `StatusChip`, `EmptyStateTest.kt`, `WindowThemeTest`, `DbKeyManagerWiringTest.kt`, `MainActivityStartupTest.kt`, `ThemePrefs`, `Paise`, `WindowBackgroundTest.kt`, `PftSurfacesTest`, `PftSpacingTest`, `ColorContrastTest`, `PftThemeModeTest`, `PftSymbol`, `CollapsingHeaderScaffoldTest`, `Previews, the token sheet and screenshot goldens`, `DbKeyManagerJvmTest`, `PftTypographyTest`, `PftShapesTest.kt`, `CategoryGlyph`, `AuditEntryMapperTest.kt`, `UserId`, `CategoryGlyphScreenshotTest`, `MoneyColors`, `MainActivity`, `RoomAuditColumnsTest`, `ContentScreenshotTest`, `DbKeyManagerTest.kt`, `MoneyText`, `PftSymbolTest`, `SampleThing.kt`, `Public interface`, `BottomActionBarTest.kt`, `TokenSheetScreenshotTest.kt`, `7. Test plan`, `BundledFontTest`, `expandedHeaderHeight`, `MigrationTestSupport`, `PreMigrationBackupTest`, `.format`, `GlyphSourceTest`, `GroupedSectionTest.kt`, `PftTheme`, `ThemePrefsTest`, `DatabaseFactory`, `MoneyToneTest`, `KeyUnavailableScreenTest.kt`, `PressScaleTest.kt`, `AuditTriggersTest`, `BackgroundStyle`, `ThemePaletteTest`, `AuditDaoTest.kt`, `AppSetting`, `BottomActionBarSurfaceTest.kt`, `PaletteScreenshotTest.kt`, `PftDatabase`, `ManifestHardeningTest`?**
-  _High betweenness centrality (0.248) - this node is a cross-community bridge._
+- **Why does `How to run and test` connect `How to run and test` to `assertequals`, `ThemePrefs`, `EmptyState`, `applicationprovider`, `ManifestHardeningTest`, `PftDatabase`, `MoneyTextTest`, `ThemeResolutionTest`, `PftSurfacesTest`, `PftSpacingTest`, `ColorContrastTest`, `LoggingScanTest`, `BottomActionBarTest.kt`, `PftSymbol`, `CollapsingHeaderScaffoldTest`, `RoomEntityRepositoryTest.kt`, `HeaderTypePairingTest.kt`, `DbKeyManagerJvmTest`, `PftTypographyTest`, `PftShapesTest.kt`, `CategoryGlyph`, `UserId`, `CategoryGlyphScreenshotTest`, `MoneyColors`, `RoomAuditColumnsTest`, `EntityMeta`, `ContentScreenshotTest`, `DbKeyManagerTest`, `MoneyText`, `AuditEntry`, `PftSymbolTest`, `SampleThing.kt`, `IdentityService`, `BottomActionBarTest.kt`, `PressScaleTest.kt`, `BundledFontTest`, `7. Test plan`, `PftDatabaseTest`, `expandedHeaderHeight`, `MigrationTestSupport`, `PreMigrationBackupTest`, `GlyphSourceTest`, `GroupedSectionTest.kt`, `PftTheme`, `ThemePrefsTest`, `DatabaseStartupTest.kt`, `Paise`, `KeyUnavailableScreenTest.kt`, `SafeLogTest`, `6.1 Slices`, `LogEventShapeTest`, `ThemePaletteTest`, `BottomActionBarSurfaceTest.kt`, `PaletteScreenshotTest.kt`, `LogEventTest`, `ManifestHardeningTest`, `modifier`?**
+  _High betweenness centrality (0.240) - this node is a cross-community bridge._
 - **Are the 49 inferred relationships involving `PftTheme()` (e.g. with `Purpose` and ``ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)`) actually correct?**
   _`PftTheme()` has 49 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `TOKENS`, `MOTION`, `BOTTOM_BAR` to the rest of the system?**
-  _197 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _196 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `redact.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1476923076923077 - nodes in this community are weakly interconnected._
-- **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Collecting and Redacting Sample Messages Guide`, `Automatic capture from SMS (S-1..S-13)`, ``build-logic` — convention plugins`, `CLAUDE.md Development Constitution`, `Layered Modular Architecture (core vs app)`, `.format`, `Personal Finance Tracker PRD`, `Slice A — Foundation (`feat/m1a-foundation`)`?**
-  _High betweenness centrality (0.096) - this node is a cross-community bridge._
+- **Why does `Project README` connect `Project README` to `docs/TECHNICAL.md`, `Collecting and Redacting Sample Messages Guide`, `Automatic capture from SMS (S-1..S-13)`, `Slice A — Foundation (`feat/m1a-foundation`)`, ``build-logic` — convention plugins`, `CLAUDE.md Development Constitution`, `Layered Modular Architecture (core vs app)`, `Paise`, `Personal Finance Tracker PRD`?**
+  _High betweenness centrality (0.086) - this node is a cross-community bridge._
 - **Are the 38 inferred relationships involving `ThemePrefs` (e.g. with `Configuration` and `PaletteSwatchesPreview()`) actually correct?**
   _`ThemePrefs` has 38 INFERRED edges - model-reasoned connections that need verification._
 - **Should `docs/TECHNICAL.md` be split into smaller, more focused modules?**
