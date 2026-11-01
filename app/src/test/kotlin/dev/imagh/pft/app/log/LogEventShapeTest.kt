@@ -19,6 +19,7 @@ class LogEventShapeTest {
         listOf(
             LogEvent.DbOpened(schemaVersion = 1, took = Duration.ofMillis(12)),
             LogEvent.DbKeyUnavailable(Reason.KEK_MISSING),
+            LogEvent.IdentityCorrupt,
         )
 
     /** Exhaustive with no `else`: a new [LogEvent] subclass without a sample is a compile error. */
@@ -27,6 +28,7 @@ class LogEventShapeTest {
         when (e) {
             is LogEvent.DbOpened -> Unit
             is LogEvent.DbKeyUnavailable -> Unit
+            is LogEvent.IdentityCorrupt -> Unit
         }
 
     private fun isAllowed(type: Class<*>): Boolean =

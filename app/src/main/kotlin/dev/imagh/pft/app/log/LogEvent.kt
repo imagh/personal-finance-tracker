@@ -35,6 +35,15 @@ sealed interface LogEvent {
     ) : LogEvent {
         override fun line(): String = render("db_key_unavailable", "reason" to LogValue(reason))
     }
+
+    /**
+     * The stored identity is inconsistent (the current-device setting points at a device or user
+     * that does not exist); the app fails closed instead of treating the database as new. It carries
+     * no fields: nothing about the identity, not even its ids, is logged.
+     */
+    data object IdentityCorrupt : LogEvent {
+        override fun line(): String = render("identity_corrupt")
+    }
 }
 
 /**

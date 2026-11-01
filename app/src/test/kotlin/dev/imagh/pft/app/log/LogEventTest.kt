@@ -19,6 +19,11 @@ class LogEventTest {
     }
 
     @Test
+    fun `identity_corrupt is only its name, with no fields`() {
+        assertEquals("identity_corrupt", LogEvent.IdentityCorrupt.line())
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }
