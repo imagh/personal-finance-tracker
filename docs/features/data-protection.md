@@ -18,9 +18,11 @@ migration). Technical design: [persistence-and-security.md](../architecture/pers
 
 ## The "Your data can't be opened" screen
 
-If the app cannot get the key that unlocks the database, it stops and shows this screen instead of
-the app. This can happen if the phone's secure hardware was reset, the app's key file was
-damaged or removed, or after restoring the app's files onto a different phone.
+If the app cannot get the key that unlocks the database, or finds that the record of who uses
+this phone does not match the rest of your data, it stops and shows this screen instead of the app.
+The key can be unavailable if the phone's secure hardware was reset, the app's key file was damaged
+or removed, or after restoring the app's files onto a different phone. The app opens the database in
+the background, so the window appears at once and the screen (or the app) follows a moment later.
 
 What it shows: a short explanation, a warning, and a code such as `Code: KEK_MISSING`.
 
@@ -41,6 +43,7 @@ Restart the phone and try again. If it keeps happening, note the code and tell t
 | `KEY_FILE_AUTH_FAILED` | The key file was altered, or was made by a different phone key |
 | `KEY_FILE_MISSING` | The database exists but its key file does not |
 | `KEY_FILE_IO` | The key file could not be read or written |
+| `IDENTITY_CORRUPT` | The database opened, but its record of this phone's user and device is inconsistent. The app does not offer to set the phone up again, because that would create a second identity over the existing data. Same advice: do not clear storage; restart; note the code |
 
 The screen shows only this code, never file paths or key details, and (like every screen) it cannot
 be screenshotted.

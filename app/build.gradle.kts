@@ -142,7 +142,9 @@ val verifyReleaseShrink by tasks.registering {
     // Kept, and unobfuscated, so each must map to its own name. MainActivity: the manifest names it.
     // PftDatabase_Impl: Room's generated database is created by name through reflection
     // (Room.getGeneratedImplementation); room-runtime's consumer rule keeps it and its constructor,
-    // and nothing in this module references it yet, so only that rule stops R8 removing it.
+    // and nothing in this module references it statically (the app reaches the database through
+    // AppContainer, and Room instantiates the generated class by name), so only that rule stops R8
+    // removing it.
     // SQLiteConnection: libsqlcipher.so registers its natives on it by name through JNI, which R8
     // cannot see, so it survives only because of the SQLCipher keep rules (the AAR's own and
     // proguard-rules.pro).

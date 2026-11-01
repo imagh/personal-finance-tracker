@@ -8,15 +8,26 @@ the app-lock model joins this file in slice H1.
 ## The pieces
 
 ```
-Application.startup (lazy)                       dev.imagh.pft.app.PftApplication
+PftApplication.container (AppContainer)          di/AppContainer: open() once, on Dispatchers.IO (A5b)
   DatabaseStartup.open(DatabaseFactory.forApp)   data/DatabaseStartup, data/DatabaseFactory
     DbKeyManager.useKey { key -> ... }           security/DbKeyManager (wraps/unwraps the key)
       PreMigrationBackup.backUpIfOlder()         data/PreMigrationBackup
       PftDatabase.create(ctx, "pft.db", SQLCipher factory(copy of key))   data/PftDatabase
       database.openHelper.writableDatabase       migrations + audit triggers run here
       PreMigrationBackup.recordOpened()
-  Ready(db)  ->  the app          KeyUnavailable(reason)  ->  KeyUnavailableScreen
+  Ready(db)  ->  AppServices(db, EpochMillis.clock())  ->  the app
+  KeyUnavailable(reason)  ->  AppStart.KeyUnavailable  ->  DataUnavailableScreen(KeyUnavailable(reason))
+  LaunchViewModel then reads the identity: LedgerError.IdentityCorrupt  ->  DataUnavailableScreen(IdentityCorrupt)
 ```
+
+**Where the open runs (A5b).** `AppContainer.open()` is the only caller of `DatabaseStartup.open` in the
+app. It runs it on an IO dispatcher, so SQLCipher's key derivation, the backup copy and any migration
+never block the main thread, and the caller suspends instead of blocking. The first call starts the open and
+every other caller, concurrent or later, shares its one result, so there is never a second open (or a
+second database object) over the same file. The open belongs to the container, not to the first caller,
+so a screen that goes away mid-open does not abort it. The container does not retry a failed open. M1b's
+SMS receiver will call the same `open()`; it must still respect the credential-encrypted-storage item
+below. The services are built on a millisecond clock (`EpochMillis.clock`), so every stored time is exact.
 
 ## SQLCipher
 
@@ -90,11 +101,18 @@ The decision is made inside `DbKeyManager` from what is on disk, never from a ca
 | `pft.db` exists, key file does not | `KEY_FILE_MISSING` (a new key would orphan the data) |
 | key file cannot be read or written | `KEY_FILE_IO` |
 
-On any of these the app shows `KeyUnavailableScreen` (plain explanation, a warning not to clear
+On any of these the app shows `DataUnavailableScreen` (plain explanation, a warning not to clear
 storage or uninstall, and the fixed reason code). It **never** generates a replacement key,
 creates a new database over existing data, or deletes a file to recover. There is no "reset"
 button. `DbKeyUnavailable` carries a fixed reason and a class name only: no path, and the
 underlying exception is not chained, because Keystore and I/O messages name paths and providers.
+
+**An inconsistent identity (A5b).** The same screen, with its own explanation and `Code: IDENTITY_CORRUPT`,
+is shown when the database opens but the stored identity does not add up (`current_device_id` names a
+device, or a device names a user, that does not exist; `LedgerError.IdentityCorrupt`). It is a
+fail-closed row of the same table: the app never treats a damaged database as a new install, so no
+Setup is offered and nothing is created or overwritten. `LaunchViewModel` logs one `identity_corrupt`
+line (no fields).
 
 **Residual risk: a power cut before the directory sync.** On first run the key file is renamed into
 place and the directory is then fsynced. If power is lost between the rename and the directory

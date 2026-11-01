@@ -1,9 +1,9 @@
 # Architecture overview
 
-How Personal Finance Tracker is put together. Status: **M1a, slice A4b** (the Room implementations of the core boundary, encrypted with SQLCipher
-under a Keystore-wrapped key, on top of the A3 ledger foundations, the A1 skeleton and the DS tokens;
-see [persistence-and-security.md](persistence-and-security.md)). This file is refined as each slice lands
-(next: A5, the app container and first-run setup). Rules live in
+How Personal Finance Tracker is put together. Status: **M1a, slice A5b** (the app container that opens the encrypted database off the main thread, on top of
+the Room implementations of the core boundary encrypted with SQLCipher under a Keystore-wrapped key, the A3 ledger
+foundations, the A1 skeleton and the DS tokens; see [persistence-and-security.md](persistence-and-security.md)).
+This file is refined as each slice lands (next: A5d to A5f, the form blocks, Setup and the navigation host). Rules live in
 `CLAUDE.md` §3 and `docs/TECHNICAL.md` §6; the M1a plan is
 `docs/plans/2026-10-28-m1a-core-ledger.md`.
 
@@ -36,6 +36,23 @@ to it the day a module that must not depend on `ledger` needs it (likely parsing
 UI (Compose) → ViewModel → core service → repository (Room dao) → db. Each layer calls only the
 one below: no UI reaching into a dao, no data access in a core service, no business logic in a dao
 or a composable.
+
+## Startup
+
+```
+MainActivity.onCreate       FLAG_SECURE first, then edge-to-edge, then setContent { PftTheme { PftRoot(app.container) } }
+PftRoot                     LaunchViewModel(container).state : StateFlow<LaunchState>
+  Opening                   nothing drawn (window background = canvas, so no flash)
+  KeyUnavailable(reason)    DataUnavailableScreen, Code: <reason>
+  IdentityCorrupt           DataUnavailableScreen, Code: IDENTITY_CORRUPT
+  Ready(services, hasIdentity)   the app (a debug placeholder until the navigation host, A5f)
+AppContainer.open()         once, on Dispatchers.IO, shared by every caller -> AppStart.Ready(AppServices) | KeyUnavailable
+```
+
+`AppContainer` owns *when* the database opens, `AppServices` owns *what* is built on the open database (the
+production wiring of the core services over Room; the test kit `RoomTestKit` builds the same class). Nothing opens
+in a constructor, and the main thread never waits for the database. Details: [persistence-and-security.md](persistence-and-security.md)
+and `app/README.md` "`di` and startup".
 
 ## The core/app boundary
 

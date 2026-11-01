@@ -7,11 +7,12 @@ Room/SQLCipher implementations of the `core` repository interfaces, Keystore key
 logging (`SafeLog`, A5a; only `SafeLog` may log). App lock arrives in a later slice. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters), A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup) and A5a (safe logging: `SafeLog`, typed `LogEvent`s, the detekt and source-scan guards, the database-open events).** The app launches a `FLAG_SECURE`, edge-to-edge
+Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters), A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup), A5a (safe logging: `SafeLog`, typed `LogEvent`s, the detekt and source-scan guards, the database-open events) and A5b (the `AppContainer` that opens the database off the main thread, `AppServices`, `LaunchViewModel`, `PftRoot`, the generalised fail-closed screen).** The app launches a `FLAG_SECURE`, edge-to-edge
 window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
-On start `PftApplication` opens the **encrypted** database; if the key cannot be produced, `MainActivity`
-shows `KeyUnavailableScreen` instead (fail closed). Nothing uses the open database yet (no `AppContainer`
-until A5). Screens and DI arrive in slices A5 onwards (plan
+On start `MainActivity` shows `PftRoot`, which asks `PftApplication.container` to open the **encrypted**
+database off the main thread (see *Startup*, below). If the key cannot be produced, or the stored
+identity is inconsistent, `PftRoot` shows `DataUnavailableScreen` instead (fail closed). Nothing else
+uses the open database yet: Setup, Home and the navigation host arrive in A5d onwards (plan
 `docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system (the DS6 premium-look slices) later (plan
 `docs/plans/2026-10-29-m1a-design-system.md`; what is built: `docs/architecture/design-system.md`).
 
@@ -47,7 +48,7 @@ screenshot tests work. `ManifestHardeningTest` runs against both variants.
 
 ## Public interface
 
-Entry points: `dev.imagh.pft.app.PftApplication` (opens the database) and `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
+Entry points: `dev.imagh.pft.app.PftApplication` (owns the `AppContainer`) and `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
 as they land (`data/common`, `ui/common`).
 
 ### `log` (safe logging, A5a)
@@ -64,7 +65,8 @@ All logging goes through one object (PRD SEC-5, CLAUDE.md §3.7). Policy:
   subclass without a sample fail to compile. The rendered line of every sample is also checked
   against the pattern, and `render` accepts only numbers and enums.
 - Events are added **only by the change that first emits them**. Today: `DbOpened(schemaVersion, took)`
-  and `DbKeyUnavailable(reason)`, both emitted by `DatabaseStartup.open`.
+  and `DbKeyUnavailable(reason)`, both emitted by `DatabaseStartup.open`, and `IdentityCorrupt`
+  (`identity_corrupt`, no fields), emitted by `LaunchViewModel`.
 - Guards: detekt `ForbiddenImport` bans `import android.util.Log` everywhere, with one file-level
   `@Suppress("ForbiddenImport")` in `SafeLog.kt` (and one in the instrumented `EncryptedDatabaseTest`,
   which prints its own timing); `LoggingScanTest` scans `app/src/{main,debug,release}` and
@@ -191,8 +193,26 @@ Design, key file format and the fail-closed table: [`docs/architecture/persisten
 | `DatabaseFactory.forApp(context).open()` | Opens `pft.db` through SQLCipher: key first (before the file exists), then the pre-migration backup, then `PftDatabase.create` over SQLCipher's open helper, opened eagerly. SQLCipher keeps and re-uses the key array it is given, so it is handed a **copy** that lives as long as the database (wiping it would key later connections with zeros). Throws `DbKeyUnavailable` or `PreMigrationBackupFailed`; creates and deletes nothing in either case |
 | `PreMigrationBackup`, `PreMigrationBackupFailed` | Copies the still-encrypted database (and its `-wal`) to `noBackupFilesDir/backups/pre-migration-v{n}.db` (n = the old schema version) before a migration, keeps the newest 3, never copies the key, `rwx------`/`rw-------`. Records the last-opened version in `noBackupFilesDir/pft_schema_version` |
 | `DatabaseStartup` (`Ready(database)`, `KeyUnavailable(reason)`), `DatabaseStartup.open(factory)` | How opening ended; only `DbKeyUnavailable` becomes a result. Logs `db_opened schema=<n> ms=<n>` or `db_key_unavailable reason=<code>` through `SafeLog` (nothing else) |
-| `PftApplication.startup` | The one opening of the database, on first access (lazy); `MainActivity` reads it. A5's `AppContainer` takes this over |
-| `ui/startup/KeyUnavailableScreen(reason)` | The fail-closed screen: a plain explanation, a warning not to clear storage or uninstall, and `Code: <reason>`. No path, key or exception detail; no reset action |
+| `ui/startup/DataUnavailableScreen(cause)`, `DataUnavailableCause` (`KeyUnavailable(reason)`, `IdentityCorrupt`) | The fail-closed screen (A4b's `KeyUnavailableScreen`, generalised in A5b): the shared title, a warning not to clear storage or uninstall, and `Code: <code>`. The cause fixes the explanation string and the code (an enum name or a constant), so the screen cannot be given user content or exception text. No path, key, name or exception detail; no reset action |
+
+### `di` and startup (A5b)
+
+Package `dev.imagh.pft.app.di`, plus `ui/LaunchViewModel` and `ui/PftRoot`. Concrete classes, no DI framework.
+
+| Symbol | What it is |
+|---|---|
+| `AppServices(database, clock, auditLog = RoomAuditLog(..))` | The production object graph over an **open** `PftDatabase`: `ids`, `runner`, `identityRepository`, `settingsRepository`, `recorder`, `identity`, `settings`, `writer`. Does no I/O. `RoomTestKit` builds exactly this, so Room integration tests run the production wiring. The clock must be a whole-millisecond clock (`EpochMillis.clock`); `AppContainer` guarantees that |
+| `AppContainer(openDatabase, baseClock, io)`, `AppContainer.forApp(context)` | Owns *when* the database opens. `suspend fun open(): AppStart` opens it once, on `io` (`Dispatchers.IO`), never on the caller's thread and without blocking it; every caller, concurrent or later, shares the one result. The open belongs to the container, so a cancelled caller does not abort it. A key failure is the value `AppStart.KeyUnavailable`; any other failure is rethrown to every caller and never cached as `Ready` (the container does not retry). `openDatabase: () -> DatabaseStartup` is a function, a test seam for a slow or failing open, not an interface |
+| `AppStart` (`Ready(services)`, `KeyUnavailable(reason)`) | How `AppContainer.open()` ended |
+| `LaunchViewModel(container, io)` + `LaunchState` (`Opening`, `KeyUnavailable(reason)`, `IdentityCorrupt`, `Ready(services, hasIdentity)`) | Maps `AppStart` plus `identity.currentIdentity()` to the launch state. `LedgerError.IdentityCorrupt` becomes `LaunchState.IdentityCorrupt` (one `identity_corrupt` log line), never "no identity". Its work runs on an injected IO dispatcher so Robolectric tests can wait for the state from the main thread. Anything unexpected is not caught: it ends the start |
+| `PftRoot(container)` | The root composable: `Opening` draws nothing (the window background already equals the canvas, so no flash), the two fail-closed states draw `DataUnavailableScreen`, `Ready` draws the app (the debug `DevContent` until A5f brings the nav host) |
+
+**Startup.** `MainActivity.onCreate` sets `FLAG_SECURE`, enables edge-to-edge and calls `setContent`
+before any database work. `PftRoot` obtains `LaunchViewModel` (state `Opening`), which calls
+`container.open()` on IO: key, backup, SQLCipher open, `db_opened` log, then the `AppServices`.
+M1b's SMS receiver will call the same `container.open()`. `PftApplication.startup`, which opened the
+database lazily on the calling (main) thread, is gone. `PftApplication` and its `container` are `open`
+only so `MainActivityOpeningTest` can substitute a held-open opener.
 
 ### Window theme
 
@@ -213,7 +233,7 @@ pre-Compose window colour would be wrong. AP1 fixes this with `UiModeManager.set
 
 ### Debug and release source sets
 
-`DevContent()` is what `MainActivity` shows until A5 brings the navigation host. In `src/debug` it
+`DevContent()` is what `PftRoot` shows for a ready database until A5f brings the navigation host. In `src/debug` it
 shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font, sans font (Figtree, Plus Jakarta Sans or system) and font scale, plus an Accent page for the manual amber check and a Palettes page (use it
 to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
 twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
@@ -225,7 +245,7 @@ release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 - `pft.db` (with `pft.db-wal` and `pft.db-shm`) in the app's database directory: the Room database
   (schema v1: `user_profile`, `device`, `app_setting`, `audit_entry`; see
   [`docs/architecture/data-model.md`](../docs/architecture/data-model.md)), **encrypted with SQLCipher**.
-  `PftApplication` opens it; A5 adds the `AppContainer` that builds the services on it.
+  `AppContainer` (held by `PftApplication`) opens it and builds the services on it.
 - `noBackupFilesDir/pft_db_key.bin`: the wrapped database key (66 bytes, format v1). The KEK
   `pft_db_kek` lives in the Android Keystore, not on disk. Never copy, log or export the file; it is
   useless without the Keystore entry, and both names are permanent (renaming either orphans the data).
@@ -235,8 +255,8 @@ release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 
 Times are stored as epoch milliseconds **exactly**: every
 time goes through `EpochMillis.of`, which refuses a finer instant (`IllegalArgumentException`) instead of
-rounding it. The app must build the `Clock` it gives core with `EpochMillis.clock()` (A5 acceptance
-criterion, plan A5), so every instant core produces is storable.
+rounding it. `AppContainer` builds the `Clock` it gives core with `EpochMillis.clock()` (the A5
+acceptance criterion; `AppContainerTest` and `AppServicesTest`), so every instant core produces is storable.
 
 ## Configuration
 
@@ -264,7 +284,7 @@ no icon library is a dependency (`material-icons-core` is on the classpath throu
 Project: `:core:money` (`implementation`, DS5): `MoneyText` formats through `PaiseFormat`. It has no
 external dependencies, so the lockfiles and verification metadata did not change.
 
-A5c (pins only; no app code uses them yet): `androidx.navigation:navigation-compose` 2.8.4 (nav host; brings
+A5c (pins only; A5b now uses `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` and coroutines; the navigation host arrives in A5f): `androidx.navigation:navigation-compose` 2.8.4 (nav host; brings
 `navigation-runtime`/`-common` and, at runtime only, `kotlinx-serialization-core` 1.6.3: the serialization
 *compiler plugin* is not applied anywhere), `androidx.lifecycle:lifecycle-viewmodel-compose` and
 `lifecycle-runtime-compose` 2.8.7 (this moves the whole lifecycle family 2.8.3 to 2.8.7), and
@@ -375,8 +395,19 @@ The JVM tests of the key logic are `DbKeyManagerJvmTest` (real AES-GCM with an i
 `DbKeyManagerWiringTest` (Robolectric). `PreMigrationBackupTest` (plain files) covers the backup
 rules; `DatabaseFactoryTest` (Robolectric, a framework open helper in SQLCipher's place) pins the
 order of events and that the key array handed over stays intact; `DatabaseStartupTest`,
-`KeyUnavailableScreenTest` and `MainActivityStartupTest` (Robolectric has no Keystore, so it
-exercises the real fail-closed path end to end) cover the screen and that nothing is created;
+`DataUnavailableScreenTest` and `MainActivityStartupTest` (Robolectric has no Keystore, so it
+exercises the real fail-closed path end to end, asynchronously) cover the screen and that nothing is created;
 `DatabaseStartupTest` also asserts that each outcome logs exactly one `pft` line, matching the
 pattern above, with no path, file name or exception text. A5a adds `LogEventTest`, `LogEventShapeTest`,
 `SafeLogTest` (Robolectric, `ShadowLog`) and `LoggingScanTest`.
+
+A5b adds `AppServicesTest` (production wiring on a sub-millisecond base clock: written equals read),
+`AppContainerTest` (opens off the main thread, a slow open does not block the caller, concurrent
+callers open once and share the result, a cancelled caller does not abort the open, key unavailable
+fails closed, a throwing open propagates and is never cached as Ready, millisecond clock),
+`LaunchViewModelTest` (the four launch states over real Room), `PftRootTest` and, in the debug tests, `PftRootReadyTest`, and
+`MainActivityOpeningTest` (with the held-open `SlowOpeningApplication`: the first frame is composed,
+`FLAG_SECURE` and text-free before the open finishes). `RoomTestKit` now delegates to `AppServices`
+with its public surface unchanged. Waiting for a ViewModel from a Robolectric test: use IO-dispatched
+ViewModel work (as `LaunchViewModel`) and a plain blocking wait or `compose.waitUntil`, never
+`runBlocking` on the main thread against a main-dispatched coroutine.
