@@ -37,6 +37,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
       DatabaseStartup                          # how opening ended: Ready(db) or KeyUnavailable(reason)
     security/                            # A4b: DbKeyManager (wrapped SQLCipher key, fail closed), DbKeyUnavailable, KekSource +
                                          # AndroidKeystoreKek (the Keystore KEK), WrappedKeyFormat (66-byte file, format v1)
+    log/                                 # A5a: SafeLog (the only logger) + LogEvent (typed, cannot hold text)
     ui/startup/                          # KeyUnavailableScreen (the fail-closed screen)
     PftApplication, MainActivity         # PftApplication.startup opens the database once; MainActivity shows the app or the fail-closed screen
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
@@ -50,7 +51,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
                                          # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
     testing/                             # test support: TestDatabase, RoomTestKit, MigrationTestSupport, AuditColumnsCheck + AuditedTables,
-                                         # RunSuspending, SampleThing (throwaway entity for the shared-block tests)
+                                         # RunSuspending, SampleThing (throwaway entity for the shared-block tests),
+                                         # SourceScan (comment-stripping text scanner shared by ThemeLiteralScanTest and LoggingScanTest)
   src/test/resources/pft-symbol-keys.txt # the pinned, permanent PftSymbol keys (removal or rename fails PftSymbolTest)
   src/test/screenshots/                  # committed Roborazzi goldens (fake data only), verified by `check`
   src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest) and MigrationTest (needs the debug-only schema assets)
@@ -71,7 +73,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 
 | Module | Owns | Responsibility |
 |--------|------|----------------|
-| `:app` | `PftApplication`, `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1 over SQLCipher, `DatabaseFactory`, `PreMigrationBackup`, DAOs, the Room implementations of the core repositories, runner and audit log); `security/` (Keystore-wrapped database key); `ui/startup/` (fail-closed screen); later: UI, app lock, SafeLog | Android layer; depends on `core`, never the reverse |
+| `:app` | `PftApplication`, `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1 over SQLCipher, `DatabaseFactory`, `PreMigrationBackup`, DAOs, the Room implementations of the core repositories, runner and audit log); `security/` (Keystore-wrapped database key); `log/` (SafeLog, LogEvent); `ui/startup/` (fail-closed screen); later: UI, app lock | Android layer; depends on `core`, never the reverse |
 | `:core:money` | `Paise`, `PaiseParser`, `PaiseFormat` (package `dev.imagh.pft.money`) | Integer-paise money: exact arithmetic, strict parsing of amount text, sign-free Indian-grouped formatting |
 | `:core:ledger` | `ids/` (`Uuid7`, `NameBasedId`, typed ids), `entity/` (`EntityMeta`, `LedgerEntity`, `Auditable`, `EntityRepository`), `audit/` (`AuditEntry`, `AuditDiff`, `AuditLog`, `AuditRecorder`, `AuditedWriter`), `tx/` (`TransactionRunner`), `validation/` (`LedgerError`, `LedgerLimits`, `Validation`), `identity/` (`IdentityService`, `UserProfile`, `Device`, `IdentityRepository`), `settings/` (`SettingsService`, `AppSettingsRepository`); test fixtures in `fakes/` and `matchers/` (package `dev.imagh.pft.ledger`) | Ledger foundations: ids, identity, the audit trail and its single audited write path, atomic transactions, validation, runtime settings. Later slices add accounts, categories, tags, transactions, loans, goals |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |

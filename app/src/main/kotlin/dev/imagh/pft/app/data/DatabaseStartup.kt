@@ -1,6 +1,9 @@
 package dev.imagh.pft.app.data
 
+import dev.imagh.pft.app.log.LogEvent
+import dev.imagh.pft.app.log.SafeLog
 import dev.imagh.pft.app.security.DbKeyUnavailable
+import java.time.Duration
 
 /**
  * How opening the app database ended, as the UI needs to know it.
@@ -23,12 +26,23 @@ sealed interface DatabaseStartup {
     ) : DatabaseStartup
 
     companion object {
-        /** Opens the database with [factory], turning a [DbKeyUnavailable] into [KeyUnavailable]. */
-        fun open(factory: DatabaseFactory): DatabaseStartup =
-            try {
-                Ready(factory.open())
+        /**
+         * Opens the database with [factory], turning a [DbKeyUnavailable] into [KeyUnavailable].
+         *
+         * Each outcome writes one [LogEvent] through [SafeLog]: [LogEvent.DbOpened] with the schema
+         * version and how long the open took, or [LogEvent.DbKeyUnavailable] with the reason code.
+         * Nothing else about the open is logged (no path, no key, no exception text).
+         */
+        fun open(factory: DatabaseFactory): DatabaseStartup {
+            val started = System.nanoTime()
+            return try {
+                val database = factory.open()
+                SafeLog.event(LogEvent.DbOpened(PftDatabase.VERSION, Duration.ofNanos(System.nanoTime() - started)))
+                Ready(database)
             } catch (e: DbKeyUnavailable) {
+                SafeLog.event(LogEvent.DbKeyUnavailable(e.reason))
                 KeyUnavailable(e.reason)
             }
+        }
     }
 }

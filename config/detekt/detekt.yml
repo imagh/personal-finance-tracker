@@ -8,8 +8,14 @@ style:
     # ui/theme/PftSymbol.kt); material-icons-core is the older Material Icons family, and mixing two
     # families looks cheap (design plan §3.6). material-icons-extended is also banned: it is several
     # MB before R8. M3's own internal components may still use it; this only checks our sources.
+    #
+    # All logging goes through SafeLog (log/SafeLog.kt) with typed LogEvents that cannot hold text
+    # (PRD SEC-5, CLAUDE.md §3.7), so android.util.Log is banned everywhere else. SafeLog.kt is the one
+    # exception, via a file-level @Suppress("ForbiddenImport"). LoggingScanTest covers what an import
+    # ban cannot see: println, System.out/err, printStackTrace, fully qualified Log calls.
     imports:
       - 'androidx.compose.material.icons.*'
+      - 'android.util.Log'
   MagicNumber:
     # Tests use literal amounts and dates on purpose. The design tokens in ui/theme (colours now;
     # type, spacing and motion later) are named literals by definition, and `ui/theme` is the only

@@ -7,19 +7,22 @@ import dev.imagh.pft.app.security.DbKeyManager
 import dev.imagh.pft.app.security.DbKeyUnavailable.Reason
 import dev.imagh.pft.app.security.InMemoryKekSource
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldMatch
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import java.io.File
 import java.security.GeneralSecurityException
 
 /**
  * [DatabaseStartup.open]: a database that opens is `Ready`; a database key that cannot be produced
  * is `KeyUnavailable` (the app shows `KeyUnavailableScreen`), and in that case nothing is created
- * over existing data and nothing is deleted.
+ * over existing data and nothing is deleted. Each outcome is also logged as one
+ * [dev.imagh.pft.app.log.LogEvent] line that carries no path, file name or key material.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -81,5 +84,47 @@ class DatabaseStartupTest {
         startup shouldBe DatabaseStartup.KeyUnavailable(Reason.KEY_FILE_MISSING)
         keyFile.exists() shouldBe false
         databaseFile.readBytes() shouldBe before
+    }
+
+    private fun pftLines() = ShadowLog.getLogs().filter { it.tag == "pft" }.map { it.msg }
+
+    @Test
+    fun `a database that opens logs db_opened with the schema version and a duration`() {
+        ShadowLog.clear()
+
+        ready = DatabaseStartup.open(factory()).shouldBeInstanceOf<DatabaseStartup.Ready>().database
+
+        pftLines().single() shouldMatch Regex("""db_opened schema=${PftDatabase.VERSION} ms=\d+""")
+    }
+
+    @Test
+    fun `a key that cannot be produced logs db_key_unavailable with only the reason code`() {
+        kek.failure = GeneralSecurityException("keystore down")
+        ShadowLog.clear()
+
+        DatabaseStartup.open(factory())
+
+        pftLines() shouldBe listOf("db_key_unavailable reason=KEK_UNUSABLE")
+    }
+
+    @Test
+    fun `no log line carries a path, a file name, an exception message or anything but codes and numbers`() {
+        ShadowLog.clear()
+        val first = DatabaseStartup.open(factory()).shouldBeInstanceOf<DatabaseStartup.Ready>()
+        first.database.close()
+        keyFile.delete()
+        kek.failure = GeneralSecurityException("keystore down at /secret/path")
+        DatabaseStartup.open(factory())
+
+        val logs = ShadowLog.getLogs()
+        logs.size shouldBe 2
+        logs.forEach { item ->
+            item.tag shouldBe "pft"
+            item.throwable shouldBe null
+            item.msg shouldMatch Regex("^[a-z_]+( [a-z_]+=[A-Z0-9_]+)*$")
+            listOf(name, databaseFile.path, dir.path, "keystore", "secret").forEach { part ->
+                item.msg.contains(part) shouldBe false
+            }
+        }
     }
 }
