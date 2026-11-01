@@ -1,3 +1,7 @@
+// An instrumented test on the owner's emulator, never shipped: it prints its own timing (a duration,
+// no data) straight to logcat. Production code logs only through SafeLog (detekt ForbiddenImport).
+@file:Suppress("ForbiddenImport")
+
 package dev.imagh.pft.app.data
 
 import android.database.sqlite.SQLiteException
