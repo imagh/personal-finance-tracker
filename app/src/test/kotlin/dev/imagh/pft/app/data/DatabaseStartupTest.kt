@@ -20,7 +20,7 @@ import java.security.GeneralSecurityException
 
 /**
  * [DatabaseStartup.open]: a database that opens is `Ready`; a database key that cannot be produced
- * is `KeyUnavailable` (the app shows `KeyUnavailableScreen`), and in that case nothing is created
+ * is `KeyUnavailable` (the app shows `DataUnavailableScreen`), and in that case nothing is created
  * over existing data and nothing is deleted. Each outcome is also logged as one
  * [dev.imagh.pft.app.log.LogEvent] line that carries no path, file name or key material.
  */

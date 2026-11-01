@@ -9,7 +9,7 @@ import java.time.Duration
  * How opening the app database ended, as the UI needs to know it.
  *
  * [KeyUnavailable] is the fail-closed outcome (plan decision 9): the database key cannot be
- * produced, so the app shows `KeyUnavailableScreen` and does nothing else: no new key, no new
+ * produced, so the app shows `DataUnavailableScreen` and does nothing else: no new key, no new
  * database over existing data, no file deleted. Any other failure (a backup that could not be made,
  * a database SQLCipher cannot open) is not caught here and ends the start, which also leaves the
  * data untouched; it is not turned into a screen yet.
