@@ -25,6 +25,7 @@ The owner tracks personal and family expenses in Cashew (Android) and shares a G
 - Make reconciliation cheap by storing the bank's own transaction reference on every transaction, so records can be matched and de-duplicated deterministically.
 - Match Cashew's everyday functionality (budgets, recurring transactions, subscriptions, loans, goals, category hierarchy) closely enough to replace it.
 - Rank **accuracy, integrity, privacy and security** above convenience in every trade-off.
+- Let the owner switch from Cashew without losing history, by importing Cashew's export (D-1). **[Confirmed 2026-11-01]**
 
 ### Non-goals (for M1)
 - Publishing on the Play Store or supporting users beyond the owner's household.
@@ -32,7 +33,6 @@ The owner tracks personal and family expenses in Cashew (Android) and shares a G
 - Insights and analytics beyond basic budget progress (M3).
 - Bank API / Account Aggregator integrations, receipt OCR. **[Proposed]**
 - Multi-currency. INR only. **[Confirmed]**
-- Importing Cashew data. Deferred to a later phase by the owner. **[Confirmed]**
 - Person-to-person lending/borrowing as a loan type. **[Confirmed for now: loans means EMI loans owed to banks and card issuers]**
 
 ## 3. Users
@@ -80,9 +80,18 @@ M1 is large. Delivering it in three increments gives a usable app early and de-r
 
 | Phase | Contents | Exit criterion |
 |---|---|---|
-| **M1a — Core ledger** | Accounts, categories/sub-categories, tags, transactions, budgets, recurring/subscriptions, loans, goals, local encrypted DB, manual entry | Owner can run a full month on the app with manual entry only |
+| **M1a — Core ledger** | Accounts, categories/sub-categories, tags, transactions, budgets, recurring/subscriptions, loans, goals, local encrypted DB, manual entry, Cashew import (D-1) | Owner can run a full month on the app with manual entry only |
 | **M1b — SMS capture** | SMS parsing, review inbox, notifications, transaction-reference matching | Owner's bank/UPI/card SMS log automatically and de-duplicate correctly |
 | **M1c — Email capture and sync** | Gmail read-only ingestion, Drive app-data sync across devices | Spouse's phone and owner's phone converge to the same ledger |
+
+### 6.2 Roadmap: tracked items
+
+Items the owner has asked to keep, with where each one lands. A plan that defers something the owner wants records it here, so it is not lost in a plan's open questions.
+
+| ID | Item | Lands in | Status |
+|---|---|---|---|
+| R-1 | **Existing-user picker on Setup** ("I'm already a household member"), using core's `initialiseForExistingUser`. Today each phone is set up as a new user, because nothing in M1a can bring another user's profile onto a device. | The first slice that can: encrypted restore (D-3) or sync (M1c), whichever lands first | Deferred (A5 plan Q1, 2026-11-01) |
+| R-2 | **Cashew import** (D-1): bring the owner's existing Cashew data into the app. | M1a slice I: a format spike first, then the ledger import after C-final, then the other entities as their slices land (M1a plan, Slice I) | Planned; needs its own architect plan |
 
 ---
 
@@ -219,7 +228,7 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 
 | ID | Requirement |
 |---|---|
-| D-1 | Import from Cashew's export. **Deferred to a later phase by the owner.** The schema should not make it hard. |
+| D-1 | Import the owner's existing data from **Cashew's export**, so switching keeps history. **Un-deferred 2026-11-01 (decision 32; roadmap R-2).** Accounts, categories and sub-categories, tags and transactions (including transfers) come first; budgets, recurring/subscriptions, loans and goals follow as those entities land. Rules: the export file is untrusted input and is only read, never changed; money converts to exact paise, and an amount that does not convert exactly is flagged for review, never rounded; every imported record has source `import` (X-1) and an audit entry; importing the same file again creates no duplicates (Cashew's own IDs are kept as the external reference); a preview shows counts before anything is written, and anything that cannot be mapped is listed for review, never silently dropped; the file never leaves the device, and real exports are never committed (redacted fixtures only). A spike on a real export confirms the format (CSV and/or Cashew's backup database) before any code. |
 | D-2 | Full export to open formats (CSV and JSON), including the audit trail. |
 | D-3 | Encrypted local backup and restore. |
 
@@ -285,7 +294,7 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 7 | Loans = EMI loans owed to banks and card issuers, for now | 2026-10-04 |
 | 8 | INR only | 2026-10-04 |
 | 9 | Normal edits with full audit trail (not append-only) | 2026-10-04 |
-| 10 | Cashew import deferred | 2026-10-04 |
+| 10 | Cashew import deferred *(superseded by 32)* | 2026-10-04 |
 | 11 | App is read-only on SMS/email; failed or wrong parses go to a local log; extracting the log is a later feature | 2026-10-04 |
 | 12 | Per-user attribution (created by user and device) in M1 | 2026-10-04 |
 | 13 | SQLCipher, app lock, client-side-encrypted sync, and the M1a/b/c phasing are approved | 2026-10-04 |
@@ -307,6 +316,8 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 29 | Toolchain pinned about two years old (late 2024) for better support: AGP 8.7.3, Gradle 8.10.2, Kotlin 2.1.0, Compose BOM 2024.10.01, JDK Temurin 17 (latest patch); **minSdk 33 (Android 13)**, target/compileSdk 35; minimal SDK packages only. Details in `docs/TECHNICAL.md` §7.1 | 2026-10-28 |
 | 30 | Database libraries: **Room 2.7.1** and **SQLCipher (`sqlcipher-android`) 4.7.2**, the newer options, chosen over the older 2.6.1 / 4.6.1 | 2026-10-28 |
 | 31 | **No USB debugging on the primary phone** (it runs payment apps). Development and testing use the emulator, with fake SMS via `adb emu sms send`; the phone gets only sideloaded, release-signed builds | 2026-10-28 |
+| 32 | Cashew import **un-deferred**: it lands in M1a as slice I, a format spike on the owner's real export first, then the ledger import after C-final (D-1, roadmap R-2) | 2026-11-01 |
+| 33 | The existing-user picker on Setup is deferred until restore (D-3) or sync (M1c) can make it reachable; tracked as roadmap R-1 | 2026-11-01 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions

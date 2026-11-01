@@ -13,6 +13,11 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-11-01 — Deferred owner asks go on the PRD roadmap
+- **Learning:** a plan's open questions close when the plan is approved, so an item the owner wants but a plan defers (the A5 existing-user picker) disappears unless it is written down elsewhere. PRD §6.2 is now the roadmap table for such items. Cashew import (D-1) is no longer deferred: it is M1a slice I.
+- **Why:** the owner asked for both items to be tracked, and the Cashew import is how they move years of history off Cashew.
+- **How to apply:** when a plan defers something the owner asked for, add an `R-n` row to PRD §6.2 that names the slice it lands in. Slice I starts with a docs-only format spike on a real export. The export itself never enters the repo, only redacted fixtures.
+
 ### 2026-10-31 — DS6i Plus Jakarta Sans: what to remember
 - **Learning:** (1) A second sans cost one font, one enum entry and a helper: `sansWeights(resId)` now builds both families, and the `R.font.<name>` references stay direct (R8 kept `res/jj.ttf`, 176,288 B, 79,125 B compressed, exactly the +79,125 B DS6f predicted). (2) A slice that only adds an option can leave every golden alone: `git diff --stat origin/feat/m1a-foundation...HEAD -- app/src/test/screenshots` was empty, and the catalogue is not golden-covered. (3) Tests over code that landed one commit earlier pass on first run; use a negative control (here, Plus Jakarta Sans without `tnum` measures different widths) to prove the check can fail. (4) `FontBudgetTest` now pins the three font names and count, so a fourth font needs a deliberate edit. (5) `SansFont` entries are permanent names (`FIGTREE`, `PLUS_JAKARTA_SANS`, `SYSTEM`); AP1 only has to parse-to-default for unknown values. (6) The release APK grew 81,395 B (21,295,067 to 21,376,462): the font entry 79,125 B, the licence text 1,951 B compressed, and small dex, arsc and overhead changes.
 - **Why:** each is a trap for the next font or option: a font with no reference is stripped silently, a tabular check without a control can pass vacuously, and a golden diff is the fastest proof that a default did not move.
