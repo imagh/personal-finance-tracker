@@ -92,6 +92,11 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.compose)
+    // Navigation host and ViewModel/StateFlow plumbing (A5). Coroutines are declared, not bumped.
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Business logic and the repository interfaces this module implements (CLAUDE.md §3.1).
     implementation(project(":core:ledger"))
