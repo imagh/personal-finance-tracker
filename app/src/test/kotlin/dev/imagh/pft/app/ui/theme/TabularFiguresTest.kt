@@ -17,13 +17,13 @@ import kotlin.math.abs
 /**
  * Money digits are tabular in every bundled font (UI-16): under each amount style the widest and
  * narrowest figure strings of the same shape measure the same, so columns of amounts line up and
- * rolling digits do not jitter. Figtree's digits are proportional by default and only `tnum` makes
- * them equal, so this checks that the amount styles really apply it; Newsreader's default figures
- * are already tabular and `tnum` keeps that true.
+ * rolling digits do not jitter. The digits of Figtree and Plus Jakarta Sans are proportional by
+ * default and only `tnum` makes them equal, so this checks that the amount styles really apply it;
+ * Newsreader's default figures are already tabular and `tnum` keeps that true.
  *
  * Measured through Compose's own [TextMeasurer] on the styles `pftType` builds, with the real
  * bundled fonts and Robolectric native graphics, which applies `fontFeatureSettings` (the negative
- * control shows it: without `tnum` the same Figtree strings differ).
+ * control shows it: without `tnum` the same Figtree and Plus Jakarta Sans strings differ).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -56,11 +56,12 @@ class TabularFiguresTest {
 
     private fun PftTypography.all() = mapOf("hero" to amountHero, "large" to amountLarge, "row" to amountRow)
 
-    /** The amount styles as the theme builds them for [display] over the bundled Figtree. */
+    /** The amount styles as the theme builds them for [display] over the bundled [sans] (Figtree by default). */
     private fun amountStyles(
         display: DisplayFont,
         pairing: TypePairing,
-    ) = pftType(display, sansFamily(SansFont.FIGTREE), pairing)
+        sans: SansFont = SansFont.FIGTREE,
+    ) = pftType(display, sansFamily(sans), pairing)
 
     private fun assertTabular(widths: Map<String, List<Float>>) {
         widths.forEach { (name, w) ->
@@ -78,7 +79,15 @@ class TabularFiguresTest {
     }
 
     @Test
+    fun `Plus Jakarta Sans amounts of the same shape measure the same width under every amount style`() {
+        val styles = amountStyles(DisplayFont.TEXT, TypePairing.EDITORIAL, SansFont.PLUS_JAKARTA_SANS).all()
+        assertEquals(3, styles.size)
+        assertTabular(widths(styles, WIDE, NARROW))
+    }
+
+    @Test
     fun `Newsreader amounts of the same shape measure the same width under its amount styles`() {
+        // Unlike the sans fonts, this passes even without tnum: Newsreader's default digits are already tabular.
         // The hero (HERO_ONLY and EDITORIAL) and amountLarge (EDITORIAL) are the Newsreader roles.
         val type = amountStyles(DisplayFont.BUNDLED_SERIF, TypePairing.EDITORIAL)
         assertTabular(widths(mapOf("hero" to type.amountHero, "large" to type.amountLarge), WIDE, NARROW))
@@ -88,6 +97,18 @@ class TabularFiguresTest {
     fun `negative control - Figtree without tnum measures the two strings differently`() {
         val styles =
             amountStyles(DisplayFont.TEXT, TypePairing.EDITORIAL)
+                .all()
+                .mapValues { (_, style) -> style.copy(fontFeatureSettings = null) }
+        val plain = widths(styles, WIDE, NARROW)
+        plain.forEach { (name, w) ->
+            assertTrue("$name should differ without tnum, got ${w[0]} vs ${w[1]}", abs(w[0] - w[1]) > TOLERANCE_PX)
+        }
+    }
+
+    @Test
+    fun `negative control - Plus Jakarta Sans without tnum measures the two strings differently`() {
+        val styles =
+            amountStyles(DisplayFont.TEXT, TypePairing.EDITORIAL, SansFont.PLUS_JAKARTA_SANS)
                 .all()
                 .mapValues { (_, style) -> style.copy(fontFeatureSettings = null) }
         val plain = widths(styles, WIDE, NARROW)

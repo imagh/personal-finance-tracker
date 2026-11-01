@@ -40,9 +40,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/startup/                          # KeyUnavailableScreen (the fail-closed screen)
     PftApplication, MainActivity         # PftApplication.startup opens the database once; MainActivity shows the app or the fail-closed screen
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
-  src/main/res/font/                     # bundled Newsreader (cut per role by `newsreader(weight, size)`) and Figtree (default sans, weights declared by `sansFamily()`) variable fonts (OFL-1.1, unmodified upstream)
+  src/main/res/font/                     # bundled Newsreader (cut per role by `newsreader(weight, size)`), Figtree (default sans) and Plus Jakarta Sans (second sans option; weights declared by `sansFamily()`) variable fonts (OFL-1.1, unmodified upstream)
   src/main/res/drawable/                 # sym_<key>.xml: 92 Material Symbols Rounded vector drawables (Apache-2.0), imported by tools/material-symbols
-  src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Figtree OFL, Material Symbols Apache-2.0)
+  src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Figtree OFL, Plus Jakarta Sans OFL, Material Symbols Apache-2.0)
   src/debug/                             # debug-only: DevContent -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevContent (empty surface)
   src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),

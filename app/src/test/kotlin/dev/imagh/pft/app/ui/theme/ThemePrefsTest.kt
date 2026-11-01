@@ -46,8 +46,8 @@ class ThemePrefsTest {
 
     @Test
     fun `the persisted sans font names are permanent`() {
-        // AP1 stores these names; DS6i adds PLUS_JAKARTA_SANS and AP2 adds CUSTOM, only ever added.
-        assertEquals(listOf("FIGTREE", "SYSTEM"), SansFont.entries.map { it.name })
+        // AP1 stores these names; AP2 adds CUSTOM, only ever added.
+        assertEquals(listOf("FIGTREE", "PLUS_JAKARTA_SANS", "SYSTEM"), SansFont.entries.map { it.name })
     }
 
     @Test

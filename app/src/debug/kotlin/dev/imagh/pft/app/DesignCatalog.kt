@@ -50,7 +50,7 @@ import dev.imagh.pft.app.ui.theme.displayName
  * the one-hand layout components (both header styles and `BottomActionBar`) and the content
  * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
  * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the header glow (off or on), the hero font, the type pairing (hero only or editorial), the sans font
- * (Figtree or the system font) and the font scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
+ * (Figtree, Plus Jakarta Sans or the system font) and the font scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
  *
  * Each toggle row is a set of single-choice chips. The catalogue starts on the default scheme,
@@ -151,6 +151,7 @@ internal fun DesignCatalog() {
                             options =
                                 listOf(
                                     "Sans: Figtree" to SansFont.FIGTREE,
+                                    "Sans: Plus Jakarta Sans" to SansFont.PLUS_JAKARTA_SANS,
                                     "Sans: System font" to SansFont.SYSTEM,
                                 ),
                             selected = sansFont,

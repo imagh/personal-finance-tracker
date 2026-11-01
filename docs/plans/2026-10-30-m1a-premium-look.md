@@ -436,7 +436,7 @@ DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans a
     val headerGlow: Boolean = false,                          // DS6d
     val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF, // existing
     val typePairing: TypePairing = TypePairing.HERO_ONLY,     // DS6g
-    val sansFont: SansFont = SansFont.FIGTREE,                // DS6h (DS6i adds one entry: PLUS_JAKARTA_SANS)
+    val sansFont: SansFont = SansFont.FIGTREE,                // DS6h (DS6i added the entry PLUS_JAKARTA_SANS)
 )
 ```
 
@@ -668,7 +668,7 @@ DS6f (2026-10-30) measured the four candidates. **Google Sans Flex and DM Sans a
   - **Baseline:** the release APK before fonts is 21,241,278 B; expect about +114 KB after Figtree and Plus Jakarta Sans.
   - **Pick-up from DS6g (apply in DS6h):** the token sheet's type page titles (`Type scale: display, headline (sans)` and `Type scale: title, body, label (sans)`) still say "(sans)", which is wrong under `EDITORIAL`. DS6h re-records every golden anyway, so it should correct them then (see the §13 DS6g deviation "The page titles still say \"(sans)\"").
 
-**DS6i: Plus Jakarta Sans**
+**DS6i: Plus Jakarta Sans DONE 2026-10-31; deviations in §13.**
 - **Red:** the same `BundledFontTest`, `TabularFiguresTest` and `FontBudgetTest` cases, now over `PLUS_JAKARTA_SANS` (the only sans left; DS6f dropped `GOOGLE_SANS_FLEX` and `DM_SANS`). `PftTypographyTest` checks that each entry maps to its family.
 - **Green:**
   - `plus_jakarta_sans.ttf` (176,288 B), its OFL text and the enum entry. Nothing else: the other two candidates were dropped by DS6f.
@@ -858,7 +858,7 @@ No mocks; the platform shadows are the only fakes.
 ## 12. Open questions
 
 **No blocking question.** The one decision that was open (hero weight) was taken at the DS6f review. One minor owner item is open and not decided here:
-- **Fold DS6i into DS6h?** DS6f left DS6i with a single font (Plus Jakarta Sans, 176,288 B). The owner may bundle it in DS6h or keep it as its own small PR (§6.2).
+- **Fold DS6i into DS6h?** RESOLVED: kept separate (DS6h shipped alone as PR #35; DS6i is its own small PR). DS6f left DS6i with a single font (Plus Jakarta Sans, 176,288 B).
 
 **Decided (owner, 2026-10-30, DS6f device check):**
 1. **Hero weight: 400** (owner, verbatim: "400"). The mockup's 350 is not adopted.
@@ -980,3 +980,14 @@ Decisions recorded here that revise earlier owner decisions (for the owner's awa
 - **Goldens.** 50 of the 56 PNGs changed and were re-recorded (stale `*-tmp.png` deleted first); the six `category-glyph-symbols-*` pages hold no text and are byte-identical. None added, none deleted. Total 5,689,686 B to 5,712,231 B (+22,545 B); the largest is `header-dashboard-expanded-glow-dark.png` at 274,888 B (under 500 KB). Every file is byte-identical between `recordRoborazziDebug` and `recordRoborazziRelease` (SHA-256 compared). Looked at: the display/headline type page (light 1x, dark 2x), the amounts page (dark 1x: Newsreader hero, Figtree large and row amounts, row digits aligned), the `EDITORIAL` title/body/label page (dark: `titleLarge` and `titleMedium` Newsreader, the rest Figtree), the Dashboard header (expanded, light: Figtree title, Newsreader hero, nothing clipped) and the grouped-section list (light).
 - **Release APK delta is +37,405 B** (21,257,662 B at `2ed7dca`, 21,295,067 B at the slice head). The `res/*.ttf` entries are the base's `res/3G.ttf` (451,664 B, same CRC) plus one new `res/Zh.ttf` (62,712 B, 35,171 B compressed), so no font was stripped. The rest of the delta: `figtree-OFL.txt` 1,945 B compressed, `classes.dex` +964 B, `resources.arsc` +56 B, and zip entry overhead (DS6f predicted about +35 KB for the font entry alone: that is the 35,171 B). `verifyReleaseShrink` is green; no new `*Samples.kt`, so `mustBeRemoved` is unchanged.
 - **No lockfile change, no new dependency, no hook change** (`.pre-commit-config.yaml` untouched).
+
+**DS6i (Plus Jakarta Sans)**
+- **Base.** Cut from `2134713` (DS6h, PR #35, merged), on `feat/m1a-foundation-ds6i-more-sans`.
+- **Provenance verified before use.** `PlusJakartaSans[wght].ttf` was fetched from google/fonts at `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` into a scratch directory outside the repo (never executed or opened by a tool): 176,288 B, sha256 `89b3fb38...f68bc8`; `OFL.txt` 4,402 B, sha256 `995c7199...b08a99`, both as the DS6f record. The shipped TTF is byte-identical (same sha256). The shipped licence is the upstream text with trailing whitespace trimmed (4,401 B, shipped sha256 `f9a8e776b4b048227f2f046b8716083eb04b1539d9ad1d4b87e81c1df28f86e3`; one line had a trailing space; it already ended with a newline). No Reserved Font Name.
+- **`sansFamily` shares a helper.** Figtree and Plus Jakarta Sans now build their families through one private `sansWeights(resId)` (400, 500 and 600, each `FontVariation.Settings(FontWeight(w), FontStyle.Normal)`), called by two private constants with direct `R.font.figtree` / `R.font.plus_jakarta_sans` references. No interface or factory. Plus Jakarta Sans's own `wght` default is 400 (200-800), so the explicit axis is not needed for the regular weight but is kept for all three, so every weight is its own cut.
+- **Weights.** `PftTypographyTest` now checks every role weight of both pairings against each bundled sans (400, 500, 600); no new weight.
+- **Tests.** `BundledFontTest` (loads, 176,288 B, sha256, OFL text with the "2020 The Plus Jakarta Sans Project Authors" line and no Reserved Font Name), `PftTypographyTest` (wght axes 400/500/600 read off the real `ResourceFont`s, each `SansFont` maps to its own family, `PLUS_JAKARTA_SANS` with `EDITORIAL` keeps the serif roles Newsreader), `ThemePrefsTest` (the names `FIGTREE, PLUS_JAKARTA_SANS, SYSTEM` and the `FIGTREE` default), `TabularFiguresTest` (`₹11,111.11` vs `₹00,000.00` under all three amount styles in Plus Jakarta Sans, plus a negative control; it also notes that the Newsreader case passes without `tnum`, as its default digits are already tabular), `FontBudgetTest` (exactly three fonts counted: `newsreader`, `figtree`, `plus_jakarta_sans`, 690,664 B of 3,145,728 B), `DesignCatalogTest` (starts on the literal chip "Sans: Figtree"; each of the other two options switches the `bodyLarge` sample's font). The tabular, budget and enum-entry tests passed on first run because the production code they check landed in the commit before; the tabular negative control proves the measurement can fail. A test for an unknown stored sans value was left to AP1's parse-to-default test.
+- **Commit order.** (1) font, licence and `BundledFontTest` (green on its own: lint does not flag an unreferenced font, and R8 only strips it from the release APK); (2) `SansFont.PLUS_JAKARTA_SANS`, `sansFamily()`, `PftTypographyTest` and `ThemePrefsTest`; (3) `TabularFiguresTest` and `FontBudgetTest`; (4) the catalogue toggle and its test; (5) docs; (6) graphify. Commits 1 and 2 were not combined.
+- **Goldens.** None added, none changed: the default look is unchanged (`git diff --stat origin/feat/m1a-foundation...HEAD -- app/src/test/screenshots` is empty). The catalogue is not covered by a golden.
+- **Release APK delta is +81,395 B** (21,295,067 B at `2134713`, 21,376,462 B at the slice head). The `res/*.ttf` entries are the base's `res/3G.ttf` (Newsreader, 451,664 B, 266,774 B compressed) and `res/Zh.ttf` (Figtree, 62,712 B, 35,171 B compressed) plus one new `res/jj.ttf` (Plus Jakarta Sans, 176,288 B, 79,125 B compressed), so no font was stripped. The compressed entry is exactly DS6f's predicted +79,125 B; the other 2,270 B are the licence text (4,401 B, 1,951 B compressed), `classes.dex` +196 B, `resources.arsc` +64 B, `baseline.prof` -9 B and zip entry overhead. `verifyReleaseShrink` is green; no new `*Samples.kt`, so `mustBeRemoved` is unchanged.
+- **No lockfile change, no new dependency, no hook change** (`.pre-commit-config.yaml` untouched; the font is under the 500 KB limit).

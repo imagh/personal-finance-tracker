@@ -58,7 +58,8 @@ choices will live in the database (CLAUDE.md §3.5).
 Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the display family is:
 `BUNDLED_SERIF` (Newsreader, the default), `SYSTEM_SERIF` or `TEXT` ("same as text").
 `ThemePrefs.typePairing` chooses **which roles** use it. The text family ("text" in the table) is
-`ThemePrefs.sansFont`: the bundled **Figtree** by default, or `SYSTEM` (`FontFamily.Default`); see
+`ThemePrefs.sansFont`: the bundled **Figtree** by default, the bundled **Plus Jakarta Sans**, or `SYSTEM`
+(`FontFamily.Default`); see
 "The sans font" below.
 
 | Role | `HERO_ONLY` (default) | `EDITORIAL` | Size / line (sp) | Weight | Features |
@@ -86,19 +87,21 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   and the text family get none. The hero keeps the 48sp cut at every shrink step.
 - **The hero weight is 400** (owner decision after the DS6f device check); the mockup's 350 was not adopted.
 - `tnum` stays on all three amount roles in every pairing.
-- **The sans font (UI-2, UI-16, DS6h).** `SansFont` is `{ FIGTREE, SYSTEM }` (names persisted by AP1; DS6i adds
-  `PLUS_JAKARTA_SANS` and AP2 adds `CUSTOM`, without a migration). `sansFamily(SansFont)` maps `SYSTEM` to
-  `FontFamily.Default` and `FIGTREE` to one family of three `Font(R.font.figtree, ...)` entries, for weights
-  400, 500 and 600, each with `FontVariation.Settings(FontWeight(w), FontStyle.Normal)`. Figtree is a variable
-  font whose `wght` axis defaults to 300, so every weight a role uses must be declared; 400, 500 and 600 are all
+- **The sans font (UI-2, UI-16, DS6h, DS6i).** `SansFont` is `{ FIGTREE, PLUS_JAKARTA_SANS, SYSTEM }` (names
+  persisted by AP1; AP2 adds `CUSTOM`, without a migration). `sansFamily(SansFont)` maps `SYSTEM` to
+  `FontFamily.Default`, and each bundled font to one family of three `Font(R.font.<name>, ...)` entries
+  (`figtree`, `plus_jakarta_sans`), for weights 400, 500 and 600, each with
+  `FontVariation.Settings(FontWeight(w), FontStyle.Normal)`; one private helper builds both. Both are variable
+  fonts; Figtree's `wght` axis defaults to 300 and Plus Jakarta Sans's (200-800) to 400, but the axis is set
+  explicitly for both, so every weight a role uses must be declared; 400, 500 and 600 are all
   the weights any role in `pftMaterialTypography` and `pftType` uses (`PftTypographyTest` checks it), and a new
   weight must be added to the family first. `PftTheme` passes the chosen family as the text family to both
   type functions, so both pairings work on top of it: in `EDITORIAL` the serif roles stay Newsreader, and
-  `displayFont = TEXT` now means Figtree. Figtree's digits are proportional by default; only `tnum` makes them
-  equal, so the three amount roles keep it, while body text digits stay proportional by design (Figtree has no
-  `lnum`, so that half of `"tnum, lnum"` is a no-op). `TabularFiguresTest` measures `₹11,111.11` against
-  `₹00,000.00` under each amount style in Figtree and Newsreader (equal within 0.5px), with a no-`tnum` control
-  that differs. Fonts are referenced only as `R.font.<name>` from main code, because release resource shrinking
+  `displayFont = TEXT` means the chosen sans (Figtree by default). The digits of Figtree and Plus Jakarta Sans are
+  proportional by default; only `tnum` makes them equal, so the three amount roles keep it, while body text digits
+  stay proportional by design (neither has `lnum`, so that half of `"tnum, lnum"` is a no-op).
+  `TabularFiguresTest` measures `₹11,111.11` against `₹00,000.00` under each amount style in Figtree, Plus
+  Jakarta Sans and Newsreader (equal within 0.5px), with a no-`tnum` control that differs for each sans. Fonts are referenced only as `R.font.<name>` from main code, because release resource shrinking
   removes an unreferenced font; `FontBudgetTest` holds all of `res/font` to 3 MiB.
 - `TypePairing` is `{ HERO_ONLY, EDITORIAL }`; its names are persisted by AP1. An all-serif value can be
   added later without a migration, because an unknown stored value reads as the default.
@@ -560,12 +563,15 @@ Screenshot rules:
 | Newsreader licence text `OFL.txt` | same directory, same commit | | | 4,394 B upstream | upstream `fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8` | `app/src/main/assets/licenses/newsreader-OFL.txt` (shipped sha256 `9a1ec58d31446303d5c3aac2e31ddecdb0e9ec285d5008747e929096d03f0b60`: the text is identical to upstream apart from trailing whitespace trimmed and a final newline added by the repo's pre-commit hooks) |
 | Figtree variable font `Figtree[wght].ttf` (Erik D. Kennedy and the Figtree Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/figtree (google/fonts `ofl/figtree`; upstream project https://github.com/erikdkennedy/figtree) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (2026-10-30, the single DS6f pin); `wght` 300-900, default 300 | SIL OFL 1.1, **Reserved Font Name: none** | 62,712 B | `26ad3db9b31ff7dde67a91ff515d022d2f495cd506590699cf264f0bfe6fb714` | `app/src/main/res/font/figtree.ttf`, unmodified; weights 400, 500 and 600 are declared in `sansFamily()` |
 | Figtree licence text `OFL.txt` | same directory, same commit | | | 4,388 B upstream | upstream `140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268` | `app/src/main/assets/licenses/figtree-OFL.txt` (4,383 B, shipped sha256 `4504180d840bfb94a6445f6145574256aac1c7da5e6d4be55da5b9e710772490`: identical to upstream apart from trailing whitespace trimmed by the repo's pre-commit hooks; the file already ended with a newline) |
+| Plus Jakarta Sans variable font `PlusJakartaSans[wght].ttf` (the Plus Jakarta Sans Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/plusjakartasans (google/fonts `ofl/plusjakartasans`; upstream project https://github.com/tokotype/PlusJakartaSans) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (2026-10-30, the single DS6f pin); `wght` 200-800, default 400 | SIL OFL 1.1, **Reserved Font Name: none** | 176,288 B | `89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8` | `app/src/main/res/font/plus_jakarta_sans.ttf`, unmodified; weights 400, 500 and 600 are declared in `sansFamily()` |
+| Plus Jakarta Sans licence text `OFL.txt` | same directory, same commit | | | 4,402 B upstream | upstream `995c7199cab65954f545996326755daee7b63cc6b42b06c13da1f9502ab08a99` | `app/src/main/assets/licenses/plus-jakarta-sans-OFL.txt` (4,401 B, shipped sha256 `f9a8e776b4b048227f2f046b8716083eb04b1539d9ad1d4b87e81c1df28f86e3`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the file already ended with a newline) |
 | Material Symbols Rounded (92 icons, SVG path data only) | https://github.com/google/material-design-icons (`symbols/web/<name>/materialsymbolsrounded/<name>_24px.svg`) | commit `10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7` (2026-10-23) | Apache-2.0 | 73 KB of drawables | per-icon SVG hashes in `tools/material-symbols/svg-sha256.txt`; upstream `LICENSE` 11,357 B, `58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd` | `app/src/main/res/drawable/sym_<key>.xml` (path data unchanged, wrapped in a group that shifts the SVG's -960 origin); licence in `app/src/main/assets/licenses/material-symbols-APACHE-2.0.txt` (attribution header, then the upstream text with trailing whitespace trimmed) |
 
 `BundledSymbolsLicenceTest` checks that the Apache-2.0 text and the attribution (source and pinned commit) ship.
 `BundledFontTest` pins each font's size and SHA-256 and checks that the OFL text and the copyright line
 ("Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)",
-"Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)") ship.
+"Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)", and the Plus Jakarta Sans
+Project Authors line "2020 The Plus Jakarta Sans Project Authors") ship.
 OFL section 2 requires the licence to accompany every copy; AP1 adds an in-app licences viewer.
 No Reserved Font Name is declared, so subsetting is allowed later if APK size matters; it is not
 done, so provenance stays checkable by hash. To update the font, download from google/fonts into a
@@ -598,5 +604,5 @@ file was not pruned. Re-vet them whenever Roborazzi is upgraded.
 - **Colour.** `BrandColors` (ink indigo) is retired (done in DS6a: Graphite is the default and dynamic colour is opt-in). DS6b adds the other three curated palettes, with light and dark chosen independently (done; see "Colour"). Money colours are unchanged.
 - **Surfaces.** The default is a tonal canvas with tonal islands, never white, with a hairline edge; a flat option remains. The window background follows the canvas (done in DS6c; see "Surfaces and window colour").
 - **Header.** An optional glow, off by default, never under money (done in DS6d; see "One-hand layout"). (Icon-only actions through `HeaderIconButton` are done: DS6e.)
-- **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option (done in DS6g; see "Typography"). Bundled Figtree is the default sans (done in DS6h). The third-party table gains a row per bundled font, and all bundled fonts together stay within 3 MiB. The DS6f spike (plan §3.7) measured the candidates: only Figtree and Plus Jakarta Sans (both variable) are bundled, 0.66 MiB with Newsreader in total; Figtree has its row now, and Plus Jakarta Sans gets one in DS6i.
+- **Typography.** A type-pairing setting: `HERO_ONLY` stays the default, and `EDITORIAL` is an option (done in DS6g; see "Typography"). Bundled Figtree is the default sans (done in DS6h) and Plus Jakarta Sans is the second bundled option (done in DS6i). The third-party table has a row per bundled font, and all bundled fonts together stay within 3 MiB. The DS6f spike (plan §3.7) measured the candidates: only Figtree and Plus Jakarta Sans (both variable) are bundled, 0.66 MiB with Newsreader in total.
 - **Scope.** It applies app-wide through the theme and the shared components. Screens never hardcode a colour or font outside `ui/theme`; `ThemeLiteralScanTest` checks this (built in DS6a).

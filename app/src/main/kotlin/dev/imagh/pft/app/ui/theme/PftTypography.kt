@@ -61,28 +61,36 @@ internal val HeroSizeSteps: List<TextUnit> =
     listOf(HeroFontSize, 40.sp, 34.sp, 28.sp, 24.sp, 20.sp, 16.sp, 12.sp)
 
 /**
- * The sans text family for [choice] (UI-2, UI-16): the bundled Figtree, or the platform default.
+ * The sans text family for [choice] (UI-2, UI-16): the bundled Figtree, the bundled Plus Jakarta
+ * Sans, or the platform default.
  *
- * Figtree is one variable font whose `wght` axis defaults to 300, lighter than any role asks for,
- * so the axis is set explicitly: one [Font] per weight 400, 500 and 600 (regular text, medium
- * labels and titles, semibold header titles), each pinned to its own `wght`. These are every
- * weight a role in [pftMaterialTypography] or [pftType] uses; a weight not declared here would fall
- * to the nearest one. Declare a new weight here before using it in a role.
+ * Both bundled sans fonts are one variable font each. Figtree's `wght` axis defaults to 300,
+ * lighter than any role asks for, and Plus Jakarta Sans defaults to 400; either way the axis is set
+ * explicitly: one [Font] per weight 400, 500 and 600 (regular text, medium labels and titles,
+ * semibold header titles), each pinned to its own `wght`. These are every weight a role in
+ * [pftMaterialTypography] or [pftType] uses; a weight not declared here would fall to the nearest
+ * one. Declare a new weight in `sansWeights` before using it in a role.
  *
- * Reference the font only as `R.font.figtree`, here: release resource shrinking removes a font
+ * Reference each font only as `R.font.<name>`, below: release resource shrinking removes a font
  * that no reachable code names, and a name string or `getIdentifier` would not count.
  */
 internal fun sansFamily(choice: SansFont): FontFamily =
     when (choice) {
         SansFont.FIGTREE -> FigtreeFamily
+        SansFont.PLUS_JAKARTA_SANS -> PlusJakartaSansFamily
         SansFont.SYSTEM -> FontFamily.Default
     }
 
-private val FigtreeFamily: FontFamily =
+private val FigtreeFamily: FontFamily = sansWeights(R.font.figtree)
+
+private val PlusJakartaSansFamily: FontFamily = sansWeights(R.font.plus_jakarta_sans)
+
+/** A family over the variable font [resId] with a [Font] pinned to each of the weights 400, 500 and 600. */
+private fun sansWeights(resId: Int): FontFamily =
     FontFamily(
         listOf(400, 500, 600).map { w ->
             Font(
-                R.font.figtree,
+                resId,
                 weight = FontWeight(w),
                 variationSettings = FontVariation.Settings(FontWeight(w), FontStyle.Normal),
             )
