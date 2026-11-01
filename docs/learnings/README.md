@@ -13,6 +13,11 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **How to apply:** <what to do next time>.
 -->
 
+### 2026-11-01 — A5a safe logging: what to remember
+- **Learning:** (1) detekt 1.23.7 **honours** a file-level `@file:Suppress("ForbiddenImport")` (placed before `package`, after any `//` comment): with it `SafeLog.kt` is clean, without it detekt reports `SafeLog.kt:7`. So the plan's fallback (`excludes: ['**/log/SafeLog.kt']`) was not needed. (2) `ForbiddenImport` has no source-set scoping, so the ban also hit two existing files that used `android.util.Log`: the instrumented `EncryptedDatabaseTest` (prints its own timing; given its own file-level suppress and reason) and the new `SafeLogTest` (uses `android.util.Log.INFO` spelled out, no import). (3) `LoggingScanTest` scans only production source sets, so those test files are not its concern. (4) The `LogEvent` shape check uses Java reflection (`declaredFields`, `permittedSubclasses`); no kotlin-reflect, and `Class.permittedSubclasses` works for Kotlin sealed interfaces on JVM 17. (5) The logging scan's `print(` rule needs a `(?<![\w.])` lookbehind so `footprint(` and `x.print(` are not hits (`System.out` is caught by its own rule). (6) Negative controls done by hand: a planted `println` in `src/main` fails `LoggingScanTest` with its path and line; a scratch `import android.util.Log` fails `./gradlew detekt`.
+- **Why:** SEC-5 must hold by construction before any feature code can log money or names.
+- **How to apply:** to log, add a `LogEvent` subclass with number/enum/duration fields in the change that emits it, add its sample to `LogEventShapeTest`, and call `SafeLog.event`. Never add a `String` field or overload; the shape test and the review reject it.
+
 ### 2026-11-01 — Deferred owner asks go on the PRD roadmap
 - **Learning:** a plan's open questions close when the plan is approved, so an item the owner wants but a plan defers (the A5 existing-user picker) disappears unless it is written down elsewhere. PRD §6.2 is now the roadmap table for such items. Cashew import (D-1) is no longer deferred: it is M1a slice I.
 - **Why:** the owner asked for both items to be tracked, and the Cashew import is how they move years of history off Cashew.

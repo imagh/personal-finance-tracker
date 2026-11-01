@@ -3,11 +3,11 @@
 ## Purpose
 
 The thin Android layer of Personal Finance Tracker: Compose UI, the single `MainActivity`, the
-Room/SQLCipher implementations of the `core` repository interfaces, Keystore key handling and (in
-later slices) app lock and safe logging. It contains no business logic; that lives in `core/<module>`
+Room/SQLCipher implementations of the `core` repository interfaces, Keystore key handling and safe
+logging (`SafeLog`, A5a; only `SafeLog` may log). App lock arrives in a later slice. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters) and A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup).** The app launches a `FLAG_SECURE`, edge-to-edge
+Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters), A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup) and A5a (safe logging: `SafeLog`, typed `LogEvent`s, the detekt and source-scan guards, the database-open events).** The app launches a `FLAG_SECURE`, edge-to-edge
 window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
 On start `PftApplication` opens the **encrypted** database; if the key cannot be produced, `MainActivity`
 shows `KeyUnavailableScreen` instead (fail closed). Nothing uses the open database yet (no `AppContainer`
@@ -49,6 +49,28 @@ screenshot tests work. `ManifestHardeningTest` runs against both variants.
 
 Entry points: `dev.imagh.pft.app.PftApplication` (opens the database) and `dev.imagh.pft.app.MainActivity`. Reusable building blocks (plan §3.4) are listed here
 as they land (`data/common`, `ui/common`).
+
+### `log` (safe logging, A5a)
+
+All logging goes through one object (PRD SEC-5, CLAUDE.md §3.7). Policy:
+
+- `SafeLog.event(LogEvent)` is the only way to log. It writes one INFO line under the tag `pft`,
+  `e.line()`, in debug **and** release builds (the events are non-sensitive, and logcat is readable
+  only over adb).
+- `LogEvent` is a sealed interface whose subclasses hold only `Int`, `Long`, `Boolean`, enums or
+  `java.time.Duration`, so a message, an amount, a payee, a name, a path or a token cannot be passed.
+  Lines look like `db_opened schema=1 ms=12` and match `^[a-z_]+( [a-z_]+=[A-Z0-9_]+)*$`.
+  `LogEventShapeTest` enforces the field types by reflection; its exhaustive `when` makes a new
+  subclass without a sample fail to compile. The rendered line of every sample is also checked
+  against the pattern, and `render` accepts only numbers and enums.
+- Events are added **only by the change that first emits them**. Today: `DbOpened(schemaVersion, took)`
+  and `DbKeyUnavailable(reason)`, both emitted by `DatabaseStartup.open`.
+- Guards: detekt `ForbiddenImport` bans `import android.util.Log` everywhere, with one file-level
+  `@Suppress("ForbiddenImport")` in `SafeLog.kt` (and one in the instrumented `EncryptedDatabaseTest`,
+  which prints its own timing); `LoggingScanTest` scans `app/src/{main,debug,release}` and
+  `core/*/src/main` for `println`, `print`, `System.out/err`, `printStackTrace`, any `android.util.Log`
+  reference (calls and `Log::d`), `java.util.logging`, `System.getLogger` and `Timber` (its shared scanner is the test helper `testing/SourceScan`).
+- Never log from a `catch`: there is no way to pass the exception, on purpose.
 
 ### `ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)
 
@@ -168,7 +190,7 @@ Design, key file format and the fail-closed table: [`docs/architecture/persisten
 | `DbKeyManager.forApp(context)`, `useKey { key -> ... }` | The SQLCipher key: 32 random bytes, stored only wrapped (AES-256-GCM, Keystore KEK `pft_db_kek`) in `noBackupFilesDir/pft_db_key.bin`. `useKey` wipes the key after the block. Fails closed with `DbKeyUnavailable(reason)` and never creates a key over an existing key file or an existing `pft.db`. The KEK is not user-auth-bound, because M1b's SMS receiver writes while locked |
 | `DatabaseFactory.forApp(context).open()` | Opens `pft.db` through SQLCipher: key first (before the file exists), then the pre-migration backup, then `PftDatabase.create` over SQLCipher's open helper, opened eagerly. SQLCipher keeps and re-uses the key array it is given, so it is handed a **copy** that lives as long as the database (wiping it would key later connections with zeros). Throws `DbKeyUnavailable` or `PreMigrationBackupFailed`; creates and deletes nothing in either case |
 | `PreMigrationBackup`, `PreMigrationBackupFailed` | Copies the still-encrypted database (and its `-wal`) to `noBackupFilesDir/backups/pre-migration-v{n}.db` (n = the old schema version) before a migration, keeps the newest 3, never copies the key, `rwx------`/`rw-------`. Records the last-opened version in `noBackupFilesDir/pft_schema_version` |
-| `DatabaseStartup` (`Ready(database)`, `KeyUnavailable(reason)`), `DatabaseStartup.open(factory)` | How opening ended; only `DbKeyUnavailable` becomes a result |
+| `DatabaseStartup` (`Ready(database)`, `KeyUnavailable(reason)`), `DatabaseStartup.open(factory)` | How opening ended; only `DbKeyUnavailable` becomes a result. Logs `db_opened schema=<n> ms=<n>` or `db_key_unavailable reason=<code>` through `SafeLog` (nothing else) |
 | `PftApplication.startup` | The one opening of the database, on first access (lazy); `MainActivity` reads it. A5's `AppContainer` takes this over |
 | `ui/startup/KeyUnavailableScreen(reason)` | The fail-closed screen: a plain explanation, a warning not to clear storage or uninstall, and `Code: <reason>`. No path, key or exception detail; no reset action |
 
@@ -223,7 +245,7 @@ release signing key installs as a new app with an empty database; plan §12 Q4),
 target/compile SDK 35, JDK 17. Pinned versions are in `gradle/libs.versions.toml`.
 Runtime appearance (`ThemePrefs`: mode, dynamic colour, light palette, dark palette, background, header glow, display font, type pairing) is a plain value that defaults to
 `SYSTEM` + dynamic colour off + Graphite for both light and dark + tonal background + no header glow + bundled serif + hero-only type; the settings screen and its `app_setting` storage arrive in AP1, so today
-nothing reads or writes a setting. Colours, like all design tokens, are static code constants, and screens never hardcode them: `ThemeLiteralScanTest` fails on any `Color(...)`, named `Color.*` (except `Transparent` and `Unspecified`), `FontFamily` or `R.font.*` outside `ui/theme`.
+nothing reads or writes a setting. Colours, like all design tokens, are static code constants, and screens never hardcode them: `ThemeLiteralScanTest` (over the shared `SourceScan`) fails on any `Color(...)`, named `Color.*` (except `Transparent` and `Unspecified`), `FontFamily` or `R.font.*` outside `ui/theme`.
 
 ## Dependencies
 
@@ -346,4 +368,7 @@ The JVM tests of the key logic are `DbKeyManagerJvmTest` (real AES-GCM with an i
 rules; `DatabaseFactoryTest` (Robolectric, a framework open helper in SQLCipher's place) pins the
 order of events and that the key array handed over stays intact; `DatabaseStartupTest`,
 `KeyUnavailableScreenTest` and `MainActivityStartupTest` (Robolectric has no Keystore, so it
-exercises the real fail-closed path end to end) cover the screen and that nothing is created.
+exercises the real fail-closed path end to end) cover the screen and that nothing is created;
+`DatabaseStartupTest` also asserts that each outcome logs exactly one `pft` line, matching the
+pattern above, with no path, file name or exception text. A5a adds `LogEventTest`, `LogEventShapeTest`,
+`SafeLogTest` (Robolectric, `ShadowLog`) and `LoggingScanTest`.

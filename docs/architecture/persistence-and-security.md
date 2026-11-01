@@ -172,7 +172,14 @@ reopen). Tamper-resistance against someone holding the key is out of scope.
 ## What logs may contain
 
 Nothing in this layer logs key material, amounts, payees, message text or account identifiers.
-`DbKeyUnavailable` and `PreMigrationBackupFailed` carry fixed codes. SQLCipher itself logs one line
+`DbKeyUnavailable` and `PreMigrationBackupFailed` carry fixed codes.
+
+The app logs only through `SafeLog.event(LogEvent)` (A5a). A `LogEvent` can hold only numbers,
+booleans, enums and durations, so no text can reach logcat. `DatabaseStartup.open` writes
+`db_opened schema=<n> ms=<n>` or `db_key_unavailable reason=<code>` and nothing else about the open (no path,
+key or exception text). Direct `android.util.Log` is banned by detekt `ForbiddenImport` (one exception,
+`SafeLog.kt`), and `LoggingScanTest` rejects `println`, `System.out/err` and `printStackTrace` in
+`app` and `core` sources. Details: `app/README.md` "`log`". SQLCipher itself logs one line
 per connection, `Database keying operation returned:<code>` (the status, never the key), at INFO.
 
 ## Corruption handling
