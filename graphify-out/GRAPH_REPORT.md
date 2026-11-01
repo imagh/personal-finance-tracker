@@ -1,7 +1,7 @@
 # Graph Report - personal-finance-tracker  (2026-11-01)
 
 ## Corpus Check
-- 266 files · ~206,501 words
+- 266 files · ~206,832 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 124 file(s) not represented in the graph (top: .xml 102, .lockfile 8, (none) 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `578634ad`
+- Built from commit: `6514f7f1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
