@@ -2,7 +2,7 @@
 
 A private, offline-first Android app for tracking a household's expenses, budgets, loans (EMIs) and goals. It logs transactions automatically from SMS and email, parsed on-device, with local encrypted SQLite storage. Personal use for two people; accuracy, integrity, privacy and security come first.
 
-**Status:** Gradle skeleton and quality gates in place (M1a slice A1), `core/money`, the `core/ledger` foundations (A3) the Room database v1 with its core adapters (A4a), and its SQLCipher encryption with the Keystore-wrapped key and pre-migration backup (A4b) built, and first-run setup (A5): the app opens to a Setup screen (your name and this phone's name) and then a placeholder Home, and later launches go straight to Home. No ledger features yet. Current milestone: M1a (core ledger).
+**Status:** Slice A (the foundation) is complete. Built: the Gradle skeleton and quality gates, `core/money`, the `core/ledger` foundations (ids, identity, audit trail, `AuditedWriter`), the Room database v1 with its core adapters, SQLCipher encryption with a Keystore-wrapped key and a pre-migration backup, the design system, and first-run setup. On first run the app opens to a Setup screen (your name and this phone's name) and then a placeholder Home; later launches go straight to Home. The database (`pft.db`) is SQLCipher-encrypted, and its key is wrapped by the Android Keystore. No ledger features yet. Current milestone: M1a (core ledger); next is slice B (accounts and categories).
 
 | Read | For |
 |---|---|
@@ -34,6 +34,7 @@ A private, offline-first Android app for tracking a household's expenses, budget
 ./gradlew :app:assembleDebug      # debug APK
 ./gradlew :app:assembleRelease    # minified (R8), unsigned release APK; `check` also runs :app:verifyReleaseShrink
 ./gradlew :app:recordRoborazziDebug  # re-record screenshot goldens after a deliberate visual change (`check` verifies them)
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest  # instrumented tests (SQLCipher, Keystore) on the pft35 emulator; not part of `check`
 ./gradlew dependencyCheckAggregate  # vulnerability gate on shipped code; needs NVD_API_KEY, OSSINDEX_USERNAME, OSSINDEX_TOKEN (PR security step)
 ./gradlew dependencyCheckAggregate -PscanAll  # report-only scan of all build/test tooling (PR security step)
 ```

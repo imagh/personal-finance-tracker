@@ -256,7 +256,8 @@ Packages `dev.imagh.pft.app.ui.nav` and `dev.imagh.pft.app.ui.home`. Concrete, n
 (`ManifestHardeningTest` pins it). On API 35 with the developer option "Predictive back animations"
 (`enable_back_animation`), a slow back swipe from the catalogue showed Home sliding in from the start
 while the catalogue followed the finger out to the end, with `PftMotion`'s pop transition, and a
-released swipe popped to Home. No glitch was seen. Back on Home finishes the activity. The result is
+released swipe popped to Home. No glitch was seen. Back on Home finishes the activity. The owner
+watched the animation on a visible emulator and approved its look on 2026-11-03. The result is
 recorded in `docs/architecture/design-system.md` and the learnings.
 
 **Lint.** Navigation's own lint checks (`WrongStartDestinationType`, `WrongNavigateRouteType`,
