@@ -1,0 +1,93 @@
+# Single source of truth for every pinned version (docs/TECHNICAL.md §7.1, plan §3.3).
+# Exact pins only; never a range or "+". Locked in gradle.lockfile and checksum-verified in
+# gradle/verification-metadata.xml. Later slices add their libraries here as they need them.
+
+[versions]
+agp = "8.7.3"
+kotlin = "2.1.0"
+ksp = "2.1.0-1.0.29"
+room = "2.7.1"
+# SQLCipher for Android (A4b); bundles its own SQLite. Pairing with Room 2.7.1 is proven by the instrumented EncryptedDatabaseTest.
+sqlcipher = "4.7.2"
+composeBom = "2024.10.01"
+activityCompose = "1.9.3"
+# A5c: navigation host and the lifecycle family (moves 2.8.3 -> 2.8.7); declared before app code uses them.
+# 2.8.9 (from 2.8.4) because under AGP 8.7.3 the 2.8.4 lint detectors crash and abort lint (issue #46).
+navigationCompose = "2.8.9"
+lifecycle = "2.8.7"
+# Declared at the version resolution already selected (1.7.3), not bumped.
+coroutines = "1.7.3"
+junitBom = "5.11.3"
+junit4 = "4.13.2"
+kotest = "5.9.1"
+robolectric = "4.14.1"
+roborazzi = "1.36.0"
+androidxTestCore = "1.6.1"
+# AndroidX Test 1.6 release set, with core 1.6.1 and monitor 1.7.2 (the instrumented tests' runner).
+androidxTestRunner = "1.6.2"
+ktlintPlugin = "12.1.2"
+ktlintEngine = "1.4.1"
+detekt = "1.23.7"
+jacoco = "0.8.12"
+owasp = "11.1.1"
+
+[libraries]
+# Build-logic plugin artifacts (compileOnly there; the root build supplies them at runtime).
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+ktlint-gradle-plugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintPlugin" }
+detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+
+# Compose (versions come from the BOM).
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+# @Preview / @PreviewLightDark annotations (tiny). The renderer (ui-tooling) is debug-only.
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+# Compose tests (design-system plan §3.8). ui-test-manifest is deliberately NOT used: it adds an
+# exported ComponentActivity to the debug manifest (ManifestHardeningTest forbids that); the JVM
+# tests register the host activity with Robolectric instead (HostedComposeRule).
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+# Navigation and lifecycle (A5c). navigation-compose brings kotlinx-serialization-core at runtime;
+# the serialization compiler plugin is NOT applied (plan 2026-11-01 D3).
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+# Dispatchers, StateFlow and viewModelScope are used directly by app code.
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# Persistence (plan §3.3). Room runs over SQLCipher (A4b). Its compiler runs through KSP.
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
+
+# Tests.
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junitBom" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+# Instrumented tests on the pft35 emulator (SQLCipher and the Keystore, plan §3.2 #14).
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+# Screenshot tests (design-system plan §3.8): 1.36.0 is built against Robolectric 4.14.1 / Compose 1.7.5.
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp" }

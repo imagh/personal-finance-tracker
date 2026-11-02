@@ -182,6 +182,12 @@ app/, core/<module>/       # code; each module has its own README.md next to it
 
 ## 6. Workflow for any new development
 
+**One worktree per session (hard rule).** Every session works in its own git worktree
+(`git worktree add <unique-parent>/personal-finance-tracker <branch>`; keep that folder name, since
+graphify titles its report after it) and runs every git, Gradle and file command there; it passes
+that path to every agent it spawns. Never check out, reset or commit in the shared root checkout,
+and remove the worktree once the branch is pushed. Why: `docs/learnings/README.md` (2026-10-29).
+
 1. **Plan** — invoke the architect (`/architect` or the `architect` sub-agent). It produces a
    documented plan in `docs/plans/` following `docs/plans/_TEMPLATE.md`, including a
    TDD-ordered step list, the documentation updates required, and an **incremental PR

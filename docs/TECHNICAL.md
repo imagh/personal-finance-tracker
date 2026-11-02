@@ -158,7 +158,7 @@ Everything is built and tested **locally on the owner's machine**; see [local se
 | Gradle | **8.10.2** | 2024-09-23 | Wrapper pinned with `distributionSha256Sum=31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26`. |
 | Kotlin | **2.1.0** | 2024-11-27 | Kotlin Gradle plugin 2.1.0 is tested with AGP up to 8.7 and Gradle up to 8.10 ([Kotlin–Gradle–AGP table](https://kotlinlang.org/docs/gradle-configure-project.html)). |
 | Compose compiler | plugin `org.jetbrains.kotlin.plugin.compose` **2.1.0** | with Kotlin | Ships with Kotlin since 2.0, so it is versioned with Kotlin. |
-| Compose BOM | **2024.10.01** | Oct 2024 | Compose UI 1.7.5, Material 3 1.3.0 ([BOM mapping](https://developer.android.com/develop/ui/compose/bom/bom-mapping)). |
+| Compose BOM | **2024.10.01** | Oct 2024 | Compose UI 1.7.5, Material 3 1.3.1, as resolved by the BOM ([BOM mapping](https://developer.android.com/develop/ui/compose/bom/bom-mapping)). |
 | KSP | **2.1.0-1.0.29** | 2024-11-27 | Matches Kotlin 2.1.0; used by Room. |
 | Room | **2.7.1** | 2025-04-23 | Owner chose the newer line over 2.6.1. Requires compileSdk 34 or newer; uses `androidx.sqlite` 2.5.0. |
 | SQLCipher | `net.zetetic:sqlcipher-android` **4.7.2** | 2025-03-31 | Encryption layer that bundles its own SQLite, so it was picked newer for security fixes. Needs `androidx.sqlite` 2.2.0 or newer. Move up if the scan flags a SQLite CVE. |
@@ -166,7 +166,7 @@ Everything is built and tested **locally on the owner's machine**; see [local se
 | SDK packages | `platform-tools`, `platforms;android-35`, `build-tools;34.0.0`, `emulator`, `system-images;android-35;google_apis;arm64-v8a` | — | build-tools 34.0.0 is AGP 8.7's default. The emulator and one Google APIs image are the development device (the primary phone never gets USB debugging). Nothing else: no NDK, CMake, Google Play or extra system images unless a task needs them. |
 | Android Studio | current stable (not pinned) | — | A development tool, not part of the build. A newer Studio opens an AGP 8.7 project, and older versions miss security fixes. Ignore its prompts to upgrade AGP. |
 
-Room 2.7.1 with SQLCipher 4.7.2 has not been exercised together yet; the first M1a test that opens an encrypted database confirms the pairing.
+Room 2.7.1 with SQLCipher 4.7.2 is **confirmed working** (slice A4b, 2026-10-30): the instrumented `EncryptedDatabaseTest` opens, writes, reopens and enforces the audit triggers on an encrypted `PftDatabase` on the `pft35` emulator. Note that sqlcipher-android 4.7.2 bundles SQLite **3.49.1**, which the vulnerability scan cannot see (it does not read native libraries) and which is older than 3.50.2 (CVE-2025-6965); 4.10.0 bundles 3.50.4. See `docs/architecture/persistence-and-security.md` and the A4b learnings entry. Moving up is an owner decision.
 
 ## 8. Token and cost discipline
 
