@@ -21,4 +21,7 @@
     <string name="money_budget_under">Under budget</string>
     <string name="money_budget_near_limit">Budget near its limit</string>
     <string name="money_budget_over">Over budget</string>
+    <!-- Form blocks (NameField, EditFormScaffold). The limit in field_too_long comes from core's validation. -->
+    <string name="field_required">Required</string>
+    <string name="field_too_long">At most %1$d characters</string>
 </resources>
