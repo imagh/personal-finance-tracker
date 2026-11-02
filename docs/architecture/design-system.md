@@ -324,6 +324,14 @@ primary action.
   per the plan; the screen's figure must also be reachable in the list if it matters in landscape.
 - **`BottomActionBar`.** One full-width primary `Button`, or an outlined secondary plus the primary
   on the end side. At least 56dp tall (the touch-target floor is 48dp). Built from `BottomBarAction(label, enabled, onClick)`.
+- **`EditFormScaffold` and `NameField` (A5d).** Every create/edit screen is a `Standard` header plus a
+  `BottomActionBar` holding the one primary action (Save, Continue), which is disabled while `saving`.
+  An optional back `HeaderIconButton` goes in the action row (48dp target; Setup has none). The
+  scaffold adds **no** `imePadding()`: `CollapsingHeaderScaffold` already wraps its bottom bar in one,
+  and a second would pad twice. `NameField` is an M3 `OutlinedTextField` (single line, words
+  capitalised) with the error as supporting text; it never clips what the user typed, so a length
+  error is shown, not enforced. Goldens: `form-light`, `form-dark`, `form-light-2x` (`FormScreenshotTest`);
+  the catalogue's Forms page is live.
 - **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
   subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
   about 56dp). A long hero shrinks to fit (DS5's `MoneyText`, below): `CollapsingHeaderScaffoldTest`

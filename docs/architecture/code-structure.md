@@ -26,8 +26,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # `Modifier.headerGlow`), BottomActionBar
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
                                          # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
+                                         # FieldState/FieldError/FieldCheck + LedgerErrorMapping (A5d), NameField, EditFormScaffold (A5d);
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
-                                         # EmptyStateSamples, CategoryGlyphSamples: previews, catalogue and goldens share them, R8 drops them)
+                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v1), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
@@ -135,6 +136,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/theme`) | `PftSymbol` (92 Material Symbols, permanent keys, `fromKey`) | `CategoryGlyph`; chrome icons everywhere (DS6e `HeaderIconButton`, A5 nav, B4 symbol grid) | DS3 |
 | app UI (`ui/theme`) | `CategoryPalette` (`PftTheme.palette`, 12 named hues, light and dark), `GlyphSize` | `CategoryGlyph`; B4 palette swatches | DS3 |
 | app UI (`ui/common`) | `CategoryGlyph` + `GlyphSource` (`fromIconKey` parses `icon_key`) | B2 account type, B4, C4 rows, `CategoryPicker`, D4, E4 | DS3 |
+| app UI (`ui/common`) | `FieldState` / `FieldCheck` / `FieldError` + `LedgerError.toFieldError()` (exhaustive; non-field errors map to null) | A5e `SetupViewModel`, B2 account edit, B3/B5, every form ViewModel | A5d |
+| app UI (`ui/common`) | `NameField` (never truncates; error text from `FieldError`) | A5e Setup, B2 account edit, B3/B5 forms, D/E/F/G edit screens | A5d |
+| app UI (`ui/common`) | `EditFormScaffold` (Standard header + `BottomActionBar`; optional Back; `saving` guard) | A5e Setup, B2 account edit, B3/B5 forms, D/E/F/G edit screens | A5d |
 
 The remaining app-UI building blocks (`EntityListScreen`, `AmountField`, `AuditHistoryList`, ...) are
 added to this table by A5, B2 and C5.
