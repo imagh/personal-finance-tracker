@@ -27,4 +27,11 @@
     <!-- Default primary action of EditFormScaffold, and the spoken label of its Back button. -->
     <string name="form_save">Save</string>
     <string name="form_back">Back</string>
+    <!-- First-run setup (SetupScreen): who is using this phone. -->
+    <string name="setup_title">Welcome</string>
+    <string name="setup_subtitle">Set up this phone</string>
+    <string name="setup_intro">Everything you add is marked with your name and this phone. Your data stays on this phone, encrypted.</string>
+    <string name="setup_name_label">Your name</string>
+    <string name="setup_device_label">This phone\'s name</string>
+    <string name="setup_continue">Continue</string>
 </resources>
