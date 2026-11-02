@@ -44,6 +44,14 @@ sealed interface LogEvent {
     data object IdentityCorrupt : LogEvent {
         override fun line(): String = render("identity_corrupt")
     }
+
+    /**
+     * First-run setup finished: the user, the device and the current-device setting were saved. It
+     * carries no fields, so neither the name nor the phone label (nor any id) can reach logcat.
+     */
+    data object SetupCompleted : LogEvent {
+        override fun line(): String = render("setup_completed")
+    }
 }
 
 /**
