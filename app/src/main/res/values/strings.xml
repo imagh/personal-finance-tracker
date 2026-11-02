@@ -34,4 +34,8 @@
     <string name="setup_name_label">Your name</string>
     <string name="setup_device_label">This phone\'s name</string>
     <string name="setup_continue">Continue</string>
+    <!-- Home placeholder (HomeScreen): who is using this phone, until C4 brings the real Home. -->
+    <string name="home_title">Home</string>
+    <string name="home_subtitle">%1$s · %2$s</string>
+    <string name="home_placeholder">Accounts and transactions arrive in the next update</string>
 </resources>
