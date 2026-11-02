@@ -238,8 +238,9 @@ outside `[0, 1)` (NaN included) and a duration of 0 or less with `IllegalArgumen
   catalogue back to Home showed the pop transition tracking the finger (Home sliding in from the
   start, the catalogue following the finger out to the end), and a released swipe committed the pop
   and landed on Home with the app still running. No glitch was observed. Verified through
-  `uiautomator dump` mid-gesture (node bounds), because `FLAG_SECURE` blanks screencap, so the
-  *look* of the animation is still for the owner to judge on the emulator window.
+  `uiautomator dump` mid-gesture (node bounds), because `FLAG_SECURE` blanks screencap, so that
+  check could not show the *look*. **Owner-approved 2026-11-03:** the owner watched the animation, on the build current at 2026-11-03 (navigation 2.8.9), on a
+  visible emulator and approved its look.
 - **Press feedback:** `Modifier.pressScale()` scales to 0.97 (`PftMotion.PRESSED_SCALE`) with `snappy`
   while a pointer is down, and back on release or cancel. Put it before `clickable` on rows, cards,
   glyph tiles and keypad keys; it only observes pointers, so the ripple and the tap are untouched
