@@ -1,7 +1,7 @@
 # Graph Report - personal-finance-tracker  (2026-11-02)
 
 ## Corpus Check
-- 306 files · ~226,763 words
+- 306 files · ~227,382 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 124 file(s) not represented in the graph (top: .xml 102, .lockfile 8, (none) 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `253cfb39`
+- Built from commit: `ef645f48`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,7 +25,7 @@
 - hooks
 - test_import_symbols.py
 - AccentCheckSection.kt
-- ThemeResolutionTest
+- ThemePrefs
 - MoneyTextTest
 - `build-logic` — convention plugins
 - Data portability (D-1..D-3)
@@ -37,7 +37,7 @@
 - DesignCatalog.kt
 - PftSymbol
 - CollapsingHeaderScaffoldTest
-- SampleId
+- RoomEntityRepositoryTest.kt
 - 9. Documentation updates (all required surfaces)
 - How to run and test
 - CollapsingHeaderScaffold.kt
@@ -53,25 +53,25 @@
 - Project README
 - PftTypographyTest.kt
 - PftMotion.kt
-- HeaderTypePairingTest
+- HeaderTypePairingTest.kt
 - `ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)
 - CLAUDE.md Development Constitution
 - HeaderIconButtonTest.kt
 - CategoryGlyphScreenshotTest
 - SetupScreenshotTest.kt
-- AuditEntryMapperTest.kt
+- AuditEntryMapperTest
 - PftThemeModeTest
 - RoomAuditColumnsTest
-- LedgerEntity
+- EntityMeta
 - ContentScreenshotTest
 - DbKeyManagerTest.kt
 - MoneyText.kt
 - Collecting and Redacting Sample Messages Guide
 - UserId
 - redact_text
-- SetupFlowTest.kt
+- SetupViewModelTest
 - asserttrue
-- 13. Deviations from the plan, by slice
+- TypePairing
 - Pseudo
 - GroupedSection.kt
 - 3.4 Reuse by layer (owner decision, 2026-10-28)
@@ -99,17 +99,17 @@
 - ThemePaletteTest
 - LedgerError
 - CollapsingHeaderScaffold
-- GroupedSectionTest
+- GroupedSectionTest.kt
 - PftTheme
 - DbKeyManager
 - ThemePalette
 - DevRouteTest.kt
-- Appearance: colour palettes, dynamic colour, background and type
+- Plan: M1a — Core ledger (manual-entry household tracker)
 - DatabaseStartupTest.kt
-- MoneyToneTest
+- Paise
 - Migrations.kt
-- LoggingScanTest
-- AppSettingEntity
+- ThemeLiteralScanTest
+- PftDatabase.kt
 - MotionSection.kt
 - How to run and test
 - parse_svg
@@ -117,10 +117,10 @@
 - BundledFontTest
 - HostedComposeRule
 - ImportRunTest
-- AppServices
+- PftNavHost
 - InMemoryKekSource
 - Personal Finance Tracker PRD
-- DataUnavailableScreenTest
+- assertisdisplayed
 - Layered Modular Architecture (core vs app)
 - LogEvent
 - AppContainer
@@ -132,15 +132,15 @@
 - shouldbe
 - WindowThemeTest
 - `di` and startup (A5b)
-- modifier
+- CategoryGlyph.kt
 - 7. Test plan
 - SetupViewModel
 - 7. Test plan
 - BottomActionBarSurfaceTest.kt
 - PaiseParser
 - IdentityRoomIntegrationTest
-- ThemePrefs
-- CategoryPaletteTest
+- EmptyState
+- assertnotequals
 - BaseDao
 - ManifestHardeningTest
 - 6. Implementation steps (TDD-ordered)
@@ -157,7 +157,7 @@
 - .fromIconKey
 - DatabaseFactory
 - HomeScreenTest.kt
-- LogEventTest
+- assertequals
 - DbKeyManagerWiringTest.kt
 - ThemePrefsTest
 - NameField
@@ -239,7 +239,7 @@ Nodes (13): always_run, entry, exclude, files, id, language, name, pass_filename
 Cohesion: 0.07
 Nodes (5): AccentCheckSection(), AmountRow(), Caption(), MoneyTextPreview(), MoneyTextSamples()
 
-### Community 9 - "ThemeResolutionTest"
+### Community 9 - "ThemePrefs"
 Cohesion: 0.11
 Nodes (6): dynamicPaletteColors(), resolveColorScheme(), resolvePaletteColors(), ThemePrefs, ThemeResolutionTest, 6.1 Slices
 
@@ -271,7 +271,7 @@ Nodes (93): PftSymbol, ACCOUNT_BALANCE, ACCOUNT_BALANCE_WALLET, ADD, BACK, BAKER
 Cohesion: 0.08
 Nodes (3): BottomBarAction, CollapsingHeaderScaffoldTest, Steps
 
-### Community 29 - "SampleId"
+### Community 29 - "RoomEntityRepositoryTest.kt"
 Cohesion: 0.23
 Nodes (3): RoomEntityRepositoryTest, SampleId, SampleThingRepository
 
@@ -335,7 +335,7 @@ Nodes (3): NavTransitionTest, PftThemeModeTest, TokenSheetScreenshotTest
 Cohesion: 0.14
 Nodes (3): Probe, RoomAuditColumnsTest, AuditColumnsCheck
 
-### Community 54 - "LedgerEntity"
+### Community 54 - "EntityMeta"
 Cohesion: 0.05
 Nodes (26): `data` (Room persistence, A4a), MetaColumns, MetaMapper, MetaMapperTest, EntityMeta, LedgerEntity, EntityId, AuditFieldsCheckTest (+18 more)
 
@@ -355,7 +355,7 @@ Nodes (10): RoomIdentityRepository, RoomIdentityRepositoryTest, AuditedTable, Au
 Cohesion: 0.33
 Nodes (4): mask_run(), redact_text(), amt(), hold()
 
-### Community 61 - "SetupFlowTest.kt"
+### Community 61 - "SetupViewModelTest"
 Cohesion: 0.15
 Nodes (3): awaitMain(), FailsFirstAppend, SetupViewModelTest
 
@@ -363,7 +363,7 @@ Nodes (3): awaitMain(), FailsFirstAppend, SetupViewModelTest
 Cohesion: 0.15
 Nodes (3): assertShownInFull(), isShownInFull(), layout()
 
-### Community 63 - "13. Deviations from the plan, by slice"
+### Community 63 - "TypePairing"
 Cohesion: 0.10
 Nodes (24): pftMaterialTypography(), DisplayFont, BUNDLED_SERIF, SYSTEM_SERIF, TEXT, SansFont, FIGTREE, PLUS_JAKARTA_SANS (+16 more)
 
@@ -447,11 +447,11 @@ Nodes (3): DbKeyManager, Decoded, WrappedKeyFormat
 Cohesion: 0.17
 Nodes (8): colors(), ThemePalette, AUBERGINE, GRAPHITE, IVORY, MIDNIGHT, paletteFor(), ChipColorsTest
 
-### Community 98 - "Appearance: colour palettes, dynamic colour, background and type"
+### Community 98 - "Plan: M1a — Core ledger (manual-entry household tracker)"
 Cohesion: 0.10
 Nodes (17): Data protection: encrypted storage and the "can't open your data" screen, Not built yet, The "Your data can't be opened" screen, What it does for you, Behaviour details, First run and profiles, What it does for you, 10. Risks & mitigations (+9 more)
 
-### Community 102 - "LoggingScanTest"
+### Community 102 - "ThemeLiteralScanTest"
 Cohesion: 0.16
 Nodes (5): LoggingScanTest, SourceScan, Violation, ThemeLiteralScanTest, Planned: premium look (DS6)
 
@@ -475,7 +475,7 @@ Nodes (4): LogEventShapeTest, TextBearing, NameFieldTest, BundledFontTest
 Cohesion: 0.14
 Nodes (3): HostedComposeRule, RegisterHostActivity, ReleaseHasNoCatalogueTest
 
-### Community 111 - "AppServices"
+### Community 111 - "PftNavHost"
 Cohesion: 0.12
 Nodes (9): `ui/nav` and `ui/home` (A5f), HomeRoute(), HomeScreen(), PftNavHost(), Routes, SetupRoute(), SetupScreen(), Where it lives (+1 more)
 
@@ -523,7 +523,7 @@ Nodes (25): RoomAuditLog, AuditDaoTest, FieldChange, AuditAction, ARCHIVE, CREAT
 Cohesion: 0.22
 Nodes (10): `di` and startup (A5b), AppStart, KeyUnavailable, IdentityCorrupt, KeyUnavailable, LaunchState, Opening, Ready (+2 more)
 
-### Community 126 - "modifier"
+### Community 126 - "CategoryGlyph.kt"
 Cohesion: 0.19
 Nodes (6): fixedSp(), GlyphSize, Chip, Hero, Adding an icon, Icons and emoji (DS3, UI-6)
 
@@ -595,16 +595,16 @@ Nodes (5): Appearance: colour palettes, dynamic colour, background and type, Beh
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `How to run and test` connect `How to run and test` to `7. Test plan`, `BottomActionBarSurfaceTest.kt`, `IdentityRoomIntegrationTest`, `ThemePrefs`, `CategoryPaletteTest`, `ManifestHardeningTest`, `ThemeResolutionTest`, `MoneyTextTest`, `LaunchRoutingTest.kt`, `PftSurfacesTest`, `ColorContrastTest`, `6.1 Design-system slice: PRs into `feat/m1a-foundation``, `SafeLogTest`, `HomeScreenTest.kt`, `LogEventTest`, `DbKeyManagerWiringTest.kt`, `ThemePrefsTest`, `PftSymbol`, `.check`, `SampleId`, `9. Documentation updates (all required surfaces)`, `CollapsingHeaderScaffoldTest`, `CollapsingHeaderScaffold.kt`, `BackgroundStyle`, `DbKeyManagerJvmTest`, `HeaderGlowScaffoldTest.kt`, `PftTypographyTest`, `CategoryGlyph`, `PftShapesTest.kt`, `GlyphSourceTest`, `AppContainerTest.kt`, `CategoryGlyphScreenshotTest`, `SetupScreenshotTest.kt`, `AuditEntryMapperTest.kt`, `PftThemeModeTest`, `RoomAuditColumnsTest`, `LedgerEntity`, `ContentScreenshotTest`, `DbKeyManagerTest.kt`, `UserId`, `SetupFlowTest.kt`, `3.4 Reuse by layer (owner decision, 2026-10-28)`, `SetupFlowTest.kt`, `MainActivityOpeningTest.kt`, `runSuspending`, `13. Deviations from the plan, by slice`, `Previews, the token sheet and screenshot goldens`, `SetupScreenTest.kt`, `PftSymbolTest`, `SampleThing.kt`, `MigrationTestSupport`, `PreMigrationBackupTest`, `StatusChip`, `ThemePaletteTest`, `CollapsingHeaderScaffold`, `GroupedSectionTest`, `PftTheme`, `ThemePalette`, `DevRouteTest.kt`, `DatabaseStartupTest.kt`, `MoneyToneTest`, `LoggingScanTest`, `BundledFontTest`, `HostedComposeRule`, `DataUnavailableScreenTest`, `AppContainer`, `FieldState`, `BundledSymbolsLicenceTest`, `shouldbe`, `WindowThemeTest`?**
-  _High betweenness centrality (0.263) - this node is a cross-community bridge._
+- **Why does `How to run and test` connect `How to run and test` to `7. Test plan`, `BottomActionBarSurfaceTest.kt`, `IdentityRoomIntegrationTest`, `EmptyState`, `assertnotequals`, `ManifestHardeningTest`, `ThemePrefs`, `MoneyTextTest`, `LaunchRoutingTest.kt`, `PftSurfacesTest`, `ColorContrastTest`, `6.1 Design-system slice: PRs into `feat/m1a-foundation``, `SafeLogTest`, `HomeScreenTest.kt`, `assertequals`, `DbKeyManagerWiringTest.kt`, `ThemePrefsTest`, `PftSymbol`, `.check`, `RoomEntityRepositoryTest.kt`, `9. Documentation updates (all required surfaces)`, `CollapsingHeaderScaffoldTest`, `CollapsingHeaderScaffold.kt`, `BackgroundStyle`, `DbKeyManagerJvmTest`, `HeaderGlowScaffoldTest.kt`, `PftTypographyTest`, `CategoryGlyph`, `PftShapesTest.kt`, `GlyphSourceTest`, `AppContainerTest.kt`, `CategoryGlyphScreenshotTest`, `SetupScreenshotTest.kt`, `AuditEntryMapperTest`, `PftThemeModeTest`, `RoomAuditColumnsTest`, `EntityMeta`, `ContentScreenshotTest`, `DbKeyManagerTest.kt`, `UserId`, `SetupViewModelTest`, `3.4 Reuse by layer (owner decision, 2026-10-28)`, `SetupFlowTest.kt`, `MainActivityOpeningTest.kt`, `runSuspending`, `13. Deviations from the plan, by slice`, `Previews, the token sheet and screenshot goldens`, `SetupScreenTest.kt`, `PftSymbolTest`, `SampleThing.kt`, `MigrationTestSupport`, `PreMigrationBackupTest`, `StatusChip`, `ThemePaletteTest`, `CollapsingHeaderScaffold`, `GroupedSectionTest.kt`, `PftTheme`, `ThemePalette`, `DevRouteTest.kt`, `DatabaseStartupTest.kt`, `Paise`, `ThemeLiteralScanTest`, `BundledFontTest`, `HostedComposeRule`, `assertisdisplayed`, `AppContainer`, `FieldState`, `BundledSymbolsLicenceTest`, `shouldbe`, `WindowThemeTest`?**
+  _High betweenness centrality (0.268) - this node is a cross-community bridge._
 - **Are the 49 inferred relationships involving `PftTheme()` (e.g. with `Purpose` and ``ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)`) actually correct?**
   _`PftTheme()` has 49 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `TOKENS`, `MOTION`, `BOTTOM_BAR` to the rest of the system?**
   _198 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `docs/TECHNICAL.md` be split into smaller, more focused modules?**
   _Cohesion score 0.1368421052631579 - nodes in this community are weakly interconnected._
-- **Why does `PftTheme()` connect `PftTheme` to `BottomActionBarSurfaceTest.kt`, `ThemePrefs`, `AccentCheckSection.kt`, `ThemeResolutionTest`, `MoneyTextTest`, `LaunchRoutingTest.kt`, `ColorContrastTest`, `BottomActionBar.kt`, `6.1 Design-system slice: PRs into `feat/m1a-foundation``, `MoneyTextTest.kt`, `PftSpacing`, `HomeScreenTest.kt`, `NameField`, `DesignCatalog.kt`, `CategoryPalette`, `CollapsingHeaderScaffoldTest`, `9. Documentation updates (all required surfaces)`, `StatusChipSamples.kt`, `CollapsingHeaderScaffold.kt`, `BackgroundStyle`, `How to run and test`, `HeaderGlowScaffoldTest.kt`, `PftTypographyTest`, `CategoryGlyph`, `PftShapesTest.kt`, `Project README`, `PftTypographyTest.kt`, `PftMotion.kt`, `HeaderTypePairingTest`, ``ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)`, `HeaderIconButtonTest.kt`, `CategoryGlyphScreenshotTest`, `SetupScreenshotTest.kt`, `PftThemeModeTest`, `ContentScreenshotTest`, `MoneyText.kt`, `asserttrue`, `13. Deviations from the plan, by slice`, `GroupedSection.kt`, `SetupFlowTest.kt`, `13. Deviations from the plan, by slice`, `Previews, the token sheet and screenshot goldens`, `SetupScreenTest.kt`, `modifier`, `Plan: M1a design system and visual direction (lands before A5)`, `StatusChip`, `CollapsingHeaderScaffold`, `GroupedSectionTest`, `DevRouteTest.kt`, `MotionSection.kt`, `BundledFontTest`, `HostedComposeRule`, `DataUnavailableScreenTest`, `AppContainer`, `modifier`, `7. Test plan`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Why does `PftTheme()` connect `PftTheme` to `BottomActionBarSurfaceTest.kt`, `EmptyState`, `AccentCheckSection.kt`, `ThemePrefs`, `MoneyTextTest`, `LaunchRoutingTest.kt`, `ColorContrastTest`, `BottomActionBar.kt`, `6.1 Design-system slice: PRs into `feat/m1a-foundation``, `MoneyTextTest.kt`, `PftSpacing`, `HomeScreenTest.kt`, `NameField`, `DesignCatalog.kt`, `CategoryPalette`, `CollapsingHeaderScaffoldTest`, `9. Documentation updates (all required surfaces)`, `StatusChipSamples.kt`, `CollapsingHeaderScaffold.kt`, `BackgroundStyle`, `How to run and test`, `HeaderGlowScaffoldTest.kt`, `PftTypographyTest`, `CategoryGlyph`, `PftShapesTest.kt`, `Project README`, `PftTypographyTest.kt`, `PftMotion.kt`, `HeaderTypePairingTest.kt`, ``ui/theme` (design-system tokens, DS1, DS2, DS3, DS4)`, `HeaderIconButtonTest.kt`, `CategoryGlyphScreenshotTest`, `SetupScreenshotTest.kt`, `PftThemeModeTest`, `ContentScreenshotTest`, `MoneyText.kt`, `asserttrue`, `TypePairing`, `GroupedSection.kt`, `SetupFlowTest.kt`, `13. Deviations from the plan, by slice`, `Previews, the token sheet and screenshot goldens`, `SetupScreenTest.kt`, `modifier`, `Plan: M1a design system and visual direction (lands before A5)`, `StatusChip`, `CollapsingHeaderScaffold`, `GroupedSectionTest.kt`, `DevRouteTest.kt`, `MotionSection.kt`, `BundledFontTest`, `HostedComposeRule`, `assertisdisplayed`, `AppContainer`, `CategoryGlyph.kt`, `7. Test plan`?**
+  _High betweenness centrality (0.099) - this node is a cross-community bridge._
 - **Are the 38 inferred relationships involving `ThemePrefs` (e.g. with `Configuration` and `PaletteSwatchesPreview()`) actually correct?**
   _`ThemePrefs` has 38 INFERRED edges - model-reasoned connections that need verification._
 - **Should `TestClock` be split into smaller, more focused modules?**
