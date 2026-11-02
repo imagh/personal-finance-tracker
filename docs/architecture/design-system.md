@@ -231,8 +231,15 @@ outside `[0, 1)` (NaN included) and a duration of 0 or less with `IllegalArgumen
   For another type, build the same spring with `iosSpring<T>(duration, bounce)`.
 - **Navigation transitions** (`navEnter`, `navExit`, `navPopEnter`, `navPopExit`) are plain
   `EnterTransition`/`ExitTransition` values: a push slides the incoming screen in from the end by
-  25% of the width with a fade, and the outgoing one out toward the start; a pop is the reverse. A5
-  wires them into the NavHost; predictive back is verified there.
+  25% of the width with a fade, and the outgoing one out toward the start; a pop is the reverse.
+  `PftNavHost` (A5f) passes all four as the NavHost's `enter/exit/popEnter/popExit` transitions, for
+  every route. **Predictive back (A5f result):** the manifest sets `enableOnBackInvokedCallback="true"`.
+  On an API 35 emulator with "Predictive back animations" on, a slow back swipe from the debug
+  catalogue back to Home showed the pop transition tracking the finger (Home sliding in from the
+  start, the catalogue following the finger out to the end), and a released swipe committed the pop
+  and landed on Home with the app still running. No glitch was observed. Verified through
+  `uiautomator dump` mid-gesture (node bounds), because `FLAG_SECURE` blanks screencap, so the
+  *look* of the animation is still for the owner to judge on the emulator window.
 - **Press feedback:** `Modifier.pressScale()` scales to 0.97 (`PftMotion.PRESSED_SCALE`) with `snappy`
   while a pointer is down, and back on release or cancel. Put it before `clickable` on rows, cards,
   glyph tiles and keypad keys; it only observes pointers, so the ripple and the tap are untouched
@@ -503,7 +510,7 @@ spacing ruler, money tokens on surfaces) with fake figures only. It is the **sin
 three consumers, so they cannot drift:
 
 - the Studio preview (`@PreviewLightDark`),
-- the debug-only design catalogue (`src/debug/.../DesignCatalog.kt`, shown by `DevContent()`),
+- the debug-only design catalogue (`src/debug/.../DesignCatalog.kt`, the `dev/catalog` route of the nav host, opened from a Home header button),
   which adds toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font and font scale,
   and an Accent page for the amber check,
 - the Roborazzi goldens (`TokenSheetScreenshotTest`).

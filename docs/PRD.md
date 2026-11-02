@@ -92,6 +92,7 @@ Items the owner has asked to keep, with where each one lands. A plan that defers
 |---|---|---|---|
 | R-1 | **Existing-user picker on Setup** ("I'm already a household member"), using core's `initialiseForExistingUser`. Today each phone is set up as a new user, because nothing in M1a can bring another user's profile onto a device. | The first slice that can: encrypted restore (D-3) or sync (M1c), whichever lands first | Deferred (A5 plan Q1, 2026-11-01) |
 | R-2 | **Cashew import** (D-1): bring the owner's existing Cashew data into the app. | M1a slice I: a format spike first, then the ledger import after C-final, then the other entities as their slices land (M1a plan, Slice I) | Planned; needs its own architect plan |
+| R-3 | **Launch-failure screen.** Today an unexpected exception from `container.open()` or `identity.currentIdentity()` in `LaunchViewModel` crashes every launch while the cause persists. It fails closed (nothing is changed) but gives no explanation. The fix is a screen with a fixed code and no exception text, path or content. It joins the existing A4b startup-failure follow-up (a failed pre-migration backup or an unopenable database). | M1a slice H2 (diagnostics), with the A4b startup-failure follow-up | Deferred (A5f review, 2026-11-02) |
 
 ---
 

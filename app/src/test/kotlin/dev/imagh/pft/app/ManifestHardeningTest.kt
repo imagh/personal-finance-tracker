@@ -134,6 +134,23 @@ class ManifestHardeningTest {
     }
 
     @Test
+    fun `predictive back is enabled for the application`() {
+        // Opts the app in to the system back gesture's preview animation (A5f); Navigation's pop
+        // transition then drives it. Not a security attribute, but pinned so it is not lost.
+        assertEquals("true", mergedManifestApplicationAttribute("enableOnBackInvokedCallback"))
+    }
+
+    @Test
+    fun `the launcher is the only intent filter, so the navigation graph has no deep links`() {
+        val document = mergedManifest()
+        val filters = document.getElementsByTagName("intent-filter")
+        assertEquals("intent filters in the merged manifest", 1, filters.length)
+        val actions = (filters.item(0) as Element).getElementsByTagName("action")
+        val names = (0 until actions.length).map { (actions.item(it) as Element).getAttributeNS(ANDROID_NS, "name") }
+        assertEquals(listOf("android.intent.action.MAIN"), names)
+    }
+
+    @Test
     fun `emoji compat initializer is not registered`() {
         // Its default config asks Google Play services for a downloadable emoji font (a cross-app
         // fetch). Emoji are drawn by the system emoji font instead (plan §3.6).

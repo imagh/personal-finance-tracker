@@ -1,9 +1,9 @@
 # Architecture overview
 
-How Personal Finance Tracker is put together. Status: **M1a, slice A5b** (the app container that opens the encrypted database off the main thread, on top of
+How Personal Finance Tracker is put together. Status: **M1a, slice A5f** (the app opens to first-run Setup and then Home through the navigation host, on top of the app container that opens the encrypted database off the main thread,
 the Room implementations of the core boundary encrypted with SQLCipher under a Keystore-wrapped key, the A3 ledger
 foundations, the A1 skeleton and the DS tokens; see [persistence-and-security.md](persistence-and-security.md)).
-This file is refined as each slice lands (next: A5d to A5f, the form blocks, Setup and the navigation host). Rules live in
+This file is refined as each slice lands (next: A-final, then slice B, accounts and categories). Rules live in
 `CLAUDE.md` §3 and `docs/TECHNICAL.md` §6; the M1a plan is
 `docs/plans/2026-10-28-m1a-core-ledger.md`.
 
@@ -45,7 +45,9 @@ PftRoot                     LaunchViewModel(container).state : StateFlow<LaunchS
   Opening                   nothing drawn (window background = canvas, so no flash)
   KeyUnavailable(reason)    DataUnavailableScreen, Code: <reason>
   IdentityCorrupt           DataUnavailableScreen, Code: IDENTITY_CORRUPT
-  Ready(services, hasIdentity)   the app (a debug placeholder until the navigation host, A5f)
+  Ready(services, hasIdentity)   PftNavHost: start = HOME if hasIdentity else SETUP
+    SETUP                   SetupRoute -> on done: navigate HOME, popUpTo(SETUP) inclusive (Back on Home leaves the app)
+    HOME                    HomeRoute (placeholder; debug adds the dev/catalog route)
 AppContainer.open()         once, on Dispatchers.IO, shared by every caller -> AppStart.Ready(AppServices) | KeyUnavailable
 ```
 
@@ -53,6 +55,21 @@ AppContainer.open()         once, on Dispatchers.IO, shared by every caller -> A
 production wiring of the core services over Room; the test kit `RoomTestKit` builds the same class). Nothing opens
 in a constructor, and the main thread never waits for the database. Details: [persistence-and-security.md](persistence-and-security.md)
 and `app/README.md` "`di` and startup".
+
+### Call flow example: first-run Setup
+
+```
+SetupScreen (stateless)  --onContinue-->  SetupViewModel.submit()          UI -> ViewModel
+  validates both FieldStates with core's Validation.requireName            (core's rule, no copy)
+  saving = true, then viewModelScope.launch:
+    IdentityService.initialise(name, label)                                ViewModel -> core service
+      RoomTransactionRunner.inTransaction {                                core service -> repository (Room dao)
+        insert user; insert device; put current_device_id; 3 x audit }     -> SQLCipher database
+    SafeLog.event(SetupCompleted)                                          no fields: no name reaches a log
+  done = true  -->  SetupRoute.onDone  -->  navController.navigate(HOME)   Home reads identity.requireIdentity()
+```
+
+The composable calls no dao and the ViewModel holds no SQL: each layer talks only to the one below.
 
 ## The core/app boundary
 

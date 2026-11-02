@@ -24,6 +24,11 @@ class LogEventTest {
     }
 
     @Test
+    fun `setup_failed is only its name, with no exception, message, name or id`() {
+        assertEquals("setup_failed", LogEvent.SetupFailed.line())
+    }
+
+    @Test
     fun `setup_completed is only its name, with no name, label or id`() {
         assertEquals("setup_completed", LogEvent.SetupCompleted.line())
     }

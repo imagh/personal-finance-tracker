@@ -6,8 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import dev.imagh.pft.app.DevContent
 import dev.imagh.pft.app.di.AppContainer
+import dev.imagh.pft.app.ui.nav.PftNavHost
 import dev.imagh.pft.app.ui.startup.DataUnavailableCause
 import dev.imagh.pft.app.ui.startup.DataUnavailableScreen
 
@@ -19,7 +19,7 @@ import dev.imagh.pft.app.ui.startup.DataUnavailableScreen
  *   is no flash while the database opens.
  * - [LaunchState.KeyUnavailable] and [LaunchState.IdentityCorrupt]: the fail-closed
  *   [DataUnavailableScreen] with a fixed code. Nothing is created or overwritten.
- * - [LaunchState.Ready]: the app. Until the navigation host arrives (A5f) that is [DevContent].
+ * - [LaunchState.Ready]: the app, the [PftNavHost]: Setup on a fresh install, Home otherwise.
  *
  * The caller provides the theme and the surface (`MainActivity`).
  */
@@ -37,6 +37,6 @@ fun PftRoot(
             DataUnavailableScreen(DataUnavailableCause.KeyUnavailable(current.reason), modifier)
         LaunchState.IdentityCorrupt ->
             DataUnavailableScreen(DataUnavailableCause.IdentityCorrupt, modifier)
-        is LaunchState.Ready -> DevContent()
+        is LaunchState.Ready -> PftNavHost(current.services, current.hasIdentity, modifier)
     }
 }
