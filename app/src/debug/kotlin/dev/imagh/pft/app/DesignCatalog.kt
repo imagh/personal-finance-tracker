@@ -53,7 +53,7 @@ import dev.imagh.pft.app.ui.theme.displayName
  * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
  * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the header glow (off or on), the hero font, the type pairing (hero only or editorial), the sans font
  * (Figtree, Plus Jakarta Sans or the system font) and the font scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
- * screenshot goldens use. Debug builds only; the release twin of `DevContent` is empty.
+ * screenshot goldens use. Debug builds only: it is the `dev/catalog` route (`devRoutes()` in `DevEntry.kt`), opened from a Home header action; the release twin adds no route.
  *
  * Each toggle row is a set of single-choice chips. The catalogue starts on the default scheme,
  * Graphite in both modes with dynamic colour off, as in the real app's default; the money colours

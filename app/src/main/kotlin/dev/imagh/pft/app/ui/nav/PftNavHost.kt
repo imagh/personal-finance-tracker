@@ -5,6 +5,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dev.imagh.pft.app.DevHeaderActions
+import dev.imagh.pft.app.devRoutes
 import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.setup.SetupRoute
@@ -21,7 +23,9 @@ import dev.imagh.pft.app.ui.theme.PftMotion
  * - **Predictive back** is enabled by the manifest's `enableOnBackInvokedCallback`; the host's own
  *   back handling drives the pop transition.
  *
- * There are no deep links: nothing outside the app can navigate it.
+ * Debug builds add the design catalogue as a route, reached from a Home header action
+ * (`devRoutes()`, `DevHeaderActions`); release adds nothing. There are no deep links: nothing
+ * outside the app can navigate it.
  *
  * @param services the open object graph the screens' ViewModels are built over.
  * @param hasIdentity whether setup has already happened (from `LaunchState.Ready`).
@@ -50,6 +54,9 @@ fun PftNavHost(
                 },
             )
         }
-        composable(Routes.HOME) { HomeRoute(services) }
+        composable(Routes.HOME) {
+            HomeRoute(services, actions = { DevHeaderActions(navController::navigate) })
+        }
+        devRoutes()
     }
 }

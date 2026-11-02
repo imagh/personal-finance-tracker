@@ -37,7 +37,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The debug design catalogue (debug source set only): `DevContent()` shows the token sheet. */
+/** The debug design catalogue (debug source set only): `DesignCatalog()` shows the token sheet. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w393dp-h851dp-xxhdpi")
 class DesignCatalogTest {
@@ -45,8 +45,8 @@ class DesignCatalogTest {
     val compose = HostedComposeRule()
 
     @Test
-    fun `DevContent shows every token section by scrolling`() {
-        compose.setContent { PftTheme { DevContent() } }
+    fun `DesignCatalog shows every token section by scrolling`() {
+        compose.setContent { PftTheme { DesignCatalog() } }
         val scroller = hasScrollAction()
         listOf(
             "Type scale: display, headline",
@@ -63,7 +63,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the toggles start on system light-dark and the bundled serif, and selecting one moves the selection`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("System").assertIsSelected()
         compose.onNodeWithText("Bundled serif").assertIsSelected()
 
@@ -75,7 +75,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the palette and dynamic colour toggles start on Graphite with dynamic colour off`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Light: Graphite").assertIsSelected()
         compose.onNodeWithText("Dark: Graphite").assertIsSelected()
         compose.onNodeWithText("Dynamic off").assertIsSelected()
@@ -83,7 +83,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the light and dark palette rows are independent, and dynamic colour toggles`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Light: Ivory").performClick()
         compose.onNodeWithText("Dark: Midnight").performClick()
         compose.onNodeWithText("Dynamic on").performClick()
@@ -96,7 +96,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the background toggle starts on the default style and selecting the other one moves the selection`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         val default = if (ThemePrefs.Default.background == BackgroundStyle.TONAL) "Tonal" else "Flat"
         val other = if (default == "Tonal") "Flat" else "Tonal"
         compose.onNodeWithText("Background: $default").assertIsSelected()
@@ -111,7 +111,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the header glow toggle starts on the default and selecting the other one moves the selection`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         val default = if (ThemePrefs.Default.headerGlow) "Glow on" else "Glow off"
         val other = if (ThemePrefs.Default.headerGlow) "Glow off" else "Glow on"
         compose.onNodeWithText(default).assertIsSelected()
@@ -126,7 +126,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the type pairing toggle starts on the default and Editorial sets the title roles in the serif`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         val default = if (ThemePrefs.Default.typePairing == TypePairing.HERO_ONLY) "Hero only" else "Editorial"
         compose.onNodeWithText("Pairing: $default").assertIsSelected()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("titleLarge"))
@@ -144,7 +144,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the sans toggle starts on Figtree and each other option switches the body samples to its font`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         assertEquals(SansFont.FIGTREE, ThemePrefs.Default.sansFont)
         compose.onNodeWithText("Sans: Figtree").assertIsSelected()
         compose.onNodeWithText("Sans: Plus Jakarta Sans").assertIsNotSelected()
@@ -198,7 +198,7 @@ class DesignCatalogTest {
 
     @Test
     fun `every palette can be picked for light and for dark`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         listOf("Graphite", "Midnight", "Ivory", "Aubergine").forEach { name ->
             compose.onNodeWithText("Light: $name").performClick()
             compose.onNodeWithText("Light: $name").assertIsSelected()
@@ -209,7 +209,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Accent section shows an Unverified pill beside a selected navigation item and the FAB`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Accent").performClick()
         compose.onNodeWithText("Accent").assertIsSelected()
         compose.onNodeWithText("Unverified").assertIsDisplayed()
@@ -220,7 +220,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Motion section shows the press target and a Play button for each spring`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Motion").performClick()
         compose.onNodeWithText("Motion").assertIsSelected()
         compose.onNodeWithText("Press me", substring = true).assertIsDisplayed()
@@ -232,7 +232,7 @@ class DesignCatalogTest {
 
     @Test
     fun `playing a spring moves its dot and playing again moves it back`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Motion").performClick()
         compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag("spring-smooth"))
         val start =
@@ -265,7 +265,7 @@ class DesignCatalogTest {
     fun `the header sections show the real scaffold in each style`() {
         // The toggle rows above the page take about 40% of a phone-height window, and a header in a
         // window under 560dp starts collapsed (no hero or period), so this page is checked on a taller one.
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Standard header").performClick()
         compose.onNodeWithText("Budgets").assertIsDisplayed()
         compose.onNodeWithText("Dashboard header").performClick()
@@ -275,7 +275,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Bottom bar section shows the action bar variants`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Bottom bar").performClick()
         compose.onNodeWithText("Cancel").assertIsDisplayed()
         compose.onNodeWithText("Continue").assertIsNotEnabled()
@@ -283,7 +283,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Chips section shows a chip for each tone`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Chips").performClick()
         compose.onNodeWithText("Chips").assertIsSelected()
         listOf("Unverified", "Overdue", "Under", "Paused").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
@@ -291,7 +291,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Money section shows signed amounts in every size`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Money").performClick()
         compose.onNodeWithText("Money").assertIsSelected()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("−₹48,250.40"))
@@ -302,7 +302,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Sections section shows islands of rows`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Sections").performClick()
         compose.onNodeWithText("Sections").assertIsSelected()
         // The toggle rows above the page take most of a phone's height, so the page scrolls to its rows.
@@ -314,7 +314,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Empty section shows the empty state with its action`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Empty").performClick()
         compose.onNodeWithText("Empty").assertIsSelected()
         // The toggle rows above the page take most of a phone's height, so the page scrolls to its content.
@@ -326,7 +326,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Glyphs section shows the sources and the symbol grid`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Glyphs").performClick()
         compose.onNodeWithText("Glyphs").assertIsSelected()
         compose.onNodeWithText("Sizes").assertIsDisplayed()
@@ -336,7 +336,7 @@ class DesignCatalogTest {
 
     @Test
     fun `the Forms section shows the form blocks with a field in error and Save in the bottom bar`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         compose.onNodeWithText("Forms").performClick()
         compose.onNodeWithText("Forms").assertIsSelected()
         // The toggle rows above the page take most of a phone's height, so the form's list scrolls to its fields.
@@ -349,7 +349,7 @@ class DesignCatalogTest {
 
     @Test
     fun `every page chip fits the window width on one line, so none is cut off`() {
-        compose.setContent { PftTheme { DevContent() } }
+        compose.setContent { PftTheme { DesignCatalog() } }
         val windowWidth =
             compose
                 .onRoot()
