@@ -12,7 +12,8 @@ sqlcipher = "4.7.2"
 composeBom = "2024.10.01"
 activityCompose = "1.9.3"
 # A5c: navigation host and the lifecycle family (moves 2.8.3 -> 2.8.7); declared before app code uses them.
-navigationCompose = "2.8.4"
+# 2.8.9 (from 2.8.4) because under AGP 8.7.3 the 2.8.4 lint detectors crash and abort lint (issue #46).
+navigationCompose = "2.8.9"
 lifecycle = "2.8.7"
 # Declared at the version resolution already selected (1.7.3), not bumped.
 coroutines = "1.7.3"
