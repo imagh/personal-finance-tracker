@@ -24,4 +24,7 @@
     <!-- Form blocks (NameField, EditFormScaffold). The limit in field_too_long comes from core's validation. -->
     <string name="field_required">Required</string>
     <string name="field_too_long">At most %1$d characters</string>
+    <!-- Default primary action of EditFormScaffold, and the spoken label of its Back button. -->
+    <string name="form_save">Save</string>
+    <string name="form_back">Back</string>
 </resources>
