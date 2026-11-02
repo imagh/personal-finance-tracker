@@ -11,6 +11,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,7 +26,9 @@ import dev.imagh.pft.app.ui.theme.PftTheme
 /**
  * First-run setup, drawn from [state] alone: a welcome header, one line saying what the two fields
  * are for, the user's name and this phone's name, and Continue in the bottom bar (disabled while
- * [SetupUiState.saving]). There is no Back, because nothing is behind this screen.
+ * [SetupUiState.saving]). After an unexpected save failure ([SetupUiState.saveFailed]) a fixed "Couldn't
+ * save. Try again." line appears under the fields as a polite live region (TalkBack reads it when it
+ * shows). There is no Back, because nothing is behind this screen.
  *
  * It holds no state and knows no ViewModel, so tests and goldens render it from fake data;
  * [SetupRoute] wires the real one.
@@ -66,6 +71,20 @@ fun SetupScreen(
                 onLabelChange,
                 imeAction = ImeAction.Done,
             )
+        }
+        if (state.saveFailed) {
+            item {
+                Text(
+                    stringResource(R.string.setup_save_failed),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = spacing.gutter, vertical = spacing.sm)
+                            // Announced when it appears, without moving focus.
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 }

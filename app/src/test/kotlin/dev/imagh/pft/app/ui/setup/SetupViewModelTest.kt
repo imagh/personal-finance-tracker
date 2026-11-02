@@ -1,19 +1,26 @@
 package dev.imagh.pft.app.ui.setup
 
+import android.os.Looper
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import dev.imagh.pft.app.data.PftDatabase
+import dev.imagh.pft.app.data.audit.RoomAuditLog
 import dev.imagh.pft.app.data.common.EpochMillis
 import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
 import dev.imagh.pft.app.ui.common.FieldError
+import dev.imagh.pft.ledger.audit.AuditEntry
+import dev.imagh.pft.ledger.audit.AuditLog
+import dev.imagh.pft.ledger.settings.SettingKeys
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
 
@@ -190,5 +197,122 @@ class SetupViewModelTest {
 
         vm.state.value.name.error shouldBe null
         vm.state.value.deviceLabel.error shouldBe FieldError.Required
+    }
+
+    // --- An unexpected save failure (A5f): the audit log is the real swap boundary of the write path,
+    // so a test double of it makes the transaction fail after the user, device and setting rows were
+    // written, which Room then rolls back.
+
+    /** Throws [failure] on the first append, then behaves like [real]. */
+    private class FailsFirstAppend(
+        private val real: AuditLog,
+        private val failure: Throwable,
+    ) : AuditLog {
+        var appends = 0
+            private set
+
+        override suspend fun append(entry: AuditEntry) {
+            appends++
+            if (appends == 1) throw failure
+            real.append(entry)
+        }
+    }
+
+    private fun failingFirstSave(
+        failure: Throwable = IllegalStateException("secret detail Akash"),
+    ): Pair<SetupViewModel, FailsFirstAppend> {
+        val audit = FailsFirstAppend(RoomAuditLog(database.auditDao()), failure)
+        val failing = AppServices(database, EpochMillis.clock(), audit)
+        return SetupViewModel(failing.identity, "Pixel 8") to audit
+    }
+
+    @Test
+    fun `an unexpected save failure shows a form error, keeps the typed text and logs setup_failed only`() {
+        val (vm, _) = failingFirstSave()
+        vm.onNameChange("  Akash ")
+        vm.onDeviceLabelChange(" Pixel 8  ")
+        ShadowLog.clear()
+
+        vm.submit()
+        awaitMain { vm.state.value.saveFailed }
+
+        val state = vm.state.value
+        state.saving shouldBe false
+        state.done shouldBe false
+        state.name.text shouldBe "  Akash "
+        state.deviceLabel.text shouldBe " Pixel 8  "
+        state.name.error shouldBe null
+        state.deviceLabel.error shouldBe null
+        ShadowLog.getLogs().map { it.msg } shouldBe listOf("setup_failed")
+        blocking { services.identity.users() } shouldBe emptyList()
+        count("audit_entry") shouldBe "0"
+        // The whole transaction rolled back, not only the rows before the failing audit append.
+        count("device") shouldBe "0"
+        blocking { services.settingsRepository.get(SettingKeys.CURRENT_DEVICE_ID) } shouldBe null
+    }
+
+    @Test
+    fun `editing the name clears the save-failed error`() {
+        val (vm, _) = failingFirstSave()
+        vm.onNameChange("Akash")
+        vm.submit()
+        awaitMain { vm.state.value.saveFailed }
+
+        vm.onNameChange("Akash K")
+
+        vm.state.value.saveFailed shouldBe false
+        vm.state.value.name.text shouldBe "Akash K"
+    }
+
+    @Test
+    fun `editing the phone name clears the save-failed error`() {
+        val (vm, _) = failingFirstSave()
+        vm.onNameChange("Akash")
+        vm.submit()
+        awaitMain { vm.state.value.saveFailed }
+
+        vm.onDeviceLabelChange("Pixel 9")
+
+        vm.state.value.saveFailed shouldBe false
+        vm.state.value.deviceLabel.text shouldBe "Pixel 9"
+    }
+
+    @Test
+    fun `submitting again clears the error at once and a retry saves exactly one identity`() {
+        val (vm, audit) = failingFirstSave()
+        vm.onNameChange("Akash")
+        vm.submit()
+        awaitMain { vm.state.value.saveFailed }
+
+        vm.submit()
+        vm.state.value.saveFailed shouldBe false
+        vm.state.value.saving shouldBe true
+        awaitMain { vm.state.value.done }
+
+        vm.state.value.saveFailed shouldBe false
+        vm.state.value.saving shouldBe false
+        audit.appends shouldBe 4
+        blocking { services.identity.users() }.map { it.displayName } shouldBe listOf("Akash")
+        count("user_profile") shouldBe "1"
+        count("device") shouldBe "1"
+        count("audit_entry") shouldBe "3"
+        blocking { services.identity.currentIdentity() }?.device?.label shouldBe "Pixel 8"
+    }
+
+    @Test
+    fun `a cancellation is not reported as a save failure`() {
+        val (vm, audit) = failingFirstSave(CancellationException("cancelled"))
+        vm.onNameChange("Akash")
+        ShadowLog.clear()
+
+        vm.submit()
+        awaitMain { audit.appends >= 1 }
+        repeat(10) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(10)
+        }
+
+        vm.state.value.saveFailed shouldBe false
+        ShadowLog.getLogs().map { it.msg } shouldBe emptyList()
     }
 }

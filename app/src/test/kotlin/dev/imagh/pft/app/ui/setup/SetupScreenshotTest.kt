@@ -21,9 +21,10 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Golden screenshots of the first-run setup screen with the header expanded (its state on first
  * launch; every file name says `expanded`): light, dark, light at font scale 2.0, light with the
- * name in error, and light while saving (Continue disabled), on a 393x851dp xxhdpi screen
- * with the committed Graphite colours (dynamic colour off, so the goldens are deterministic). Fake
- * data only: the sample phone name is "Pixel 8" and the name is empty (or "Akash" in the saving shot).
+ * name in error, light while saving (Continue disabled), and light after a failed save (the
+ * try-again message), on a 393x851dp xxhdpi screen with the committed Graphite colours (dynamic
+ * colour off, so the goldens are deterministic). Fake data only: the sample phone name is "Pixel 8"
+ * and the name is empty (or "Akash" in the saving and save-failed shots).
  *
  * `./gradlew check` verifies against `src/test/screenshots`; after a deliberate visual change run
  * `./gradlew :app:recordRoborazziDebug` and review the PNG diff. Pixels catch visual regressions;
@@ -77,4 +78,9 @@ class SetupScreenshotTest {
     @Config(qualifiers = "+notnight")
     fun setupLightSaving() =
         capture("setup-expanded-saving-light", fresh.copy(name = FieldState("Akash"), saving = true))
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun setupLightSaveFailed() =
+        capture("setup-expanded-save-failed-light", fresh.copy(name = FieldState("Akash"), saveFailed = true))
 }

@@ -15,6 +15,7 @@ Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device
   "At most 100 characters") and nothing is saved. The app never shortens what you typed: if it is
   too long, you shorten it. Spaces around a name are dropped when it is saved.
 - **Tapping Continue twice saves once.** While it saves, Continue is greyed out.
+- **If saving fails unexpectedly** (for example the phone is out of storage), a red line under the fields says "Couldn't save. Try again." and TalkBack reads it out. Nothing was saved, both names stay exactly as you typed them, and Continue works again. The message goes away when you edit a name or tap Continue again. Trying again is safe: the profile is saved in one step, so it can never end up half-saved or doubled.
 - **Then you land on Home.** Home is a placeholder for now: its header says "Home" and, underneath,
   who is using this phone ("Akash · Pixel 8"), and it says that accounts and transactions arrive in
   the next update. This is how you can see the mark that every later entry will carry.
@@ -37,6 +38,7 @@ Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device
   start of setup), the screen treats setup as done instead of showing an error, because a profile
   exists either way. What you typed is **not** saved in that case: Home shows the profile that was
   already there.
+- A failed save writes only "setup failed" to the app's log, with no details, no error text and no names.
 - Rotating the phone on Setup keeps what you typed. If the app is killed mid-setup, the typed text
   is lost and you type the two short fields again.
 - In a debug build only, Home has an extra header button, "Design catalogue", for checking the

@@ -21,6 +21,7 @@ class LogEventShapeTest {
             LogEvent.DbKeyUnavailable(Reason.KEK_MISSING),
             LogEvent.IdentityCorrupt,
             LogEvent.SetupCompleted,
+            LogEvent.SetupFailed,
         )
 
     /** Exhaustive with no `else`: a new [LogEvent] subclass without a sample is a compile error. */
@@ -31,6 +32,7 @@ class LogEventShapeTest {
             is LogEvent.DbKeyUnavailable -> Unit
             is LogEvent.IdentityCorrupt -> Unit
             is LogEvent.SetupCompleted -> Unit
+            is LogEvent.SetupFailed -> Unit
         }
 
     private fun isAllowed(type: Class<*>): Boolean =

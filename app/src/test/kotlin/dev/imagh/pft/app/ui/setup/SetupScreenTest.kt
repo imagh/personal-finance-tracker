@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -131,6 +132,26 @@ class SetupScreenTest {
         show(SetupUiState(name = FieldState("", FieldError.Required), deviceLabel = FieldState("Pixel 8")))
 
         compose.onAllNodesWithText("Required").assertCountEquals(1)
+    }
+
+    @Test
+    fun `a failed save shows the try-again message, announced politely, and Continue is enabled`() {
+        show(SetupUiState(name = FieldState("Akash"), deviceLabel = FieldState("Pixel 8"), saveFailed = true))
+
+        val message = compose.onNodeWithText("Couldn't save. Try again.")
+        message.assertIsDisplayed()
+        assertEquals(
+            LiveRegionMode.Polite,
+            message.fetchSemanticsNode().config.getOrNull(SemanticsProperties.LiveRegion),
+        )
+        compose.onNodeWithText("Continue").assertIsEnabled()
+        compose.onNodeWithText("Akash").assertIsDisplayed()
+    }
+
+    @Test
+    fun `without a failed save there is no try-again message`() {
+        show()
+        compose.onAllNodesWithText("Couldn't save. Try again.").assertCountEquals(0)
     }
 
     @Test

@@ -52,6 +52,14 @@ sealed interface LogEvent {
     data object SetupCompleted : LogEvent {
         override fun line(): String = render("setup_completed")
     }
+
+    /**
+     * First-run setup could not be saved (an unexpected failure; the user is asked to try again). It
+     * carries no fields: not the exception, its message or its class name, and not the names typed.
+     */
+    data object SetupFailed : LogEvent {
+        override fun line(): String = render("setup_failed")
+    }
 }
 
 /**
