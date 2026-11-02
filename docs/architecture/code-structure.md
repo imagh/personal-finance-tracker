@@ -42,6 +42,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     di/                                  # A5b: AppContainer (opens the database once, off the main thread; open(): AppStart), AppStart (Ready(services) | KeyUnavailable),
                                          # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
     ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
+    ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point); not reachable until A5f
     ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
     PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
@@ -120,6 +121,8 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app DI | `AppServices` (the core services wired over an open `PftDatabase`, on a millisecond clock, with an injectable `AuditLog`) | `AppContainer` (the app) and `RoomTestKit` (every Room integration test) | A5b |
 | app DI | `AppContainer.open()` (opens the database once, off the caller's thread; callers share the result) | `LaunchViewModel`; M1b's SMS receiver | A5b |
 | app UI (`ui/startup`) | `DataUnavailableScreen(cause)` + `DataUnavailableCause` | key unavailable (A4b), identity corrupt (A5b) | A5b |
+| app UI (`ui/setup`) | `SetupViewModel` + `SetupUiState`, `SetupScreen`, `SetupRoute` | A5f `PftNavHost` (Setup destination) | A5e |
+| app tests | `awaitMain { condition }` (idles the Robolectric main looper until true) | tests of ViewModels that run on the main dispatcher | A5e |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
 | app tests | `AuditColumnsCheck` + `AuditedTables` (every column audited or allowlisted) | every entity table; each slice registers its table | A4a |

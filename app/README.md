@@ -66,7 +66,8 @@ All logging goes through one object (PRD SEC-5, CLAUDE.md §3.7). Policy:
   against the pattern, and `render` accepts only numbers and enums.
 - Events are added **only by the change that first emits them**. Today: `DbOpened(schemaVersion, took)`
   and `DbKeyUnavailable(reason)`, both emitted by `DatabaseStartup.open`, and `IdentityCorrupt`
-  (`identity_corrupt`, no fields), emitted by `LaunchViewModel`.
+  (`identity_corrupt`, no fields), emitted by `LaunchViewModel`, and `SetupCompleted`
+  (`setup_completed`, no fields: no name, label or id), emitted by `SetupViewModel`.
 - Guards: detekt `ForbiddenImport` bans `import android.util.Log` everywhere, with one file-level
   `@Suppress("ForbiddenImport")` in `SafeLog.kt` (and one in the instrumented `EncryptedDatabaseTest`,
   which prints its own timing); `LoggingScanTest` scans `app/src/{main,debug,release}` and
@@ -217,6 +218,24 @@ M1b's SMS receiver will call the same `container.open()`. `PftApplication.startu
 database lazily on the calling (main) thread, is gone. `PftApplication` and its `container` are `open`
 only so `MainActivityOpeningTest` can substitute a held-open opener.
 
+### `ui/setup` and the UiState convention (A5e)
+
+Package `dev.imagh.pft.app.ui.setup`. One ViewModel, one screen, no new interfaces. **Not reachable
+yet**: the navigation host that shows it is A5f, so nothing in the app opens it today.
+
+| Symbol | What it is |
+|---|---|
+| `SetupUiState(name, deviceLabel, saving, done)` | Everything the screen shows: two `FieldState`s, `saving` (Continue disabled) and `done` (an identity exists; the route leaves) |
+| `SetupViewModel(identity, defaultDeviceLabel)` + `SetupViewModel.factory(services, defaultDeviceLabel)` | `onNameChange`, `onDeviceLabelChange`, `submit()`. `submit()` checks both fields through `FieldState.check { Validation.requireName(it, LedgerLimits.MAX_NAME_LENGTH) }` (core's rule, no copy here), saves nothing unless both pass, then calls `IdentityService.initialise` on the main dispatcher and logs `setup_completed`. It sets `saving` before launching and ignores calls while `saving` or `done`, so a double tap saves once. `AlreadyInitialised` counts as done; any other failure is not caught. The phone-name prefill is `defaultDeviceLabel` trimmed and cut to 100 |
+| `SetupScreen(state, onNameChange, onLabelChange, onContinue, modifier)` | Stateless: an `EditFormScaffold` (title "Welcome", subtitle "Set up this phone", Continue in the bottom bar, no Back), one explanatory line and two `NameField`s ("Your name", "This phone's name"). Rendered from fake state by the tests and goldens |
+| `SetupRoute(services, onDone, modifier)` | The only place that touches the ViewModel: builds it with `Build.MODEL` as the default phone name, collects its state and calls `onDone` when `done` becomes true |
+
+**UiState convention (plan D4).** It is a convention, not a type: one immutable `XxxUiState` data
+class per screen, exposed as a `StateFlow` and collected with `collectAsStateWithLifecycle`; a one-shot
+outcome such as "setup finished" is a state field the screen reacts to, not a `Channel`; a
+`LedgerError` is mapped in the ViewModel, never in a composable. A generic `UiState<T>` waits for a
+second consumer with a Loading/Content/Error shape (B2 may introduce one for its lists).
+
 ### Window theme
 
 `res/values/themes.xml` and `res/values-night/themes.xml` (`Theme.Pft`) paint Graphite's canvas
@@ -357,6 +376,8 @@ signs, spoken direction, tone colours, hero shrink at the real maximum `Paise.MA
 scale on 320dp, rolling digits), `StatusChipTest`, `GroupedSectionTest`, `EmptyStateTest` and
 `ContentScreenshotTest` (goldens for the four components, `MoneyText` also at 200%). Text fit is asserted with
 line metrics (`TextLayoutSupport.kt`), not `hasVisualOverflow`, which is unreliable in Compose 1.7.
+
+A5e adds `SetupViewModelTest` (Robolectric, real Room through `AppServices`; the main looper is idled by `testing/awaitMain`, which also lets the ViewModel's `viewModelScope` run: blank and over-long names, the phone-name error only, a valid save with its three audit rows and the `setup_completed` line, the double-submit guard (a mutation test showed the guard is what keeps a changed second submit out), prefill), `SetupScreenTest` (copy, Continue in the bottom bar with a 48dp `touchBoundsInRoot` target, disabled while saving, error text, typing), `SetupRouteTest` (the real route over a real database) and `SetupScreenshotTest` (five `setup-expanded-*` goldens: light, dark, light at 200% font, light with the name in error, light while saving; fake data only). Under Compose rules, wait for a ViewModel result with `awaitMain { compose.waitForIdle(); condition }`: `compose.waitUntil` alone did not let the Main-dispatched save finish.
 
 A5d adds the form-block tests: `FieldStateTest` (JUnit 5, pure, through core's real `Validation`: errors, edit-clears-error, the exhaustive mapping), `NameFieldTest` (label, error text and error semantics, no truncation at 120 or 5,000 characters), `EditFormScaffoldTest` (primary in the bottom bar and outside the list, disabled while saving, Back absent or present with a 48dp `touchBoundsInRoot`) and `FormScreenshotTest` (`form-light`, `form-dark`, `form-light-2x` goldens). The debug catalogue has a Forms page, covered by `DesignCatalogTest`. `DesignCatalogTest` also asserts every page chip fits the window width on one line.
 
