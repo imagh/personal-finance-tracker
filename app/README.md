@@ -259,13 +259,18 @@ while the catalogue followed the finger out to the end, with `PftMotion`'s pop t
 released swipe popped to Home. No glitch was seen. Back on Home finishes the activity. The result is
 recorded in `docs/architecture/design-system.md` and the learnings.
 
-**Lint.** Navigation 2.8.4's own lint checks (`WrongStartDestinationType`, `WrongNavigateRouteType`,
+**Lint.** Navigation's own lint checks (`WrongStartDestinationType`, `WrongNavigateRouteType`,
 `WrongPopBackStackRouteType`, `TypeSafeDestinationMissingAnnotation`, `ComposableDestinationInComposeScope`,
-`ComposableNavGraphInComposeScope`, `UnrememberedGetBackStackEntry`) throw `NoClassDefFoundError`
-inside lint on `PftNavHost.kt` with AGP 8.7.3, and one crashing detector aborts the whole run, so they
-are disabled in `app/build.gradle.kts` `lint { disable }` with the reason and a
-`TODO(AGP upgrade)` to re-enable them once the detector no longer crashes. The deep-link checks stay
-on.
+`ComposableNavGraphInComposeScope`, `UnrememberedGetBackStackEntry`, and the deep-link ones) are all on.
+With navigation 2.8.4 and AGP 8.7.3's lint 31.7.3 the detectors threw `NoClassDefFoundError`
+(`androidx/navigation/lint/UtilKt`) on `PftNavHost.kt`, and one crashing detector aborts the whole run,
+so A5f had disabled seven of them. Navigation 2.8.9 (`navigationCompose` in `gradle/libs.versions.toml`)
+does not crash, although its lint jars are byte-identical to 2.8.4's. Only `AndroidGradlePluginVersion`,
+`GradleDependency` and `NewerVersionAvailable` are disabled now, because upgrades are deliberate. A newer
+lint (`android.experimental.lint.version=8.13.2`) also fixed it but needs 45 extra components (85
+artifacts) with known CVEs, so it was not adopted; see the learnings entry of 2026-11-02 (issue #46).
+Revisit it when the lint version moves with the next AGP upgrade (`docs/TECHNICAL.md` section 7.1), and
+only once issue #47 lets the vulnerability scan cover that classpath.
 
 ### Window theme
 
@@ -335,7 +340,7 @@ no icon library is a dependency (`material-icons-core` is on the classpath throu
 Project: `:core:money` (`implementation`, DS5): `MoneyText` formats through `PaiseFormat`. It has no
 external dependencies, so the lockfiles and verification metadata did not change.
 
-A5c (pins only; A5b uses `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` and coroutines; A5f uses navigation): `androidx.navigation:navigation-compose` 2.8.4 (nav host; brings
+A5c (pins only; A5b uses `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` and coroutines; A5f uses navigation): `androidx.navigation:navigation-compose` 2.8.4, moved to 2.8.9 for the lint fix (nav host; brings
 `navigation-runtime`/`-common` and, at runtime only, `kotlinx-serialization-core` 1.6.3: the serialization
 *compiler plugin* is not applied anywhere), `androidx.lifecycle:lifecycle-viewmodel-compose` and
 `lifecycle-runtime-compose` 2.8.7 (this moves the whole lifecycle family 2.8.3 to 2.8.7), and
