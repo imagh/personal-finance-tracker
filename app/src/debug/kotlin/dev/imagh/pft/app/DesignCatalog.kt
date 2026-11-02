@@ -28,6 +28,7 @@ import dev.imagh.pft.app.ui.common.BottomActionBarSamples
 import dev.imagh.pft.app.ui.common.CategoryGlyphSamples
 import dev.imagh.pft.app.ui.common.CategoryGlyphSymbolSamples
 import dev.imagh.pft.app.ui.common.DashboardHeaderSample
+import dev.imagh.pft.app.ui.common.EditFormSample
 import dev.imagh.pft.app.ui.common.EmptyStateSamples
 import dev.imagh.pft.app.ui.common.GroupedSectionSamples
 import dev.imagh.pft.app.ui.common.MoneyTextSamples
@@ -47,7 +48,8 @@ import dev.imagh.pft.app.ui.theme.displayName
 
 /**
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
- * the one-hand layout components (both header styles and `BottomActionBar`) and the content
+ * the one-hand layout components (both header styles, `BottomActionBar` and the form blocks
+ * `EditFormScaffold` and `NameField`) and the content
  * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
  * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the header glow (off or on), the hero font, the type pairing (hero only or editorial), the sans font
  * (Figtree, Plus Jakarta Sans or the system font) and the font scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
@@ -178,7 +180,7 @@ internal fun DesignCatalog() {
     }
 }
 
-private const val SECTIONS_PER_ROW = 3
+private const val SECTIONS_PER_ROW = 4
 
 /** The catalogue's pages: the token sheet, then the motion, layout and content components. */
 private enum class CatalogSection(
@@ -189,6 +191,7 @@ private enum class CatalogSection(
     BOTTOM_BAR("Bottom bar"),
     STANDARD_HEADER("Standard header"),
     DASHBOARD_HEADER("Dashboard header"),
+    FORMS("Forms"),
     MONEY("Money"),
     CHIPS("Chips"),
     SECTIONS("Sections"),
@@ -199,7 +202,7 @@ private enum class CatalogSection(
 }
 
 /**
- * One page of the catalogue. The header pages are the real scaffold (it owns its own list, so it
+ * One page of the catalogue. The header and form pages are the real scaffold (it owns its own list, so it
  * cannot sit inside a scrolling column); the others scroll.
  */
 @Composable
@@ -207,6 +210,7 @@ private fun SectionContent(section: CatalogSection) {
     when (section) {
         CatalogSection.STANDARD_HEADER -> StandardHeaderSample()
         CatalogSection.DASHBOARD_HEADER -> DashboardHeaderSample()
+        CatalogSection.FORMS -> EditFormSample()
         else ->
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 when (section) {

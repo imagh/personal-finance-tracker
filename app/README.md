@@ -121,7 +121,7 @@ Rules: never draw money text on `surfaceVariant`; use `background`, `surface` or
 values and design `dp`/`sp` live only in `ui/theme` (detekt's `MagicNumber` is relaxed there for
 that reason). Colour is never the only cue: every amount carries a sign and every status a word.
 
-### `ui/common` (shared components, DS3, DS4 and DS5)
+### `ui/common` (shared components, DS3, DS4, DS5 and A5d)
 
 | Symbol | What it is |
 |---|---|
@@ -140,13 +140,16 @@ that reason). Colour is never the only cue: every amount carries a sign and ever
 | `CategoryGlyph(source: GlyphSource, name, colourKey, modifier, size = Row, onClick = null)` | The category/account badge: a soft-square tile in a palette colour holding a symbol, one emoji or a letter. One image node announced as `name` (never the key); fixed dp size; emoji clipped to one line; with `onClick` it is a button (48dp touch target, press scale) |
 | `GlyphSource { Symbol(PftSymbol), Emoji(text), Letter(letter) }` (`Letter` holds one code point as a string, with a `Char` constructor), `GlyphSource.fromIconKey(iconKey, name)`, `GlyphSource.letterFor(name)` | The UI model of `category.icon_key`. `fromIconKey` is the **boundary parser** (untrusted input): `sym:<key>` with key `[a-z0-9_]{1,40}` naming a registered symbol, or `emoji:<value>` of 1 to 16 UTF-16 units, well-formed, no whitespace, control or invisible format characters (ZWJ and tag characters allowed). Anything else (null, no prefix, oversized, malformed, unknown) is `Letter` of the name's first letter or digit by code point (a combining mark or unpaired surrogate never counts, a letter outside the basic plane does), upper-cased (`?` if none); it never throws. `Emoji` itself rejects an invalid value (`IllegalArgumentException`) |
 | `EmptyState(message, modifier, glyph, actionLabel, onAction)` | A centred glyph slot, message and optional tonal-button action; the label and callback must be given together |
+| `FieldState(text, error)` with `edit(text)` and `check(rule)`, `FieldCheck(value, state)`, `FieldError { Required, TooLong(max) }`, `LedgerError.toFieldError()` (A5d; `FieldState.kt`, `FieldError.kt`, `LedgerErrorMapping.kt`) | A form field's state as plain data a ViewModel holds. `text` is exactly what was typed and is never trimmed or clipped; `edit` replaces it and clears the error. `check` runs one of **core's own validators** (for example `{ Validation.requireName(it, MAX_NAME_LENGTH) }`) and returns the validated value, or null plus the state with the `FieldError`; it catches only `LedgerError`, and rethrows one that is not about a field. `toFieldError()` is an exhaustive `when` (no `else`): a new `LedgerError` case fails compilation until mapped, and non-field errors (`NotInitialised`, `IdentityCorrupt`, ...) map to null, to be shown as a form-level message |
+| `NameField(label, state, onTextChange, modifier, imeAction)` (A5d) | The one name input: a single-line M3 `OutlinedTextField`, words capitalised, error text under it (`field_required`, `field_too_long`) and M3 error semantics. **Never truncates or alters the typed text**: 120 typed characters stay 120 and length is reported as `TooLong`, never enforced by clipping. Fills the width between the gutters and adds its own vertical rhythm |
+| `EditFormScaffold(title, onPrimary, modifier, subtitle, primaryLabel, saving, onBack) { LazyListScope }` (A5d) | The create/edit frame: a `Standard` `CollapsingHeaderScaffold` with the primary action ("Save" by default, or the caller's, such as "Continue") in a `BottomActionBar`. `saving = true` disables it (a double-tap guard; the ViewModel keeps its own). `onBack` adds a labelled back `HeaderIconButton` (48dp target); null means no Back. **Adds no `imePadding()`**: the scaffold already lifts its bottom bar above the keyboard. Named consumers: Setup (A5e), B2 account edit, B3/B5 forms, D/E/F/G edit screens |
 
 The hero slot is set in `PftTheme.type.amountHero` by default (the serif is the number only). Actions
 go in the top row (back, search, filter, overflow; secondary only), add actions in the FAB. Both
 components are shared (named consumers in `docs/architecture/code-structure.md`); do not wrap them
 to restyle. `HeaderSamples.kt` holds the fake-data samples that feed the previews, the debug
 catalogue and `HeaderScreenshotTest`; DS5 adds one file per component (`MoneyTextSamples.kt`,
-`StatusChipSamples.kt`, `GroupedSectionSamples.kt`, `EmptyStateSamples.kt`; DS3 adds `CategoryGlyphSamples.kt`) for the same three
+`StatusChipSamples.kt`, `GroupedSectionSamples.kt`, `EmptyStateSamples.kt`; DS3 adds `CategoryGlyphSamples.kt`; A5d adds `FormSamples.kt`, a live two-field form) for the same three
 consumers and `ContentScreenshotTest`. Each `*Samples` file is listed in `mustBeRemoved` of
 `verifyReleaseShrink`, so R8 is shown to drop it from the release APK.
 
@@ -354,6 +357,8 @@ signs, spoken direction, tone colours, hero shrink at the real maximum `Paise.MA
 scale on 320dp, rolling digits), `StatusChipTest`, `GroupedSectionTest`, `EmptyStateTest` and
 `ContentScreenshotTest` (goldens for the four components, `MoneyText` also at 200%). Text fit is asserted with
 line metrics (`TextLayoutSupport.kt`), not `hasVisualOverflow`, which is unreliable in Compose 1.7.
+
+A5d adds the form-block tests: `FieldStateTest` (JUnit 5, pure, through core's real `Validation`: errors, edit-clears-error, the exhaustive mapping), `NameFieldTest` (label, error text and error semantics, no truncation at 120 or 5,000 characters), `EditFormScaffoldTest` (primary in the bottom bar and outside the list, disabled while saving, Back absent or present with a 48dp `touchBoundsInRoot`) and `FormScreenshotTest` (`form-light`, `form-dark`, `form-light-2x` goldens). The debug catalogue has a Forms page, covered by `DesignCatalogTest`. `DesignCatalogTest` also asserts every page chip fits the window width on one line.
 
 DS3 adds `PftSymbolTest` (permanent keys, drawables inflate), `GlyphSourceTest` (JUnit 5, the `icon_key` boundary),
 `CategoryPaletteTest`, palette contrast in `ColorContrastTest`, `CategoryGlyphTest`, `BundledSymbolsLicenceTest` and
