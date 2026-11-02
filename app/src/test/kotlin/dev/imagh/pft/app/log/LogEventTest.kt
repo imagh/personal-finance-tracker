@@ -24,6 +24,11 @@ class LogEventTest {
     }
 
     @Test
+    fun `setup_completed is only its name, with no name, label or id`() {
+        assertEquals("setup_completed", LogEvent.SetupCompleted.line())
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }
