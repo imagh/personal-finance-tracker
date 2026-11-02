@@ -42,15 +42,17 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     di/                                  # A5b: AppContainer (opens the database once, off the main thread; open(): AppStart), AppStart (Ready(services) | KeyUnavailable),
                                          # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
     ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
-    ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point); not reachable until A5f
+    ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
+    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts)
+    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder), HomeRoute
     ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
     PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
   src/main/res/font/                     # bundled Newsreader (cut per role by `newsreader(weight, size)`), Figtree (default sans) and Plus Jakarta Sans (second sans option; weights declared by `sansFamily()`) variable fonts (OFL-1.1, unmodified upstream)
   src/main/res/drawable/                 # sym_<key>.xml: 92 Material Symbols Rounded vector drawables (Apache-2.0), imported by tools/material-symbols
   src/main/assets/licenses/              # licence texts that ship with bundled assets (Newsreader OFL, Figtree OFL, Plus Jakarta Sans OFL, Material Symbols Apache-2.0)
-  src/debug/                             # debug-only: DevContent (shown by PftRoot for a ready database until A5f) -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
-  src/release/kotlin/...                 # release twin of DevContent (empty surface)
+  src/debug/                             # debug-only: DevEntry (devRoutes(): the dev/catalog route; DevHeaderActions: Home's "Design catalogue" button) -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
+  src/release/kotlin/...                 # release twin of DevEntry (devRoutes() and DevHeaderActions() add nothing)
   src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),
                                          # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
@@ -60,7 +62,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # SourceScan (comment-stripping text scanner shared by ThemeLiteralScanTest and LoggingScanTest)
   src/test/resources/pft-symbol-keys.txt # the pinned, permanent PftSymbol keys (removal or rename fails PftSymbolTest)
   src/test/screenshots/                  # committed Roborazzi goldens (fake data only), verified by `check`
-  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest, PftRootReadyTest) and MigrationTest (needs the debug-only schema assets)
+  src/testDebug/kotlin/...               # tests of debug-only code (DesignCatalogTest, DevRouteTest) and MigrationTest (needs the debug-only schema assets)
+  src/testRelease/kotlin/...             # A5f: tests of what release must NOT contain (ReleaseHasNoCatalogueTest)
 core/
   <module>/             # pure Kotlin/JVM, no Android imports
     README.md           # module doc (Purpose · Boundaries · Interface · Data · Config · Deps · Run/test)
@@ -121,7 +124,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app DI | `AppServices` (the core services wired over an open `PftDatabase`, on a millisecond clock, with an injectable `AuditLog`) | `AppContainer` (the app) and `RoomTestKit` (every Room integration test) | A5b |
 | app DI | `AppContainer.open()` (opens the database once, off the caller's thread; callers share the result) | `LaunchViewModel`; M1b's SMS receiver | A5b |
 | app UI (`ui/startup`) | `DataUnavailableScreen(cause)` + `DataUnavailableCause` | key unavailable (A4b), identity corrupt (A5b) | A5b |
-| app UI (`ui/setup`) | `SetupViewModel` + `SetupUiState`, `SetupScreen`, `SetupRoute` | A5f `PftNavHost` (Setup destination) | A5e |
+| app UI (`ui/setup`) | `SetupViewModel` + `SetupUiState`, `SetupScreen`, `SetupRoute` | `PftNavHost` (Setup destination) | A5e |
+| app UI (`ui/nav`) | `PftNavHost(services, hasIdentity)` + `Routes` (the one navigation host and its string routes; later slices add their routes here) | `PftRoot` (Ready); the debug catalogue joins through `devRoutes()` | A5f |
+| app UI (`ui/home`) | `HomeViewModel` + `HomeUiState`, `HomeScreen`, `HomeRoute` (placeholder until C4 replaces it) | `PftNavHost` (Home destination) | A5f |
 | app tests | `awaitMain { condition }` (idles the Robolectric main looper until true) | tests of ViewModels that run on the main dispatcher | A5e |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |

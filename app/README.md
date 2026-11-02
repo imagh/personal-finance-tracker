@@ -7,12 +7,14 @@ Room/SQLCipher implementations of the `core` repository interfaces, Keystore key
 logging (`SafeLog`, A5a; only `SafeLog` may log). App lock arrives in a later slice. It contains no business logic; that lives in `core/<module>`
 (CLAUDE.md §3.1).
 
-Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters), A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup), A5a (safe logging: `SafeLog`, typed `LogEvent`s, the detekt and source-scan guards, the database-open events) and A5b (the `AppContainer` that opens the database off the main thread, `AppServices`, `LaunchViewModel`, `PftRoot`, the generalised fail-closed screen).** The app launches a `FLAG_SECURE`, edge-to-edge
-window inside `PftTheme` (a debug build shows the design catalogue; release shows an empty surface).
+Status: **A1 skeleton plus DS1, DS2, DS3, DS4 and DS5 (theming, icons and category glyphs, motion, one-hand layout, content primitives), A4a (the Room database v1 and its core adapters), A4b (SQLCipher, the Keystore-wrapped key, the pre-migration backup), A5a (safe logging: `SafeLog`, typed `LogEvent`s, the detekt and source-scan guards, the database-open events) A5b (the `AppContainer` that opens the database off the main thread, `AppServices`, `LaunchViewModel`, `PftRoot`, the generalised fail-closed screen), A5c to A5e (the navigation and lifecycle pins, the shared form blocks, the Setup ViewModel and screen) and A5f (the navigation host, the Home placeholder, the debug-only catalogue route, predictive back).** The app launches a `FLAG_SECURE`, edge-to-edge
+window inside `PftTheme`.
 On start `MainActivity` shows `PftRoot`, which asks `PftApplication.container` to open the **encrypted**
 database off the main thread (see *Startup*, below). If the key cannot be produced, or the stored
-identity is inconsistent, `PftRoot` shows `DataUnavailableScreen` instead (fail closed). Nothing else
-uses the open database yet: Setup, Home and the navigation host arrive in A5d onwards (plan
+identity is inconsistent, `PftRoot` shows `DataUnavailableScreen` instead (fail closed). Otherwise it
+shows `PftNavHost`: **the app opens to Setup on a fresh install** (name and phone name, saved as the
+identity) and to the Home placeholder on every later launch; Back on Home leaves the app (plan
+`docs/plans/2026-11-01-m1a-a5-first-run-setup.md`, product doc `docs/features/first-run-and-profiles.md`). Real Home content arrives with C4 (plan
 `docs/plans/2026-10-28-m1a-core-ledger.md`); the rest of the design system (the DS6 premium-look slices) later (plan
 `docs/plans/2026-10-29-m1a-design-system.md`; what is built: `docs/architecture/design-system.md`).
 
@@ -209,7 +211,7 @@ Package `dev.imagh.pft.app.di`, plus `ui/LaunchViewModel` and `ui/PftRoot`. Conc
 | `AppContainer(openDatabase, baseClock, io)`, `AppContainer.forApp(context)` | Owns *when* the database opens. `suspend fun open(): AppStart` opens it once, on `io` (`Dispatchers.IO`), never on the caller's thread and without blocking it; every caller, concurrent or later, shares the one result. The open belongs to the container, so a cancelled caller does not abort it. A key failure is the value `AppStart.KeyUnavailable`; any other failure is rethrown to every caller and never cached as `Ready` (the container does not retry). `openDatabase: () -> DatabaseStartup` is a function, a test seam for a slow or failing open, not an interface |
 | `AppStart` (`Ready(services)`, `KeyUnavailable(reason)`) | How `AppContainer.open()` ended |
 | `LaunchViewModel(container, io)` + `LaunchState` (`Opening`, `KeyUnavailable(reason)`, `IdentityCorrupt`, `Ready(services, hasIdentity)`) | Maps `AppStart` plus `identity.currentIdentity()` to the launch state. `LedgerError.IdentityCorrupt` becomes `LaunchState.IdentityCorrupt` (one `identity_corrupt` log line), never "no identity". Its work runs on an injected IO dispatcher so Robolectric tests can wait for the state from the main thread. Anything unexpected is not caught: it ends the start |
-| `PftRoot(container)` | The root composable: `Opening` draws nothing (the window background already equals the canvas, so no flash), the two fail-closed states draw `DataUnavailableScreen`, `Ready` draws the app (the debug `DevContent` until A5f brings the nav host) |
+| `PftRoot(container)` | The root composable: `Opening` draws nothing (the window background already equals the canvas, so no flash), the two fail-closed states draw `DataUnavailableScreen`, `Ready` draws `PftNavHost(services, hasIdentity)` |
 
 **Startup.** `MainActivity.onCreate` sets `FLAG_SECURE`, enables edge-to-edge and calls `setContent`
 before any database work. `PftRoot` obtains `LaunchViewModel` (state `Opening`), which calls
@@ -220,8 +222,8 @@ only so `MainActivityOpeningTest` can substitute a held-open opener.
 
 ### `ui/setup` and the UiState convention (A5e)
 
-Package `dev.imagh.pft.app.ui.setup`. One ViewModel, one screen, no new interfaces. **Not reachable
-yet**: the navigation host that shows it is A5f, so nothing in the app opens it today.
+Package `dev.imagh.pft.app.ui.setup`. One ViewModel, one screen, no new interfaces. Shown by `PftNavHost`
+when no identity exists (A5f).
 
 | Symbol | What it is |
 |---|---|
@@ -235,6 +237,34 @@ class per screen, exposed as a `StateFlow` and collected with `collectAsStateWit
 outcome such as "setup finished" is a state field the screen reacts to, not a `Channel`; a
 `LedgerError` is mapped in the ViewModel, never in a composable. A generic `UiState<T>` waits for a
 second consumer with a Loading/Content/Error shape (B2 may introduce one for its lists).
+
+### `ui/nav` and `ui/home` (A5f)
+
+Packages `dev.imagh.pft.app.ui.nav` and `dev.imagh.pft.app.ui.home`. Concrete, no new interfaces.
+
+| Symbol | What it is |
+|---|---|
+| `Routes` (`SETUP = "setup"`, `HOME = "home"`) | Plain string routes (plan D3): Navigation 2.8's type-safe routes need the kotlinx-serialization compiler plugin, which the project does not use. No arguments, no deep links. The debug catalogue's route (`dev/catalog`) is private to `src/debug/.../DevEntry.kt`, so release has no trace of it |
+| `PftNavHost(services, hasIdentity, modifier)` | The `NavHost`. Starts on `HOME` when `hasIdentity`, on `SETUP` otherwise. Setup's `onDone` navigates to `HOME` with `popUpTo(SETUP) { inclusive = true }`, so Back on Home leaves the app. All four transitions are `PftMotion.navEnter/navExit/navPopEnter/navPopExit`. It also calls `devRoutes()` (debug adds the catalogue; release adds nothing) |
+| `HomeUiState(userName, deviceLabel, loaded)`, `HomeViewModel(identity)` + `HomeViewModel.factory(services)` | Reads `identity.requireIdentity()` on `viewModelScope` and holds the user and phone name. Home is only reachable once an identity exists, so a missing or inconsistent one here is a bug and is not caught |
+| `HomeScreen(state, modifier, actions)` | Stateless: a `CollapsingHeaderScaffold` titled "Home", subtitle "<name> · <phone>" once loaded, one `EmptyState` ("Accounts and transactions arrive in the next update"). `actions` is the header's action slot (only `HeaderIconButton`s, UI-14) |
+| `HomeRoute(services, modifier, actions)` | The only place that touches `HomeViewModel` |
+| `devRoutes()` and `RowScope.DevHeaderActions(navigate)` in `src/debug` and `src/release` | Debug: the `dev/catalog` route (`DesignCatalog()`) and a "Design catalogue" `HeaderIconButton` (`PftSymbol.SETTINGS`) on Home that opens it. Release: both are empty |
+
+**Predictive back.** The manifest sets `android:enableOnBackInvokedCallback="true"` on `<application>`
+(`ManifestHardeningTest` pins it). On API 35 with the developer option "Predictive back animations"
+(`enable_back_animation`), a slow back swipe from the catalogue showed Home sliding in from the start
+while the catalogue followed the finger out to the end, with `PftMotion`'s pop transition, and a
+released swipe popped to Home. No glitch was seen. Back on Home finishes the activity. The result is
+recorded in `docs/architecture/design-system.md` and the learnings.
+
+**Lint.** Navigation 2.8.4's own lint checks (`WrongStartDestinationType`, `WrongNavigateRouteType`,
+`WrongPopBackStackRouteType`, `TypeSafeDestinationMissingAnnotation`, `ComposableDestinationInComposeScope`,
+`ComposableNavGraphInComposeScope`, `UnrememberedGetBackStackEntry`) throw `NoClassDefFoundError`
+inside lint on `PftNavHost.kt` with AGP 8.7.3, and one crashing detector aborts the whole run, so they
+are disabled in `app/build.gradle.kts` `lint { disable }` with the reason and a
+`TODO(AGP upgrade)` to re-enable them once the detector no longer crashes. The deep-link checks stay
+on.
 
 ### Window theme
 
@@ -255,10 +285,8 @@ pre-Compose window colour would be wrong. AP1 fixes this with `UiModeManager.set
 
 ### Debug and release source sets
 
-`DevContent()` is what `PftRoot` shows for a ready database until A5f brings the navigation host. In `src/debug` it
-shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font, sans font (Figtree, Plus Jakarta Sans or system) and font scale, plus an Accent page for the manual amber check and a Palettes page (use it
-to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds an empty
-twin, so nothing from the catalogue ships in `DevContent`. `TokenSheet` itself lives in `main`
+In `src/debug`, `devRoutes()` adds the `dev/catalog` route to `PftNavHost` and `DevHeaderActions` puts a "Design catalogue" button in Home's header. The route shows `DesignCatalog`: the token sheet, a motion page (press target, one spring track per token), the bottom bar, both header styles and a page each for money text, chips, sections, the empty state and the category glyphs (sources plus every symbol), with toggles for light/dark, the light palette, the dark palette, dynamic colour, hero font, sans font (Figtree, Plus Jakarta Sans or system) and font scale, plus an Accent page for the manual amber check and a Palettes page (use it
+to check tokens and components on the emulator or phone; it grows with each DS slice). `src/release` holds empty twins of both (`ReleaseHasNoCatalogueTest` proves Home has no such action and the catalogue class is not on the release classpath), so nothing from the catalogue ships. `TokenSheet` itself lives in `main`
 (`ui/theme`) so the screenshot tests can render it on both unit-test variants; it is unreferenced by
 release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 
@@ -306,7 +334,7 @@ no icon library is a dependency (`material-icons-core` is on the classpath throu
 Project: `:core:money` (`implementation`, DS5): `MoneyText` formats through `PaiseFormat`. It has no
 external dependencies, so the lockfiles and verification metadata did not change.
 
-A5c (pins only; A5b now uses `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` and coroutines; the navigation host arrives in A5f): `androidx.navigation:navigation-compose` 2.8.4 (nav host; brings
+A5c (pins only; A5b uses `lifecycle-viewmodel-compose`, `lifecycle-runtime-compose` and coroutines; A5f uses navigation): `androidx.navigation:navigation-compose` 2.8.4 (nav host; brings
 `navigation-runtime`/`-common` and, at runtime only, `kotlinx-serialization-core` 1.6.3: the serialization
 *compiler plugin* is not applied anywhere), `androidx.lifecycle:lifecycle-viewmodel-compose` and
 `lifecycle-runtime-compose` 2.8.7 (this moves the whole lifecycle family 2.8.3 to 2.8.7), and
@@ -345,8 +373,12 @@ reason in the file (H3 narrows it). Add a rule only for something R8 reports or 
 broken, with a comment saying why. There is deliberately **no release `signingConfig`** (H3 adds it from
 `ANDROID_KEYSTORE_*` and must fail closed), so `assembleRelease` yields `app-release-unsigned.apk`.
 The release APK is about 21 MB with R8 since SQLCipher's native libraries (four ABIs) joined it
-(1.4 MB before; the app code itself is still about 1.4 MB). DS3's 92 icons add about 87 KB once
-something in release references `PftSymbol` (A5), and 4 KB (the licence text) until then.
+(1.4 MB before; the app code itself was about 1.4 MB). A5f, which wires the first screens, measured
+21,415,742 B before and 22,290,811 B after (+875,069 B): `classes.dex` +785,168 B (navigation-compose,
+`navigation-runtime`/`-common`, `kotlinx-serialization-core`, the ViewModel plumbing and the new
+Setup, Home and form code, now reachable), the 92 `PftSymbol` drawables +51,492 B (DS3 predicted about
+87 KB), `resources.arsc` +28,272 B and the baseline profile +1.4 KB. The dex growth, not the icons,
+is the surprise: the plan expected about +87 KB.
 
 `verifyReleaseShrink` (registered in `app/build.gradle.kts`, wired into `check`) runs
 `assembleRelease`, reads `build/outputs/mapping/release/mapping.txt` and fails with a clear message
@@ -378,6 +410,8 @@ scale on 320dp, rolling digits), `StatusChipTest`, `GroupedSectionTest`, `EmptyS
 line metrics (`TextLayoutSupport.kt`), not `hasVisualOverflow`, which is unreliable in Compose 1.7.
 
 A5e adds `SetupViewModelTest` (Robolectric, real Room through `AppServices`; the main looper is idled by `testing/awaitMain`, which also lets the ViewModel's `viewModelScope` run: blank and over-long names, the phone-name error only, a valid save with its three audit rows and the `setup_completed` line, the double-submit guard (a mutation test showed the guard is what keeps a changed second submit out), prefill), `SetupScreenTest` (copy, Continue in the bottom bar with a 48dp `touchBoundsInRoot` target, disabled while saving, error text, typing), `SetupRouteTest` (the real route over a real database) and `SetupScreenshotTest` (five `setup-expanded-*` goldens: light, dark, light at 200% font, light with the name in error, light while saving; fake data only). Under Compose rules, wait for a ViewModel result with `awaitMain { compose.waitForIdle(); condition }`: `compose.waitUntil` alone did not let the Main-dispatched save finish.
+
+A5f adds `SetupFlowTest` (the M1a acceptance test: the real `AppContainer` over a real Room database, through `PftRoot`; a fresh install shows Setup, Continue lands on "Akash · Pixel 8" with one user, one device, `current_device_id` and three audit rows persisted, system back on Home finishes the activity, a blank name stays on Setup with nothing saved, and when an identity appears while Setup is open Home shows the **existing** one, not what was typed), `LaunchRoutingTest` (an initialised database opens on Home with the stored identity, Setup is not shown (sampled at each poll as Home appears, and at the end), nothing new is written), `HomeViewModelTest`, `HomeScreenTest`, `PftRootTest` (Home or Setup for a ready database), `DevRouteTest` (`src/testDebug`: the "Design catalogue" action opens the catalogue and back returns to Home), `ReleaseHasNoCatalogueTest` (the new `src/testRelease`: no such action, and the catalogue class is absent) and two `ManifestHardeningTest` cases (the predictive-back flag; the launcher is the only intent filter). Mutation checks: removing `popUpTo` failed the back test, and starting always on Setup failed `LaunchRoutingTest`; a release `DevHeaderActions` that drew the button failed `ReleaseHasNoCatalogueTest`. No golden changed.
 
 A5d adds the form-block tests: `FieldStateTest` (JUnit 5, pure, through core's real `Validation`: errors, edit-clears-error, the exhaustive mapping), `NameFieldTest` (label, error text and error semantics, no truncation at 120 or 5,000 characters), `EditFormScaffoldTest` (primary in the bottom bar and outside the list, disabled while saving, Back absent or present with a 48dp `touchBoundsInRoot`) and `FormScreenshotTest` (`form-light`, `form-dark`, `form-light-2x` goldens). The debug catalogue has a Forms page, covered by `DesignCatalogTest`. `DesignCatalogTest` also asserts every page chip fits the window width on one line.
 

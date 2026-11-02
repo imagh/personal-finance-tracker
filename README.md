@@ -2,7 +2,7 @@
 
 A private, offline-first Android app for tracking a household's expenses, budgets, loans (EMIs) and goals. It logs transactions automatically from SMS and email, parsed on-device, with local encrypted SQLite storage. Personal use for two people; accuracy, integrity, privacy and security come first.
 
-**Status:** Gradle skeleton and quality gates in place (M1a slice A1), `core/money`, the `core/ledger` foundations (A3) the Room database v1 with its core adapters (A4a), and its SQLCipher encryption with the Keystore-wrapped key and pre-migration backup (A4b) built; no user-visible features yet. Current milestone: M1a (core ledger).
+**Status:** Gradle skeleton and quality gates in place (M1a slice A1), `core/money`, the `core/ledger` foundations (A3) the Room database v1 with its core adapters (A4a), and its SQLCipher encryption with the Keystore-wrapped key and pre-migration backup (A4b) built, and first-run setup (A5): the app opens to a Setup screen (your name and this phone's name) and then a placeholder Home, and later launches go straight to Home. No ledger features yet. Current milestone: M1a (core ledger).
 
 | Read | For |
 |---|---|

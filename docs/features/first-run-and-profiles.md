@@ -1,9 +1,6 @@
 # First run and profiles
 
-Status: **DRAFT.** The setup screen and its ViewModel are built (plan A5e) but nothing opens them yet;
-the navigation that shows Setup on the first launch, and the Home it lands on, arrive in A5f, which
-also finalises this document. Treat everything below as the intended behaviour.
-PRD: L-8 (who is using this device). Plan:
+Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device). Plan:
 [2026-11-01-m1a-a5-first-run-setup.md](../plans/2026-11-01-m1a-a5-first-run-setup.md).
 
 ## What it does for you
@@ -18,25 +15,37 @@ PRD: L-8 (who is using this device). Plan:
   "At most 100 characters") and nothing is saved. The app never shortens what you typed: if it is
   too long, you shorten it. Spaces around a name are dropped when it is saved.
 - **Tapping Continue twice saves once.** While it saves, Continue is greyed out.
-- **There is no way back from this screen**, because nothing is behind it.
+- **Then you land on Home.** Home is a placeholder for now: its header says "Home" and, underneath,
+  who is using this phone ("Akash · Pixel 8"), and it says that accounts and transactions arrive in
+  the next update. This is how you can see the mark that every later entry will carry.
+- **Every later launch goes straight to Home.** You are never asked again. Pressing Back (or the
+  back gesture) on Home leaves the app: Setup is not behind it, so it can never be reached by going
+  back.
+- **There is no way back from Setup**, because nothing is behind it.
 - **Your names stay on the phone.** They are stored in the encrypted database, never sent anywhere
   and never written to the app's logs. The log notes only that setup was completed.
 - **Each phone has its own profile** until sync arrives (M1c, M2).
+- **If the stored profile is inconsistent**, the app does not set up a new one. It shows the "Your
+  data can't be opened" screen with the code `IDENTITY_CORRUPT` and changes nothing (see
+  [data-protection.md](data-protection.md)).
 
 ## Behaviour details
 
 - The profile (one user, one device, and the "this is the current device" setting) is saved in one
   step, together with its audit entries (three in all).
-- If a profile already exists when Continue is tapped (an unlikely race), the screen treats setup
-  as done instead of showing an error, because a profile exists either way.
-- Typed text is not kept if the app is killed mid-setup; you type the two short fields again.
-
-## Not yet (A5f)
-
-- Opening to Setup on a fresh install and to Home afterwards; the placeholder Home that shows
-  "<name> · <phone>"; back from Home leaving the app instead of returning to Setup.
+- If a profile already exists when Continue is tapped (an unlikely race, for example a second
+  start of setup), the screen treats setup as done instead of showing an error, because a profile
+  exists either way. What you typed is **not** saved in that case: Home shows the profile that was
+  already there.
+- Rotating the phone on Setup keeps what you typed. If the app is killed mid-setup, the typed text
+  is lost and you type the two short fields again.
+- In a debug build only, Home has an extra header button, "Design catalogue", for checking the
+  look of the app. Release builds do not contain it.
 
 ## Where it lives
 
-`app/.../ui/setup/` (`SetupViewModel`, `SetupScreen`, `SetupRoute`); validation is core's
-`Validation.requireName`; saving is core's `IdentityService.initialise`. See `app/README.md`.
+`app/.../ui/setup/` (`SetupViewModel`, `SetupScreen`, `SetupRoute`), `app/.../ui/nav/` (`PftNavHost`,
+`Routes`: Setup on a fresh install, Home otherwise) and `app/.../ui/home/` (`HomeViewModel`,
+`HomeScreen`, `HomeRoute`). Validation is core's `Validation.requireName`; saving is core's
+`IdentityService.initialise`. See `app/README.md`. The test that proves the flow end to end is
+`SetupFlowTest`.

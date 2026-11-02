@@ -241,6 +241,18 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 - **Refactor:** none.
 - **Follow-up (A4b): open off the main thread.** The database opens on the main thread today (Keystore work, key derivation of about 75 ms per connection, and the backup copy risk an ANR). `AppContainer` opens it off the main thread; `AppContainerTest` shows the UI thread is not blocked while the open runs (a slow fake `DatabaseFactory`), and `PftApplication.startup` is retired.
 
+**As built (A5, 2026-11-02).** B1 onwards build on these details; the detailed plan is [`2026-11-01-m1a-a5-first-run-setup.md`](2026-11-01-m1a-a5-first-run-setup.md):
+- **Split into six PRs** (A5a safe logging, A5c nav and lifecycle pins, A5b app container, A5d form blocks, A5e Setup, A5f nav host and Home), merged in that order. The step text above is the original single-PR sketch.
+- **`PftApplication.startup` is retired.** `PftApplication.container` (an `AppContainer`) opens the database once, off the main thread; M1b's SMS receiver calls the same `container.open()`.
+- **`UiState` is a convention, not a type** (D4): one immutable `XxxUiState` data class per screen, a `StateFlow` collected with `collectAsStateWithLifecycle`. There is no `UiState.kt` or `FormState.kt`; the form state is `ui/common/FieldState` (+ `FieldError`, `LedgerError.toFieldError()`).
+- **`EditFormScaffold` adds no `imePadding()`** (D6): `CollapsingHeaderScaffold` already pads its bottom bar, so the "+ imePadding" wording above would double-pad.
+- **String routes** (D3): `ui/nav/Routes` holds `SETUP` and `HOME`; type-safe routes need the serialization compiler plugin, which is not used. The nav host pops Setup on completion, so Back on Home leaves the app. The debug catalogue is a `src/debug` route, reached from a Home header button; release has neither.
+- **Coroutines are declared at the resolved 1.7.3**, not bumped to 1.9.0 (§3.3); navigation-compose 2.8.4 and lifecycle 2.8.7 as pinned.
+- **Lint:** navigation 2.8.4's own lint checks crash inside lint on the nav host with AGP 8.7.3, so seven of them are disabled in `app/build.gradle.kts` with the reason (A5f).
+- **Predictive back** is on (`enableOnBackInvokedCallback`, pinned by `ManifestHardeningTest`) and worked on an API 35 emulator (see `docs/architecture/design-system.md`).
+- **Release APK:** 21,415,742 B before A5f, 22,290,811 B after (+875,069 B, mostly the navigation and ViewModel libraries' dex, not the icons).
+- **Open (owner decision, in the A5f PR):** an unexpected exception from `initialise` (A5e follow-up b) and from `LaunchViewModel`'s open or identity read (F2) crash the app instead of showing a screen.
+
 ### Slice B — Accounts, categories, tags (`feat/m1a-ledger-setup`)
 
 **B1 — Accounts core + Room (v2)**
