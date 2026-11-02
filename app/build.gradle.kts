@@ -52,6 +52,23 @@ android {
         abortOnError = true
         // Upgrades are deliberate (docs/TECHNICAL.md §7.1), so "newer version available" is noise.
         disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+        // Navigation's own lint checks throw NoClassDefFoundError (androidx/navigation/lint/UtilKt,
+        // androidx/compose/lint/PsiUtilsKt) on PftNavHost.kt with this AGP/lint, and one crashing
+        // detector aborts the whole lint run. They are disabled here: the type-safe-route checks
+        // have nothing to check (the app uses plain string routes, plan A5 D3), and the remaining
+        // Compose ones flag misuse that PftNavHost's few lines are reviewed by hand against. The deep
+        // link checks stay on (the app has none).
+        // TODO(AGP upgrade): re-enable these navigation lint checks once the detector no longer crashes.
+        disable +=
+            setOf(
+                "WrongStartDestinationType",
+                "WrongNavigateRouteType",
+                "WrongPopBackStackRouteType",
+                "TypeSafeDestinationMissingAnnotation",
+                "ComposableDestinationInComposeScope",
+                "ComposableNavGraphInComposeScope",
+                "UnrememberedGetBackStackEntry",
+            )
     }
 
     sourceSets {

@@ -12,6 +12,7 @@ import dev.imagh.pft.app.di.AppContainer
 import dev.imagh.pft.app.security.DbKeyUnavailable.Reason
 import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
+import dev.imagh.pft.app.testing.awaitMain
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.ledger.settings.AppSetting
@@ -29,8 +30,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * [PftRoot] maps the launch state to what is drawn, through the real [AppContainer] over a real
- * Room database: nothing while opening, the fail-closed screen for each fail-closed cause. (The
- * ready, initialised case shows debug-only content for now: `PftRootReadyTest` in the debug tests.)
+ * Room database: nothing while opening, the fail-closed screen for each fail-closed cause, and for a
+ * ready database the navigation host's first screen (Setup on a fresh install, Home otherwise). The
+ * whole first-run flow is `SetupFlowTest`.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -49,10 +51,12 @@ class PftRootTest {
             PftTheme(ThemePrefs(dynamicColor = false)) { PftRoot(container) }
         }
 
+    // awaitMain, not compose.waitUntil: Home's ViewModel runs on the main dispatcher (A5e learning).
     private fun waitForText(text: String) =
-        compose.waitUntil(
-            timeoutMillis = 10_000,
-        ) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        awaitMain {
+            compose.waitForIdle()
+            compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
 
     @Test
     fun `an inconsistent identity shows the fail-closed screen with its code`() {
@@ -66,6 +70,27 @@ class PftRootTest {
 
         compose.onNodeWithText("Your data can't be opened").assertIsDisplayed()
         compose.onNode(hasText("who uses this phone", substring = true)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a ready, initialised database shows Home and no fail-closed screen`() {
+        runBlocking { RoomTestKit(database).initialise() }
+
+        show(AppContainer({ DatabaseStartup.Ready(database) }))
+        waitForText("Akash · Pixel")
+
+        compose.onNodeWithText("Home").assertIsDisplayed()
+        compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().size shouldBe 0
+        compose.onAllNodesWithText("Your data can't be opened").fetchSemanticsNodes().size shouldBe 0
+    }
+
+    @Test
+    fun `a ready, fresh database shows Setup and no fail-closed screen`() {
+        show(AppContainer({ DatabaseStartup.Ready(database) }))
+        waitForText("Welcome")
+
+        compose.onNodeWithText("Set up this phone").assertIsDisplayed()
+        compose.onAllNodesWithText("Your data can't be opened").fetchSemanticsNodes().size shouldBe 0
     }
 
     @Test
