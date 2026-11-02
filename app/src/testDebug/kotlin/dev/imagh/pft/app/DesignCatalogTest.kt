@@ -14,6 +14,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.text.TextLayoutResult
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.ResourceFont
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.common.HeaderTags
 import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.SansFont
@@ -330,5 +332,61 @@ class DesignCatalogTest {
         compose.onNodeWithText("Sizes").assertIsDisplayed()
         compose.onNode(hasScrollAction()).performScrollToNode(hasContentDescription("savings"))
         compose.onNodeWithContentDescription("savings").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the Forms section shows the form blocks with a field in error and Save in the bottom bar`() {
+        compose.setContent { PftTheme { DevContent() } }
+        compose.onNodeWithText("Forms").performClick()
+        compose.onNodeWithText("Forms").assertIsSelected()
+        // The toggle rows above the page take most of a phone's height, so the form's list scrolls to its fields.
+        listOf("Account name", "Nickname", "At most 100 characters").forEach { text ->
+            compose.onNodeWithTag(HeaderTags.LIST).performScrollToNode(hasText(text))
+            compose.onNodeWithText(text).assertIsDisplayed()
+        }
+        compose.onNodeWithText("Save").assertExists()
+    }
+
+    @Test
+    fun `every page chip fits the window width on one line, so none is cut off`() {
+        compose.setContent { PftTheme { DevContent() } }
+        val windowWidth =
+            compose
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.width
+        listOf(
+            "Tokens",
+            "Motion",
+            "Bottom bar",
+            "Standard header",
+            "Dashboard header",
+            "Forms",
+            "Money",
+            "Chips",
+            "Sections",
+            "Empty",
+            "Glyphs",
+            "Accent",
+            "Palettes",
+        ).forEach { label ->
+            val chip = compose.onNodeWithText(label)
+            chip.assertIsDisplayed()
+            val bounds = chip.fetchSemanticsNode().boundsInRoot
+            assertTrue(
+                "$label spans ${bounds.left}..${bounds.right} of $windowWidth",
+                bounds.left >= 0f && bounds.right <= windowWidth,
+            )
+            val layouts = mutableListOf<TextLayoutResult>()
+            chip
+                .fetchSemanticsNode()
+                .config
+                .getOrNull(SemanticsActions.GetTextLayoutResult)
+                ?.action
+                ?.invoke(layouts)
+            val layout = layouts.single()
+            assertEquals("$label wraps", 1, layout.lineCount)
+            assertFalse("$label is ellipsised", layout.isLineEllipsized(0))
+        }
     }
 }
