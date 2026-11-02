@@ -319,6 +319,7 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 31 | **No USB debugging on the primary phone** (it runs payment apps). Development and testing use the emulator, with fake SMS via `adb emu sms send`; the phone gets only sideloaded, release-signed builds | 2026-10-28 |
 | 32 | Cashew import **un-deferred**: it lands in M1a as slice I, a format spike on the owner's real export first, then the ledger import after C-final (D-1, roadmap R-2) | 2026-11-01 |
 | 33 | The existing-user picker on Setup is deferred until restore (D-3) or sync (M1c) can make it reachable; tracked as roadmap R-1 | 2026-11-01 |
+| 34 | **Encryption moves into the M1a foundation, not last.** The owner approved building SQLCipher encryption (with the Keystore-wrapped key and the pre-migration backup) in the persistence foundation, slice A4b, before any ledger feature, instead of last as §16 item 8 orders ("app lock + encryption"). App lock stays late (slice H). Reason recorded in the plan (`docs/plans/2026-10-28-m1a-core-ledger.md`, section 2 and Q3): retrofitting SQLCipher onto a plaintext database needs a `sqlcipher_export` migration, and plaintext financial data would otherwise exist on the emulator or phone in the meantime | 2026-11-03 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions
@@ -358,4 +359,4 @@ The owner builds **locally on their own machine** with their **Claude Pro plan**
 5. **No broad "audit everything" sessions** and no unnecessary subagents. Research is done once and written to `docs/research/`.
 6. **Stop points.** Every slice has a definition of done in advance; a slice that would overrun is cut down, not extended.
 7. **Current step (S0):** commit decisions, docs and setup only: starter kit adopted, local setup guide, rules. No application code.
-8. **Suggested slice order for M1a** after S0: schema + migrations + audit trail → accounts/categories/tags → transactions UI → budgets → recurring/subscriptions → loans/EMIs → goals → app lock + encryption.
+8. **Suggested slice order for M1a** after S0: schema + migrations + audit trail → accounts/categories/tags → transactions UI → budgets → recurring/subscriptions → loans/EMIs → goals → app lock + encryption. *(Encryption was moved ahead of this order, into the foundation slice A4b; app lock stays late, in slice H. See decision 34 in section 12.)*

@@ -500,7 +500,7 @@ About 32 slice PRs and 8 integration PRs, each sized for one session (TECHNICAL.
 | Root `README.md` (status, build/test commands, module map) | A1, A-final, C-final, H3 |
 | `docs/guides/local-setup.md` (`NVD_API_KEY`, running `connectedAndroidTest` on `pft35`) | A1, A4b |
 | `.pre-commit-config.yaml` comment about "slice M1a-1" | A1 (now real) |
-| PRD §16 note recording the encryption-first reorder (decision-log entry) | A-final, if the owner approves |
+| PRD §16 note recording the encryption-first reorder (decision-log entry) | A-final, if the owner approves. **Done 2026-11-03** (owner approved): PRD §12 decision 34, with a pointer in §16 item 8 |
 
 ## 10. Risks & mitigations
 
