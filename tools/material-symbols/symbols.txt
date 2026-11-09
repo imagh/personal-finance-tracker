@@ -1,0 +1,116 @@
+# The curated icon set: `<permanent key> <Material Symbols name>`. Keys are persisted in
+# category.icon_key and are NEVER renamed or removed, only added (PftSymbol, plan §3.6).
+# Chrome keys use semantic names (DS6e relies on back, search, filter, overflow, chevron_*);
+# category keys keep the Material name.
+
+# --- Chrome ---
+back arrow_back
+forward arrow_forward
+add add
+close close
+check check
+search search
+filter filter_list
+overflow more_vert
+chevron_left chevron_left
+chevron_right chevron_right
+expand_more expand_more
+expand_less expand_less
+edit edit
+delete delete
+undo undo
+lock lock
+settings settings
+calendar calendar_month
+info info
+warning warning
+error error
+visibility visibility
+visibility_off visibility_off
+download download
+upload upload
+tune tune
+sort sort
+transfer swap_horiz
+tag label
+history history
+check_circle check_circle
+
+# --- Food and drink ---
+restaurant restaurant
+local_cafe local_cafe
+fastfood fastfood
+local_bar local_bar
+bakery_dining bakery_dining
+local_pizza local_pizza
+icecream icecream
+
+# --- Shopping ---
+shopping_cart shopping_cart
+shopping_bag shopping_bag
+grocery grocery
+checkroom checkroom
+redeem redeem
+diamond diamond
+
+# --- Transport ---
+directions_car directions_car
+directions_bus directions_bus
+train train
+local_taxi local_taxi
+two_wheeler two_wheeler
+flight flight
+local_gas_station local_gas_station
+
+# --- Home and bills ---
+home home
+bed bed
+chair chair
+bolt bolt
+water_drop water_drop
+wifi wifi
+cleaning_services cleaning_services
+handyman handyman
+receipt_long receipt_long
+phone_iphone phone_iphone
+tv tv
+
+# --- Health ---
+medication medication
+local_hospital local_hospital
+fitness_center fitness_center
+spa spa
+favorite favorite
+
+# --- Fun and travel ---
+movie movie
+sports_esports sports_esports
+music_note music_note
+theater_comedy theater_comedy
+beach_access beach_access
+luggage luggage
+
+# --- Family and learning ---
+school school
+menu_book menu_book
+child_care child_care
+pets pets
+
+# --- Money and work ---
+work work
+payments payments
+account_balance account_balance
+savings savings
+trending_up trending_up
+credit_card credit_card
+account_balance_wallet account_balance_wallet
+currency_rupee currency_rupee
+local_atm local_atm
+receipt receipt
+subscriptions subscriptions
+
+# --- Other ---
+category category
+star star
+flag flag
+volunteer_activism volunteer_activism

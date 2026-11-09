@@ -1,6 +1,6 @@
 # Local setup (your machine)
 
-All builds, tests and Claude sessions run locally. This is slice **S0**: tooling only, no application code yet. Do these once per machine.
+All builds, tests and Claude sessions run locally. Do these once per machine. The Gradle project exists since slice **A1**; §9 shows the day-to-day commands.
 
 ## 1. Tools
 
@@ -90,7 +90,7 @@ pre-commit install && pre-commit install --hook-type pre-push
 python3 -m unittest discover -s tools/redact      # sanity check, should pass
 ```
 
-Never commit with `--no-verify`. The Gradle hooks skip themselves until the Gradle project exists.
+Never commit with `--no-verify`. The commit hook runs `./gradlew --quiet ktlintFormat detekt`, the push hook runs `./gradlew check` (tests, coverage floor, lint); the first run downloads Gradle 8.10.2 and the dependencies, so allow a few minutes. Both hooks configure `:app`, so the shell that runs `git commit` and `git push` needs `ANDROID_HOME` set (§2).
 
 ## 5. Secrets: environment only (docs/TECHNICAL.md §3)
 
@@ -100,6 +100,8 @@ Nothing secret goes in the repo. Put values in your shell profile or `~/.gradle/
 |---|---|
 | `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | Release signing (keystore lives outside the repo, e.g. `~/.android/`) |
 | `GOOGLE_OAUTH_CLIENT_ID` | Google sign-in for Gmail read-only and Drive appData |
+| `NVD_API_KEY` | OWASP dependency-check (`./gradlew dependencyCheckAggregate`). Request a free key at <https://nvd.nist.gov/developers/request-an-api-key> and export it in your shell profile. The scan refuses to start without it. It is not needed for `check` |
+| `OSSINDEX_USERNAME`, `OSSINDEX_TOKEN` | Sonatype OSS Index analyzer in the same scan (anonymous access was withdrawn). Create a free account at <https://ossindex.sonatype.org>, take the API token from your account settings, and export both in your shell profile; keep the token in the Keychain (`security add-generic-password -a "$USER" -s OSSINDEX_TOKEN -w`, read back with `security find-generic-password -a "$USER" -s OSSINDEX_TOKEN -w`). The scan refuses to start without them |
 
 Debug builds need none of these. The `.gitignore` and the agents' deny-list already block `.env*`, `local.properties`, keystores and your private exports.
 
@@ -127,3 +129,51 @@ Before every PR also run `/security-review` (docs/TECHNICAL.md §5). Agents open
 ## 8. Sample messages (when you are ready)
 
 See [collecting-sample-messages.md](collecting-sample-messages.md). Your bank list and redacted samples are still open for planning and are needed before M1b.
+
+## 9. Build, test and the emulator
+
+With `JAVA_HOME` and `ANDROID_HOME` set (§2), from the repo root:
+
+```bash
+./gradlew ktlintFormat detekt         # format and lint (what the commit hook runs)
+./gradlew check                       # everything the push hook runs: JVM + Robolectric tests, lint, 90% coverage floor on core
+./gradlew :app:testDebugUnitTest      # just the Robolectric tests
+./gradlew :app:assembleDebug          # debug APK in app/build/outputs/apk/debug/
+./gradlew dependencyCheckAggregate    # PR security step; needs NVD_API_KEY + OSSINDEX_* (§5), slow on first run
+./gradlew dependencyCheckAggregate -PscanAll  # same, report-only over build/test tooling
+```
+
+Robolectric downloads its Android 15 (`android-all`) jar from Maven Central the first time the app
+tests run and caches it under `~/.m2`; later runs are offline-capable.
+
+**Emulator (`pft35`, from §3).** Unit and Robolectric tests need no device. Instrumented tests
+(`src/androidTest`: the Android Keystore and SQLCipher, slice A4b) are not part of `check`; run them
+locally with the emulator up:
+
+```bash
+emulator -avd pft35 -no-window -no-audio -gpu host > /tmp/pft35-emulator.log 2>&1 &
+adb wait-for-device; adb shell getprop sys.boot_completed       # wait until it prints 1
+adb devices                                                     # expect: emulator-5554  device
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
+```
+
+**If the snapshot boot hangs** (`adb devices` stays `offline`), cold-boot instead:
+`emulator -avd pft35 -no-window -no-audio -no-snapshot-load -no-snapshot-save -gpu host`, then wait
+for `sys.boot_completed` = 1 (about 15 s). The tests use their own database name, Keystore alias and
+folder, so they never touch the app's real data; stop the emulator with `adb emu kill`.
+
+To try the app by hand: `./gradlew :app:installDebug`, then launch "Personal Finance Tracker". It
+shows a blank window for now (slice A1), and screenshots are deliberately blocked by `FLAG_SECURE`.
+The first start creates the encrypted database and its key. In a debug build you can look at the
+files with `adb shell run-as dev.imagh.pft ls -la databases no_backup`; deleting
+`no_backup/pft_db_key.bin` and restarting shows the "Your data can't be opened" screen
+(`KEY_FILE_MISSING`) and leaves the database untouched.
+
+**Dev devices that ran a build before A4b** (A4a created a plaintext `pft.db` and no key file) show
+`KEY_FILE_MISSING` with the A4b build, because the app never replaces an existing database. Uninstall
+the app, or clear its data (`adb shell pm clear dev.imagh.pft`), before installing A4b. This only affects
+development emulators and phones; there are no real users with an older database.
+
+**Changing dependencies.** Versions are pinned in `gradle/libs.versions.toml` and checked against
+lockfiles and `gradle/verification-metadata.xml`, so a new or upgraded dependency fails the build
+until you refresh them deliberately. The exact commands are in `build-logic/README.md`.

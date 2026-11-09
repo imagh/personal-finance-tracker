@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OWASP dependency-check suppressions (Rule C). Every entry needs:
+    - a <notes> reason saying why the finding does not apply or is accepted, and who decided;
+    - an `until` expiry date, so the suppression lapses and the finding comes back for review.
+  Never suppress by broad regex across unrelated libraries, and never without an expiry.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress until="2027-01-31Z">
+        <notes><![CDATA[
+        CVE-2026-53914: "JetBrains Kotlin before 2.4.20, code execution via unsafe deserialization in
+        the build cache metadata". The vulnerable code is in the compiler's build-cache handling, which
+        runs on the build machine; the scanner matches the shared Kotlin CPE onto kotlin-stdlib, which
+        ships in the APK but does not contain that code. Exposure on the build machine needs write access
+        to the local Gradle cache. Mitigation until Kotlin >= 2.4.20: no remote or shared Gradle build
+        cache. Owner accepted 2026-10-29; revisit with the toolchain bump (follow-up plan).
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib(-jdk7|-jdk8)?@.*$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+    <suppress until="2026-12-31Z">
+        <notes><![CDATA[
+        androidx.sqlite (sqlite, sqlite-android, sqlite-framework, sqlite-framework-android) 2.5.0 is
+        AndroidX's Kotlin/Java wrapper API over SQLite, and "2.5.0" is the wrapper's own version. The
+        scanner matches it to the CPE of the SQLite *engine* (sqlite:sqlite:2.5.0, a release from
+        the early 2000s) and reports that engine's whole CVE history (CVE-2015-3414 ... CVE-2025-6965).
+        None of that code is in these jars. The engine in use is the platform's SQLite (patched by OS
+        updates; minSdk 33) until A4b swaps in SQLCipher 4.7.2, which bundles its own SQLite.
+        A4b result (2026-10-30): the engine in the app is now the one inside libsqlcipher.so of
+        sqlcipher-android 4.7.2, SQLite 3.49.1, which is older than 3.50.2 (CVE-2025-6965). The scanner
+        cannot see inside native libraries, so it reports nothing for it; this suppression still says
+        nothing about the engine. The app only runs its own static, parameterised SQL, so those CVEs
+        (they need crafted SQL) are not reachable today; sqlcipher-android 4.10.0 bundles 3.50.4 and is
+        the way to remove the question (owner decision, see docs/architecture/persistence-and-security.md).
+        Added by the A4a developer; the owner decides whether to accept (docs/TECHNICAL.md section 5).
+        Expires so it comes back for review before the H3 release work.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/androidx\.sqlite/sqlite(-android|-framework(-android)?)?@2\.5\.0$</packageUrl>
+        <cpe>cpe:/a:sqlite:sqlite</cpe>
+    </suppress>
+    <suppress until="2026-12-31Z">
+        <notes><![CDATA[
+        CVE-2020-29582 (JetBrains Kotlin before 1.4.21: insecure temp file creation in the Java API used by
+        the standard library). It is fixed in 1.4.21, and the affected artifacts here are
+        kotlin-stdlib-jdk7 and -jdk8 1.8.20 (transitive of AndroidX; in these versions the jdk7/jdk8
+        artifacts are empty shims that forward to kotlin-stdlib). The scanner's CPE match ignores the
+        fixed-in version. Added by the A4a developer; the owner decides whether to accept.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk(7|8)@1\.8\.20$</packageUrl>
+        <cve>CVE-2020-29582</cve>
+    </suppress>
+</suppressions>
