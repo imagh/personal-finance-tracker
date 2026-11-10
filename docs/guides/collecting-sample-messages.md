@@ -44,7 +44,7 @@ PDF statements and other attachments are not read by the script (the app handles
 
 ## 3. Redact locally
 
-Requires Python 3.9+. No packages to install.
+Requires Python 3.10+. No packages to install.
 
 ```bash
 python3 tools/redact/redact.py --input ~/exports/sms-20261004123456.xml ~/exports/alerts.mbox --out ./redacted-out
