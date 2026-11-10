@@ -11,7 +11,7 @@ All builds, tests and Claude sessions run locally. Do these once per machine. Th
 | Android SDK | compile, install | Command-line tools plus exactly three packages: `platform-tools`, `platforms;android-35`, `build-tools;34.0.0`, and the emulator with one system image (§3). Lives in `~/Library/Android/sdk`. See §2. |
 | Android Studio | optional: Compose previews, profiler, emulator | Current stable; not pinned (it is a tool, not part of the build). Point it at the same SDK and JDK as the terminal. See §2. |
 | `adb` | drive the emulator, fake SMS, optional SMS export | From the SDK's `platform-tools`. Never enabled on the primary phone (see §3). |
-| Python 3.9+ | `tools/redact` | Standard library only |
+| Python 3.10+ | `tools/redact`, `tools/material-symbols` | Standard library only. macOS ships 3.9, so `brew install python@3.13` and keep `/opt/homebrew/bin` before `/usr/bin` in PATH |
 | `pre-commit` and `gitleaks` | local gates and secret scan | `brew install pre-commit gitleaks` (or `pip install pre-commit` and gitleaks from its release page) |
 | `uv` | installs graphify in isolation | |
 | Claude Code | the agents | Pro plan login |
