@@ -31,7 +31,7 @@ The owner tracks personal and family expenses in Cashew (Android) and shares a G
 - Publishing on the Play Store or supporting users beyond the owner's household.
 - Server-side components operated by the owner (M2 is explicitly serverless).
 - Insights and analytics beyond basic budget progress (M3).
-- Bank API / Account Aggregator integrations, receipt OCR. **[Proposed]**
+- Bank API / Account Aggregator integrations, receipt OCR. **[Proposed]** (Receipt OCR is out for M1; invoice-to-items is tracked as roadmap R-4.)
 - Multi-currency. INR only. **[Confirmed]**
 - Person-to-person lending/borrowing as a loan type. **[Confirmed for now: loans means EMI loans owed to banks and card issuers]**
 
@@ -93,6 +93,8 @@ Items the owner has asked to keep, with where each one lands. A plan that defers
 | R-1 | **Existing-user picker on Setup** ("I'm already a household member"), using core's `initialiseForExistingUser`. Today each phone is set up as a new user, because nothing in M1a can bring another user's profile onto a device. | The first slice that can: encrypted restore (D-3) or sync (M1c), whichever lands first | Deferred (A5 plan Q1, 2026-11-01) |
 | R-2 | **Cashew import** (D-1): bring the owner's existing Cashew data into the app. | M1a slice I: a format spike first, then the ledger import after C-final, then the other entities as their slices land (M1a plan, Slice I) | Planned; needs its own architect plan |
 | R-3 | **Launch-failure screen.** Today an unexpected exception from `container.open()` or `identity.currentIdentity()` in `LaunchViewModel` crashes every launch while the cause persists. It fails closed (nothing is changed) but gives no explanation. The fix is a screen with a fixed code and no exception text, path or content. It joins the existing A4b startup-failure follow-up (a failed pre-migration backup or an unopenable database). | M1a slice H2 (diagnostics), with the A4b startup-failure follow-up | Deferred (A5f review, 2026-11-02) |
+| R-4 | **Invoice image/PDF → proposed items.** Share an invoice and the app proposes items for the user to confirm; nothing is applied without confirmation, and the file stays on the device. Needs an explicit owner decision on on-device OCR (decision 4 and the M1 non-goal "receipt OCR") and a justified share target. | After roadmap R-5 (statistics), with its own architect plan | Future (decision 35, 2026-11-10) |
+| R-5 | **Statistics and graphs** for categories, sub-categories, tags, accounts, budgets, loans, goals and users, over week, month, quarter, year or a custom range. Figures are derived from transactions and their items when shown, never stored. | M3 (insights, §15), before roadmap R-4, with its own architect plan | Future (decision 35, 2026-11-10) |
 
 ---
 
@@ -117,7 +119,7 @@ The app must **detect bank accounts, credit cards and loans from SMS and email a
 
 | ID | Requirement |
 |---|---|
-| L-1 | A transaction has: amount, date/time, type (expense / income / transfer), account, category, optional sub-category, zero or more tags, title, description. |
+| L-1 | A transaction has: amount, date/time, type (expense / income / transfer), account, title, description, and **one or more items**. Each item has an amount, an optional category or sub-category, zero or more tags and an optional note. A plain transaction has one item. **[Confirmed]** (decision 35) |
 | L-2 | Categories form a two-level hierarchy (category → sub-category). Users can create, rename, recolour/re-icon, reorder and archive both. Archiving never deletes history. |
 | L-3 | Tags are free-form, user-defined, many-to-many with transactions. |
 | L-4 | Accounts represent the method/account used (bank account, credit card, cash, wallet/UPI). In M1 an account has a name, type, currency and optional identifiers used for matching (e.g. last 4 digits). Balance tracking from email is M2. |
@@ -127,6 +129,7 @@ The app must **detect bank accounts, credit cards and loans from SMS and email a
 | L-6 | A transaction's lifecycle state is visible: `unverified` (auto-logged, not yet reviewed) or `verified` (created manually or confirmed). **[Confirmed]** |
 | L-7 | Full-text search and filtering by date range, account, category, tag, amount, state. |
 | L-8 | Every transaction records who created it (user profile) and on which device. In M1 both users share one Google account, so the user profile is chosen per device on first run. **[Confirmed]** |
+| L-11 | **Itemised transactions.** Any transaction, manual or auto-captured, can be broken into items at creation or later. Item amounts always sum exactly to the transaction amount; a save that breaks this is refused. Itemising never changes the payment facts (amount, account, time, bank reference, source, state). Every item change is audited and attributed, and a removed item is kept as a tombstone. Category and tag budgets, filters and statistics count each item's portion; an overall budget counts the transaction once. **[Confirmed]** (decision 35) |
 
 ### 7.2 Budgets
 
@@ -320,6 +323,7 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 32 | Cashew import **un-deferred**: it lands in M1a as slice I, a format spike on the owner's real export first, then the ledger import after C-final (D-1, roadmap R-2) | 2026-11-01 |
 | 33 | The existing-user picker on Setup is deferred until restore (D-3) or sync (M1c) can make it reachable; tracked as roadmap R-1 | 2026-11-01 |
 | 34 | **Encryption moves into the M1a foundation, not last.** The owner approved building SQLCipher encryption (with the Keystore-wrapped key and the pre-migration backup) in the persistence foundation, slice A4b, before any ledger feature, instead of last as §16 item 8 orders ("app lock + encryption"). App lock stays late (slice H). Reason recorded in the plan (`docs/plans/2026-10-28-m1a-core-ledger.md`, section 2 and Q3): retrofitting SQLCipher onto a plaintext database needs a `sqlcipher_export` migration, and plaintext financial data would otherwise exist on the emulator or phone in the meantime | 2026-11-03 |
+| 35 | **Itemised transactions.** Every transaction has one or more items carrying the category, tags and note, and the items always sum exactly to the amount (L-1, L-11). Tags live only on items. Limits: 50 items per transaction, 200 characters per item note. Statistics and graphs (roadmap R-5) come in M3, before invoice-to-items (roadmap R-4). Plan: `docs/plans/2026-11-10-itemised-transactions.md` | 2026-11-10 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions
@@ -347,6 +351,8 @@ Implications to keep in mind while building M1:
 ## 15. Milestone 3 — placeholder
 
 Insights; requirements deliberately open. To be specified after M1/M2 usage shows what questions the owner actually asks of the data.
+
+Statistics and graphs across entities and interval types are already tracked as roadmap R-5 (§6.2).
 
 ## 16. Delivery constraints **[Confirmed]**
 

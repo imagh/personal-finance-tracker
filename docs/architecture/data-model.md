@@ -68,11 +68,11 @@ them.
 | 1 | A4a | `user_profile`, `device`, `app_setting`, `audit_entry` and the audit triggers |
 | 2 | B1 | `account` |
 | 3 | B3 | `category`, `tag` |
-| 4 | C1 | `ledger_transaction`, `transaction_tag` |
-| 5 | C3 | `transaction_fts` |
+| 4 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
+| 5 | C3 | `transaction_fts`, `transaction_line_fts` |
 | 6 | D3 | `budget`, `budget_scope`, `budget_revision` |
 | 7 | E3 | `recurring_rule`, `recurring_occurrence` |
 | 8 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
 | 9 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-Versions 2 onwards are planned (plan §4), not built.
+Versions 2 onwards are planned (plan §4), not built. Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.
