@@ -166,10 +166,11 @@ Room DB `pft.db`, starting at v1. Each slice adds tables through its own migrati
 | v1 | `app_setting` | key PK, value, updated_at (changes audited) |
 | v2 (B1) | `account` | name, type (BANK/CREDIT_CARD/CASH/WALLET), currency CHECK = 'INR', masked_identifier NULL, issuer NULL, opening_balance INTEGER (signed), archived |
 | v3 (B3) | `category` | parent_id NULL FK self, kind (EXPENSE/INCOME), name, colour, icon_key, sort_order, archived, system_key NULL UNIQUE (e.g. `LOAN_EMI`) |
-| v3 (B5) | `tag`, `transaction_tag` | tag: name (UNIQUE NOCASE among live rows), archived. The join table is created in C1 |
-| v4 (C1) | `ledger_transaction` | type (EXPENSE/INCOME/TRANSFER), direction (OUT/IN), amount INTEGER CHECK > 0, occurred_at (epoch ms UTC), account_id FK, category_id NULL FK, title, description, state (UNVERIFIED/VERIFIED), source (MANUAL/SMS/EMAIL/IMPORT/RECURRING), bank_ref NULL, source_message_id NULL, account_fragment NULL, transfer_group_id NULL, recurring_rule_id NULL; indexes on (occurred_at), (account_id, occurred_at), (category_id), (transfer_group_id) |
-| v4 (C1) | `transaction_tag` | (transaction_id, tag_id) PK |
-| v5 (C3) | `transaction_fts` | FTS4 content table over title, description |
+| v3 (B5) | `tag` | tag: name (UNIQUE NOCASE among live rows), archived. Its join table (`transaction_line_tag`, amended 2026-11-10) is created in C1 |
+| v4 (C1) | `ledger_transaction` | type (EXPENSE/INCOME/TRANSFER), direction (OUT/IN), amount INTEGER CHECK > 0, occurred_at (epoch ms UTC), account_id FK, title, description, state (UNVERIFIED/VERIFIED), source (MANUAL/SMS/EMAIL/IMPORT/RECURRING), bank_ref NULL, source_message_id NULL, account_fragment NULL, transfer_group_id NULL, recurring_rule_id NULL; indexes on (occurred_at), (account_id, occurred_at), (transfer_group_id). No category and no tags (amended 2026-11-10: they live on lines) |
+| v4 (C1) | `transaction_line` | meta columns; transaction_id FK RESTRICT, position > 0, amount INTEGER CHECK > 0, category_id NULL FK, note NULL; indexes on (transaction_id), (category_id). Live lines sum exactly to the transaction amount (enforced in core) |
+| v4 (C1) | `transaction_line_tag` | (line_id, tag_id) PK, index on (tag_id); replaces `transaction_tag` |
+| v5 (C3) | `transaction_fts`, `transaction_line_fts` | FTS4 content tables over title, description and over `transaction_line.note` |
 | v6 (D3) | `budget`, `budget_scope`, `budget_revision` | budget: name, period_type (WEEKLY/MONTHLY/CUSTOM), anchor_date, custom_end NULL, alert_threshold_pct, archived; scope rows: (budget_id, category_id or tag_id); revision: (budget_id, effective_from, limit_amount) |
 | v7 (E3) | `recurring_rule`, `recurring_occurrence` | rule: kind (RECURRING/SUBSCRIPTION/EMI), template fields (type, amount, account_id, to_account_id NULL, category_id, title, tag ids via `recurring_rule_tag`), frequency (DAILY/WEEKLY/MONTHLY/YEARLY), interval, start_date, end_date NULL, max_count NULL, mode (AUTO/CONFIRM), status (ACTIVE/PAUSED/CANCELLED), provider NULL, loan_id NULL; occurrence: (rule_id, due_date) **UNIQUE**, state (PENDING/CREATED/SKIPPED), transaction_id NULL |
 | v8 (F2) | `loan`; ALTER `ledger_transaction` ADD `loan_id`, `neutralised_by_loan_id` | loan: lender, account_fragment NULL, emi_amount, start_date, principal NULL, interest_rate_bps NULL (integer basis points, no float), tenure_months NULL, status |
@@ -177,9 +178,13 @@ Room DB `pft.db`, starting at v1. Each slice adds tables through its own migrati
 
 Canonical schema (§3.3): the core models are the canonical shape. Room entities in `app` are persistence DTOs mapped one-to-one, and core never sees them.
 
+**Amendment (2026-11-10, itemised transactions):** category and tags move from the transaction to its lines (`transaction_line`, `transaction_line_tag`), and v5 adds `transaction_line_fts`; the rows above are updated. Details and the invariant: [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) §4.
+
 ## 5. Flows
 
 **Manual expense (representative).** `AddTransactionScreen` → `AddTransactionViewModel.save()` → `Paise.parse(text)` (rejects bad input at the UI boundary) → `TransactionService.createExpense(cmd)` validates (account live, category of kind EXPENSE and live, amount > 0 and ≤ limit, title length) → `runner.inTransaction { transactionRepo.insert(txn); tagRepo.setTags(id, tags); audit.append(CREATE diff) }` → Room `withTransaction` → SQLCipher DB. The list screen observes `transactionQueries.month(yearMonth, filter): Flow<List<…>>` and updates.
+
+**Amendment (2026-11-10, itemised transactions):** the expense is saved with its lines, and budgets read `spendingLinesBetween`, not `spendingBetween`; the itemised flows are in [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) §5.
 
 **Transfer.** `TransactionService.createTransfer(from, to, amount, at)` creates two rows with one `transfer_group_id` (OUT on `from`, IN on `to`) and two audit entries in one DB transaction. Budgets and income/expense totals exclude TRANSFER (L-5).
 
@@ -278,6 +283,8 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 ### Slice C — Transactions (`feat/m1a-transactions`)
 
+**Amendment (2026-11-10, itemised transactions):** every transaction has one or more **lines** (items), each with an amount, category, tags and note, and the live lines always sum exactly to the transaction amount. [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) §6 **supersedes C1** (now C1a, C1b, C1c) and adds C4b; its C2, C3, C4 and C5 entries are deltas to the steps below, which stay as the base. Where they conflict (a category or tags on the transaction, `transaction_tag`, `spendingBetween`), that plan wins.
+
 **C1 — Expense/income core + Room (v4)**
 - **Red:** `TransactionServiceTest`: `createExpense` produces `type=EXPENSE, direction=OUT, state=VERIFIED, source=MANUAL`, attributed to the current user and device (L-6, L-8), and audited. Validation rejects an archived/deleted account, an INCOME category on an expense, an archived category, amount 0, and amount > limit. Tags are set many-to-many (L-3), and an optional `bank_ref` is stored (X-1). `edit` diffs only changed fields, including tags; a no-op edit writes no audit row. `delete` sets a tombstone and `restore` restores it. `markVerified` flips state and is audited. `AccountService.delete` of an account with live transactions → `AccountInUse`. Room integration, including a failure mid-`create` (bad tag id) leaving neither a transaction nor an audit row. `migrate3To4`.
 - **Green:** `core/ledger/.../transaction/{LedgerTransaction,TransactionType,Direction,TxnState,TxnSource,TransactionRepository,TransactionService}.kt`; `app/.../data/transaction/*`; `MIGRATION_3_4`.
@@ -313,10 +320,12 @@ Adds `:core:budget` to settings.
     - `DailyPaceTest` (pure): pace = remaining ÷ days left in the period, counting today, in integer paise rounded **down** (it never suggests more than is left). On the last day it equals remaining. Remaining ≤ 0 gives no pace (the UI shows "Over"). A past period gives no pace. Day counts use the period's local dates, so a DST change does not shift them.
     - `BudgetServiceTest`: `transactions(budgetId, period)` returns exactly the rows the calculator counts (same scope and type rules), newest first, so their sum equals `spent` for that period, for current and past periods alike.
 - **Green:** `core/budget/.../{Budget,BudgetScope,BudgetRevision,BudgetCalculator,BudgetProgress,DailyPace,BudgetRepository,BudgetService}.kt`; consumes `TransactionQueries.spendingBetween` and the category tree from `:core:ledger`. `DailyPace` is a plain function next to `BudgetCalculator`, and `BudgetProgress` carries its result.
+- **Amendment (2026-11-10, itemised transactions):** budgets count the in-scope portion of each line (`spendingLinesBetween`); an overall budget counts a transaction once; `transactions(budgetId, period)` returns `(transaction, inScopeAmount)` pairs. Tests: [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) "Later-slice deltas", D2.
 
 **D3 — Room (v6)**
 - **Red:** `RoomBudgetIntegrationTest`: create a budget and add expenses through `TransactionService`; `progress()` reflects them, and a deleted transaction drops out. `migrate5To6`.
 - **Green:** `app/.../data/budget/*`, `MIGRATION_5_6`.
+- **Amendment (2026-11-10, itemised transactions):** `RoomBudgetIntegrationTest` also covers one itemised expense.
 
 **D4 — Budgets UI: list and detail** (layout per design plan §3.4 and §5.5, owner decision Q11). **Amount contract (design plan DS5):** the budget mapper passes non-negative `Paise` with `Budget(state)` to `MoneyText` (an overspend as a magnitude with `OVER`, never a negative remainder), which throws in composition otherwise; test the mapper.
 - **Red:** `BudgetsFlowTest` (through the nav host, real in-memory Room):
@@ -338,6 +347,7 @@ Adds `:core:recurring`.
 **E2 — Rules, subscriptions, catch-up service (R-2, R-3, R-5)**
 - **Red:** `RecurringServiceTest` (fakes): rule CRUD is audited; SUBSCRIPTION requires a provider and exposes `nextDue`; pause/resume/cancel are audited and a paused rule generates nothing. `catchUp(today)`: AUTO creates one UNVERIFIED `source=RECURRING` transaction per missed due date, dated on its due date, with a deterministic id; running it twice creates nothing new (idempotent). CONFIRM creates PENDING occurrences; `confirm(occ)` creates a VERIFIED transaction and `skip(occ)` marks SKIPPED (audited, never silent). `overdue(today)` lists PENDING with due < today (R-5), and `upcoming(today, lookaheadDays)` reads lookahead from settings (R-3). Transfer templates create both legs.
 - **Green:** `core/recurring/.../{RecurringRule,RecurringKind,Occurrence,RecurringRepository,RecurringService}.kt`.
+- **Amendment (2026-11-10, itemised transactions):** generated transactions have one line from the template, with an id derived from the deterministic transaction id; catch-up twice adds no lines.
 
 **E3 — Room (v7)**
 - **Red:** `RoomRecurringIntegrationTest`: catch-up over Room is idempotent, and a concurrent second `catchUp` cannot insert a duplicate (UNIQUE constraint holds, and the service treats the conflict as already-processed). A failure creating the transaction leaves no occurrence row. `migrate6To7`.
@@ -352,6 +362,7 @@ Adds `:core:recurring`.
 **F1 — Core**
 - **Red:** `LoanServiceTest`: create a loan (lender required, EMI > 0, optional principal, rate in bps, tenure) as an audited CREATE; `withSchedule=true` also creates an EMI-kind CONFIRM monthly `RecurringRule` linked to the loan with category LOAN_EMI (LN-4). `linkEmi(txn, loan)` requires an EXPENSE and is audited. `progress(loan)` = paid (Σ linked live EMIs), count, and remaining payable (`emi × (tenure − count)`, or unknown). `markConverted(purchaseTxn, loan)` sets `neutralised_by_loan_id`, is audited, and `TransactionQueries.spendingBetween` then excludes it (LN-5; this updates the C3 test). An EMI confirmed from the recurring rule is auto-linked to the loan.
 - **Green:** `core/ledger/.../loan/{Loan,LoanRepository,LoanService,LoanProgress}.kt`. `LoanService` takes `RecurringService`? **No**: that would make ledger depend on recurring. Instead `LoanScheduleService` lives in `:core:recurring` (which already depends on ledger) and composes `LoanService` and `RecurringService`.
+- **Amendment (2026-11-10, itemised transactions):** an EMI is one `LOAN_EMI` line; `markConverted` on an itemised purchase removes all its lines from `spendingLinesBetween`.
 
 **F2 — Room (v8)**: `RoomLoanIntegrationTest` (loan plus linked EMIs give correct progress; a neutralised purchase is absent from budget spent end to end), `migrate7To8`.
 
@@ -362,6 +373,7 @@ Adds `:core:recurring`.
 **G1 — Core + Room (v9)**
 - **Red:** `GoalServiceTest`: create (target > 0, optional date) is audited; `linkContribution(txn, goal)` (for a transfer, only the IN leg carries the link, so it counts once); progress = Σ linked live amounts, percentage in bps, and complete when ≥ target; unlinking and transaction deletion reduce progress. Room integration and `migrate8To9`.
 - **Green:** `core/ledger/.../goal/*`, `app/.../data/goal/*`, `MIGRATION_8_9`.
+- **Amendment (2026-11-10, itemised transactions):** an itemised transaction linked to a goal counts its amount once.
 
 **G2 — UI**: `GoalsFlowTest`: create "Emergency fund ₹1,00,000", link a transfer, and the progress bar shows 10%.
 
@@ -371,6 +383,7 @@ Added 2026-11-01: the owner un-deferred PRD D-1 (decision 32, roadmap R-2). This
 
 - **I0 — Format spike (docs only).** The owner exports from Cashew. The spike records the format (CSV columns and/or backup-database tables) and how amounts, dates, transfers, sub-categories and IDs are represented, then maps them onto M1a entities, in `docs/research/`. The real export stays outside the repo; only redacted fixtures are committed. It needs no code, so it can run at any time.
 - **I1 — Ledger import** (after C-final): accounts, categories, tags and transactions, with preview, report and idempotent re-import.
+  **Amendment (2026-11-10, itemised transactions):** each imported transaction gets one line, unless the I0 spike finds itemised data in Cashew's export.
 - **Later PRs:** budgets, recurring/subscriptions, loans and goals, each after its slice (D–G) merges.
 
 ### Slice H — App lock, diagnostics, release (`feat/m1a-hardening`)
@@ -382,6 +395,7 @@ Added 2026-11-01: the owner un-deferred PRD D-1 (decision 32, roadmap R-2). This
 **H2 — Diagnostics screen (§3.7)**
 - **Red:** `DiagnosticsViewModelTest`: shows schema version, row counts per table, last catch-up time, app version and DB encryption = on, and the rendered text contains no amounts or names (asserted against seeded data containing a known payee and amount).
 - **Green:** `ui/diagnostics/*`, `DiagnosticsQueries`.
+- **Amendment (2026-11-10, itemised transactions):** diagnostics also shows the breakdown mismatch count (a number only).
 - **Follow-up (A4b, extended by A5f F2; PRD roadmap R-3): startup-failure screen.** A failed pre-migration backup (`PreMigrationBackupFailed`), a database SQLCipher cannot open, and an unexpected exception from `container.open()` or `identity.currentIdentity()` in `LaunchViewModel` are each a crash loop with no explanation today (only `DbKeyUnavailable` and `IdentityCorrupt` have a screen). Add a screen with a fixed code from a small enum (never exception text, a class name, a path or content), as `DataUnavailableScreen` has, and a test that it shows no path or content; it may link to the diagnostics screen. A retry must not open a second database over a failed first attempt (A5 plan follow-up F1): re-attempt only on the `KeyUnavailable` value, never after a thrown failure.
 
 **H3 — Release build and M1a acceptance**
@@ -410,8 +424,8 @@ Added 2026-11-01: the owner un-deferred PRD D-1 (decision 32, roadmap R-2). This
 | B3 / B4 | categories core+Room / categories UI | `feat/m1a-ledger-setup` | B1 | hierarchy rules isolated from UI |
 | B5 | tags (core+Room+UI; small) | `feat/m1a-ledger-setup` | B3 | small entity |
 | B-final | ledger setup | `main` | B1–B5 | |
-| C1, C2, C3, C4, C5 | expense/income; transfers; queries+FTS+balances; list+edit UI; search+detail UI | `feat/m1a-transactions` | B-final, sequential | each is one behaviour |
-| C-final | transactions | `main` | C1–C5 | **Owner can start daily manual entry here** |
+| C1a, C1b, C1c, C2, C3, C4, C4b, C5 | transaction+line model; itemisation; Room v4; transfers; queries over lines+FTS+balances; list+plain edit UI; items editor; search+detail UI (amended 2026-11-10, see [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) PR table) | `feat/m1a-transactions` | B-final, P0, sequential | each is one behaviour |
+| C-final | transactions | `main` | C1a–C5 | **Owner can start daily manual entry here** |
 | D1, D2, D3, D4 | period maths; calculator+service; Room; UI | `feat/m1a-budgets` | C-final | |
 | E1, E2, E3, E4 | engine; service; Room; UI+trigger | `feat/m1a-recurring` | C-final (parallel with D allowed) | |
 | F1, F2, F3 | loan core (+schedule via recurring); Room; UI | `feat/m1a-loans` | E-final | needs recurring for LN-4 |
@@ -456,7 +470,7 @@ About 32 slice PRs and 8 integration PRs, each sized for one session (TECHNICAL.
 | INT-1 | `PaiseTest` (property), detekt rule forbidding `Double`/`Float` in `core/money`/`ledger` money paths (custom `ForbiddenImport`/type config) |
 | INT-2 | audit assertions in every service test, `AuditDaoTest` |
 | INT-3 | delete/restore tests per entity |
-| INT-4 | `RoomTransactionRunnerTest`, atomicity tests in C1, C2, E3 |
+| INT-4 | `RoomTransactionRunnerTest`, atomicity tests in C1a, C1b, C1c (an itemised save that fails mid-way leaves no transaction, line or audit row), C2, E3 |
 | INT-5 | `MigrationTest` chain, `PreMigrationBackupTest` |
 | INT-6 | balance, budget, loan and goal tests computed from rows, with deletion changing the result |
 
