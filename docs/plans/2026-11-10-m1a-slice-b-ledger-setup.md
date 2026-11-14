@@ -4,7 +4,7 @@
 |-------------|-------|
 | Date        | 2026-11-10 |
 | Author      | architect |
-| Status      | Proposed: awaiting owner review (Q1 accepted 2026-11-10; Q2–Q7 open, §12). B1a, which no question touches, is in review |
+| Status      | Approved by the owner: Q1 accepted 2026-11-10, Q2–Q7 accepted as recommended 2026-11-13 (§12) |
 | Related ACs | PRD L-2 (two-level categories: create, rename, recolour/re-icon, reorder, archive), L-3 (tags; the link to transaction items is C1), L-4 (accounts: name, type, currency, optional identifiers), L-9 (one account per transaction; this slice supplies the accounts), L-8 (attribution on every record), INT-2, INT-3, INT-4, INT-5 (first real migration and its backup), INT-6 (no stored balance), SEC-5 (nothing logged), UI-6 (category icons and colours). L-1 and L-11 (itemised transactions) are slice C; this slice only supplies the entities and pickers each item uses |
 | Plan owner  | akashg (repo owner) |
 
@@ -474,3 +474,5 @@ End to end on the emulator (`pft35`, cold-booted per learnings), at B5b and agai
 | Q5 | Category names unique among live siblings (same parent and kind), ignoring case, like tags? Not in PRD or M1a; prevents two identical picker entries and helps Cashew import match by name. | **Yes.** |
 | Q6 | Reorder by Move up / Move down in the row menu (no drag and drop) for M1a? | **Yes.** |
 | Q7 | Kind and parent fixed after a category is created (edit name, colour and icon only)? | **Yes.** |
+
+**Owner answers (2026-11-13):** every default above is accepted. On Q4 the owner added that they must be able to create their own categories and sub-categories. That is already in scope (§1 outcome 2, steps B4a and B4b: create top-level categories, and sub-categories under a live top-level parent of the same kind), so the §4 list is only a starting set. B4b's `CategoriesFlowTest` already covers it end to end: it creates a new top-level "Pets", then "Vet" under that user-created parent.
