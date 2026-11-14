@@ -7,10 +7,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.theme.PftTheme
 
 /**
@@ -49,15 +47,8 @@ fun NameField(
         modifier = modifier.fillMaxWidth().padding(horizontal = spacing.gutter, vertical = spacing.sm),
         label = { Text(label) },
         isError = state.error != null,
-        supportingText = state.error?.let { error -> { Text(errorMessage(error)) } },
+        supportingText = state.error?.let { error -> { Text(error.message()) } },
         singleLine = true,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = imeAction),
     )
 }
-
-@Composable
-private fun errorMessage(error: FieldError): String =
-    when (error) {
-        FieldError.Required -> stringResource(R.string.field_required)
-        is FieldError.TooLong -> stringResource(R.string.field_too_long, error.max)
-    }

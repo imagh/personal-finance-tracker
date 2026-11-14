@@ -66,4 +66,7 @@ sealed class LedgerError(
     class SettingValueTooLong(
         val max: Int,
     ) : LedgerError("A setting value may be at most $max characters")
+
+    /** An account's last-digits identifier is not exactly four digits `0-9`. */
+    class InvalidMaskedIdentifier : LedgerError("The identifier must be exactly four digits")
 }

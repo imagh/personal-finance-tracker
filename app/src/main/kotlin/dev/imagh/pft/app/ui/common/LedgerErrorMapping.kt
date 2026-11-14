@@ -14,6 +14,7 @@ fun LedgerError.toFieldError(): FieldError? =
     when (this) {
         is LedgerError.BlankName -> FieldError.Required
         is LedgerError.NameTooLong -> FieldError.TooLong(max)
+        is LedgerError.InvalidMaskedIdentifier -> FieldError.InvalidLastFour
         is LedgerError.AmountNotPositive,
         is LedgerError.AmountTooLarge,
         is LedgerError.NotFound,

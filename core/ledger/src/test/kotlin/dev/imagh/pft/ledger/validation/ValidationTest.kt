@@ -141,5 +141,6 @@ class ValidationTest :
             LedgerError.BlankName().message shouldBe "A name is required"
             LedgerError.NameTooLong(20).message shouldBe "A name may be at most 20 characters"
             LedgerError.NotFound("account").message shouldBe "No such account"
+            LedgerError.InvalidMaskedIdentifier().message shouldBe "The identifier must be exactly four digits"
         }
     })

@@ -86,6 +86,11 @@ class FieldStateTest {
     }
 
     @Test
+    fun `InvalidMaskedIdentifier maps to InvalidLastFour`() {
+        assertSame(FieldError.InvalidLastFour, LedgerError.InvalidMaskedIdentifier().toFieldError())
+    }
+
+    @Test
     fun `form-level errors map to null`() {
         val formLevel: List<LedgerError> =
             listOf(
