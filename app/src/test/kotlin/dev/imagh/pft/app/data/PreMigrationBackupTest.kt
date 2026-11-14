@@ -224,6 +224,17 @@ class PreMigrationBackupTest {
     }
 
     @Test
+    fun `a failed database copy leaves no log copy behind`() {
+        database.mkdirs() // a directory where the file should be: the .db copy fails after the log is copied
+        wal.writeBytes(byteArrayOf(2, 2, 2))
+        withMarker(1)
+
+        shouldThrow<PreMigrationBackupFailed> { backup(currentVersion = 2).backUpIfOlder() }
+
+        backupNames() shouldBe emptyList()
+    }
+
+    @Test
     fun `recordOpened stores the current version, and a later start sees it`() {
         backup(currentVersion = 3).lastOpenedVersion().shouldBeNull()
 

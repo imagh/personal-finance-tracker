@@ -43,7 +43,8 @@ class PreMigrationBackupFailed(
  * `pft.db-wal` until a checkpoint. The database is not open at backup time (and SQLCipher cannot
  * checkpoint without the key), so the `-wal` file is copied next to the copy as
  * `pre-migration-v{n}.db-wal` and written first; the `.db` file's rename is the commit point, so a
- * backup is complete exactly when its `.db` exists. To restore, put both files back under the
+ * backup is complete exactly when its `.db` exists. If the `.db` copy fails, the log copy just written
+ * is deleted, so no lone log is left. To restore, put both files back under the
  * database's name and let SQLCipher open them with the key; it replays the log.
  *
  * **Secrecy.** The copy is as encrypted as the original (same key), so the backup is useless
@@ -85,7 +86,14 @@ class PreMigrationBackup(
             val walCopy = File(backupDir, backupName(stored) + WAL_SUFFIX)
             val wal = File(databaseFile.path + WAL_SUFFIX)
             if (wal.length() > 0) copyPrivately(wal, walCopy) else walCopy.delete()
-            copyPrivately(databaseFile, target)
+            try {
+                copyPrivately(databaseFile, target)
+            } catch (e: IOException) {
+                // A log without its .db restores nothing; delete() returns false rather than throwing,
+                // so the original failure propagates.
+                walCopy.delete()
+                throw e
+            }
             prune()
         } catch (e: IOException) {
             failed(e)
