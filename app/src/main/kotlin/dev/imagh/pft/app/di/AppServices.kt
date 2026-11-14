@@ -4,12 +4,14 @@ import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.data.RoomTransactionRunner
 import dev.imagh.pft.app.data.account.RoomAccountRepository
 import dev.imagh.pft.app.data.audit.RoomAuditLog
+import dev.imagh.pft.app.data.category.RoomCategoryRepository
 import dev.imagh.pft.app.data.identity.RoomIdentityRepository
 import dev.imagh.pft.app.data.settings.RoomAppSettingsRepository
 import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
 import dev.imagh.pft.ledger.audit.AuditedWriter
+import dev.imagh.pft.ledger.category.CategoryService
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
@@ -51,6 +53,9 @@ class AppServices(
     /** Accounts. */
     val accountRepository = RoomAccountRepository(database.accountDao())
 
+    /** Categories. */
+    val categoryRepository = RoomCategoryRepository(database.categoryDao())
+
     /** Builds audit entries into the audit log. */
     val recorder = AuditRecorder(auditLog, ids, clock)
 
@@ -65,4 +70,7 @@ class AppServices(
 
     /** Accounts: create, edit, archive, delete, restore and the lists. */
     val accounts = AccountService(writer, accountRepository, ids)
+
+    /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
+    val categories = CategoryService(runner, writer, categoryRepository, ids)
 }
