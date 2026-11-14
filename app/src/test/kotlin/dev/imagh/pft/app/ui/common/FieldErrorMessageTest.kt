@@ -52,4 +52,10 @@ class FieldErrorMessageTest {
         show(FieldError.InvalidLastFour)
         compose.onNodeWithText("Enter exactly 4 digits").assertIsDisplayed()
     }
+
+    @Test
+    fun `Duplicate says the name is already in use`() {
+        show(FieldError.Duplicate)
+        compose.onNodeWithText("Already in use").assertIsDisplayed()
+    }
 }

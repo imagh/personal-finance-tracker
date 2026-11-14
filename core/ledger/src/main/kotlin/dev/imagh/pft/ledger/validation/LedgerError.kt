@@ -69,4 +69,30 @@ sealed class LedgerError(
 
     /** An account's last-digits identifier is not exactly four digits `0-9`. */
     class InvalidMaskedIdentifier : LedgerError("The identifier must be exactly four digits")
+
+    /** A sub-category was put under a category that is itself a sub-category: two levels only. */
+    class DepthExceeded : LedgerError("Categories can only be nested two levels")
+
+    /** A sub-category is not the same kind (expense or income) as its parent. */
+    class KindMismatch : LedgerError("A sub-category must be the same kind as its parent")
+
+    /** A category still has sub-categories, so it cannot be deleted yet. */
+    class HasChildren : LedgerError("Delete the sub-categories first")
+
+    /** A reorder named a different set of categories than the ones that are there now. */
+    class InvalidOrder : LedgerError("The order does not match the current categories")
+
+    /** A category icon is not a symbol key or an emoji in the allowed form. */
+    class InvalidIcon : LedgerError("The icon is not valid")
+
+    /**
+     * Another record of the same kind already has this name. [what] is the kind of record (such as
+     * `category`), **never the name**: the name is user content and must not reach logs.
+     */
+    class DuplicateName(
+        val what: String,
+    ) : LedgerError("A $what with this name already exists")
+
+    /** The category is a system category (such as Loan EMI), which can be renamed but not archived or deleted. */
+    class SystemCategoryProtected : LedgerError("This category cannot be archived or deleted")
 }

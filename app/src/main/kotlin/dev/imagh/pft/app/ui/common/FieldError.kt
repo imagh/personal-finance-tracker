@@ -23,6 +23,9 @@ sealed interface FieldError {
 
     /** The last-four identifier is not exactly four digits. */
     data object InvalidLastFour : FieldError
+
+    /** Another record of the same kind already has this name (ignoring case); see `LedgerError.DuplicateName`. */
+    data object Duplicate : FieldError
 }
 
 /** The text the user reads for this error, from string resources (never from typed content). */
@@ -32,4 +35,5 @@ internal fun FieldError.message(): String =
         FieldError.Required -> stringResource(R.string.field_required)
         is FieldError.TooLong -> stringResource(R.string.field_too_long, max)
         FieldError.InvalidLastFour -> stringResource(R.string.field_invalid_last_four)
+        FieldError.Duplicate -> stringResource(R.string.field_duplicate)
     }

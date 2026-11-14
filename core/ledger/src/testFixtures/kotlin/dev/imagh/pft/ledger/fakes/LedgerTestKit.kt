@@ -4,10 +4,12 @@ import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
 import dev.imagh.pft.ledger.audit.AuditedWriter
+import dev.imagh.pft.ledger.category.CategoryService
 import dev.imagh.pft.ledger.identity.Identity
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
+import dev.imagh.pft.ledger.setup.FirstRunService
 
 /**
  * The core object graph wired over in-memory fakes, so a service test starts with one line
@@ -35,6 +37,9 @@ class LedgerTestKit {
     /** Accounts. */
     val accountRepository = InMemoryAccountRepository(store)
 
+    /** Categories. */
+    val categoryRepository = InMemoryCategoryRepository(store)
+
     /** Builds audit entries into [InMemoryLedgerStore.auditLog]. */
     val recorder = AuditRecorder(store.auditLog, ids, clock)
 
@@ -49,6 +54,12 @@ class LedgerTestKit {
 
     /** Accounts: create, edit, archive, delete, restore and the lists. */
     val accounts = AccountService(writer, accountRepository, ids)
+
+    /** Categories: create, edit, reorder, archive, delete, restore, the picker list and the defaults. */
+    val categories = CategoryService(store, writer, categoryRepository, ids)
+
+    /** First-run setup: the identity and the default categories, in one transaction. */
+    val firstRun = FirstRunService(store, identity, categories)
 
     /** An [IdentityService] over the same fakes whose audit entries go to [log] (to inject failures). */
     fun identityServiceWith(log: AuditLog) =

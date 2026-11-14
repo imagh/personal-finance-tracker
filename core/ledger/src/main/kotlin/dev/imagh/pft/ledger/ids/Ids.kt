@@ -52,3 +52,13 @@ value class AccountId(
         require(value.isNotBlank()) { "AccountId must not be blank" }
     }
 }
+
+/** Identifies a [dev.imagh.pft.ledger.category.Category]. */
+@JvmInline
+value class CategoryId(
+    override val value: String,
+) : EntityId {
+    init {
+        require(value.isNotBlank()) { "CategoryId must not be blank" }
+    }
+}
