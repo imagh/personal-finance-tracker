@@ -177,7 +177,8 @@ defines (the only swap boundaries in M1a); tables and conventions are in
 
 | Symbol | What it is |
 |---|---|
-| `PftDatabase` (`VERSION = 1`), `Migrations.ALL` | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`) with exported schemas in `app/schemas/`; the ordered list of migrations. **`PftDatabase.create(context, name, openHelperFactory)` is the only way to build it** (production and tests; `internal`, so only the app module, in production `DatabaseFactory`, can call it): it registers `Migrations.ALL` and the audit-trigger callback; `DatabaseFactory` only passes SQLCipher's open-helper factory. `name = null` is in-memory |
+| `PftDatabase` (`VERSION = 2`), `Migrations.ALL` (`MIGRATION_1_2`) | The Room database `pft.db` (`user_profile`, `device`, `app_setting`, `audit_entry`, `account`) with exported schemas in `app/schemas/`; the ordered list of migrations. **`PftDatabase.create(context, name, openHelperFactory)` is the only way to build it** (production and tests; `internal`, so only the app module, in production `DatabaseFactory`, can call it): it registers `Migrations.ALL` and the audit-trigger callback; `DatabaseFactory` only passes SQLCipher's open-helper factory. `name = null` is in-memory |
+| `AccountEntity`, `AccountDao`, `AccountMapper`, `RoomAccountRepository` (B1c, `data/account/`) | Table `account`, and core's `AccountRepository` over it: `RoomEntityRepository` plus `allLive()` (`deleted_at IS NULL`, no order; the service sorts). `AccountMapper` always writes `currency = 'INR'` and **fails closed on read** (`IllegalStateException` naming the column, never the value) for another currency or an unknown `type`. No `CHECK` and no index (Room cannot declare a CHECK; see `data-model.md`) |
 | `AuditTriggers` | The `BEFORE UPDATE`/`BEFORE DELETE` triggers that make `audit_entry` append-only (Room does not model triggers). Its callback re-installs them on **every open** (dropping a same-named trigger first), so a database that lost or had its triggers replaced is repaired; `PftDatabaseTest` covers it |
 | `RoomTransactionRunner(db)` | core `TransactionRunner` over `withTransaction`. A failure at any nesting depth rolls back the outermost block, even when an outer block swallows it (same as core's fake) |
 | `RoomAuditLog(dao)`, `AuditDao`, `AuditEntryMapper` | core `AuditLog`: insert and select only. `changes_json` is the pinned JSON shape written with `org.json` |
@@ -208,7 +209,7 @@ Package `dev.imagh.pft.app.di`, plus `ui/LaunchViewModel` and `ui/PftRoot`. Conc
 
 | Symbol | What it is |
 |---|---|
-| `AppServices(database, clock, auditLog = RoomAuditLog(..))` | The production object graph over an **open** `PftDatabase`: `ids`, `runner`, `identityRepository`, `settingsRepository`, `recorder`, `identity`, `settings`, `writer`. Does no I/O. `RoomTestKit` builds exactly this, so Room integration tests run the production wiring. The clock must be a whole-millisecond clock (`EpochMillis.clock`); `AppContainer` guarantees that |
+| `AppServices(database, clock, auditLog = RoomAuditLog(..))` | The production object graph over an **open** `PftDatabase`: `ids`, `runner`, `identityRepository`, `accountRepository`, `accounts` (`AccountService`), `settingsRepository`, `recorder`, `identity`, `settings`, `writer`. Does no I/O. `RoomTestKit` builds exactly this, so Room integration tests run the production wiring. The clock must be a whole-millisecond clock (`EpochMillis.clock`); `AppContainer` guarantees that |
 | `AppContainer(openDatabase, baseClock, io)`, `AppContainer.forApp(context)` | Owns *when* the database opens. `suspend fun open(): AppStart` opens it once, on `io` (`Dispatchers.IO`), never on the caller's thread and without blocking it; every caller, concurrent or later, shares the one result. The open belongs to the container, so a cancelled caller does not abort it. A key failure is the value `AppStart.KeyUnavailable`; any other failure is rethrown to every caller and never cached as `Ready` (the container does not retry). `openDatabase: () -> DatabaseStartup` is a function, a test seam for a slow or failing open, not an interface |
 | `AppStart` (`Ready(services)`, `KeyUnavailable(reason)`) | How `AppContainer.open()` ended |
 | `LaunchViewModel(container, io)` + `LaunchState` (`Opening`, `KeyUnavailable(reason)`, `IdentityCorrupt`, `Ready(services, hasIdentity)`) | Maps `AppStart` plus `identity.currentIdentity()` to the launch state. `LedgerError.IdentityCorrupt` becomes `LaunchState.IdentityCorrupt` (one `identity_corrupt` log line), never "no identity". Its work runs on an injected IO dispatcher so Robolectric tests can wait for the state from the main thread. Anything unexpected is not caught: it ends the start |
@@ -300,7 +301,7 @@ release code and R8 drops it (checked by `verifyReleaseShrink`, below).
 ## Data it owns
 
 - `pft.db` (with `pft.db-wal` and `pft.db-shm`) in the app's database directory: the Room database
-  (schema v1: `user_profile`, `device`, `app_setting`, `audit_entry`; see
+  (schema v2: `user_profile`, `device`, `app_setting`, `audit_entry`, `account`; see
   [`docs/architecture/data-model.md`](../docs/architecture/data-model.md)), **encrypted with SQLCipher**.
   `AppContainer` (held by `PftApplication`) opens it and builds the services on it.
 - `noBackupFilesDir/pft_db_key.bin`: the wrapped database key (66 bytes, format v1). The KEK
@@ -441,7 +442,13 @@ native SQLite) with `runSuspending { }` around suspend calls, and never mock the
 `RoomAuditColumnsTest` (every column audited or allowlisted, plus tests that the check catches a miss).
 `MigrationTest` (in `src/testDebug`, because Robolectric serves the tested variant's merged assets and
 the exported schemas are debug-variant assets only) uses `MigrationTestSupport`: `createV1 { seed }`,
-then `migrateTo(version, migrations)`, which also fails unless the audit triggers survived.
+then `migrateTo(version, migrations)`, which also fails unless the audit triggers survived; B1c adds
+`migrate1To2` (the table's columns, the seeded rows, a row insert) and the one-step list check.
+`RoomAccountIntegrationTest` (every field round-trips through `AccountService`, each change with its
+audit entry; a failing audit write leaves no row) and `RoomAccountMapperTest` (INR, unknown type, no
+value in the message) cover accounts. The instrumented `EncryptedMigrationTest` (`pft35`, not in
+`check`) migrates an encrypted v1 file to `PftDatabase.VERSION` through `DatabaseFactory`; run it with
+`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.imagh.pft.app.data.EncryptedMigrationTest`.
 
 Robolectric tests use the JUnit 4 runner and execute on the JUnit Vintage engine, because
 Robolectric does not run on Jupiter. Robolectric downloads its `android-all` SDK 35 jar from Maven
