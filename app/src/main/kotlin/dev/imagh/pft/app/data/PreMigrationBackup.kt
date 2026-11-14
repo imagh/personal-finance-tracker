@@ -43,7 +43,9 @@ class PreMigrationBackupFailed(
  * `pft.db-wal` until a checkpoint. The database is not open at backup time (and SQLCipher cannot
  * checkpoint without the key), so the `-wal` file is copied next to the copy as
  * `pre-migration-v{n}.db-wal` and written first; the `.db` file's rename is the commit point, so a
- * backup is complete exactly when its `.db` exists. To restore, put both files back under the
+ * backup is complete exactly when its `.db` exists. If the `.db` copy fails, the log copy just written
+ * is deleted, and [prune] deletes any log copy whose `.db` is absent (for example after a crash
+ * between the two copies), so a lone log never lingers. To restore, put both files back under the
  * database's name and let SQLCipher open them with the key; it replays the log.
  *
  * **Secrecy.** The copy is as encrypted as the original (same key), so the backup is useless
@@ -85,7 +87,14 @@ class PreMigrationBackup(
             val walCopy = File(backupDir, backupName(stored) + WAL_SUFFIX)
             val wal = File(databaseFile.path + WAL_SUFFIX)
             if (wal.length() > 0) copyPrivately(wal, walCopy) else walCopy.delete()
-            copyPrivately(databaseFile, target)
+            try {
+                copyPrivately(databaseFile, target)
+            } catch (e: IOException) {
+                // A log without its .db restores nothing; delete() returns false rather than throwing,
+                // so the original failure propagates.
+                walCopy.delete()
+                throw e
+            }
             prune()
         } catch (e: IOException) {
             failed(e)
@@ -162,7 +171,10 @@ class PreMigrationBackup(
         }
     }
 
-    /** Keeps the newest [KEEP] backups (highest versions) and deletes the rest with their logs. */
+    /**
+     * Keeps the newest [KEEP] backups (highest versions) and deletes the rest with their logs, and
+     * deletes any log copy whose `.db` is absent (an orphan from a crash or an earlier failed copy).
+     */
     private fun prune() {
         val versions =
             backupDir
@@ -179,6 +191,11 @@ class PreMigrationBackup(
             File(backupDir, backupName(version)).delete()
             File(backupDir, backupName(version) + WAL_SUFFIX).delete()
         }
+        backupDir
+            .listFiles { _, name -> name.endsWith(WAL_SUFFIX) }
+            .orEmpty()
+            .filter { !File(backupDir, it.name.removeSuffix(WAL_SUFFIX)).exists() }
+            .forEach { it.delete() }
     }
 
     companion object {

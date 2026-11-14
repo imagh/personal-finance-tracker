@@ -162,7 +162,9 @@ version the copy holds). It keeps the newest three. The last-opened schema versi
   a missing one.
 - **WAL.** The database is not open at backup time and SQLCipher cannot checkpoint without the
   key, so `pft.db-wal` is copied alongside as `pre-migration-v{n}.db-wal`, written first; the `.db`
-  rename is the commit point. To restore, put both files back under the database's name and open
+  rename is the commit point. If the `.db` copy fails, the log copy just written is deleted, so no
+  orphan is left, and `prune()` also deletes any `-wal` copy whose `.db` is absent (for example after
+  a crash between the two copies). To restore, put both files back under the database's name and open
   with the key; SQLCipher replays the log. On the emulator a force-stopped app really leaves tens of
   KB of committed data in the `-wal` file, so a copy of the `.db` alone would be stale.
 - **Never overwritten, never the key.** An existing backup for a version is kept (a crash after a
