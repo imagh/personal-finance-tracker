@@ -60,6 +60,9 @@ android {
         // build only (a few KB of table definitions, no data) so the release APK does not carry
         // them; for that reason MigrationTest lives in src/testDebug.
         getByName("debug").assets.srcDir("$projectDir/schemas")
+        // The instrumented EncryptedMigrationTest reads the exported v1 schema from the test APK's
+        // assets to build an old encrypted database (the test APK is never shipped).
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
     }
 
     testOptions {
