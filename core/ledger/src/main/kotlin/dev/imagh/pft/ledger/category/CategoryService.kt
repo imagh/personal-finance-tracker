@@ -1,5 +1,6 @@
 package dev.imagh.pft.ledger.category
 
+import dev.imagh.pft.ledger.audit.AuditSource
 import dev.imagh.pft.ledger.audit.AuditedWriter
 import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.Uuid7
@@ -192,6 +193,43 @@ class CategoryService(
      * its non-archived children back.
      */
     suspend fun pickable(kind: CategoryKind): List<Category> = CategoryTree.pickable(repository.allLive(), kind)
+
+    /**
+     * Creates the default categories ([DefaultCategories.LIST]) that do not exist yet, in one
+     * transaction, audited with source [AuditSource.SYSTEM]; run by first-run setup.
+     *
+     * Each gets the id `DefaultCategories.idOf(seedKey)` and its position from the table order.
+     * One that already exists **as a tombstone too** is skipped, so a default the user deleted is not
+     * created again, and a second call writes and audits nothing.
+     *
+     * @throws LedgerError.NotInitialised before first-run setup.
+     */
+    suspend fun seedDefaults() {
+        runner.inTransaction {
+            DefaultCategories.LIST.forEach { entry ->
+                val id = DefaultCategories.idOf(entry.seedKey)
+                // `get`, not `getLive`: a default the user deleted is a tombstone, and stays deleted.
+                if (repository.get(id) == null) {
+                    val siblings =
+                        DefaultCategories.LIST.filter {
+                            it.parentSeedKey == entry.parentSeedKey && it.kind == entry.kind
+                        }
+                    writer.create(repository, id, AuditSource.SYSTEM) { meta ->
+                        Category(
+                            meta = meta,
+                            parentId = entry.parentSeedKey?.let(DefaultCategories::idOf),
+                            kind = entry.kind,
+                            name = entry.name,
+                            colour = entry.colour,
+                            iconKey = CategoryIcon.Symbol(entry.symbolKey),
+                            sortOrder = siblings.indexOf(entry),
+                            systemKey = entry.systemKey,
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     private suspend fun requireNotSystem(id: CategoryId) {
         if (repository.get(id)?.systemKey != null) throw LedgerError.SystemCategoryProtected()
