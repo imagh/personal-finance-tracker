@@ -12,6 +12,8 @@ import dev.imagh.pft.app.testing.awaitMain
 import dev.imagh.pft.app.ui.common.FieldError
 import dev.imagh.pft.ledger.audit.AuditEntry
 import dev.imagh.pft.ledger.audit.AuditLog
+import dev.imagh.pft.ledger.category.DefaultCategories
+import dev.imagh.pft.ledger.category.SystemCategory
 import dev.imagh.pft.ledger.settings.SettingKeys
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CancellationException
@@ -53,6 +55,20 @@ class SetupViewModelTest {
             cursor.getString(0)
         }
 
+    /** The 31 defaults of plan §4: [DefaultCategories.LIST], each stored under its deterministic id. */
+    private fun assertDefaultsSeeded() {
+        count("category") shouldBe "31"
+        val stored = blocking { services.categoryRepository.allLive() }
+        val expected = DefaultCategories.LIST.map { DefaultCategories.idOf(it.seedKey) }.toSet()
+        stored.map { it.meta.id }.toSet() shouldBe expected
+        val emi = blocking { services.categoryRepository.bySystemKey(SystemCategory.LOAN_EMI) }
+        emi?.name shouldBe "Loan EMI"
+        // Seeded in the same step as the identity, so every default is attributed to the new user and device.
+        val identity = blocking { services.identity.currentIdentity() }
+        stored.map { it.meta.createdByUserId }.toSet() shouldBe setOf(identity?.user?.id)
+        stored.map { it.meta.createdOnDeviceId }.toSet() shouldBe setOf(identity?.device?.id)
+    }
+
     @Test
     fun `a blank name is Required on the name field, saves nothing and is not done`() {
         val vm = viewModel()
@@ -67,6 +83,7 @@ class SetupViewModelTest {
         state.done shouldBe false
         blocking { services.identity.users() } shouldBe emptyList()
         count("audit_entry") shouldBe "0"
+        count("category") shouldBe "0"
     }
 
     @Test
@@ -115,10 +132,13 @@ class SetupViewModelTest {
         vm.state.value.name.error shouldBe null
         vm.state.value.deviceLabel.error shouldBe null
         ShadowLog.getLogs().map { it.msg } shouldBe listOf("setup_completed")
+        assertDefaultsSeeded()
+        // The user, the device and the setting (3 audit rows), then one CREATE per default.
+        count("audit_entry") shouldBe "34"
     }
 
     @Test
-    fun `two rapid submits create one user and three audit rows, with no error`() {
+    fun `two rapid submits create one user and one set of defaults, with no error`() {
         val vm = viewModel()
         vm.onNameChange("Akash")
 
@@ -127,7 +147,8 @@ class SetupViewModelTest {
         awaitMain { vm.state.value.done }
 
         blocking { services.identity.users() }.size shouldBe 1
-        count("audit_entry") shouldBe "3"
+        count("audit_entry") shouldBe "34"
+        assertDefaultsSeeded()
         vm.state.value.name.error shouldBe null
         vm.state.value.deviceLabel.error shouldBe null
     }
@@ -157,7 +178,8 @@ class SetupViewModelTest {
         vm.submit()
         awaitMain { !vm.state.value.saving }
 
-        count("audit_entry") shouldBe "3"
+        count("audit_entry") shouldBe "34"
+        count("category") shouldBe "31"
         vm.state.value.done shouldBe true
     }
 
@@ -173,14 +195,16 @@ class SetupViewModelTest {
         vm.state.value.name.error shouldBe null
         blocking { services.identity.users() }.map { it.displayName } shouldBe listOf("Akash")
         count("audit_entry") shouldBe "3"
+        // Nothing is seeded for an identity that already existed (no defaults for pre-slice-B installs, Q4).
+        count("category") shouldBe "0"
     }
 
     @Test
     fun `the phone name is prefilled from the default, trimmed and cut to the limit`() {
         // Built directly: a ViewModelStore hands back its first instance for the same class.
-        SetupViewModel(services.identity, "  Pixel 8 ")
+        SetupViewModel(services.firstRun, "  Pixel 8 ")
             .state.value.deviceLabel.text shouldBe "Pixel 8"
-        SetupViewModel(services.identity, "x".repeat(150))
+        SetupViewModel(services.firstRun, "x".repeat(150))
             .state.value.deviceLabel.text shouldBe "x".repeat(100)
     }
 
@@ -203,27 +227,29 @@ class SetupViewModelTest {
     // so a test double of it makes the transaction fail after the user, device and setting rows were
     // written, which Room then rolls back.
 
-    /** Throws [failure] on the first append, then behaves like [real]. */
-    private class FailsFirstAppend(
+    /** Throws [failure] on append number [failOn] (the first by default), then behaves like [real]. */
+    private class FailsOnAppend(
         private val real: AuditLog,
         private val failure: Throwable,
+        private val failOn: Int = 1,
     ) : AuditLog {
         var appends = 0
             private set
 
         override suspend fun append(entry: AuditEntry) {
             appends++
-            if (appends == 1) throw failure
+            if (appends == failOn) throw failure
             real.append(entry)
         }
     }
 
     private fun failingFirstSave(
         failure: Throwable = IllegalStateException("secret detail Akash"),
-    ): Pair<SetupViewModel, FailsFirstAppend> {
-        val audit = FailsFirstAppend(RoomAuditLog(database.auditDao()), failure)
+        failOn: Int = 1,
+    ): Pair<SetupViewModel, FailsOnAppend> {
+        val audit = FailsOnAppend(RoomAuditLog(database.auditDao()), failure, failOn)
         val failing = AppServices(database, EpochMillis.clock(), audit)
-        return SetupViewModel(failing.identity, "Pixel 8") to audit
+        return SetupViewModel(failing.firstRun, "Pixel 8") to audit
     }
 
     @Test
@@ -249,6 +275,36 @@ class SetupViewModelTest {
         // The whole transaction rolled back, not only the rows before the failing audit append.
         count("device") shouldBe "0"
         blocking { services.settingsRepository.get(SettingKeys.CURRENT_DEVICE_ID) } shouldBe null
+        count("category") shouldBe "0"
+    }
+
+    @Test
+    fun `a failure after the identity and some defaults were written rolls all of it back, and a retry seeds once`() {
+        // Append 10 is the seventh category: the user, device and setting rows and six defaults are already
+        // written inside the transaction when it fails.
+        val (vm, audit) = failingFirstSave(failOn = 10)
+        vm.onNameChange("Akash")
+        ShadowLog.clear()
+
+        vm.submit()
+        awaitMain { vm.state.value.saveFailed }
+
+        audit.appends shouldBe 10
+        vm.state.value.done shouldBe false
+        ShadowLog.getLogs().map { it.msg } shouldBe listOf("setup_failed")
+        blocking { services.identity.users() } shouldBe emptyList()
+        count("user_profile") shouldBe "0"
+        count("device") shouldBe "0"
+        count("app_setting") shouldBe "0"
+        count("category") shouldBe "0"
+        count("audit_entry") shouldBe "0"
+
+        vm.submit()
+        awaitMain { vm.state.value.done }
+
+        count("user_profile") shouldBe "1"
+        count("audit_entry") shouldBe "34"
+        assertDefaultsSeeded()
     }
 
     @Test
@@ -291,11 +347,13 @@ class SetupViewModelTest {
 
         vm.state.value.saveFailed shouldBe false
         vm.state.value.saving shouldBe false
-        audit.appends shouldBe 4
+        // One failed append, then the identity (3) and the defaults (31) of the successful retry.
+        audit.appends shouldBe 35
         blocking { services.identity.users() }.map { it.displayName } shouldBe listOf("Akash")
         count("user_profile") shouldBe "1"
         count("device") shouldBe "1"
-        count("audit_entry") shouldBe "3"
+        count("audit_entry") shouldBe "34"
+        count("category") shouldBe "31"
         blocking { services.identity.currentIdentity() }?.device?.label shouldBe "Pixel 8"
     }
 

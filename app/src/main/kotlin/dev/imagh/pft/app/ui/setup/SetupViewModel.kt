@@ -9,7 +9,7 @@ import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.app.log.LogEvent
 import dev.imagh.pft.app.log.SafeLog
 import dev.imagh.pft.app.ui.common.FieldState
-import dev.imagh.pft.ledger.identity.IdentityService
+import dev.imagh.pft.ledger.setup.FirstRunService
 import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.ledger.validation.Validation
@@ -40,13 +40,14 @@ data class SetupUiState(
 )
 
 /**
- * First-run setup: collects the user's name and this phone's name and saves them as the identity.
+ * First-run setup: collects the user's name and this phone's name and saves them as the identity, together
+ * with the default categories (`FirstRunService`: one transaction).
  *
  * - **Validation is core's.** Both fields go through [FieldState.check] with
  *   [Validation.requireName] and core's [LedgerLimits.MAX_NAME_LENGTH]; this class has no rule of its
- *   own, and `IdentityService.initialise` validates again. Nothing is saved unless both are valid.
+ *   own, and `FirstRunService.initialise` validates again. Nothing is saved unless both are valid.
  * - **One save.** [submit] sets [SetupUiState.saving] before it launches the save and ignores calls
- *   while saving or done, so a double tap creates one user and three audit rows. It must be called
+ *   while saving or done, so a double tap creates one user and one set of defaults. It must be called
  *   on the main thread (the UI does), which is what makes the check-then-set atomic.
  * - **Already set up is done.** [LedgerError.AlreadyInitialised] (an identity exists, for example
  *   after a race) is treated as success, because an identity exists either way.
@@ -55,16 +56,17 @@ data class SetupUiState(
  * - **An unexpected failure** (anything that is not a [LedgerError] already handled, and not a
  *   cancellation) is caught: [SetupUiState.saving] is reset, [SetupUiState.saveFailed] is set (a fixed
  *   message, never exception text), both typed fields are kept as typed, and one field-less
- *   `setup_failed` event is logged. Retrying is safe: `IdentityService.initialise` writes the user,
- *   device, setting and audit rows in one transaction, so a failed attempt leaves nothing behind.
+ *   `setup_failed` event is logged. Retrying is safe: `FirstRunService.initialise` writes the user,
+ *   device, setting, default categories and audit rows in one transaction, so a failed attempt leaves
+ *   nothing behind.
  *   A [CancellationException] is rethrown, so cancelling the ViewModel is never reported as a failure.
  *
- * @param identity first-run setup.
+ * @param firstRun first-run setup: the identity and the default categories.
  * @param defaultDeviceLabel the suggested phone name (the device model), trimmed and cut to the
  *   name limit for the prefill only; the user can edit it.
  */
 class SetupViewModel(
-    private val identity: IdentityService,
+    private val firstRun: FirstRunService,
     defaultDeviceLabel: String,
 ) : ViewModel() {
     private val mutableState =
@@ -103,7 +105,7 @@ class SetupViewModel(
             current.copy(name = name.state, deviceLabel = label.state, saving = true, saveFailed = false)
         viewModelScope.launch {
             try {
-                identity.initialise(validName, validLabel)
+                firstRun.initialise(validName, validLabel)
                 SafeLog.event(LogEvent.SetupCompleted)
             } catch (_: LedgerError.AlreadyInitialised) {
                 // An identity exists already: that is what setup is for, so it is done.
@@ -130,6 +132,6 @@ class SetupViewModel(
             services: AppServices,
             defaultDeviceLabel: String,
         ): ViewModelProvider.Factory =
-            viewModelFactory { initializer { SetupViewModel(services.identity, defaultDeviceLabel) } }
+            viewModelFactory { initializer { SetupViewModel(services.firstRun, defaultDeviceLabel) } }
     }
 }

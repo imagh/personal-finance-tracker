@@ -69,6 +69,9 @@ class RoomTestKit(
     /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
     val categories = services.categories
 
+    /** First-run setup: the identity and the default categories in one transaction. */
+    val firstRun = services.firstRun
+
     /** Performs first-run setup as `Akash` on `Pixel` and returns that identity. */
     suspend fun initialise(): Identity = identity.initialise("Akash", "Pixel")
 

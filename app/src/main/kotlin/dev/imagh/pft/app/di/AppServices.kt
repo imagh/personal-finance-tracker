@@ -15,6 +15,7 @@ import dev.imagh.pft.ledger.category.CategoryService
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
+import dev.imagh.pft.ledger.setup.FirstRunService
 import java.time.Clock
 
 /**
@@ -73,4 +74,7 @@ class AppServices(
 
     /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
     val categories = CategoryService(runner, writer, categoryRepository, ids)
+
+    /** First-run setup: the identity and the default categories in one transaction. */
+    val firstRun = FirstRunService(runner, identity, categories)
 }
