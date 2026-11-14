@@ -132,4 +132,24 @@ class MigrationTest {
         db.query("SELECT name, type FROM pragma_table_info(?)", arrayOf(table)).use { cursor ->
             generateSequence { if (cursor.moveToNext()) cursor.getString(0) to cursor.getString(1) else null }.toList()
         }
+
+    @Test
+    fun `createAt builds an older schema version with the audit row and the seeded rows`() {
+        support.createAt(2) {
+            it.execSQL(
+                "INSERT INTO account (id, created_at, updated_at, created_by_user_id, created_on_device_id, name, " +
+                    "type, currency, opening_balance) VALUES ('a1', 1, 1, 'u1', 'd1', 'Cash', 'CASH', 'INR', 700)",
+            )
+        }
+
+        val db = support.migrateTo(2)
+
+        db.version shouldBe 2
+        db.query("SELECT name, opening_balance FROM account WHERE id = 'a1'").use {
+            it.moveToFirst() shouldBe true
+            it.getString(0) shouldBe "Cash"
+            it.getLong(1) shouldBe 700L
+        }
+        support.auditRowCount(db) shouldBe 1
+    }
 }
