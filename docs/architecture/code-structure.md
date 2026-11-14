@@ -30,11 +30,12 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
                                          # EmptyStateSamples, CategoryGlyphSamples, FormSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
-      PftDatabase, Migrations, AuditTriggers   # the database (v2), its migration list, the audit_entry immutability triggers
+      PftDatabase, Migrations, AuditTriggers   # the database (v3), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
       common/                                  # MetaColumns, MetaMapper, BaseDao, EntityMapper, RoomEntityRepository (shared by every entity)
       identity/ settings/ audit/               # entities, DAOs, Room repositories: users+devices, app settings, the audit trail (RoomAuditLog, AuditEntryMapper)
       account/                                 # B1c: AccountEntity, AccountDao, AccountMapper (INR, fails closed), RoomAccountRepository
+      category/                                # B3b: CategoryEntity (self-FK, unique system_key), CategoryDao, CategoryMapper (colour key; bad colour/icon fall back, bad kind/system_key fail closed), RoomCategoryRepository
       DatabaseFactory, PreMigrationBackup      # A4b: opens pft.db through SQLCipher (key first, backup, eager open); the pre-migration copy
       DatabaseStartup                          # how opening ended: Ready(db) or KeyUnavailable(reason)
     security/                            # A4b: DbKeyManager (wrapped SQLCipher key, fail closed), DbKeyUnavailable, KekSource +

@@ -1,7 +1,7 @@
 # Data model
 
-The Room database `pft.db`: tables, conventions and the version table. Status: **schema v2 (plan
-slice B1c)**. Each later slice adds its tables through its own migration and a migration test and
+The Room database `pft.db`: tables, conventions and the version table. Status: **schema v3 (plan
+slice B3b)**. Each later slice adds its tables through its own migration and a migration test and
 updates this file in the same PR. The full table plan is in
 `docs/plans/2026-10-28-m1a-core-ledger.md` §4; the encryption layer (SQLCipher, Keystore key) is
 A4b and is described in [persistence-and-security.md](persistence-and-security.md).
@@ -25,7 +25,7 @@ are mapped one-to-one to them, and core never sees them (CLAUDE.md §3.3).
 Every column must be audited or named in an explicit, reviewed allowlist. The test
 `RoomAuditColumnsTest` enforces it by comparing `PRAGMA table_info` (minus the shared columns and the
 allowlist) with the keys of a fully populated sample's `auditFields()`. A new table must be
-registered in `AuditedTables` (test support) or the same test fails. Current allowlist:
+registered in `AuditedTables` (test support) or the same test fails. Current allowlist (unchanged by `category`):
 `app_setting.key` (the setting's identifier, not an audited value) and `account.currency` (always
 `INR`, not part of the model; the mapper writes it and refuses anything else on read).
 
@@ -83,13 +83,47 @@ them.
 - Two instrumented tests run it on the encrypted file (`EncryptedMigrationTest`, see
   [persistence-and-security.md](persistence-and-security.md)).
 
+## Version 3 (B3b)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `category` | shared columns, `parent_id` NULL (FK -> `category.id`), `kind` (the `CategoryKind` name), `name`, `colour` (the palette **key**, `coral`), `icon_key` NULL (`sym:<key>` or `emoji:<text>`), `sort_order` (INTEGER), `system_key` NULL (the `SystemCategory` name) | A group for the items of a transaction (PRD L-2), two levels. Indexes: `index_category_parent_id` on `parent_id` (Room requires one for the key) and **unique** `index_category_system_key` on `system_key` (SQLite allows many NULLs, so only system categories take part: at most one `LOAN_EMI` row, tombstones included) |
+
+- **Every column is audited; the allowlist did not grow.** The audit trail names `colour` by its enum
+  name (`CORAL`, like `kind` and `system_key`) while the column holds the key (`coral`): the audit-columns
+  test compares column names only, and the owner confirmed the difference.
+- **Foreign key `parent_id -> category(id)`, no `ON DELETE` action** (rows are tombstoned, never
+  removed). **Result of the plan's [Verify]: SQLite enforces it.** Room turns `PRAGMA foreign_keys` on, so
+  an insert whose `parent_id` does not exist fails with `SQLiteConstraintException`.
+  `RoomCategoryForeignKeyTest` pins it on the framework SQLite (Robolectric) and
+  `EncryptedDatabaseTest.foreignKeysAreEnforcedOnTheEncryptedDatabase` on SQLCipher (`pft35`). The
+  guard is still two layers: `CategoryService` validates the parent (live, top-level, same kind) in the
+  write transaction, and the database refuses a dangling reference whatever the service does. Because
+  the key is enforced, **a migration or a later table rebuild that inserts a child before its parent
+  fails**; insert parents first.
+- **No `CHECK` constraints and no partial indexes, and why.** Room creates a fresh database's tables
+  from the `@Entity` classes and cannot declare a `CHECK` or a `WHERE` index there, so one written only
+  into a migration would exist in upgraded databases and not in fresh installs: the two would silently
+  enforce different rules. So the rules SQL would have enforced live in core (`currency = 'INR'`, the name
+  rules, balance bounds, two levels, kind and parent fixed, and **name uniqueness among live siblings**,
+  checked case-insensitively inside the write transaction), and the schema holds only what Room can
+  declare on both paths: types, `NOT NULL`, the foreign key, plain and unique indexes.
+- **No default categories in the migration.** First-run setup creates them (`FirstRunService`, one
+  transaction with the identity). A database that already has an identity when it migrates to v3 stays
+  without them (owner decision Q4: no launch-time seeding; only dev installs existed).
+- **Migration `2 -> 3`** is the `CREATE TABLE` and two `CREATE INDEX` statements copied from the
+  exported `schemas/.../3.json`; `MigrationTest.migrate2To3` starts from a v2 database with an account
+  row, validates the result against that schema, and checks the columns, both indexes (and which is
+  unique), the key, the account row and the audit triggers. A second test inserts into the migrated table
+  and gets the dangling-parent and second-system-key refusals.
+
 ## Version table
 
 | Version | Slice | Adds |
 |---|---|---|
 | 1 | A4a | `user_profile`, `device`, `app_setting`, `audit_entry` and the audit triggers |
 | 2 | B1c | `account` (built) |
-| 3 | B3 | `category`, `tag` |
+| 3 | B3b | `category` (built) |
 | 4 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
 | 5 | C3 | `transaction_fts`, `transaction_line_fts` |
 | 6 | D3 | `budget`, `budget_scope`, `budget_revision` |
@@ -97,4 +131,4 @@ them.
 | 8 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
 | 9 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-Versions 3 onwards are planned (plan §4), not built. Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.
+`tag` moves out of version 3 into its own migration (v4, slice B5a; plan 2026-11-10 D3), so every row below it shifts by one (C1 becomes v5); the B-final PR renumbers this table and the plans that quote it. Versions 4 onwards are planned (plan §4), not built. Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.

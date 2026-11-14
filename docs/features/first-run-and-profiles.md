@@ -1,6 +1,6 @@
 # First run and profiles
 
-Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device). Plan:
+Status: **Built** (plan A5, finished in A5f; default categories added in slice B3b). PRD: L-8 (who is using this device). Plan:
 [2026-11-01-m1a-a5-first-run-setup.md](../plans/2026-11-01-m1a-a5-first-run-setup.md).
 
 ## What it does for you
@@ -14,8 +14,12 @@ Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device
   100 characters. If one is wrong, the message appears under that field only ("Required" or
   "At most 100 characters") and nothing is saved. The app never shortens what you typed: if it is
   too long, you shorten it. Spaces around a name are dropped when it is saved.
+- **Continue also sets up your categories.** In the same step it creates the starter list of categories
+  (31 of them: Food & dining, Transport, Salary and so on, see [categories-and-tags.md](categories-and-tags.md)),
+  so the app is ready to use. You can rename, recolour, re-icon, archive or delete them afterwards (except
+  Loan EMI, which cannot be archived or deleted).
 - **Tapping Continue twice saves once.** While it saves, Continue is greyed out.
-- **If saving fails unexpectedly** (for example the phone is out of storage), a red line under the fields says "Couldn't save. Try again." and TalkBack reads it out. Nothing was saved, both names stay exactly as you typed them, and Continue works again. The message goes away when you edit a name or tap Continue again. Trying again is safe: the profile is saved in one step, so it can never end up half-saved or doubled.
+- **If saving fails unexpectedly** (for example the phone is out of storage), a red line under the fields says "Couldn't save. Try again." and TalkBack reads it out. Nothing was saved, both names stay exactly as you typed them, and Continue works again. The message goes away when you edit a name or tap Continue again. Trying again is safe: the profile and the starter categories are saved in one step, so it can never end up half-saved or doubled (no profile without categories, no categories without a profile).
 - **Then you land on Home.** Home is a placeholder for now: its header says "Home" and, underneath,
   who is using this phone ("Akash · Pixel 8"), and it says that accounts and transactions arrive in
   the next update. This is how you can see the mark that every later entry will carry.
@@ -32,12 +36,14 @@ Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device
 
 ## Behaviour details
 
-- The profile (one user, one device, and the "this is the current device" setting) is saved in one
-  step, together with its audit entries (three in all).
+- The profile (one user, one device, and the "this is the current device" setting) and the 31
+  starter categories are saved in one step, together with their audit entries (three for the profile, one
+  per category, 34 in all). The category entries are marked as made by the system, attributed to you and
+  this phone.
 - If a profile already exists when Continue is tapped (an unlikely race, for example a second
   start of setup), the screen treats setup as done instead of showing an error, because a profile
   exists either way. What you typed is **not** saved in that case: Home shows the profile that was
-  already there.
+  already there, and no categories are created.
 - A failed save writes only "setup failed" to the app's log, with no details, no error text and no names.
 - Rotating the phone on Setup keeps what you typed. If the app is killed mid-setup, the typed text
   is lost and you type the two short fields again.
@@ -49,5 +55,6 @@ Status: **Built** (plan A5, finished in A5f). PRD: L-8 (who is using this device
 `app/.../ui/setup/` (`SetupViewModel`, `SetupScreen`, `SetupRoute`), `app/.../ui/nav/` (`PftNavHost`,
 `Routes`: Setup on a fresh install, Home otherwise) and `app/.../ui/home/` (`HomeViewModel`,
 `HomeScreen`, `HomeRoute`). Validation is core's `Validation.requireName`; saving is core's
-`IdentityService.initialise`. See `app/README.md`. The test that proves the flow end to end is
+`FirstRunService.initialise` (which runs `IdentityService.initialise` and then `CategoryService.seedDefaults`
+in one transaction). See `app/README.md`. The test that proves the flow end to end is
 `SetupFlowTest`.
