@@ -4,6 +4,7 @@ import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
 import dev.imagh.pft.ledger.audit.AuditedWriter
+import dev.imagh.pft.ledger.category.CategoryService
 import dev.imagh.pft.ledger.identity.Identity
 import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
@@ -35,6 +36,9 @@ class LedgerTestKit {
     /** Accounts. */
     val accountRepository = InMemoryAccountRepository(store)
 
+    /** Categories. */
+    val categoryRepository = InMemoryCategoryRepository(store)
+
     /** Builds audit entries into [InMemoryLedgerStore.auditLog]. */
     val recorder = AuditRecorder(store.auditLog, ids, clock)
 
@@ -49,6 +53,9 @@ class LedgerTestKit {
 
     /** Accounts: create, edit, archive, delete, restore and the lists. */
     val accounts = AccountService(writer, accountRepository, ids)
+
+    /** Categories: create, edit, reorder, archive, delete, restore, and the picker list. */
+    val categories = CategoryService(store, writer, categoryRepository, ids)
 
     /** An [IdentityService] over the same fakes whose audit entries go to [log] (to inject failures). */
     fun identityServiceWith(log: AuditLog) =
