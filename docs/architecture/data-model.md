@@ -1,7 +1,7 @@
 # Data model
 
-The Room database `pft.db`: tables, conventions and the version table. Status: **schema v1 (plan
-slice A4a)**. Each later slice adds its tables through its own migration and a migration test and
+The Room database `pft.db`: tables, conventions and the version table. Status: **schema v2 (plan
+slice B1c)**. Each later slice adds its tables through its own migration and a migration test and
 updates this file in the same PR. The full table plan is in
 `docs/plans/2026-10-28-m1a-core-ledger.md` §4; the encryption layer (SQLCipher, Keystore key) is
 A4b and is described in [persistence-and-security.md](persistence-and-security.md).
@@ -26,7 +26,8 @@ Every column must be audited or named in an explicit, reviewed allowlist. The te
 `RoomAuditColumnsTest` enforces it by comparing `PRAGMA table_info` (minus the shared columns and the
 allowlist) with the keys of a fully populated sample's `auditFields()`. A new table must be
 registered in `AuditedTables` (test support) or the same test fails. Current allowlist:
-`app_setting.key` (the setting's identifier, not an audited value).
+`app_setting.key` (the setting's identifier, not an audited value) and `account.currency` (always
+`INR`, not part of the model; the mapper writes it and refuses anything else on read).
 
 ## Version 1 (A4a)
 
@@ -61,12 +62,33 @@ builds an old-version database and, after every migration, fails unless all trig
 refuse to update or delete a seeded audit row. A migration that rebuilds `audit_entry` must re-create
 them.
 
+## Version 2 (B1c)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `account` | shared columns (below), `name`, `type` (the `AccountType` name), `currency` (always `INR`), `opening_balance` (signed paise), `masked_identifier` NULL (last four digits), `issuer` NULL | A place money is kept (PRD L-4). No stored balance (INT-6): the balance is the opening balance plus the account's transactions, computed in slice C. No foreign keys and no index (tens of rows) |
+
+- **`currency` fails closed.** `AccountMapper` always writes `INR` and throws on read for any other
+  value, naming the column and never the value. It is outside `auditFields()` because it is not on the
+  core model; the audit-columns test carries it as a reviewed allowlist entry.
+- **No `CHECK` constraints and no partial indexes, anywhere.** Room cannot declare either on an
+  `@Entity`, so one added only in a migration would exist in upgraded databases and not in fresh
+  installs. Invariants that SQL would enforce (INR, the name rules, balance bounds) live in core
+  services and mappers instead (plan 2026-11-10 §2, learnings 2026-11-10).
+- **Migration `1 -> 2`** is one `CREATE TABLE IF NOT EXISTS` copied verbatim from Room's exported
+  `schemas/.../2.json` (table name filled in), so an upgraded table is identical to a fresh one;
+  `MigrationTest.migrate1To2` validates it against that schema and checks the audit triggers survived.
+  Room writes the embedded shared columns **last** in the statement; the order is not part of the
+  contract.
+- Two instrumented tests run it on the encrypted file (`EncryptedMigrationTest`, see
+  [persistence-and-security.md](persistence-and-security.md)).
+
 ## Version table
 
 | Version | Slice | Adds |
 |---|---|---|
 | 1 | A4a | `user_profile`, `device`, `app_setting`, `audit_entry` and the audit triggers |
-| 2 | B1 | `account` |
+| 2 | B1c | `account` (built) |
 | 3 | B3 | `category`, `tag` |
 | 4 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
 | 5 | C3 | `transaction_fts`, `transaction_line_fts` |
@@ -75,4 +97,4 @@ them.
 | 8 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
 | 9 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-Versions 2 onwards are planned (plan §4), not built. Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.
+Versions 3 onwards are planned (plan §4), not built. Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.

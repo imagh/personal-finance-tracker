@@ -145,7 +145,7 @@ Defines (and `app` persists, since A4a) these tables; they are Room schema v1 (d
 | `audit_entry` | `id`, `entity_type`, `entity_id`, `action`, `changes_json`, `user_id`, `device_id`, `source`, `at`; insert-only, immutability enforced by DB triggers |
 | `app_setting` | `key`, `value`, `updated_at` |
 
-`account` (v2, added with the Room work in slice B1c) is defined here and persisted by `app`:
+`account` (schema v2) is defined here and persisted by `app`:
 `name`, `type`, `opening_balance` (signed paise), `masked_identifier`, `issuer`, plus the currency
 column the persistence layer owns.
 

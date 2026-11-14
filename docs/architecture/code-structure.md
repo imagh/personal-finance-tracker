@@ -30,10 +30,11 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
                                          # EmptyStateSamples, CategoryGlyphSamples, FormSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
-      PftDatabase, Migrations, AuditTriggers   # the database (v1), its migration list, the audit_entry immutability triggers
+      PftDatabase, Migrations, AuditTriggers   # the database (v2), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
       common/                                  # MetaColumns, MetaMapper, BaseDao, EntityMapper, RoomEntityRepository (shared by every entity)
       identity/ settings/ audit/               # entities, DAOs, Room repositories: users+devices, app settings, the audit trail (RoomAuditLog, AuditEntryMapper)
+      account/                                 # B1c: AccountEntity, AccountDao, AccountMapper (INR, fails closed), RoomAccountRepository
       DatabaseFactory, PreMigrationBackup      # A4b: opens pft.db through SQLCipher (key first, backup, eager open); the pre-migration copy
       DatabaseStartup                          # how opening ended: Ready(db) or KeyUnavailable(reason)
     security/                            # A4b: DbKeyManager (wrapped SQLCipher key, fail closed), DbKeyUnavailable, KekSource +
@@ -54,7 +55,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/debug/                             # debug-only: DevEntry (devRoutes(): the dev/catalog route; DevHeaderActions: Home's "Design catalogue" button) -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevEntry (devRoutes() and DevHeaderActions() add nothing)
   src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),
-                                         # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file)
+                                         # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file),
+                                         # data/EncryptedMigrationTest (an encrypted v1 file migrated to the current version, with its backup)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
                                          # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
     testing/                             # test support: TestDatabase, RoomTestKit, MigrationTestSupport, AuditColumnsCheck + AuditedTables,

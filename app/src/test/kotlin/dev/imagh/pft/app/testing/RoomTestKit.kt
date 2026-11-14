@@ -45,6 +45,9 @@ class RoomTestKit(
     /** App settings. */
     val settingsRepository = services.settingsRepository
 
+    /** Accounts. */
+    val accountRepository = services.accountRepository
+
     /** Builds audit entries into [auditLog]. */
     val recorder = services.recorder
 
@@ -56,6 +59,9 @@ class RoomTestKit(
 
     /** The audited write path every service uses. */
     val writer = services.writer
+
+    /** Accounts: create, edit, archive, delete, restore and the lists. */
+    val accounts = services.accounts
 
     /** Performs first-run setup as `Akash` on `Pixel` and returns that identity. */
     suspend fun initialise(): Identity = identity.initialise("Akash", "Pixel")

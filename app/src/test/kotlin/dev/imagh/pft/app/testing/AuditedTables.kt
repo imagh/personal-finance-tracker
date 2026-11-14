@@ -1,9 +1,12 @@
 package dev.imagh.pft.app.testing
 
+import dev.imagh.pft.ledger.account.Account
+import dev.imagh.pft.ledger.account.AccountType
 import dev.imagh.pft.ledger.entity.Auditable
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.identity.Device
 import dev.imagh.pft.ledger.identity.UserProfile
+import dev.imagh.pft.ledger.ids.AccountId
 import dev.imagh.pft.ledger.ids.DeviceId
 import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.settings.AppSetting
@@ -42,6 +45,20 @@ object AuditedTables {
             // `key` is the setting's identifier (its auditId), not an audited value; `updated_at` is
             // a meta column and the audit entry's own timestamp covers it.
             AuditedTable("app_setting", AppSetting("auto_lock_seconds", "60", at), nonAudited = setOf("key")),
+            // `currency` is always INR and not part of the model (plan D4): the mapper writes it and fails
+            // closed on anything else, so there is no value to audit.
+            AuditedTable(
+                "account",
+                Account(
+                    EntityMeta(AccountId("acc-1"), at, at, UserId("user-1"), DeviceId("device-1")),
+                    "HDFC Savings",
+                    AccountType.BANK,
+                    Paise(-250_000),
+                    "1234",
+                    "HDFC",
+                ),
+                nonAudited = setOf("currency"),
+            ),
             AuditedTable("sample_thing", SampleThing(meta, "Chai", Paise(2_500), "hot")),
         )
 
