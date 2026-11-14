@@ -42,3 +42,13 @@ value class AuditEntryId(
         require(value.isNotBlank()) { "AuditEntryId must not be blank" }
     }
 }
+
+/** Identifies an [dev.imagh.pft.ledger.account.Account]. */
+@JvmInline
+value class AccountId(
+    override val value: String,
+) : EntityId {
+    init {
+        require(value.isNotBlank()) { "AccountId must not be blank" }
+    }
+}
