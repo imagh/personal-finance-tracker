@@ -6,23 +6,23 @@ The core of the household ledger: client-generated ids, who-is-using-this-device
 audit trail and the one audited write path, atomic transactions, shared validation, and runtime
 settings. This is the **foundation** (plan step A3); accounts, categories, tags, transactions,
 loans and goals are added to this module by later slices, composed from the building blocks
-below. Pure Kotlin/JVM, no Android imports, no third-party runtime dependency (only
+below. **Accounts** are the first entity built on them (slice B1b, package `account`). Pure Kotlin/JVM, no Android imports, no third-party runtime dependency (only
 `:core:money`).
 
 ## Responsibilities & boundaries
 
 - **Owns:** UUIDv7 and name-based ids; typed id classes; `EntityMeta` (attribution and lifecycle
   columns); the audit model, diff and the `AuditedWriter`; the `TransactionRunner` contract;
-  `LedgerError` and `Validation`; users, devices and first-run setup; audited app settings; and
-  the repository interfaces for all of these.
+  `LedgerError` and `Validation`; users, devices and first-run setup; audited app settings;
+  accounts (`AccountService`); and the repository interfaces for all of these.
 - **Does not own:** persistence (Room implements the interfaces in `app`, built in A4a; SQLCipher follows in A4b),
   UI, logging, serialisation of audit `changes` (`app` does that with `org.json`), money
   representation (`:core:money`). Budget and recurring logic live in `:core:budget` and
   `:core:recurring`, which depend on this module.
 - **Layering:** UI -> ViewModel -> service -> repository -> db. Services contain business rules;
   repositories hold none. The only interfaces here are the swap boundaries `core` and `app` meet
-  at: `EntityRepository`, `IdentityRepository`, `AppSettingsRepository`, `AuditLog` and
-  `TransactionRunner` (CLAUDE.md abstraction bar). Everything else is concrete.
+  at: `EntityRepository`, `IdentityRepository`, `AppSettingsRepository`, `AccountRepository`,
+  `AuditLog` and `TransactionRunner` (CLAUDE.md abstraction bar). Everything else is concrete.
 - **Untrusted input:** `Validation`, `IdentityService` and `SettingsService` are the boundary for
   user-typed text. They trim, bound and type it before anything is stored.
 
@@ -40,10 +40,11 @@ entity step composes instead of re-implementing:
 | `AuditedWriter` | `audit` | `create`, `update`, `delete`, `restore`, `archive`, `unarchive`: one transaction, attribution from the current identity, the diff and the audit entry; a no-op writes nothing |
 | `AuditDiff`, `AuditEntry`, `FieldChange`, `AuditAction`, `AuditSource`, `AuditLog`, `AuditRecorder` | `audit` | the immutable trail: `diff(old, new)` of field text, the entry model, the insert-only `AuditLog` boundary, and the single place an entry is built |
 | `TransactionRunner` | `tx` | `inTransaction { ... }`: atomic, nestable; Room's `withTransaction` in `app` |
-| `Validation`, `LedgerLimits`, `LedgerError` | `validation` | `requireName`, `requireAmount`, `requireLive`; the static limits; the sealed error vocabulary (add new cases here) |
-| `Uuid7`, `NameBasedId`, `UserId`/`DeviceId`/`AuditEntryId`, `EntityId` | `ids` | time-sortable ids, deterministic UUIDv5 ids (`NameBasedId.of("recurring-txn", ruleId, dueDate)`), typed ids (each slice adds its own, implementing `EntityId`) |
+| `Validation`, `LedgerLimits`, `LedgerError` | `validation` | `requireName`, `requireOptionalName` (blank -> null), `requireAmount` (positive), `requireBalance` (signed, zero allowed, bounded by `MAX_AMOUNT` either way), `requireLive`; the static limits; the sealed error vocabulary (add new cases here) |
+| `Uuid7`, `NameBasedId`, `UserId`/`DeviceId`/`AuditEntryId`/`AccountId`, `EntityId` | `ids` | time-sortable ids, deterministic UUIDv5 ids (`NameBasedId.of("recurring-txn", ruleId, dueDate)`), typed ids (each slice adds its own, implementing `EntityId`) |
 | `IdentityService`, `Identity`, `UserProfile`, `Device`, `IdentityRepository` | `identity` | `initialise` / `initialiseForExistingUser` (first run), `currentIdentity()`, `requireIdentity()`, `users()` |
 | `SettingsService`, `AppSetting`, `AppSettingsRepository`, `SettingKeys` | `settings` | audited runtime settings: `get(key)`, `set(key, value)` |
+| `AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository` | `account` | accounts (PRD L-4): `create(draft)`, `edit(id, draft)`, `archive`/`unarchive`, `delete`/`restore`, `active()`, `all()`, `lists()` (active and archived, each sorted by name ignoring case, then by creation order); `AccountRules.requireMaskedIdentifier(text)` is public so a form can check the last four with core's rule. `AccountRepository` adds `allLive()` to `EntityRepository` |
 
 ### Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
 
@@ -56,7 +57,8 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 | `InMemoryEntityStore<T, Id>` | A keyed, insertion-ordered table with primary-key behaviour (duplicate insert and missing update fail) |
 | `InMemoryEntityRepository<T, Id>` | `EntityRepository` over a store; extend it with an entity's own queries (`protected val rows`) |
 | `InMemoryAuditLog`, `InMemoryIdentityRepository`, `InMemoryAppSettingsRepository` | the fakes for this module's boundaries |
-| `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `initialise()`; `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
+| `InMemoryAccountRepository` | `AccountRepository` over `InMemoryEntityRepository` (adds `allLive()`, which returns rows newest first on purpose, so no test depends on an order the contract does not promise); `all()` returns every row, tombstones included, in insertion order |
+| `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `accountRepository`, `accounts` (an `AccountService`), `initialise()`; `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
 | `TestClock` | a hand-moved `java.time.Clock` |
 | `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write, with no opt-out |
 | `shouldHaveAudited` / `shouldNotHaveAudited` | Kotest matchers over an audit trail: `kit.store.auditLog.entries.shouldHaveAudited("account", id, AuditAction.CREATE, userId = ...)` |
@@ -109,6 +111,17 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     field set): `entity.shouldHaveCompleteAuditFields()`. A fake write only checks the instance it
     is given, and a null field is trivially consistent.
   - Typed ids and `Paise` need nothing special.
+- **Accounts** (`AccountService`): the name is trimmed and 1 to 100 characters; names need not be
+  unique. The opening balance is a **signed** `Paise` bounded by `LedgerLimits.MAX_AMOUNT` either
+  way (`requireBalance`), so an overdrawn account or a card with money owed is representable; which
+  sign the UI asks for by type is the UI's choice, core does not tie them. The last four digits are
+  null when blank, otherwise exactly four ASCII `0-9` (not `Char.isDigit()`, which accepts other
+  scripts' digits), else `InvalidMaskedIdentifier`. The issuer is optional (blank -> null, same 100
+  limit). The currency is always INR and is not on the model: the persistence layer writes it and
+  refuses anything else. There is no stored balance (INT-6). All checks run before anything is
+  written, so a refused call leaves no row and no audit entry. `edit` audits only the changed
+  fields, and an identical edit writes nothing. Archive and delete are idempotent; delete has no
+  "in use" check until transactions exist (slice C).
 - **Soft delete only (INT-3):** `delete` sets `deletedAt`; there is no hard delete. `restore` is
   audited. Lifecycle calls are idempotent: repeating one is a no-op that audits nothing.
 - **The writer owns the meta:** id, timestamps, attribution and lifecycle state are set by
@@ -131,6 +144,10 @@ Defines (and `app` persists, since A4a) these tables; they are Room schema v1 (d
 | `device` | `id`, `user_id`, `label`; this device is named by `app_setting('current_device_id')` |
 | `audit_entry` | `id`, `entity_type`, `entity_id`, `action`, `changes_json`, `user_id`, `device_id`, `source`, `at`; insert-only, immutability enforced by DB triggers |
 | `app_setting` | `key`, `value`, `updated_at` |
+
+`account` (v2, added with the Room work in slice B1c) is defined here and persisted by `app`:
+`name`, `type`, `opening_balance` (signed paise), `masked_identifier`, `issuer`, plus the currency
+column the persistence layer owns.
 
 Entity tables added by later slices share the `EntityMeta` columns (`id`, `created_at`,
 `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at`, plus archive state).
@@ -172,7 +189,7 @@ Per CLAUDE.md §3.5, chosen by how the value varies:
 
 Tests (Kotest on JUnit 5, `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/`): `Uuid7Test`,
 `NameBasedIdTest` (RFC 9562 vector and pinned ids), `IdsTest`, `AuditDiffTest`, `EntityMetaTest`,
-`ValidationTest`, `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including
+`ValidationTest`, `account/AccountServiceTest`, `account/AccountRulesTest`, `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including
 rollback of the write and its audit entry), and `fakes/` tests that pin the fake runner's
 rollback semantics and the matcher. Services are tested against the in-memory fakes; the same
 contracts are re-tested against real Room in `app` (A4a: `RoomTransactionRunnerTest`, `IdentityRoomIntegrationTest`,
