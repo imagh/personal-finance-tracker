@@ -15,6 +15,7 @@ fun LedgerError.toFieldError(): FieldError? =
         is LedgerError.BlankName -> FieldError.Required
         is LedgerError.NameTooLong -> FieldError.TooLong(max)
         is LedgerError.InvalidMaskedIdentifier -> FieldError.InvalidLastFour
+        is LedgerError.DuplicateName -> FieldError.Duplicate
         is LedgerError.AmountNotPositive,
         is LedgerError.AmountTooLarge,
         is LedgerError.NotFound,
@@ -25,5 +26,12 @@ fun LedgerError.toFieldError(): FieldError? =
         is LedgerError.IdentityCorrupt,
         is LedgerError.InvalidSettingKey,
         is LedgerError.SettingValueTooLong,
+        // Category rules that are not about one typed field: the screen shows them as a form-level message.
+        is LedgerError.DepthExceeded,
+        is LedgerError.KindMismatch,
+        is LedgerError.HasChildren,
+        is LedgerError.InvalidOrder,
+        is LedgerError.InvalidIcon,
+        is LedgerError.SystemCategoryProtected,
         -> null
     }
