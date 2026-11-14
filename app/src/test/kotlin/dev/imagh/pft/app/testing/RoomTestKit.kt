@@ -48,6 +48,9 @@ class RoomTestKit(
     /** Accounts. */
     val accountRepository = services.accountRepository
 
+    /** Categories. */
+    val categoryRepository = services.categoryRepository
+
     /** Builds audit entries into [auditLog]. */
     val recorder = services.recorder
 
@@ -62,6 +65,12 @@ class RoomTestKit(
 
     /** Accounts: create, edit, archive, delete, restore and the lists. */
     val accounts = services.accounts
+
+    /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
+    val categories = services.categories
+
+    /** First-run setup: the identity and the default categories in one transaction. */
+    val firstRun = services.firstRun
 
     /** Performs first-run setup as `Akash` on `Pixel` and returns that identity. */
     suspend fun initialise(): Identity = identity.initialise("Akash", "Pixel")

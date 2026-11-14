@@ -9,6 +9,8 @@ import dev.imagh.pft.app.data.account.AccountDao
 import dev.imagh.pft.app.data.account.AccountEntity
 import dev.imagh.pft.app.data.audit.AuditDao
 import dev.imagh.pft.app.data.audit.AuditEntryEntity
+import dev.imagh.pft.app.data.category.CategoryDao
+import dev.imagh.pft.app.data.category.CategoryEntity
 import dev.imagh.pft.app.data.identity.DeviceEntity
 import dev.imagh.pft.app.data.identity.IdentityDao
 import dev.imagh.pft.app.data.identity.UserProfileEntity
@@ -17,8 +19,8 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
 
 /**
  * The app's Room database, `pft.db` (plan §4). Version 1 holds the identity, settings and audit
- * tables and version 2 adds `account` (slice B1); each later slice adds its tables through its own
- * migration and a migration test.
+ * tables, version 2 adds `account` (slice B1) and version 3 adds `category` (slice B3); each later
+ * slice adds its tables through its own migration and a migration test.
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
  * and tests alike), which is `internal` to the app module: the only production caller is
@@ -35,6 +37,7 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
         AppSettingEntity::class,
         AuditEntryEntity::class,
         AccountEntity::class,
+        CategoryEntity::class,
     ],
     version = PftDatabase.VERSION,
     exportSchema = true,
@@ -42,7 +45,7 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
 abstract class PftDatabase : RoomDatabase() {
     companion object {
         /** The current schema version; bump it with a migration in [Migrations] and a migration test. */
-        const val VERSION = 2
+        const val VERSION = 3
 
         /** The database file name. */
         const val NAME = "pft.db"
@@ -93,4 +96,7 @@ abstract class PftDatabase : RoomDatabase() {
 
     /** Accounts (schema v2). */
     abstract fun accountDao(): AccountDao
+
+    /** Categories (schema v3). */
+    abstract fun categoryDao(): CategoryDao
 }

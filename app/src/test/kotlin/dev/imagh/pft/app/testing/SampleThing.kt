@@ -9,6 +9,7 @@ import androidx.room.Query
 import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.data.account.AccountEntity
 import dev.imagh.pft.app.data.audit.AuditEntryEntity
+import dev.imagh.pft.app.data.category.CategoryEntity
 import dev.imagh.pft.app.data.common.BaseDao
 import dev.imagh.pft.app.data.common.EntityMapper
 import dev.imagh.pft.app.data.common.MetaColumns
@@ -84,6 +85,7 @@ class SampleThingRepository(
         AppSettingEntity::class,
         AuditEntryEntity::class,
         AccountEntity::class,
+        CategoryEntity::class,
         SampleThingEntity::class,
     ],
     version = 1,

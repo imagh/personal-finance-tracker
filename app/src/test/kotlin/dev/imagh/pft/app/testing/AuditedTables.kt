@@ -2,11 +2,17 @@ package dev.imagh.pft.app.testing
 
 import dev.imagh.pft.ledger.account.Account
 import dev.imagh.pft.ledger.account.AccountType
+import dev.imagh.pft.ledger.category.Category
+import dev.imagh.pft.ledger.category.CategoryColour
+import dev.imagh.pft.ledger.category.CategoryIcon
+import dev.imagh.pft.ledger.category.CategoryKind
+import dev.imagh.pft.ledger.category.SystemCategory
 import dev.imagh.pft.ledger.entity.Auditable
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.identity.Device
 import dev.imagh.pft.ledger.identity.UserProfile
 import dev.imagh.pft.ledger.ids.AccountId
+import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.DeviceId
 import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.settings.AppSetting
@@ -58,6 +64,21 @@ object AuditedTables {
                     "HDFC",
                 ),
                 nonAudited = setOf("currency"),
+            ),
+            // Every column of `category` is audited, none allowlisted. The sample sets every optional
+            // field (parent, icon, system key) so a column that were audited only when set cannot hide.
+            AuditedTable(
+                "category",
+                Category(
+                    EntityMeta(CategoryId("cat-1"), at, at, UserId("user-1"), DeviceId("device-1")),
+                    parentId = CategoryId("cat-0"),
+                    kind = CategoryKind.EXPENSE,
+                    name = "Groceries",
+                    colour = CategoryColour.CORAL,
+                    iconKey = CategoryIcon.Symbol("grocery"),
+                    sortOrder = 2,
+                    systemKey = SystemCategory.LOAN_EMI,
+                ),
             ),
             AuditedTable("sample_thing", SampleThing(meta, "Chai", Paise(2_500), "hot")),
         )

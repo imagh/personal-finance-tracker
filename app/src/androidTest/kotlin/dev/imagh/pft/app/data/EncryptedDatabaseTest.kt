@@ -210,6 +210,27 @@ class EncryptedDatabaseTest {
     }
 
     @Test
+    fun foreignKeysAreEnforcedOnTheEncryptedDatabase() {
+        // The [Verify] item of plan §4 for `category.parent_id`: Room switches foreign keys on for the
+        // SQLCipher engine too, not only for the framework SQLite the Robolectric test runs on.
+        val db = open().openHelper.writableDatabase
+
+        fun insert(
+            id: String,
+            parent: String?,
+        ) = db.execSQL(
+            "INSERT INTO category (id, created_at, updated_at, created_by_user_id, created_on_device_id, parent_id, " +
+                "kind, name, colour, sort_order) VALUES (?, 1, 1, 'u1', 'd1', ?, 'EXPENSE', ?, 'slate', 0)",
+            arrayOf(id, parent, id),
+        )
+
+        insert("parent", null)
+        insert("child", "parent")
+
+        assertThrows(SQLiteException::class.java) { insert("orphan", "no-such-parent") }
+    }
+
+    @Test
     fun aLostTriggerIsRepairedWhenTheEncryptedDatabaseIsReopened() {
         val first = open()
         first.openHelper.writableDatabase.execSQL("DROP TRIGGER ${AuditTriggers.NO_UPDATE}")

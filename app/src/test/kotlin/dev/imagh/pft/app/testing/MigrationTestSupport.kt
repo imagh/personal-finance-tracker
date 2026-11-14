@@ -17,12 +17,12 @@ import org.junit.runners.model.Statement
  * `MigrationTestHelper` that replays the exported schemas in `app/schemas/`.
  *
  * Usage: `@get:Rule val support = MigrationTestSupport()`, then
- * `support.createV1 { db -> /* seed old-shape rows */ }` and
- * `val db = support.migrateTo(2, MIGRATION_1_2)`; assert the new shape on `db`. A chain test passes
+ * `support.createAt(2) { db -> /* seed old-shape rows */ }` (or `createV1`) and
+ * `val db = support.migrateTo(3, MIGRATION_2_3)`; assert the new shape on `db`. A chain test passes
  * `PftDatabase.VERSION` and `Migrations.ALL`.
  *
  * Why it exists: the helper builds the old database from the schema JSON, and the JSON has no
- * triggers (Room does not model them), so [createV1] installs them the way the production callback does and seeds
+ * triggers (Room does not model them), so [createAt] installs them the way the production callback does and seeds
  * one audit row. [migrateTo] then runs the migrations, validates the result against the current
  * entities, and **fails unless the audit triggers are all present and still refuse to update or delete
  * the seeded row**. So no migration test can forget to prove the audit trail survived (INT-2).
@@ -36,16 +36,18 @@ class MigrationTestSupport : TestRule {
     ): Statement = helper.apply(base, description)
 
     /**
-     * Creates the database file at schema version 1 from the exported JSON, installs the audit
+     * Creates the database file at schema [version] from the exported JSON, installs the audit
      * triggers unless `installAuditTriggers` is false (only for testing this support), seeds one audit
      * row (id [SEED_AUDIT_ID]) and runs [seed] for any other old-shape rows. The database is closed
-     * afterwards so [migrateTo] can open the file.
+     * afterwards so [migrateTo] can open the file. A test of the step N to N+1 starts at version N, with
+     * rows in the tables that exist there.
      */
-    fun createV1(
+    fun createAt(
+        version: Int,
         installAuditTriggers: Boolean = true,
         seed: (SupportSQLiteDatabase) -> Unit = {},
     ) {
-        val db = helper.createDatabase(NAME, 1)
+        val db = helper.createDatabase(NAME, version)
         if (installAuditTriggers) AuditTriggers.install(db)
         db.execSQL(
             "INSERT INTO audit_entry " +
@@ -57,8 +59,14 @@ class MigrationTestSupport : TestRule {
         db.close()
     }
 
+    /** [createAt] at schema version 1, the first shipped shape (kept for the chain test and A4a's tests). */
+    fun createV1(
+        installAuditTriggers: Boolean = true,
+        seed: (SupportSQLiteDatabase) -> Unit = {},
+    ) = createAt(1, installAuditTriggers, seed)
+
     /**
-     * Opens the database created by [createV1] at [version], running [migrations], and returns it
+     * Opens the database created by [createAt] at [version], running [migrations], and returns it
      * after Room has validated it against the current entities and [assertAuditTrailIntact] passed.
      */
     fun migrateTo(
@@ -118,7 +126,7 @@ class MigrationTestSupport : TestRule {
         /** The database file name used by every migration test. */
         const val NAME = "migration-test.db"
 
-        /** Id of the audit row [createV1] seeds. */
+        /** Id of the audit row [createAt] seeds. */
         const val SEED_AUDIT_ID = "seed-audit-1"
 
         private const val SEED_CHANGES = """{"display_name":{"old":null,"new":"Akash"}}"""
