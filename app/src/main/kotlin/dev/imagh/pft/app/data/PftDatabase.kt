@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import dev.imagh.pft.app.data.account.AccountDao
+import dev.imagh.pft.app.data.account.AccountEntity
 import dev.imagh.pft.app.data.audit.AuditDao
 import dev.imagh.pft.app.data.audit.AuditEntryEntity
 import dev.imagh.pft.app.data.identity.DeviceEntity
@@ -15,7 +17,8 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
 
 /**
  * The app's Room database, `pft.db` (plan §4). Version 1 holds the identity, settings and audit
- * tables; each later slice adds its tables through its own migration and a migration test.
+ * tables and version 2 adds `account` (slice B1); each later slice adds its tables through its own
+ * migration and a migration test.
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
  * and tests alike), which is `internal` to the app module: the only production caller is
@@ -31,6 +34,7 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
         DeviceEntity::class,
         AppSettingEntity::class,
         AuditEntryEntity::class,
+        AccountEntity::class,
     ],
     version = PftDatabase.VERSION,
     exportSchema = true,
@@ -38,7 +42,7 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
 abstract class PftDatabase : RoomDatabase() {
     companion object {
         /** The current schema version; bump it with a migration in [Migrations] and a migration test. */
-        const val VERSION = 1
+        const val VERSION = 2
 
         /** The database file name. */
         const val NAME = "pft.db"
@@ -86,4 +90,7 @@ abstract class PftDatabase : RoomDatabase() {
 
     /** Runtime settings. */
     abstract fun appSettingDao(): AppSettingDao
+
+    /** Accounts (schema v2). */
+    abstract fun accountDao(): AccountDao
 }

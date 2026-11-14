@@ -2,9 +2,11 @@ package dev.imagh.pft.app.di
 
 import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.data.RoomTransactionRunner
+import dev.imagh.pft.app.data.account.RoomAccountRepository
 import dev.imagh.pft.app.data.audit.RoomAuditLog
 import dev.imagh.pft.app.data.identity.RoomIdentityRepository
 import dev.imagh.pft.app.data.settings.RoomAppSettingsRepository
+import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
 import dev.imagh.pft.ledger.audit.AuditedWriter
@@ -46,6 +48,9 @@ class AppServices(
     /** App settings. */
     val settingsRepository = RoomAppSettingsRepository(database.appSettingDao())
 
+    /** Accounts. */
+    val accountRepository = RoomAccountRepository(database.accountDao())
+
     /** Builds audit entries into the audit log. */
     val recorder = AuditRecorder(auditLog, ids, clock)
 
@@ -57,4 +62,7 @@ class AppServices(
 
     /** The audited write path every service uses. */
     val writer = AuditedWriter(runner, identity, recorder, clock)
+
+    /** Accounts: create, edit, archive, delete, restore and the lists. */
+    val accounts = AccountService(writer, accountRepository, ids)
 }
