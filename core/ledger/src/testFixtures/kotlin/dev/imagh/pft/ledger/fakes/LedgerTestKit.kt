@@ -1,5 +1,6 @@
 package dev.imagh.pft.ledger.fakes
 
+import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
 import dev.imagh.pft.ledger.audit.AuditedWriter
@@ -31,6 +32,9 @@ class LedgerTestKit {
     /** App settings. */
     val settingsRepository = InMemoryAppSettingsRepository(store)
 
+    /** Accounts. */
+    val accountRepository = InMemoryAccountRepository(store)
+
     /** Builds audit entries into [InMemoryLedgerStore.auditLog]. */
     val recorder = AuditRecorder(store.auditLog, ids, clock)
 
@@ -42,6 +46,9 @@ class LedgerTestKit {
 
     /** The audited write path every service uses. */
     val writer = AuditedWriter(store, identity, recorder, clock)
+
+    /** Accounts: create, edit, archive, delete, restore and the lists. */
+    val accounts = AccountService(writer, accountRepository, ids)
 
     /** An [IdentityService] over the same fakes whose audit entries go to [log] (to inject failures). */
     fun identityServiceWith(log: AuditLog) =
