@@ -44,6 +44,32 @@ object Validation {
     }
 
     /**
+     * [paise] if its size is at most [max] (inclusive), whatever its sign: a signed balance, where
+     * zero is allowed and negative means "owed" or overdrawn. The signed twin of [requireAmount].
+     *
+     * @throws LedgerError.AmountTooLarge if it is more than [max] above zero or below zero.
+     */
+    fun requireBalance(
+        paise: Paise,
+        max: Paise = LedgerLimits.MAX_AMOUNT,
+    ): Paise {
+        // Compare, never negate [paise]: -Long.MIN_VALUE overflows.
+        if (paise > max || paise.value < -max.value) throw LedgerError.AmountTooLarge(max)
+        return paise
+    }
+
+    /**
+     * The optional twin of [requireName]: null for null, empty or whitespace-only text (the field was
+     * left empty), otherwise the trimmed text if it is at most [max] characters.
+     *
+     * @throws LedgerError.NameTooLong if the trimmed text is longer than [max].
+     */
+    fun requireOptionalName(
+        text: String?,
+        max: Int,
+    ): String? = if (text.isNullOrBlank()) null else requireName(text, max)
+
+    /**
      * [entity] if it can be referenced from new data: it exists and is neither deleted nor
      * archived. [what] names the kind of record for the error (`"account"`), never its content.
      *
