@@ -6,11 +6,16 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -723,6 +728,30 @@ class CollapsingHeaderScaffoldTest {
 
         val save = compose.onNodeWithText("Save").bounds()
         assertTrue("Save bottom ${save.bottom}", save.bottom <= windowHeight - 300f + 0.5f)
+    }
+
+    @Test
+    fun `a snackbar shown through the snackbarHost slot sits above the bottom inset`() {
+        compose.setContent {
+            density = LocalDensity.current
+            hostView = LocalView.current
+            val snackbars = remember { SnackbarHostState() }
+            LaunchedEffect(Unit) { snackbars.showSnackbar("Account deleted", duration = SnackbarDuration.Indefinite) }
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                CollapsingHeaderScaffold(
+                    title = "Accounts",
+                    snackbarHost = { SnackbarHost(snackbars) },
+                ) {
+                    items(60) { index -> Box(Modifier.fillMaxWidth().height(56.dp)) { Text("Row $index") } }
+                }
+            }
+        }
+        compose.waitForIdle()
+        dispatchBottomInset(WindowInsetsCompat.Type.navigationBars(), dp = 48f)
+
+        compose.onNodeWithText("Account deleted").assertIsDisplayed()
+        val bottom = compose.onNodeWithText("Account deleted").bounds().bottom
+        assertTrue("snackbar bottom $bottom", bottom <= windowHeight - 48f + 0.5f)
     }
 
     // --- canvas pixels (DS6c) --------------------------------------------------------------
