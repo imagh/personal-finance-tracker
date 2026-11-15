@@ -10,6 +10,7 @@ import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
 import dev.imagh.pft.ledger.setup.FirstRunService
+import dev.imagh.pft.ledger.tag.TagService
 
 /**
  * The core object graph wired over in-memory fakes, so a service test starts with one line
@@ -40,6 +41,9 @@ class LedgerTestKit {
     /** Categories. */
     val categoryRepository = InMemoryCategoryRepository(store)
 
+    /** Tags. */
+    val tagRepository = InMemoryTagRepository(store)
+
     /** Builds audit entries into [InMemoryLedgerStore.auditLog]. */
     val recorder = AuditRecorder(store.auditLog, ids, clock)
 
@@ -57,6 +61,9 @@ class LedgerTestKit {
 
     /** Categories: create, edit, reorder, archive, delete, restore, the picker list and the defaults. */
     val categories = CategoryService(store, writer, categoryRepository, ids)
+
+    /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
+    val tags = TagService(store, writer, tagRepository, ids)
 
     /** First-run setup: the identity and the default categories, in one transaction. */
     val firstRun = FirstRunService(store, identity, categories)
