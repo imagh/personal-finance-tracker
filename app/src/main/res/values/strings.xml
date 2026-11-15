@@ -47,7 +47,12 @@
     <!-- Home placeholder (HomeScreen): who is using this phone, until C4 brings the real Home. -->
     <string name="home_title">Home</string>
     <string name="home_subtitle">%1$s · %2$s</string>
-    <string name="home_placeholder">Accounts and transactions arrive in the next update</string>
+    <string name="home_placeholder">Open More to manage your accounts. Transactions arrive in the next update</string>
+    <!-- Spoken label of Home's header button that opens the More screen. -->
+    <string name="home_more">More</string>
+    <!-- More screen (MoreScreen): the entry point to the entity lists. -->
+    <string name="more_title">More</string>
+    <string name="more_accounts">Accounts</string>
     <!-- Accounts list (AccountsScreen): row actions, the fixed messages and the type names. -->
     <string name="accounts_title">Accounts</string>
     <string name="accounts_empty">No accounts yet</string>

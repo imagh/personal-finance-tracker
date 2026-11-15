@@ -12,4 +12,10 @@ object Routes {
 
     /** Home: where every later launch starts, and where Back leaves the app. */
     const val HOME = "home"
+
+    /** More: the entry point to the entity lists, opened from Home's header (plan D9). */
+    const val MORE = "more"
+
+    /** The accounts list, opened from More. */
+    const val ACCOUNTS = "accounts"
 }
