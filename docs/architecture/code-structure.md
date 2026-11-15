@@ -27,8 +27,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
                                          # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
                                          # FieldState/FieldError/FieldCheck + LedgerErrorMapping (A5d), NameField, EditFormScaffold (A5d);
+                                         # EntityListScreen + EntityRow/RowGlyph/RowAction + UndoDeleteSnackbar (B2a: the one entity list screen);
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
-                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples: previews, catalogue and goldens share them, R8 drops them)
+                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v3), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
@@ -45,8 +46,11 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
     ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
     ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
-    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts)
-    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder), HomeRoute
+    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts; B2a adds MORE and ACCOUNTS)
+    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder, B2a: header More button), HomeRoute
+    ui/more/                             # B2a: MoreScreen (stateless: the Accounts row; Categories and Tags rows come with their screens)
+    ui/accounts/                         # B2a: AccountsViewModel (+ AccountsUiState), AccountsScreen (+ AccountsActions), AccountsRoute (reload on resume, Undo),
+                                         # AccountRowMapper (type badge, supporting line; the only account-specific drawing logic)
     ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
     PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
@@ -150,6 +154,8 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `FieldState` / `FieldCheck` / `FieldError` + `LedgerError.toFieldError()` (exhaustive; non-field errors map to null) | A5e `SetupViewModel`, B2 account edit, B3/B5, every form ViewModel | A5d |
 | app UI (`ui/common`) | `NameField` (never truncates; error text from `FieldError`) | A5e Setup, B2 account edit, B3/B5 forms, D/E/F/G edit screens | A5d |
 | app UI (`ui/common`) | `EditFormScaffold` (Standard header + `BottomActionBar`; optional Back; `saving` guard) | A5e Setup, B2 account edit, B3/B5 forms, D/E/F/G edit screens | A5d |
+| app UI (`ui/common`) | `EntityListScreen` + `EntityRow` / `RowGlyph` / `RowAction` (plain data; active rows, collapsed "Archived (n)", `EmptyState`, add FAB, row overflow menu, indent) | B2a accounts, B4a categories, B5b tags; later loans and goals | B2a |
+| app UI (`ui/common`) | `UndoDeleteSnackbar` (the delete Undo effect on a `SnackbarHostState`) and the `CollapsingHeaderScaffold` `snackbarHost` slot | B2a accounts, B4a categories, B5b tags, C4 transaction delete | B2a |
 
-The remaining app-UI building blocks (`EntityListScreen`, `AmountField`, `AuditHistoryList`, ...) are
-added to this table by A5, B2 and C5.
+The remaining app-UI building blocks (`AmountField`, `AuditHistoryList`, ...) are
+added to this table by B2b, B2c and C5.
