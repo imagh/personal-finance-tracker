@@ -1,8 +1,9 @@
 # Categories and tags
 
 Status: **Categories: data and rules built, no screens yet** (plan slice B3a core, B3b storage and
-first-run seeding). Tags and every screen (the category list, the create and edit form, the picker, emoji
-icons, the tags list) arrive in later PRs of slice B (B4a to B4c, B5a, B5b). PRD: L-2 (categories), L-3
+first-run seeding). Tags: data and rules built too (B5a), no screens yet. Every screen (the category
+list, the create and edit form, the picker, emoji icons, the tags list) arrives in later PRs of slice B
+(B4a to B4c, B5b). PRD: L-2 (categories), L-3
 (tags). Plan: [2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
 
 This page grows with each PR. Today it describes what a category is, the list you start with, and the
@@ -95,4 +96,4 @@ and friends in core, and `RoomCategoryIntegrationTest`, `RoomCategoryMapperTest`
 
 ## Tags
 
-Tags (PRD L-3) are not built yet; they get their own page section here when B5 lands.
+Tags (PRD L-3): the data and rules are built (B5a) but nothing shows them yet; this section is written with the tags screens in B5b.

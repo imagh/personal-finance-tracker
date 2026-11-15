@@ -14,8 +14,10 @@ import dev.imagh.pft.ledger.identity.UserProfile
 import dev.imagh.pft.ledger.ids.AccountId
 import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.DeviceId
+import dev.imagh.pft.ledger.ids.TagId
 import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.settings.AppSetting
+import dev.imagh.pft.ledger.tag.Tag
 import dev.imagh.pft.money.Paise
 import java.time.Instant
 
@@ -79,6 +81,11 @@ object AuditedTables {
                     sortOrder = 2,
                     systemKey = SystemCategory.LOAN_EMI,
                 ),
+            ),
+            // The one business column of `tag` is its name, audited; no allowlist entry.
+            AuditedTable(
+                "tag",
+                Tag(EntityMeta(TagId("tag-1"), at, at, UserId("user-1"), DeviceId("device-1")), "Travel"),
             ),
             AuditedTable("sample_thing", SampleThing(meta, "Chai", Paise(2_500), "hot")),
         )

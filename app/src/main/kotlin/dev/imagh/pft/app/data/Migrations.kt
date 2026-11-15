@@ -69,6 +69,27 @@ object Migrations {
             }
         }
 
+    /**
+     * 3 to 4 (slice B5): adds the `tag` table. The statement is Room's own `CREATE TABLE` for `TagEntity`,
+     * copied from the exported `schemas/.../4.json` with the table name filled in, so a migrated database
+     * and a fresh one have the identical table (`MigrationTest` validates it against that schema).
+     *
+     * No index, no `CHECK` constraint and no partial or `NOCASE` unique index, as in the earlier steps: Room
+     * cannot declare those on an entity (plan §2), so "unique among live tags, ignoring case" lives in
+     * `TagService`, in the write transaction. Nothing is seeded: tags start empty.
+     */
+    val MIGRATION_3_4: Migration =
+        object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `tag` (`name` TEXT NOT NULL, `id` TEXT NOT NULL, " +
+                        "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                        "`created_by_user_id` TEXT NOT NULL, `created_on_device_id` TEXT NOT NULL, " +
+                        "`deleted_at` INTEGER, `archived_at` INTEGER, PRIMARY KEY(`id`))",
+                )
+            }
+        }
+
     /** All migrations for `Room.databaseBuilder(...).addMigrations(*Migrations.ALL.toTypedArray())`. */
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3)
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }

@@ -2,6 +2,7 @@ package dev.imagh.pft.ledger.validation
 
 import dev.imagh.pft.ledger.entity.LedgerEntity
 import dev.imagh.pft.money.Paise
+import java.util.Locale
 
 /**
  * The validation helpers every service shares, so each rule is written once (plan §3.4).
@@ -68,6 +69,14 @@ object Validation {
         text: String?,
         max: Int,
     ): String? = if (text.isNullOrBlank()) null else requireName(text, max)
+
+    /**
+     * The text two names are compared by to decide they are the same name (categories among their
+     * siblings, tags among all live tags): trimmed and lower-cased with Unicode rules and no locale
+     * ([Locale.ROOT]), because SQLite's `NOCASE` folds ASCII only and a device locale must not change
+     * the answer. One function so every "unique ignoring case" rule agrees.
+     */
+    fun nameKey(name: String): String = name.trim().lowercase(Locale.ROOT)
 
     /**
      * [entity] if it can be referenced from new data: it exists and is neither deleted nor

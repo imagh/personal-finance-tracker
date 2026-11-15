@@ -62,3 +62,13 @@ value class CategoryId(
         require(value.isNotBlank()) { "CategoryId must not be blank" }
     }
 }
+
+/** Identifies a [dev.imagh.pft.ledger.tag.Tag]. */
+@JvmInline
+value class TagId(
+    override val value: String,
+) : EntityId {
+    init {
+        require(value.isNotBlank()) { "TagId must not be blank" }
+    }
+}

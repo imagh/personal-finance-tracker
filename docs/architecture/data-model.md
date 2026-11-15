@@ -1,7 +1,7 @@
 # Data model
 
-The Room database `pft.db`: tables, conventions and the version table. Status: **schema v3 (plan
-slice B3b)**. Each later slice adds its tables through its own migration and a migration test and
+The Room database `pft.db`: tables, conventions and the version table. Status: **schema v4 (plan
+slice B5a)**. Each later slice adds its tables through its own migration and a migration test and
 updates this file in the same PR. The full table plan is in
 `docs/plans/2026-10-28-m1a-core-ledger.md` §4; the encryption layer (SQLCipher, Keystore key) is
 A4b and is described in [persistence-and-security.md](persistence-and-security.md).
@@ -25,7 +25,7 @@ are mapped one-to-one to them, and core never sees them (CLAUDE.md §3.3).
 Every column must be audited or named in an explicit, reviewed allowlist. The test
 `RoomAuditColumnsTest` enforces it by comparing `PRAGMA table_info` (minus the shared columns and the
 allowlist) with the keys of a fully populated sample's `auditFields()`. A new table must be
-registered in `AuditedTables` (test support) or the same test fails. Current allowlist (unchanged by `category`):
+registered in `AuditedTables` (test support) or the same test fails. Current allowlist (unchanged by `category` and `tag`):
 `app_setting.key` (the setting's identifier, not an audited value) and `account.currency` (always
 `INR`, not part of the model; the mapper writes it and refuses anything else on read).
 
@@ -117,6 +117,26 @@ them.
   unique), the key, the account row and the audit triggers. A second test inserts into the migrated table
   and gets the dangling-parent and second-system-key refusals.
 
+## Version 4 (B5a)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `tag` | shared columns, `name` | A free-form label for the items of a transaction (PRD L-3). A name and nothing else: no colour, icon or order. No foreign keys and **no index** (tens of rows). The link from an item to its tags (`transaction_line_tag`) arrives with C1 |
+
+- **Name uniqueness is a core rule, not a table rule.** The plan says "unique among live tags, ignoring
+  case". SQL could only say that with a partial unique index (`WHERE deleted_at IS NULL`) or a `NOCASE`
+  collation (ASCII only, so `Éclair` and `éCLAIR` would differ); Room can declare neither on an `@Entity`,
+  so there is none (see the version 3 note above). `TagService` compares `Validation.nameKey` (trimmed,
+  lower-cased with `Locale.ROOT`) over the live tags inside the write transaction, archived tags count,
+  deleted ones do not, and `restore` checks again. The migrated table and a fresh one are identical, and
+  the table itself would accept two tags with the same name.
+- **Every column is audited; the allowlist did not grow** (`tag` is registered in `AuditedTables` with a
+  fully populated sample and no allowlist entry).
+- **Migration `3 -> 4`** is the single `CREATE TABLE` copied from the exported `schemas/.../4.json`;
+  `MigrationTest.migrate3To4` starts from a v3 database with an account row and a (top-level) category
+  row, validates the result against that schema, and checks the columns, that no index or key was added,
+  the surviving rows and the audit triggers. Nothing is seeded: tags start empty.
+
 ## Version table
 
 | Version | Slice | Adds |
@@ -124,6 +144,7 @@ them.
 | 1 | A4a | `user_profile`, `device`, `app_setting`, `audit_entry` and the audit triggers |
 | 2 | B1c | `account` (built) |
 | 3 | B3b | `category` (built) |
+| 4 | B5a | `tag` (built) |
 | 4 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
 | 5 | C3 | `transaction_fts`, `transaction_line_fts` |
 | 6 | D3 | `budget`, `budget_scope`, `budget_revision` |
@@ -131,4 +152,4 @@ them.
 | 8 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
 | 9 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-`tag` moves out of version 3 into its own migration (v4, slice B5a; plan 2026-11-10 D3), so every row below it shifts by one (C1 becomes v5); the B-final PR renumbers this table and the plans that quote it. Versions 4 onwards are planned (plan §4), not built. Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.
+`tag` moved out of version 3 into its own migration (v4, slice B5a; plan 2026-11-10 D3), so every row from C1 on shifts by one (C1 becomes v5, shown below with its old number until the B-final PR renumbers this table and the plans that quote it). Only the `tag` row is built; the rest are planned (plan §4). Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.
