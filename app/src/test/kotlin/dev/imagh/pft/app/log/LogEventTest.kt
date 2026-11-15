@@ -34,6 +34,14 @@ class LogEventTest {
     }
 
     @Test
+    fun `entity_action_failed renders the kind and the action codes`() {
+        assertEquals(
+            "entity_action_failed kind=ACCOUNT action=ARCHIVE",
+            LogEvent.EntityActionFailed(EntityKind.ACCOUNT, EntityAction.ARCHIVE).line(),
+        )
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }
