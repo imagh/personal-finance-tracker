@@ -22,6 +22,7 @@ class LogEventShapeTest {
             LogEvent.IdentityCorrupt,
             LogEvent.SetupCompleted,
             LogEvent.SetupFailed,
+            LogEvent.EntityActionFailed(EntityKind.ACCOUNT, EntityAction.ARCHIVE),
         )
 
     /** Exhaustive with no `else`: a new [LogEvent] subclass without a sample is a compile error. */
@@ -33,6 +34,7 @@ class LogEventShapeTest {
             is LogEvent.IdentityCorrupt -> Unit
             is LogEvent.SetupCompleted -> Unit
             is LogEvent.SetupFailed -> Unit
+            is LogEvent.EntityActionFailed -> Unit
         }
 
     private fun isAllowed(type: Class<*>): Boolean =

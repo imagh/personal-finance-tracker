@@ -164,6 +164,7 @@ val verifyReleaseShrink by tasks.registering {
     // DS5 adds one *SamplesKt per component (GroupedSectionSamplesKt, MoneyTextSamplesKt, ...) holding
     // its fake-data samples and previews. DS6b adds PaletteSamplesKt (the four-palette swatch page).
     // A5d adds FormSamplesKt (the live form sample and its preview).
+    // B2a adds EntityListSamplesKt (the entity list samples and their previews).
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
@@ -185,6 +186,8 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.theme.ComposableSingletons\$PaletteSamples",
             "dev.imagh.pft.app.ui.common.FormSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$FormSamples",
+            "dev.imagh.pft.app.ui.common.EntityListSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$EntityListSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

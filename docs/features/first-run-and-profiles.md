@@ -21,8 +21,9 @@ Status: **Built** (plan A5, finished in A5f; default categories added in slice B
 - **Tapping Continue twice saves once.** While it saves, Continue is greyed out.
 - **If saving fails unexpectedly** (for example the phone is out of storage), a red line under the fields says "Couldn't save. Try again." and TalkBack reads it out. Nothing was saved, both names stay exactly as you typed them, and Continue works again. The message goes away when you edit a name or tap Continue again. Trying again is safe: the profile and the starter categories are saved in one step, so it can never end up half-saved or doubled (no profile without categories, no categories without a profile).
 - **Then you land on Home.** Home is a placeholder for now: its header says "Home" and, underneath,
-  who is using this phone ("Akash · Pixel 8"), and it says that accounts and transactions arrive in
-  the next update. This is how you can see the mark that every later entry will carry.
+  who is using this phone ("Akash · Pixel 8"), and it points you to **More** (the three-dots button in
+  the header) to manage your accounts; transactions arrive in the next update. This is how you can see
+  the mark that every later entry will carry.
 - **Every later launch goes straight to Home.** You are never asked again. Pressing Back (or the
   back gesture) on Home leaves the app: Setup is not behind it, so it can never be reached by going
   back.

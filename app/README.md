@@ -70,7 +70,12 @@ All logging goes through one object (PRD SEC-5, CLAUDE.md §3.7). Policy:
   and `DbKeyUnavailable(reason)`, both emitted by `DatabaseStartup.open`, and `IdentityCorrupt`
   (`identity_corrupt`, no fields), emitted by `LaunchViewModel`, and `SetupCompleted`
   (`setup_completed`, no fields: no name, label or id) and `SetupFailed` (`setup_failed`, no fields: not
-  the exception, its message or its class name), both emitted by `SetupViewModel`.
+  the exception, its message or its class name), both emitted by `SetupViewModel`. B2a adds
+  `EntityActionFailed(kind, action)` (`entity_action_failed kind=ACCOUNT action=ARCHIVE`), emitted by
+  `AccountsViewModel` when an archive, unarchive, delete or undo fails unexpectedly. It carries
+  enums only: `EntityKind { ACCOUNT }` and `EntityAction { ARCHIVE, UNARCHIVE, DELETE, RESTORE }`; an
+  entry is added with the screen that first uses it (categories and tags, reorder). The form's
+  `EntitySaveFailed(kind)` is added by B2b, which emits it.
 - Guards: detekt `ForbiddenImport` bans `import android.util.Log` everywhere, with one file-level
   `@Suppress("ForbiddenImport")` in `SafeLog.kt` (and one in the instrumented `EncryptedDatabaseTest`,
   which prints its own timing); `LoggingScanTest` scans `app/src/{main,debug,release}` and
@@ -129,7 +134,7 @@ that reason). Colour is never the only cue: every amount carries a sign and ever
 
 | Symbol | What it is |
 |---|---|
-| `CollapsingHeaderScaffold(title, style, subtitle, hero, heroCaption, period, actions, bottomBar, floatingActionButton) { LazyListScope }` | The screen frame: M3 `TopAppBarState` + `exitUntilCollapsedScrollBehavior` (snap on `PftTheme.motion.smooth`), expanded height `clamp(0.38 x window, 200dp, 360dp)`, 64dp collapsed bar, collapsed-only under 560dp of window height, expanded while the list fits. Owns the `LazyColumn`. Edge-to-edge (`safeDrawing`); `bottomBar` is `imePadding()`-aware |
+| `CollapsingHeaderScaffold(title, style, subtitle, hero, heroCaption, period, actions, bottomBar, floatingActionButton, snackbarHost) { LazyListScope }` | The screen frame: M3 `TopAppBarState` + `exitUntilCollapsedScrollBehavior` (snap on `PftTheme.motion.smooth`), expanded height `clamp(0.38 x window, 200dp, 360dp)`, 64dp collapsed bar, collapsed-only under 560dp of window height, expanded while the list fits. Owns the `LazyColumn`. Edge-to-edge (`safeDrawing`); `bottomBar` is `imePadding()`-aware |
 | `HeaderStyle { Dashboard, Standard }` | `Dashboard`: `titleLarge` title about 12% down plus the hero, caption and period stepper in the lower (thumb) band. `Standard`: `headlineLarge` title centred in the middle, no hero. All titles are sans, centred and read-only (Q10) |
 | `HeaderIconButton(symbol: PftSymbol, label: String, onClick)` | The only control a header's `actions` may hold (UI-14): an M3 `IconButton` around a 24dp registry symbol tinted `onSurfaceVariant`, announced as a button named `label` (a blank label throws `IllegalArgumentException`), touch target at least 48dp, never text. `actions` stays a slot (an overflow `DropdownMenu` needs a `Box` anchor); the rule is in the scaffold KDoc and `CollapsingHeaderScaffoldTest` checks it on the samples |
 | `glowAlpha(distance, end)`, `Density.glowEnd(heroTop, bodyHeight)`, `glowStrength(collapsedFraction)`, `MAX_GLOW_ALPHA` (DS6d, `ui/common/HeaderGlow.kt`, internal) | The pure rules of the header glow: 72% at the top edge, about 28% at 38% of the reach, exactly 0 from the end on; the reach is 24dp above the hero (0.6 x the header without one); the strength is `1 - collapsedFraction` |
@@ -146,6 +151,9 @@ that reason). Colour is never the only cue: every amount carries a sign and ever
 | `EmptyState(message, modifier, glyph, actionLabel, onAction)` | A centred glyph slot, message and optional tonal-button action; the label and callback must be given together |
 | `FieldState(text, error)` with `edit(text)` and `check(rule)`, `FieldCheck(value, state)`, `FieldError { Required, TooLong(max), InvalidLastFour, Duplicate }` with `FieldError.message()` (the one internal `@Composable` that turns an error into its string), `LedgerError.toFieldError()` (A5d, B1b, B3a; `FieldState.kt`, `FieldError.kt`, `LedgerErrorMapping.kt`) | A form field's state as plain data a ViewModel holds. `text` is exactly what was typed and is never trimmed or clipped; `edit` replaces it and clears the error. `check` runs one of **core's own validators** (for example `{ Validation.requireName(it, MAX_NAME_LENGTH) }`) and returns the validated value, or null plus the state with the `FieldError`; it catches only `LedgerError`, and rethrows one that is not about a field. `toFieldError()` and `message()` are exhaustive `when`s (no `else`): a new `LedgerError` case fails compilation until mapped, and a new `FieldError` until it has its string, and non-field errors (`NotInitialised`, `IdentityCorrupt`, the category rules `DepthExceeded`, `KindMismatch`, `HasChildren`, `InvalidOrder`, `InvalidIcon`, `SystemCategoryProtected`, ...) map to null, to be shown as a form-level message. `DuplicateName` maps to `FieldError.Duplicate` ("Already in use", for a category or tag name) |
 | `NameField(label, state, onTextChange, modifier, imeAction)` (A5d) | The one name input: a single-line M3 `OutlinedTextField`, words capitalised, error text under it (`FieldError.message()`) and M3 error semantics. **Never truncates or alters the typed text**: 120 typed characters stay 120 and length is reported as `TooLong`, never enforced by clipping. Fills the width between the gutters and adds its own vertical rhythm |
+| `EntityListScreen(title, active: List<EntityRow>, archived: List<EntityRow>, emptyMessage, onBack, modifier, add: RowAction?, snackbarHost, loaded = true)` (B2a) | The one list screen every entity list is (plan D11): a `CollapsingHeaderScaffold` with a labelled Back, the **active** rows in a `GroupedSection`, a collapsed **"Archived (n)"** header (a 48dp button that says "Collapsed"/"Expanded") over a second island, an `EmptyState` when there is nothing at all (only once `loaded`: while `loaded` is false neither rows nor the empty state are drawn, so the empty message never flashes before the first read), a labelled `+` FAB, and a snackbar host. `add` is both the FAB and the empty state's button; **null hides both** (accounts pass null until B2b). A row is an M3 `ListItem` with an optional `CategoryGlyph`, a title, a supporting line and, when it has actions, a trailing overflow button (labelled "Actions for <title>") that opens a menu of exactly those actions. Named consumers: accounts, categories, tags (loans and goals later). No generic list ViewModel or base class: each consumer maps its entities to rows |
+| `EntityRow(key, title, supporting, glyph: RowGlyph?, indent, onClick, actions: List<RowAction>)`, `RowGlyph(source, colourKey, label)`, `RowAction(label, onClick)` (B2a) | Plain immutable data: everything a row shows and can do, already resolved to text. The glyph's `label` is what TalkBack says for the badge (the account type), so the title is not announced twice. `indent` insets a child row by one spacing step (24dp). `key` is the entity id as text and keeps a row's open menu with its entity when the list reorders |
+| `UndoDeleteSnackbar(offer, message, host, onUndo, onDismissed)` (B2a) | The effect (it draws nothing itself) that shows "<message>" with **Undo** on a `SnackbarHostState` for 10 s while an `offer` is on. Undo reports `onUndo`, timeout or swipe reports `onDismissed`; a new offer replaces the snackbar and a null offer removes it, both without reporting. The list's ViewModel owns the delete and the undo, so nothing travels across navigation |
 | `EditFormScaffold(title, onPrimary, modifier, subtitle, primaryLabel, saving, onBack) { LazyListScope }` (A5d) | The create/edit frame: a `Standard` `CollapsingHeaderScaffold` with the primary action ("Save" by default, or the caller's, such as "Continue") in a `BottomActionBar`. `saving = true` disables it (a double-tap guard; the ViewModel keeps its own). `onBack` adds a labelled back `HeaderIconButton` (48dp target); null means no Back. **Adds no `imePadding()`**: the scaffold already lifts its bottom bar above the keyboard. Named consumers: Setup (A5e), B2 account edit, B3/B5 forms, D/E/F/G edit screens |
 
 The hero slot is set in `PftTheme.type.amountHero` by default (the serif is the number only). Actions
@@ -153,7 +161,7 @@ go in the top row (back, search, filter, overflow; secondary only), add actions 
 components are shared (named consumers in `docs/architecture/code-structure.md`); do not wrap them
 to restyle. `HeaderSamples.kt` holds the fake-data samples that feed the previews, the debug
 catalogue and `HeaderScreenshotTest`; DS5 adds one file per component (`MoneyTextSamples.kt`,
-`StatusChipSamples.kt`, `GroupedSectionSamples.kt`, `EmptyStateSamples.kt`; DS3 adds `CategoryGlyphSamples.kt`; A5d adds `FormSamples.kt`, a live two-field form) for the same three
+`StatusChipSamples.kt`, `GroupedSectionSamples.kt`, `EmptyStateSamples.kt`; DS3 adds `CategoryGlyphSamples.kt`; A5d adds `FormSamples.kt`, a live two-field form; B2a adds `EntityListSamples.kt`, a full list screen and its empty twin, goldens `entity-list-*`) for the same three
 consumers and `ContentScreenshotTest`. Each `*Samples` file is listed in `mustBeRemoved` of
 `verifyReleaseShrink`, so R8 is shown to drop it from the release APK.
 
@@ -247,11 +255,11 @@ Packages `dev.imagh.pft.app.ui.nav` and `dev.imagh.pft.app.ui.home`. Concrete, n
 
 | Symbol | What it is |
 |---|---|
-| `Routes` (`SETUP = "setup"`, `HOME = "home"`) | Plain string routes (plan D3): Navigation 2.8's type-safe routes need the kotlinx-serialization compiler plugin, which the project does not use. No arguments, no deep links. The debug catalogue's route (`dev/catalog`) is private to `src/debug/.../DevEntry.kt`, so release has no trace of it |
-| `PftNavHost(services, hasIdentity, modifier)` | The `NavHost`. Starts on `HOME` when `hasIdentity`, on `SETUP` otherwise. Setup's `onDone` navigates to `HOME` with `popUpTo(SETUP) { inclusive = true }`, so Back on Home leaves the app. All four transitions are `PftMotion.navEnter/navExit/navPopEnter/navPopExit`. It also calls `devRoutes()` (debug adds the catalogue; release adds nothing) |
+| `Routes` (`SETUP = "setup"`, `HOME = "home"`, `MORE = "more"`, `ACCOUNTS = "accounts"`) | Plain string routes (plan D3): Navigation 2.8's type-safe routes need the kotlinx-serialization compiler plugin, which the project does not use. No arguments, no deep links. The debug catalogue's route (`dev/catalog`) is private to `src/debug/.../DevEntry.kt`, so release has no trace of it |
+| `PftNavHost(services, hasIdentity, modifier)` | The `NavHost`. Starts on `HOME` when `hasIdentity`, on `SETUP` otherwise. Setup's `onDone` navigates to `HOME` with `popUpTo(SETUP) { inclusive = true }`, so Back on Home leaves the app. All four transitions are `PftMotion.navEnter/navExit/navPopEnter/navPopExit`. It also calls `devRoutes()` (debug adds the catalogue; release adds nothing). B2a adds `MORE` and `ACCOUNTS` as plain pushes: Home's More button opens More, More's Accounts row opens the list, and Back pops one screen at a time (Accounts to More to Home) |
 | `HomeUiState(userName, deviceLabel, loaded)`, `HomeViewModel(identity)` + `HomeViewModel.factory(services)` | Reads `identity.requireIdentity()` on `viewModelScope` and holds the user and phone name. Home is only reachable once an identity exists, so a missing or inconsistent one here is a bug and is not caught |
-| `HomeScreen(state, modifier, actions)` | Stateless: a `CollapsingHeaderScaffold` titled "Home", subtitle "<name> · <phone>" once loaded, one `EmptyState` ("Accounts and transactions arrive in the next update"). `actions` is the header's action slot (only `HeaderIconButton`s, UI-14) |
-| `HomeRoute(services, modifier, actions)` | The only place that touches `HomeViewModel` |
+| `HomeScreen(state, onOpenMore, modifier, actions)` | Stateless: a `CollapsingHeaderScaffold` titled "Home", subtitle "<name> · <phone>" once loaded, one `EmptyState` ("Open More to manage your accounts. Transactions arrive in the next update"). The header ends with a `HeaderIconButton(OVERFLOW, "More")` that calls `onOpenMore` (plan D9; C4 moves it into the bottom bar); `actions` is the caller's extra header actions, drawn before it (only `HeaderIconButton`s, UI-14) |
+| `HomeRoute(services, onOpenMore, modifier, actions)` | The only place that touches `HomeViewModel` |
 | `devRoutes()` and `RowScope.DevHeaderActions(navigate)` in `src/debug` and `src/release` | Debug: the `dev/catalog` route (`DesignCatalog()`) and a "Design catalogue" `HeaderIconButton` (`PftSymbol.SETTINGS`) on Home that opens it. Release: both are empty |
 
 **Predictive back.** The manifest sets `android:enableOnBackInvokedCallback="true"` on `<application>`
@@ -274,6 +282,25 @@ lint (`android.experimental.lint.version=8.13.2`) also fixed it but needs 45 ext
 artifacts) with known CVEs, so it was not adopted; see the learnings entry of 2026-11-02 (issue #46).
 Revisit it when the lint version moves with the next AGP upgrade (`docs/TECHNICAL.md` section 7.1), and
 only once issue #47 lets the vulnerability scan cover that classpath.
+
+### `ui/more` and `ui/accounts` (B2a)
+
+Packages `dev.imagh.pft.app.ui.more` and `dev.imagh.pft.app.ui.accounts`. Concrete, no new interfaces.
+
+| Symbol | What it is |
+|---|---|
+| `MoreScreen(onBack, onOpenAccounts, modifier)` | Stateless (nothing to load, so no ViewModel or route wrapper): a `CollapsingHeaderScaffold` titled "More" with Back and one `GroupedSection` row, **Accounts**. The Categories and Tags rows arrive with their screens; C4 reuses the screen as the bottom bar's More tab |
+| `AccountsUiState(active, archived, loaded, undo: AccountId?, failedAction: EntityAction?)`, `AccountsViewModel(accounts)` + `AccountsViewModel.factory(services)` | The accounts list's state and actions: `reload()`, `archive(id)`, `unarchive(id)`, `delete(id)`, `undo()`, `dismissUndo()`, `failureShown()`. Lists are read from `AccountService.lists()` on construction, after every action and on `reload()` (plan D2: no `Flow`). Actions and reads run one at a time (a `Mutex`). A `LedgerError` (the account was deleted elsewhere) just refreshes the list; any other exception leaves the list as it was, sets `failedAction` and logs one `entity_action_failed`; cancellation is rethrown. A successful delete sets `undo` to that account (only the latest delete is offered) |
+| `AccountsScreen(state, actions: AccountsActions, snackbars, onBack, modifier)`, `AccountsActions(archive, unarchive, delete)` | Stateless: `EntityListScreen` over account rows. Active rows offer Archive and Delete, archived rows Unarchive and Delete. **No add button and no row tap yet** (`add = null`): the create and edit form is B2b |
+| `AccountsRoute(services, onBack, modifier)` | The only place that touches `AccountsViewModel`. `LifecycleResumeEffect` reloads the lists whenever the screen resumes (so an edit made elsewhere shows on return) and ends the undo offer when it pauses; `UndoDeleteSnackbar` shows "Account deleted" with Undo; a failure shows a fixed "Couldn't archive. Try again." snackbar (never exception text) and is then cleared |
+| `AccountRowMapper.badge(type)`, `AccountRowMapper.supporting(typeLabel, issuer, lastFour)`, `Account.toRow(typeLabel, actions)` (internal) | The only account-specific drawing logic: Bank `account_balance`/blue, Credit card `credit_card`/violet, Cash `payments`/emerald, Wallet `account_balance_wallet`/teal; the second line is "<type> · <issuer> · ••<last four>" with missing parts left out. The badge is spoken as the type |
+
+Tests: `EntityListScreenTest`, `UndoDeleteSnackbarTest`, `EntityListScreenshotTest` (goldens
+`entity-list-{light,dark,archived-light,empty-light,empty-dark}`), `AccountRowMapperTest`,
+`AccountsViewModelTest` (over real in-memory Room, with a failing `AuditLog` for the failure paths),
+`AccountsRouteTest` (the resume reload and the pause behaviour, driven through a hand-made
+`LifecycleRegistry`), `MoreScreenTest` and `AccountsFlowTest` (Home to More to Accounts through
+`PftRoot`).
 
 ### Window theme
 

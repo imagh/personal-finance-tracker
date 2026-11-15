@@ -185,6 +185,10 @@ private enum class HeaderPhase { Expanded, Moving, Collapsed }
  * @param bottomBar a `NavigationBar` or a [BottomActionBar], or null for none. With none, the list
  *   and the FAB are padded by the `safeDrawing` bottom inset instead, so they clear the navigation bar.
  * @param floatingActionButton the add action.
+ * @param snackbarHost where snackbars are shown (normally a `SnackbarHost`); empty by default, so a
+ *   screen that has none is unchanged. M3's `Scaffold` places it above the [bottomBar], or above the
+ *   bottom inset when there is none, and moves it clear of the [floatingActionButton]. Used by the
+ *   entity lists for their delete Undo (`UndoDeleteSnackbar`).
  * @param content the scrolling list.
  */
 @Composable
@@ -199,6 +203,7 @@ fun CollapsingHeaderScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     bottomBar: (@Composable () -> Unit)? = null,
     floatingActionButton: @Composable () -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
     content: LazyListScope.() -> Unit,
 ) {
     val sizes = headerSizes()
@@ -236,6 +241,7 @@ fun CollapsingHeaderScaffold(
         // nothing, so with no bar it must emit nothing (not an empty wrapper).
         bottomBar = { if (bottomBar != null) Box(Modifier.imePadding()) { bottomBar() } },
         floatingActionButton = floatingActionButton,
+        snackbarHost = snackbarHost,
         containerColor = PftTheme.surfaces.canvas,
         contentWindowInsets = WindowInsets.safeDrawing,
     ) { padding ->

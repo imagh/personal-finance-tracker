@@ -26,9 +26,15 @@
     <string name="field_too_long">At most %1$d characters</string>
     <string name="field_invalid_last_four">Enter exactly 4 digits</string>
     <string name="field_duplicate">Already in use</string>
-    <!-- Default primary action of EditFormScaffold, and the spoken label of its Back button. -->
+    <!-- Default primary action of EditFormScaffold, and the spoken label of the Back button of EditFormScaffold and EntityListScreen. -->
     <string name="form_save">Save</string>
     <string name="form_back">Back</string>
+    <!-- Entity lists (EntityListScreen, UndoDeleteSnackbar): the collapsible archived section, each row's overflow button, and the Undo action. -->
+    <string name="entity_list_archived">Archived (%1$d)</string>
+    <string name="entity_list_expanded">Expanded</string>
+    <string name="entity_list_collapsed">Collapsed</string>
+    <string name="entity_row_actions">Actions for %1$s</string>
+    <string name="entity_undo">Undo</string>
     <!-- First-run setup (SetupScreen): who is using this phone. -->
     <string name="setup_title">Welcome</string>
     <string name="setup_subtitle">Set up this phone</string>
@@ -41,5 +47,26 @@
     <!-- Home placeholder (HomeScreen): who is using this phone, until C4 brings the real Home. -->
     <string name="home_title">Home</string>
     <string name="home_subtitle">%1$s · %2$s</string>
-    <string name="home_placeholder">Accounts and transactions arrive in the next update</string>
+    <string name="home_placeholder">Open More to manage your accounts. Transactions arrive in the next update</string>
+    <!-- Spoken label of Home's header button that opens the More screen. -->
+    <string name="home_more">More</string>
+    <!-- More screen (MoreScreen): the entry point to the entity lists. -->
+    <string name="more_title">More</string>
+    <string name="more_accounts">Accounts</string>
+    <!-- Accounts list (AccountsScreen): row actions, the fixed messages and the type names. -->
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_empty">No accounts yet</string>
+    <string name="accounts_deleted">Account deleted</string>
+    <string name="entity_action_archive">Archive</string>
+    <string name="entity_action_unarchive">Unarchive</string>
+    <string name="entity_action_delete">Delete</string>
+    <!-- Shown in a snackbar after an unexpected failure of a list action; fixed text, never exception text. -->
+    <string name="entity_failed_archive">Couldn\'t archive. Try again.</string>
+    <string name="entity_failed_unarchive">Couldn\'t unarchive. Try again.</string>
+    <string name="entity_failed_delete">Couldn\'t delete. Try again.</string>
+    <string name="entity_failed_restore">Couldn\'t undo. Try again.</string>
+    <string name="account_type_bank">Bank</string>
+    <string name="account_type_credit_card">Credit card</string>
+    <string name="account_type_cash">Cash</string>
+    <string name="account_type_wallet">Wallet</string>
 </resources>

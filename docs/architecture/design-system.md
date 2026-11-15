@@ -340,6 +340,25 @@ primary action.
   capitalised) with the error as supporting text; it never clips what the user typed, so a length
   error is shown, not enforced. Goldens: `form-light`, `form-dark`, `form-light-2x` (`FormScreenshotTest`);
   the catalogue's Forms page is live.
+- **`snackbarHost` slot (B2a).** `CollapsingHeaderScaffold` passes a `snackbarHost: @Composable () -> Unit`
+  (empty by default, so no existing screen or golden changes) to M3's `Scaffold`, which places it above
+  the `bottomBar`, or above the bottom inset when there is none, and moves it clear of the FAB.
+  `CollapsingHeaderScaffoldTest` shows a snackbar through the slot with a 48dp navigation-bar inset
+  and checks it ends above it. Used for the delete Undo (`UndoDeleteSnackbar`) and the fixed
+  "Couldn't ... Try again." messages of the entity lists.
+- **`EntityListScreen` (B2a).** The one screen every entity list is (accounts now; categories and tags
+  in B4 and B5; loans and goals later): a `Standard` `CollapsingHeaderScaffold` with a labelled Back,
+  the **active** rows in a `GroupedSection`, a collapsed **"Archived (n)"** toggle (a 48dp button that
+  says "Collapsed" or "Expanded", with an expand chevron) over a second island, an `EmptyState` when
+  there are no rows at all, and the add FAB. A row is an M3 `ListItem` (`EntityRow`: title, optional
+  supporting line, optional leading `CategoryGlyph`, optional trailing overflow button that opens a
+  menu of exactly its `RowAction`s; `indent` insets a child by the 24dp spacing step). The overflow
+  button is labelled "Actions for <title>" and the badge is spoken as the row's glyph label, so the
+  title is read once. `add` (a `RowAction`) is the FAB's label and callback and the empty state's
+  button; null hides both. The FAB sits in the scaffold's slot, so the list ends with a 96dp spacer
+  that keeps the last row clear of it. `EntityRow` and `RowAction` stay plain data: each consumer's
+  mapper (`AccountRowMapper`) owns what a row says. Goldens `entity-list-light`, `-dark`,
+  `-archived-light` (Archived expanded), `-empty-light`, `-empty-dark` (`EntityListScreenshotTest`).
 - **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
   subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
   about 56dp). A long hero shrinks to fit (DS5's `MoneyText`, below): `CollapsingHeaderScaffoldTest`
