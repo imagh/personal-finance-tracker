@@ -26,9 +26,15 @@
     <string name="field_too_long">At most %1$d characters</string>
     <string name="field_invalid_last_four">Enter exactly 4 digits</string>
     <string name="field_duplicate">Already in use</string>
-    <!-- Default primary action of EditFormScaffold, and the spoken label of its Back button. -->
+    <!-- Default primary action of EditFormScaffold, and the spoken label of the Back button of EditFormScaffold and EntityListScreen. -->
     <string name="form_save">Save</string>
     <string name="form_back">Back</string>
+    <!-- Entity lists (EntityListScreen, UndoDeleteSnackbar): the collapsible archived section, each row's overflow button, and the Undo action. -->
+    <string name="entity_list_archived">Archived (%1$d)</string>
+    <string name="entity_list_expanded">Expanded</string>
+    <string name="entity_list_collapsed">Collapsed</string>
+    <string name="entity_row_actions">Actions for %1$s</string>
+    <string name="entity_undo">Undo</string>
     <!-- First-run setup (SetupScreen): who is using this phone. -->
     <string name="setup_title">Welcome</string>
     <string name="setup_subtitle">Set up this phone</string>
