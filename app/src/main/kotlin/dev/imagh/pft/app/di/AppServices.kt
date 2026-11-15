@@ -7,6 +7,7 @@ import dev.imagh.pft.app.data.audit.RoomAuditLog
 import dev.imagh.pft.app.data.category.RoomCategoryRepository
 import dev.imagh.pft.app.data.identity.RoomIdentityRepository
 import dev.imagh.pft.app.data.settings.RoomAppSettingsRepository
+import dev.imagh.pft.app.data.tag.RoomTagRepository
 import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.audit.AuditRecorder
@@ -16,6 +17,7 @@ import dev.imagh.pft.ledger.identity.IdentityService
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
 import dev.imagh.pft.ledger.setup.FirstRunService
+import dev.imagh.pft.ledger.tag.TagService
 import java.time.Clock
 
 /**
@@ -57,6 +59,9 @@ class AppServices(
     /** Categories. */
     val categoryRepository = RoomCategoryRepository(database.categoryDao())
 
+    /** Tags. */
+    val tagRepository = RoomTagRepository(database.tagDao())
+
     /** Builds audit entries into the audit log. */
     val recorder = AuditRecorder(auditLog, ids, clock)
 
@@ -74,6 +79,9 @@ class AppServices(
 
     /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
     val categories = CategoryService(runner, writer, categoryRepository, ids)
+
+    /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
+    val tags = TagService(runner, writer, tagRepository, ids)
 
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = FirstRunService(runner, identity, categories)

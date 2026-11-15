@@ -16,11 +16,13 @@ import dev.imagh.pft.app.data.identity.IdentityDao
 import dev.imagh.pft.app.data.identity.UserProfileEntity
 import dev.imagh.pft.app.data.settings.AppSettingDao
 import dev.imagh.pft.app.data.settings.AppSettingEntity
+import dev.imagh.pft.app.data.tag.TagDao
+import dev.imagh.pft.app.data.tag.TagEntity
 
 /**
  * The app's Room database, `pft.db` (plan §4). Version 1 holds the identity, settings and audit
- * tables, version 2 adds `account` (slice B1) and version 3 adds `category` (slice B3); each later
- * slice adds its tables through its own migration and a migration test.
+ * tables, version 2 adds `account` (slice B1), version 3 adds `category` (slice B3) and version 4 adds `tag`
+ * (slice B5); each later slice adds its tables through its own migration and a migration test.
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
  * and tests alike), which is `internal` to the app module: the only production caller is
@@ -38,6 +40,7 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
         AuditEntryEntity::class,
         AccountEntity::class,
         CategoryEntity::class,
+        TagEntity::class,
     ],
     version = PftDatabase.VERSION,
     exportSchema = true,
@@ -45,7 +48,7 @@ import dev.imagh.pft.app.data.settings.AppSettingEntity
 abstract class PftDatabase : RoomDatabase() {
     companion object {
         /** The current schema version; bump it with a migration in [Migrations] and a migration test. */
-        const val VERSION = 3
+        const val VERSION = 4
 
         /** The database file name. */
         const val NAME = "pft.db"
@@ -99,4 +102,7 @@ abstract class PftDatabase : RoomDatabase() {
 
     /** Categories (schema v3). */
     abstract fun categoryDao(): CategoryDao
+
+    /** Tags (schema v4). */
+    abstract fun tagDao(): TagDao
 }

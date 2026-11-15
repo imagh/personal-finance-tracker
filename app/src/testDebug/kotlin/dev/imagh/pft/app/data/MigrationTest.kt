@@ -44,6 +44,7 @@ class MigrationTest {
         support.auditRowCount(db) shouldBe 1
         columnsOf(db, "account").isNotEmpty() shouldBe true
         columnsOf(db, "category").isNotEmpty() shouldBe true
+        columnsOf(db, "tag").isNotEmpty() shouldBe true
     }
 
     @Test
@@ -54,8 +55,8 @@ class MigrationTest {
     }
 
     @Test
-    fun `the migrations so far are 1 to 2 and 2 to 3`() {
-        Migrations.ALL.map { it.startVersion to it.endVersion } shouldBe listOf(1 to 2, 2 to 3)
+    fun `the migrations so far are 1 to 2, 2 to 3 and 3 to 4`() {
+        Migrations.ALL.map { it.startVersion to it.endVersion } shouldBe listOf(1 to 2, 2 to 3, 3 to 4)
     }
 
     @Test
@@ -174,6 +175,76 @@ class MigrationTest {
 
         shouldThrow<SQLiteConstraintException> { insert("c4", "missing", null) }
         shouldThrow<SQLiteConstraintException> { insert("c5", null, "LOAN_EMI") }
+    }
+
+    @Test
+    fun `migrate3To4 creates tag, keeping the account, the category and the audit triggers`() {
+        support.createAt(3) {
+            it.execSQL(
+                "INSERT INTO account (id, created_at, updated_at, created_by_user_id, created_on_device_id, name, " +
+                    "type, currency, opening_balance) VALUES ('a1', 1, 1, 'u1', 'd1', 'Cash', 'CASH', 'INR', -500)",
+            )
+            // A top-level category: the self-referencing key on parent_id is enforced, so a child would need its
+            // parent inserted first.
+            it.execSQL(
+                "INSERT INTO category (id, created_at, updated_at, created_by_user_id, created_on_device_id, " +
+                    "parent_id, kind, name, colour, sort_order, system_key) " +
+                    "VALUES ('c1', 1, 1, 'u1', 'd1', NULL, 'EXPENSE', 'Food', 'coral', 0, NULL)",
+            )
+        }
+
+        val db = support.migrateTo(4, Migrations.MIGRATION_3_4)
+
+        db.version shouldBe 4
+        columnsOf(db, "tag").toSet() shouldBe
+            setOf(
+                "id" to "TEXT",
+                "created_at" to "INTEGER",
+                "updated_at" to "INTEGER",
+                "created_by_user_id" to "TEXT",
+                "created_on_device_id" to "TEXT",
+                "deleted_at" to "INTEGER",
+                "archived_at" to "INTEGER",
+                "name" to "TEXT",
+            )
+        // No index and no key beyond the primary key (plan §2: Room cannot declare a partial or NOCASE index).
+        db.query("SELECT name FROM pragma_index_list('tag') WHERE origin = 'c'").use { it.count } shouldBe 0
+        db.query("SELECT COUNT(*) FROM pragma_foreign_key_list('tag')").use {
+            it.moveToFirst() shouldBe true
+            it.getInt(0) shouldBe 0
+        }
+        db.query("SELECT name, opening_balance FROM account WHERE id = 'a1'").use {
+            it.moveToFirst() shouldBe true
+            it.getString(0) shouldBe "Cash"
+            it.getLong(1) shouldBe -500L
+        }
+        db.query("SELECT name, colour FROM category WHERE id = 'c1'").use {
+            it.moveToFirst() shouldBe true
+            it.getString(0) shouldBe "Food"
+            it.getString(1) shouldBe "coral"
+        }
+        support.auditRowCount(db) shouldBe 1
+    }
+
+    @Test
+    fun `a tag row can be written to the migrated table, and two tags may share a name in the table`() {
+        support.createAt(3)
+        val db = support.migrateTo(4, Migrations.MIGRATION_3_4)
+
+        fun insert(id: String) =
+            db.execSQL(
+                "INSERT INTO tag (id, created_at, updated_at, created_by_user_id, created_on_device_id, name) " +
+                    "VALUES (?, 1, 1, 'u1', 'd1', 'Travel')",
+                arrayOf(id),
+            )
+        insert("t1")
+        // Uniqueness is the service's rule, not the table's (a fresh install has the same table).
+        insert("t2")
+
+        db.query("SELECT COUNT(*) FROM tag WHERE name = 'Travel'").use {
+            it.moveToFirst() shouldBe true
+            it.getInt(0) shouldBe 2
+        }
     }
 
     @Test

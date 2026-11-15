@@ -51,6 +51,9 @@ class RoomTestKit(
     /** Categories. */
     val categoryRepository = services.categoryRepository
 
+    /** Tags. */
+    val tagRepository = services.tagRepository
+
     /** Builds audit entries into [auditLog]. */
     val recorder = services.recorder
 
@@ -68,6 +71,9 @@ class RoomTestKit(
 
     /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
     val categories = services.categories
+
+    /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
+    val tags = services.tags
 
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = services.firstRun
