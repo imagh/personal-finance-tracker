@@ -9,6 +9,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import java.time.Instant
+import java.util.Locale
 
 private data class Widget(
     override val meta: EntityMeta<UserId>,
@@ -99,6 +100,26 @@ class ValidationTest :
                 val error =
                     shouldThrow<LedgerError.NameTooLong> { Validation.requireOptionalName("a".repeat(21), max = 20) }
                 error.max shouldBe 20
+            }
+        }
+
+        context("nameKey") {
+            test("trims and lower-cases with Unicode rules") {
+                Validation.nameKey("  Food & Dining ") shouldBe "food & dining"
+                Validation.nameKey("ÉCLAIR") shouldBe "éclair"
+            }
+            test("does not depend on the device locale") {
+                // Locale.ROOT: a Turkish default locale would turn "I" into a dotless i.
+                val original = Locale.getDefault()
+                try {
+                    Locale.setDefault(Locale.forLanguageTag("tr-TR"))
+                    Validation.nameKey("INTEREST") shouldBe "interest"
+                } finally {
+                    Locale.setDefault(original)
+                }
+            }
+            test("names that differ only by case or padding share a key") {
+                Validation.nameKey(" TRAVEL ") shouldBe Validation.nameKey("travel")
             }
         }
 

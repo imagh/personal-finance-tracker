@@ -9,6 +9,7 @@ import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.NameBasedId
 import dev.imagh.pft.ledger.matchers.shouldHaveAudited
 import dev.imagh.pft.ledger.validation.LedgerError
+import dev.imagh.pft.ledger.validation.Validation
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -101,7 +102,7 @@ class DefaultCategoriesTest :
                     .groupBy { it.parentSeedKey to it.kind }
                     .values
                     .forEach { siblings ->
-                        siblings.map { CategoryTree.nameKey(it.name) }.toSet() shouldHaveSize siblings.size
+                        siblings.map { Validation.nameKey(it.name) }.toSet() shouldHaveSize siblings.size
                     }
             }
 

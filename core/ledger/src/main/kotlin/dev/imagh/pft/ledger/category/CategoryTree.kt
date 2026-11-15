@@ -3,7 +3,6 @@ package dev.imagh.pft.ledger.category
 import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.ledger.validation.Validation
-import java.util.Locale
 
 /**
  * The tree's plain functions: sorting, sibling sets, the picker's order and the name rule, over the
@@ -63,21 +62,15 @@ internal object CategoryTree {
     ): Boolean = ids.size == siblings.size && ids.toSet() == siblings.map { it.meta.id }.toSet()
 
     /**
-     * The text names are compared by: trimmed and lower-cased with Unicode rules and no locale (SQLite's
-     * `NOCASE` folds ASCII only).
-     */
-    fun nameKey(name: String): String = name.trim().lowercase(Locale.ROOT)
-
-    /**
      * True if one of [siblings], other than the category [except] (the one being renamed), already
-     * has [name] by [nameKey].
+     * has [name] by [Validation.nameKey].
      */
     fun isNameTaken(
         siblings: List<Category>,
         name: String,
         except: CategoryId? = null,
     ): Boolean {
-        val key = nameKey(name)
-        return siblings.any { it.meta.id != except && nameKey(it.name) == key }
+        val key = Validation.nameKey(name)
+        return siblings.any { it.meta.id != except && Validation.nameKey(it.name) == key }
     }
 }

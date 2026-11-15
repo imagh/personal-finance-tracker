@@ -129,13 +129,6 @@ class CategoryTreeTest :
         }
 
         context("names") {
-            test("the key trims and lower-cases with Unicode rules, independent of the device locale") {
-                CategoryTree.nameKey("  Food & Dining ") shouldBe "food & dining"
-                CategoryTree.nameKey("ÉCLAIR") shouldBe "éclair"
-                // Locale.ROOT: a Turkish default locale would turn "I" into a dotless i.
-                CategoryTree.nameKey("INTEREST") shouldBe "interest"
-            }
-
             test("a name is taken by a sibling with the same key, unless that sibling is the one being renamed") {
                 val siblings = listOf(cat("a", name = "Food"), cat("b", name = "Home"))
 
