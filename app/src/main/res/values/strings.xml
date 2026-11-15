@@ -48,4 +48,20 @@
     <string name="home_title">Home</string>
     <string name="home_subtitle">%1$s · %2$s</string>
     <string name="home_placeholder">Accounts and transactions arrive in the next update</string>
+    <!-- Accounts list (AccountsScreen): row actions, the fixed messages and the type names. -->
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_empty">No accounts yet</string>
+    <string name="accounts_deleted">Account deleted</string>
+    <string name="entity_action_archive">Archive</string>
+    <string name="entity_action_unarchive">Unarchive</string>
+    <string name="entity_action_delete">Delete</string>
+    <!-- Shown in a snackbar after an unexpected failure of a list action; fixed text, never exception text. -->
+    <string name="entity_failed_archive">Couldn\'t archive. Try again.</string>
+    <string name="entity_failed_unarchive">Couldn\'t unarchive. Try again.</string>
+    <string name="entity_failed_delete">Couldn\'t delete. Try again.</string>
+    <string name="entity_failed_restore">Couldn\'t undo. Try again.</string>
+    <string name="account_type_bank">Bank</string>
+    <string name="account_type_credit_card">Credit card</string>
+    <string name="account_type_cash">Cash</string>
+    <string name="account_type_wallet">Wallet</string>
 </resources>
