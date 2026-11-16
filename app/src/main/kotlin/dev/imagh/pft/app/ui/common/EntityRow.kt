@@ -7,14 +7,16 @@ import androidx.compose.runtime.Immutable
  *
  * @property source a registry symbol, an emoji or a letter.
  * @property colourKey the palette name (`CategoryPalette`); null or unknown gets slate.
- * @property label what TalkBack speaks for the badge: the account's type ("Bank") or the category's
- *   name. It is separate from the row's title so a screen reader does not say the title twice.
+ * @property label what TalkBack speaks for the badge: the account's type ("Bank"). It is separate from
+ *   the row's title so a screen reader does not say the title twice. Null makes the badge decorative
+ *   (nothing is spoken for it), for a row whose title already says all there is to say, such as a
+ *   category.
  */
 @Immutable
 data class RowGlyph(
     val source: GlyphSource,
     val colourKey: String?,
-    val label: String,
+    val label: String?,
 )
 
 /**

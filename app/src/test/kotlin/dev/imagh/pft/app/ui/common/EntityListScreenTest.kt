@@ -2,11 +2,15 @@ package dev.imagh.pft.app.ui.common
 
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -23,6 +27,7 @@ import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import io.kotest.matchers.shouldBe
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -66,6 +71,7 @@ class EntityListScreenTest {
         archived: List<EntityRow> = emptyList(),
         add: RowAction? = RowAction("Add account") { invoked += "add" },
         loaded: Boolean = true,
+        header: (@Composable () -> Unit)? = null,
     ) {
         compose.setContent {
             density = LocalDensity.current.density
@@ -80,6 +86,7 @@ class EntityListScreenTest {
                     onBack = { invoked += "back" },
                     add = add,
                     loaded = loaded,
+                    header = header,
                 )
             }
         }
@@ -157,6 +164,32 @@ class EntityListScreenTest {
 
         compose.onAllNodesWithText("No accounts yet").assertCountEquals(0)
         compose.onAllNodesWithText("Add account").assertCountEquals(0) // the empty state's button
+    }
+
+    @Test
+    fun `a header slot shows above the rows`() {
+        show(active = listOf(row("Everyday")), header = { Text("Kind switch") })
+
+        val header = compose.onNodeWithText("Kind switch")
+        header.assertIsDisplayed()
+        assertTrue(header.bounds().bottom <= compose.onNodeWithText("Everyday").bounds().top)
+    }
+
+    @Test
+    fun `a header slot shows before the first load and above the empty state`() {
+        show(loaded = false, header = { Text("Kind switch") })
+        compose.onNodeWithText("Kind switch").assertIsDisplayed()
+        compose.onAllNodesWithText("No accounts yet").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a header slot stays above the empty state`() {
+        show(header = { Text("Kind switch") })
+
+        assertTrue(
+            compose.onNodeWithText("Kind switch").bounds().bottom <=
+                compose.onNodeWithText("No accounts yet").bounds().top,
+        )
     }
 
     @Test
@@ -268,5 +301,39 @@ class EntityListScreenTest {
 
         compose.onAllNodesWithContentDescription("Bank").assertCountEquals(1)
         compose.onNodeWithText("Everyday").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a row glyph with no label is decorative, so the title is the only thing that speaks the name`() {
+        compose.setContent {
+            val snackbars = remember { SnackbarHostState() }
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                EntityListScreen(
+                    title = "Categories",
+                    active =
+                        listOf(
+                            EntityRow(
+                                key = "a",
+                                title = "Groceries",
+                                glyph = RowGlyph(GlyphSource.Symbol(PftSymbol.ACCOUNT_BALANCE), "coral", null),
+                            ),
+                        ),
+                    archived = emptyList(),
+                    emptyMessage = "No categories yet",
+                    snackbarHost = { SnackbarHost(snackbars) },
+                    onBack = {},
+                )
+            }
+        }
+
+        // Unmerged tree: the badge is not an image and has no description.
+        compose.onAllNodesWithContentDescription("Groceries", useUnmergedTree = true).assertCountEquals(0)
+        val images =
+            compose
+                .onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Image), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+        assertEquals(listOf("Back"), images)
+        compose.onNodeWithText("Groceries").assertIsDisplayed()
     }
 }
