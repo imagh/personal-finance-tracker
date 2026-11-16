@@ -55,6 +55,7 @@
     <!-- More screen (MoreScreen): the entry point to the entity lists. -->
     <string name="more_title">More</string>
     <string name="more_accounts">Accounts</string>
+    <string name="more_categories">Categories</string>
     <!-- Accounts list (AccountsScreen): row actions, the fixed messages and the type names. -->
     <string name="accounts_title">Accounts</string>
     <string name="accounts_empty">No accounts yet</string>

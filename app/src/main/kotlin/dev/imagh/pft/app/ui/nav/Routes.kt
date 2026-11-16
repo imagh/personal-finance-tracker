@@ -22,6 +22,9 @@ object Routes {
     /** The accounts list, opened from More. */
     const val ACCOUNTS = "accounts"
 
+    /** The categories list, opened from More. */
+    const val CATEGORIES = "categories"
+
     /** The argument name of an entity's id in the edit routes. */
     const val ARG_ID = "id"
 

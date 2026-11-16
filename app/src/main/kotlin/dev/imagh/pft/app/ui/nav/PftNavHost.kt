@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import dev.imagh.pft.app.DevHeaderActions
 import dev.imagh.pft.app.devRoutes
 import dev.imagh.pft.app.di.AppServices
+import dev.imagh.pft.app.ui.categories.CategoriesRoute
 import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.more.MoreScreen
 import dev.imagh.pft.app.ui.setup.SetupRoute
@@ -24,8 +25,8 @@ import dev.imagh.pft.app.ui.theme.PftMotion
  * - **Predictive back** is enabled by the manifest's `enableOnBackInvokedCallback`; the host's own
  *   back handling drives the pop transition.
  *
- * - **Home to More to Accounts** are plain pushes (`navigate`); Back pops one screen, so Back from
- *   Accounts returns to More and from More to Home. Home's header More button is the entry point
+ * - **Home to More to Accounts or Categories** are plain pushes (`navigate`); Back pops one screen, so
+ *   Back from either list returns to More and from More to Home. Home's header More button is the entry point
  *   until C4's bottom navigation bar replaces it (plan D9).
  *
  * - **Accounts to the account form** is a push with an optional `id` argument (none: create). The form
@@ -74,9 +75,13 @@ fun PftNavHost(
             MoreScreen(
                 onBack = { navController.popBackStack() },
                 onOpenAccounts = { navController.navigate(Routes.ACCOUNTS) },
+                onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
             )
         }
         accountRoutes(navController, services)
+        composable(Routes.CATEGORIES) {
+            CategoriesRoute(services, onBack = { navController.popBackStack() })
+        }
         devRoutes()
     }
 }
