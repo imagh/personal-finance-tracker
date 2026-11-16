@@ -107,7 +107,7 @@ class CategoryService(
      */
     suspend fun archive(id: CategoryId): Category =
         runner.inTransaction {
-            requireNotSystem(id)
+            repository.requireNotSystem(id)
             writer.archive(repository, id)
         }
 
@@ -123,7 +123,7 @@ class CategoryService(
      */
     suspend fun delete(id: CategoryId): Category =
         runner.inTransaction {
-            requireNotSystem(id)
+            repository.requireNotSystem(id)
             if (repository.allLive().any { it.parentId == id }) throw LedgerError.HasChildren()
             writer.delete(repository, id)
         }
@@ -195,6 +195,13 @@ class CategoryService(
     suspend fun pickable(kind: CategoryKind): List<Category> = CategoryTree.pickable(repository.allLive(), kind)
 
     /**
+     * The categories of [kind] for a list screen: the ones in use and the archived ones (those
+     * archived themselves and the children of an archived parent), each depth-first in `sort_order`
+     * (see [CategoryLists]). Deleted categories are in neither.
+     */
+    suspend fun lists(kind: CategoryKind): CategoryLists = CategoryTree.lists(repository.allLive(), kind)
+
+    /**
      * Creates the default categories ([DefaultCategories.LIST]) that do not exist yet, in one
      * transaction, audited with source [AuditSource.SYSTEM]; run by first-run setup.
      *
@@ -231,12 +238,13 @@ class CategoryService(
         }
     }
 
-    private suspend fun requireNotSystem(id: CategoryId) {
-        if (repository.get(id)?.systemKey != null) throw LedgerError.SystemCategoryProtected()
-    }
-
     private companion object {
         /** The kind of record, for errors (never a name). */
         const val WHAT = "category"
     }
+}
+
+/** Refuses [id] if it is a system category: those can be edited but never archived or deleted. */
+private suspend fun CategoryRepository.requireNotSystem(id: CategoryId) {
+    if (get(id)?.systemKey != null) throw LedgerError.SystemCategoryProtected()
 }
