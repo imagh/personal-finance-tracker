@@ -356,9 +356,13 @@ primary action.
   button is labelled "Actions for <title>" and the badge is spoken as the row's glyph label, so the
   title is read once. `add` (a `RowAction`) is the FAB's label and callback and the empty state's
   button; null hides both. The FAB sits in the scaffold's slot, so the list ends with a 96dp spacer
-  that keeps the last row clear of it. `EntityRow` and `RowAction` stay plain data: each consumer's
-  mapper (`AccountRowMapper`) owns what a row says. Goldens `entity-list-light`, `-dark`,
-  `-archived-light` (Archived expanded), `-empty-light`, `-empty-dark` (`EntityListScreenshotTest`).
+  that keeps the last row clear of it. An optional `header` slot (B4a) draws a block as the first list
+  item, above the rows and above the empty state; the categories list puts its Expense/Income segmented
+  switch there. `EntityRow` and `RowAction` stay plain data: each consumer's
+  mapper (`AccountRowMapper`, `CategoryRowMapper`) owns what a row says. Goldens `entity-list-light`, `-dark`,
+  `-archived-light` (Archived expanded), `-empty-light`, `-empty-dark` (`EntityListScreenshotTest`) and
+  `categories-list-light`, `-dark`, `-archived-light` (`CategoriesScreenshotTest`, 1100dp and 1500dp tall
+  so the Archived section is in the picture).
 - **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
   subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
   about 56dp). A long hero shrinks to fit (DS5's `MoneyText`, below): `CollapsingHeaderScaffoldTest`
@@ -474,7 +478,8 @@ sources (M3's own internals may still use it).
   emoji is the B4 `EmojiInputValidator`'s job when a category is saved.
 - **`CategoryGlyph(source, name, colourKey, size, onClick)`** (`ui/common`) draws a symbol, one emoji or a letter on a
   `CategoryPalette` badge (12 hues, light and dark: `PftTheme.palette[colourKey]`; unknown name is `slate`). It is announced as the
-  category name, at a fixed dp size (`GlyphSize`: chip 28, row 40, hero 56), and is a button only when given `onClick`.
+  category name (or, with a null `name`, is decorative and silent, for a badge beside a title that already says it: category list rows),
+  at a fixed dp size (`GlyphSize`: chip 28, row 40, hero 56), and is a button only when given `onClick`.
 - **Emoji** are drawn by the system emoji font, so they differ between phones (accepted; symbols are the consistent option).
   `EmojiCompatInitializer` is removed from the merged manifest (it fetches a font through Google Play services);
   `ManifestHardeningTest` asserts it is absent. Compose is not affected: it uses the platform emoji font (minSdk 33).

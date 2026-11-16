@@ -1,13 +1,12 @@
 # Categories and tags
 
-Status: **Categories: data and rules built, no screens yet** (plan slice B3a core, B3b storage and
-first-run seeding). Tags: data and rules built too (B5a), no screens yet. Every screen (the category
-list, the create and edit form, the picker, emoji icons, the tags list) arrives in later PRs of slice B
-(B4a to B4c, B5b). PRD: L-2 (categories), L-3
-(tags). Plan: [2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
+Status: **Categories: the list is built** (More, then Categories: browse, reorder, archive, delete with
+Undo). Creating and editing a category, the picker and emoji icons come in later PRs of slice B (B4b,
+B4c). Tags: data and rules built (B5a), no screens yet (B5b). PRD: L-2 (categories), L-3 (tags). Plan:
+[2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
 
-This page grows with each PR. Today it describes what a category is, the list you start with, and the
-rules the app already enforces underneath. You cannot see or change categories yet: the screens come next.
+This page grows with each PR. Today it describes what a category is, the list you start with, the rules
+the app enforces underneath, and what the categories list does.
 
 ## What a category is
 
@@ -61,6 +60,37 @@ listed in `DefaultCategories` in core. The list lives in code, with a permanent 
 - **Phones set up before this update do not get the list** (an owner decision: only development installs
   existed). Only a fresh setup creates it.
 
+## The categories list
+
+Open **More, then Categories**. A switch at the top chooses **Expense** (shown first) or **Income**; the
+list below shows only that kind.
+
+- **Rows.** Each top-level category is followed by its sub-categories, inset a step, in the order you
+  gave them. Each row shows its icon (a symbol, an emoji, or the first letter of its name when it has
+  none) in its colour, and its name. A row's **three-dot menu** holds its actions.
+- **Reorder: Move up and Move down.** There is no dragging. Move up and Move down swap a category with
+  the one next to it among its siblings: top-level categories move among top-level ones, and a
+  sub-category moves among the sub-categories of the same parent. The first row of a group has no Move
+  up and the last has no Move down. Archived siblings keep their place, so a move skips over them. Two
+  categories that ended up with the same position (for example after a restore) still move.
+- **Archive and Unarchive.** Archive moves a category to the collapsed **Archived (n)** section at the
+  bottom, and hides it from pickers. Archiving a parent moves its sub-categories there with it (they
+  show under it, inset); they offer only Delete, because they are hidden by their parent rather than
+  archived themselves. A sub-category you archive on its own appears in that section with "Under
+  <parent>" beneath its name. Unarchive puts it back where it was.
+- **Delete, with Undo.** Delete removes a category and shows "Category deleted" with **Undo** for about
+  10 seconds. Undo restores it, in its old place. Only the latest delete can be undone, and leaving the
+  screen ends the offer (the delete stands).
+- **A parent with sub-categories cannot be deleted.** Choosing Delete shows "Delete its sub-categories
+  first" and changes nothing; delete or archive-and-delete its sub-categories first.
+- **Loan EMI** can be moved but its menu has no Archive and no Delete.
+- **If something goes wrong** (a save fails), a short fixed message such as "Couldn't archive. Try again."
+  appears and the list is left as it was. The message never contains a name.
+- **No add button yet.** The "add category" button and tapping a row to edit arrive with the form (B4b).
+  A fresh setup already has the starter list; phones set up before slice B have no categories until then.
+
+Nothing on this screen logs a name: failures log only the kind of record and the action.
+
 ## Rules the app already enforces
 
 These live in core (`CategoryService`) and are tested there and through the real database; the screens
@@ -81,7 +111,8 @@ will show their messages as they arrive.
 - **Loan EMI cannot be archived or deleted**, because loans (a later slice) book their instalments to it. You can
   rename it, recolour it and change its icon. There is at most one.
 - **Reordering** applies to the siblings of one parent and kind: the new order must list exactly the
-  current ones.
+  current ones, archived siblings included. Core hands out positions itself and breaks ties between equal
+  positions, so a swap always takes effect.
 - **A corrupt stored colour or icon never breaks the list**: an unknown colour is shown as slate and an unknown
   icon as the name's first letter. (The values are untrusted when they are read back, for example after
   sync.)
@@ -92,7 +123,10 @@ Core: `core/ledger/.../category/` and `setup/FirstRunService` (rules, the defaul
 see `core/ledger/README.md`. Storage: `app/.../data/category/` and schema v3 (see
 [data-model.md](../architecture/data-model.md)); `app/README.md` for the wiring. Tests: `CategoryServiceTest`
 and friends in core, and `RoomCategoryIntegrationTest`, `RoomCategoryMapperTest`, `RoomCategoryForeignKeyTest`,
-`MigrationTest` and the Setup tests in `app`.
+`MigrationTest` and the Setup tests in `app`. The list: `ui/categories/` in `app`, with
+`CategoryService.lists(kind)` in core; tests `CategoryListsTest` (core), `CategoriesViewModelTest`,
+`CategoriesActionsTest`, `CategoryRowMapperTest`, `CategoriesScreenTest`, `CategoriesFlowTest` and the
+`CategoriesScreenshotTest` goldens in `app`.
 
 ## Tags
 
