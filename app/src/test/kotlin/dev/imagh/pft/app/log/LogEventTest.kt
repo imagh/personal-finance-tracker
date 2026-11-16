@@ -42,6 +42,11 @@ class LogEventTest {
     }
 
     @Test
+    fun `entity_save_failed renders only the kind code`() {
+        assertEquals("entity_save_failed kind=ACCOUNT", LogEvent.EntitySaveFailed(EntityKind.ACCOUNT).line())
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }
