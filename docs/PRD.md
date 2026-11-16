@@ -95,6 +95,7 @@ Items the owner has asked to keep, with where each one lands. A plan that defers
 | R-3 | **Launch-failure screen.** Today an unexpected exception from `container.open()` or `identity.currentIdentity()` in `LaunchViewModel` crashes every launch while the cause persists. It fails closed (nothing is changed) but gives no explanation. The fix is a screen with a fixed code and no exception text, path or content. It joins the existing A4b startup-failure follow-up (a failed pre-migration backup or an unopenable database). | M1a slice H2 (diagnostics), with the A4b startup-failure follow-up | Deferred (A5f review, 2026-11-02) |
 | R-4 | **Invoice image/PDF → proposed items.** Share an invoice and the app proposes items for the user to confirm; nothing is applied without confirmation, and the file stays on the device. Needs an explicit owner decision on on-device OCR (decision 4 and the M1 non-goal "receipt OCR") and a justified share target. | After roadmap R-5 (statistics), with its own architect plan | Future (decision 35, 2026-11-10) |
 | R-5 | **Statistics and graphs** for categories, sub-categories, tags, accounts, budgets, loans, goals and users, over week, month, quarter, year or a custom range. Figures are derived from transactions and their items when shown, never stored. | M3 (insights, §15), before roadmap R-4, with its own architect plan | Future (decision 35, 2026-11-10) |
+| R-6 | **Pre-release review (release gate, REL-1).** Research how to check an AI-written Android app for security, privacy, stability and latency issues before each release, then plan it: the method, the tools (static and dependency scans, manual review, on-device tests, performance measurement), the pass criteria, who runs it, and how its result is recorded. | Before the first release to a phone (M1a acceptance), with its own research note and architect plan | Planned; research and plan to come (decision 36, 2026-11-16) |
 
 ---
 
@@ -255,6 +256,14 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | INT-5 | Migrations are versioned and tested, with an automatic pre-migration backup. | Proposed |
 | INT-6 | Derived totals (balances, budget spent, goal progress) are computed from transactions and can always be re-derived. No hand-maintained running totals that can drift. | Proposed |
 
+### 8.1 Release gate **[Confirmed]**
+
+The app is written largely by AI coding agents ("vibe coded"). Automated tests and the per-PR reviews catch a great deal, but they are not enough assurance for an app that holds a household's financial data. So every release passes a dedicated review first.
+
+| ID | Requirement | Status |
+|---|---|---|
+| REL-1 | **No release without a pre-release review for security, privacy, stability and latency.** A release is any build installed on the owner's or the spouse's phone (the sideloaded, release-signed builds of decision 31), including every milestone acceptance build. Debug builds on the emulator are not releases. The review covers: **security** (attack surface, permissions, manifest, secrets, dependencies, untrusted SMS and email input); **privacy** (nothing leaves the device unencrypted, and no financial content in logs, crash output or anything shared); **stability** (crashes, data integrity, migrations and the upgrade path from the previous release); and **latency** (the responsiveness target in §9). Every finding is fixed before release, or the owner explicitly accepts it in writing. The result is recorded with the release. It is a must-do: no deadline or size of change skips it. The method, tools, pass criteria and record format are still to be researched and planned (roadmap R-6). | Confirmed |
+
 ## 9. Non-functional requirements
 
 - **Offline-first.** All core features work without network.
@@ -324,6 +333,7 @@ The note: *"Sync across devices through gmail."* Interpreted as Google-account-b
 | 33 | The existing-user picker on Setup is deferred until restore (D-3) or sync (M1c) can make it reachable; tracked as roadmap R-1 | 2026-11-01 |
 | 34 | **Encryption moves into the M1a foundation, not last.** The owner approved building SQLCipher encryption (with the Keystore-wrapped key and the pre-migration backup) in the persistence foundation, slice A4b, before any ledger feature, instead of last as §16 item 8 orders ("app lock + encryption"). App lock stays late (slice H). Reason recorded in the plan (`docs/plans/2026-10-28-m1a-core-ledger.md`, section 2 and Q3): retrofitting SQLCipher onto a plaintext database needs a `sqlcipher_export` migration, and plaintext financial data would otherwise exist on the emulator or phone in the meantime | 2026-11-03 |
 | 35 | **Itemised transactions.** Every transaction has one or more items carrying the category, tags and note, and the items always sum exactly to the amount (L-1, L-11). Tags live only on items. Limits: 50 items per transaction, 200 characters per item note. Statistics and graphs (roadmap R-5) come in M3, before invoice-to-items (roadmap R-4). Plan: `docs/plans/2026-11-10-itemised-transactions.md` | 2026-11-10 |
+| 36 | **Release gate.** Because the app is written largely by AI agents, every release passes a pre-release review for security, privacy, stability and latency before it reaches a phone (§8.1, REL-1). It is a must-do check for every release. Its method is to be researched and planned (roadmap R-6) | 2026-11-16 |
 | 6 | M2 sync is serverless (P2P is a "maybe"); each user uses their own email in M2 | from notes |
 
 ## 13. Open questions
