@@ -62,7 +62,7 @@ sealed interface LogEvent {
     }
 
     /**
-     * A list action ([action]: archive, unarchive, delete or restore) on a [kind] of record failed
+     * A list action ([action]: archive, unarchive, delete, restore or reorder) on a [kind] of record failed
      * unexpectedly; the list is left as it was and the user is asked to try again. Enums only (SEC-5).
      */
     data class EntityActionFailed(
@@ -87,16 +87,19 @@ sealed interface LogEvent {
 
 /**
  * The kind of record an entity log event is about. An entry is added with the screen that first
- * emits an event for it (categories and tags come with their lists, slice B).
+ * emits an event for it (tags come with their list, slice B).
  */
 enum class EntityKind {
     /** An account. */
     ACCOUNT,
+
+    /** A category or sub-category. */
+    CATEGORY,
 }
 
 /**
  * The list action an [LogEvent.EntityActionFailed] is about. An entry is added only when something
- * emits it (a category's reorder comes with the categories list).
+ * emits it.
  */
 enum class EntityAction {
     /** Hide a record from new entries, keeping it in the archived section. */
@@ -110,6 +113,9 @@ enum class EntityAction {
 
     /** Undo a delete. */
     RESTORE,
+
+    /** Move a category up or down among its siblings. */
+    REORDER,
 }
 
 /**
