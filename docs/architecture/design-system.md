@@ -363,6 +363,21 @@ primary action.
   `-archived-light` (Archived expanded), `-empty-light`, `-empty-dark` (`EntityListScreenshotTest`) and
   `categories-list-light`, `-dark`, `-archived-light` (`CategoriesScreenshotTest`, 1100dp and 1500dp tall
   so the Archived section is in the picture).
+- **`PftBottomSheet` and `AccountPicker` (B2c).** Pickers (account, category, tag, date) open as
+  bottom sheets, never as top dropdowns. `PftBottomSheet(title, onDismiss) { close -> ... }` is the only
+  place that opts into `ExperimentalMaterial3Api` for `ModalBottomSheet`, so an M3 upgrade touches one
+  file. It adds no styling of its own: the sheet is M3's, so it takes `MaterialTheme.shapes.extraLarge`
+  (32dp, top corners only) and the theme's sheet container colour (never white `surfaceContainerLowest`),
+  with a dimming scrim and the standard slide. It opens at its full content height (`skipPartiallyExpanded`)
+  so a short picker is short and a long one scrolls. The title is a `titleLarge` heading. Back, a scrim tap,
+  a swipe down and the content's `close` all slide the sheet out and then call `onDismiss` once; the consumer
+  removes the sheet from the composition. `AccountPicker` is a stateless list of radio-style `ListItem` rows
+  (type badge, name, the list's supporting line): the selected row has `selected` semantics and a primary-
+  coloured check, and a tap picks, closes, and ignores further taps. The consumer's ViewModel supplies
+  `AccountService.active()`. Goldens `account-picker-{light,dark,empty-light,empty-dark}`
+  (`AccountPickerScreenshotTest`; the sheet's dialog window is drawn directly because `captureToImage`
+  cannot read it under Robolectric). `CategoryPicker` (B4b) and `TagPicker` (B5b) are separate components
+  and share only the sheet.
 - **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
   subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
   about 56dp). A long hero shrinks to fit (DS5's `MoneyText`, below): `CollapsingHeaderScaffoldTest`
