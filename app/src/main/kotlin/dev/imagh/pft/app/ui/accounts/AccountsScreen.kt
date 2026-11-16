@@ -116,7 +116,7 @@ fun AccountsRoute(
 }
 
 @StringRes
-private fun typeLabelRes(type: AccountType): Int =
+internal fun typeLabelRes(type: AccountType): Int =
     when (type) {
         AccountType.BANK -> R.string.account_type_bank
         AccountType.CREDIT_CARD -> R.string.account_type_credit_card
