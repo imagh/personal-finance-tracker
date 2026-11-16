@@ -29,8 +29,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # FieldState/FieldError/FieldCheck + LedgerErrorMapping (A5d), NameField, EditFormScaffold (A5d);
                                          # EntityListScreen + EntityRow/RowGlyph/RowAction + UndoDeleteSnackbar (B2a: the one entity list screen),
                                          # CategoryIconGlyph (B4a: CategoryIcon to GlyphSource), EntityActionText (the fixed failure strings);
+                                         # PftBottomSheet (the one ModalBottomSheet opt-in), AccountPicker (B2c: stateless account sheet);
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
-                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples: previews, catalogue and goldens share them, R8 drops them)
+                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples, AccountPickerSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v4), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
@@ -164,6 +165,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `CategoryIcon?.toGlyphSource(name)` (the one core icon to `GlyphSource` mapping; `GlyphSource.fromIconKey` delegates to it) | B4a categories list, B4b `CategoryPicker`, C4 rows, D4, E4 | B4a |
 | app UI (`ui/common`) | `EntityAction.failureRes()` (the fixed "Couldn't ... Try again." strings) | B2a accounts, B4a categories, B5b tags | B4a |
 | app UI (`ui/common`) | `UndoDeleteSnackbar` (the delete Undo effect on a `SnackbarHostState`) and the `CollapsingHeaderScaffold` `snackbarHost` slot | B2a accounts, B4a categories, B5b tags, C4 transaction delete | B2a |
+| app UI (`ui/common`) | `PftBottomSheet` (the one `ModalBottomSheet` opt-in: theme shape and colour, title heading, `close` that slides out then reports one dismissal) | `AccountPicker` (B2c), `CategoryPicker` (B4b), `TagPicker` (B5b), C4 date picker | B2c |
+| app UI (`ui/common`) | `AccountPicker` (stateless: a `List<Account>` from `AccountService.active()`, the selection and `onPick`; reuses `AccountRowMapper.badge` and `typeLabelRes`) | C4 account chip; D budget and F loan account fields | B2c |
 
 The remaining app-UI building blocks (`AuditHistoryList`, ...) are
-added to this table by B2c and C5.
+added to this table by C5. `CategoryPicker` and `TagPicker` are separate components, not subclasses or instances of a
+generic picker; they share only `PftBottomSheet`.

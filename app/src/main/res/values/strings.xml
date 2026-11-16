@@ -84,6 +84,9 @@
     <string name="account_type_credit_card">Credit card</string>
     <string name="account_type_cash">Cash</string>
     <string name="account_type_wallet">Wallet</string>
+    <!-- Account picker sheet (AccountPicker). -->
+    <string name="account_picker_title">Choose account</string>
+    <string name="account_picker_empty">No accounts yet. Add one from More.</string>
     <!-- Categories list (CategoriesScreen): the kind switch, row actions and the fixed messages. -->
     <string name="categories_title">Categories</string>
     <string name="categories_empty">No categories yet</string>

@@ -1,11 +1,11 @@
 # Accounts
 
-Status: **The list, adding and editing are built** (plan slices B2a and B2b). The account picker for
-transactions arrives in B2c. PRD: L-4
+Status: **The list, adding, editing and the account picker are built** (plan slices B2a, B2b and B2c). The
+picker is not on any screen yet: the transaction form (slice C) is its first user. PRD: L-4
 (accounts), L-9 (every transaction belongs to one account), INT-3 (delete is undoable). Plan:
 [2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
 
-This page grows with each PR. Today it describes what an account is, the list, and the add and edit form.
+This page grows with each PR. Today it describes what an account is, the list, the add and edit form, and the account picker.
 
 ## What an account is
 
@@ -82,6 +82,24 @@ which says **"That account no longer exists"** and refreshes.
 
 A message under the fields says **"Couldn't save. Try again."**, the Save button works again and what you
 typed is kept. Nothing is half-saved.
+
+## Choosing an account (the account picker)
+
+Wherever the app asks "which account?" (first the transaction form, later budgets and loans) it opens
+the same bottom sheet, **Choose account**. It is not on a screen yet; the transaction form will be its
+first user.
+
+- **Only active accounts are listed.** Archived and deleted accounts never appear, so a new transaction
+  cannot be put on one. They are sorted by name ignoring capital letters, like the list.
+- **Each row shows** the type badge (the same colours as the list; TalkBack says the type, for example
+  "Bank"), the name, and under it the type, issuer and last four digits ("Bank · HDFC · ••1234"), so two
+  accounts with similar names can be told apart.
+- **The current account is marked** with a check mark, and TalkBack says it is selected. If the current
+  account has since been archived it is simply not in the list, and nothing is marked.
+- **Tap an account** to choose it: the sheet slides away with that account chosen. A second tap while it
+  slides away does nothing.
+- **Back, a tap outside the sheet, or a swipe down** closes it without choosing anything.
+- **No accounts yet?** The sheet says "No accounts yet. Add one from More."
 
 ## Archive or delete?
 
