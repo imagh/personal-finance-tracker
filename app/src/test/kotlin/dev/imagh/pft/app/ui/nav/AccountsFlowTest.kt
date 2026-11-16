@@ -3,11 +3,14 @@ package dev.imagh.pft.app.ui.nav
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import dev.imagh.pft.app.data.DatabaseStartup
 import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.di.AppContainer
@@ -107,15 +110,15 @@ class AccountsFlowTest {
     private val hdfc = AccountDraft("HDFC Savings", AccountType.BANK, Paise(1_000_000), "1234", "HDFC")
 
     @Test
-    fun `Home to More to Accounts shows the empty state, with no add control until the form exists`() {
+    fun `Home to More to Accounts shows the empty state with an Add account control`() {
         show()
 
         openAccounts()
         awaitText("No accounts yet")
 
         compose.onNodeWithText("No accounts yet").assertIsDisplayed()
-        compose.onAllNodesWithContentDescription("Add account").fetchSemanticsNodes().size shouldBe 0
-        compose.onAllNodesWithText("Add account").fetchSemanticsNodes().size shouldBe 0
+        compose.onNodeWithContentDescription("Add account").assertIsDisplayed()
+        compose.onNodeWithText("Add account").assertIsDisplayed()
     }
 
     @Test
@@ -192,5 +195,141 @@ class AccountsFlowTest {
 
         systemBack()
         checkNotNull(activity).isFinishing shouldBe true
+    }
+
+    // --- Create and edit (B2b)
+
+    private fun openAddForm() {
+        compose.onNodeWithContentDescription("Add account").performClick()
+        awaitText("Current balance")
+    }
+
+    private fun type(
+        label: String,
+        text: String,
+    ) = compose.onNodeWithText(label).performTextInput(text)
+
+    private fun save() = compose.onNodeWithText("Save").performClick()
+
+    @Test
+    fun `the Add button opens the form, and saving a valid account lists it`() {
+        show()
+        openAccounts()
+        awaitText("No accounts yet")
+        openAddForm()
+
+        type("Name", "HDFC Savings")
+        compose.onNodeWithText("Bank").performClick()
+        type("Last 4 digits (optional)", "1234")
+        type("Issuer (optional)", "HDFC")
+        type("Current balance", "10,000")
+        save()
+        awaitGone("Current balance")
+        awaitText("Bank · HDFC · ••1234")
+
+        compose.onNodeWithText("HDFC Savings").assertIsDisplayed()
+        compose.onAllNodesWithText("No accounts yet").fetchSemanticsNodes().size shouldBe 0
+        val stored = runBlocking { kit.accounts.all() }.single()
+        stored.name shouldBe "HDFC Savings"
+        stored.type shouldBe AccountType.BANK
+        stored.openingBalance shouldBe Paise(1_000_000)
+        stored.maskedIdentifier shouldBe "1234"
+        stored.issuer shouldBe "HDFC"
+        runBlocking { kit.trailOf("account", stored.meta.id.value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE)
+    }
+
+    @Test
+    fun `a credit card asks for the amount owed and stores it as a negative balance`() {
+        show()
+        openAccounts()
+        awaitText("No accounts yet")
+        openAddForm()
+
+        type("Name", "Amex")
+        compose.onNodeWithText("Credit card").performClick()
+        awaitText("Amount owed")
+        type("Amount owed", "5,000")
+        save()
+        awaitGone("Amount owed")
+        awaitText("Amex")
+
+        runBlocking { kit.accounts.all() }.single().openingBalance shouldBe Paise(-500_000)
+    }
+
+    @Test
+    fun `an invalid last four shows its error under the field and stays on the form`() {
+        show()
+        openAccounts()
+        awaitText("No accounts yet")
+        openAddForm()
+
+        type("Name", "HDFC Savings")
+        type("Last 4 digits (optional)", "12")
+        type("Current balance", "10,000")
+        save()
+        awaitText("Enter exactly 4 digits")
+
+        compose.onNodeWithText("Enter exactly 4 digits").assertIsDisplayed()
+        compose.onNodeWithText("Current balance").assertIsDisplayed()
+        runBlocking { kit.accounts.all() } shouldBe emptyList()
+        database.rowCount("audit_entry") shouldBe 3L // the setup identity only: nothing was audited for an account
+    }
+
+    @Test
+    fun `tapping a row opens it for editing, and a new name shows in the list`() {
+        val (id) = show(hdfc)
+        openAccounts()
+        awaitText("HDFC Savings")
+
+        compose.onNodeWithText("HDFC Savings").performClick()
+        awaitText("Edit account")
+
+        compose.onNode(hasSetTextAction() and hasText("HDFC Savings")).assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("10,000.00")).assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("1234")).assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("HDFC")).assertIsDisplayed()
+
+        compose.onNode(hasSetTextAction() and hasText("HDFC Savings")).performTextReplacement("HDFC Salary")
+        save()
+        awaitGone("Current balance")
+        awaitText("HDFC Salary")
+
+        compose.onAllNodesWithText("HDFC Savings").fetchSemanticsNodes().size shouldBe 0
+        runBlocking { kit.accounts.all() }.single().name shouldBe "HDFC Salary"
+        runBlocking { kit.trailOf("account", id.value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE, AuditAction.UPDATE)
+    }
+
+    @Test
+    fun `Back from the form returns to the list without saving`() {
+        show(hdfc)
+        openAccounts()
+        awaitText("HDFC Savings")
+        compose.onNodeWithText("HDFC Savings").performClick()
+        awaitText("Edit account")
+        compose.onNode(hasSetTextAction() and hasText("HDFC Savings")).performTextReplacement("Changed")
+
+        compose.onNodeWithContentDescription("Back").performClick()
+        awaitGone("Current balance")
+
+        compose.onNodeWithText("HDFC Savings").assertIsDisplayed()
+        runBlocking { kit.accounts.all() }.single().name shouldBe "HDFC Savings"
+    }
+
+    @Test
+    fun `an account deleted elsewhere while the list is shown returns to the list with a no longer exists message`() {
+        val (id) = show(hdfc)
+        openAccounts()
+        awaitText("HDFC Savings")
+        runBlocking { kit.accounts.delete(id) }
+
+        compose.onNodeWithText("HDFC Savings").performClick()
+        awaitText("That account no longer exists")
+
+        compose.onAllNodesWithText("Current balance").fetchSemanticsNodes().size shouldBe 0
+        awaitText("No accounts yet")
+        runBlocking { kit.trailOf("account", id.value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE, AuditAction.DELETE)
     }
 }

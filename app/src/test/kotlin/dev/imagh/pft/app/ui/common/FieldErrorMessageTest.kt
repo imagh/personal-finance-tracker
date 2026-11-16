@@ -54,6 +54,12 @@ class FieldErrorMessageTest {
     }
 
     @Test
+    fun `InvalidAmount asks for a valid amount`() {
+        show(FieldError.InvalidAmount)
+        compose.onNodeWithText("Enter a valid amount").assertIsDisplayed()
+    }
+
+    @Test
     fun `Duplicate says the name is already in use`() {
         show(FieldError.Duplicate)
         compose.onNodeWithText("Already in use").assertIsDisplayed()

@@ -71,6 +71,24 @@ SetupScreen (stateless)  --onContinue-->  SetupViewModel.submit()          UI ->
 
 The composable calls no dao and the ViewModel holds no SQL: each layer talks only to the one below.
 
+### Call flow example: create an account (B2b)
+
+```
+AccountEditScreen (stateless)  --Save-->  AccountEditViewModel.submit()    UI -> ViewModel
+  checks every field with core's rules (requireName, requireMaskedIdentifier,
+  requireOptionalName) and the amount rule (PaiseParser through checkAmount);
+  the balance sign comes from the type (Credit card: negated); saving = true, then viewModelScope.launch:
+    AccountService.create(AccountDraft)                                    ViewModel -> core service (validates again)
+      AuditedWriter.create(accountRepository, AccountId(ids.next()))       core service -> audited write path
+        RoomTransactionRunner.inTransaction {                              -> repository (Room dao)
+          RoomAccountRepository.insert; AuditRecorder.record(CREATE) }     -> SQLCipher database
+  saved = true  -->  AccountEditRoute.onDone  -->  navController.popBackStack()
+AccountsRoute resumes  -->  LifecycleResumeEffect  -->  AccountsViewModel.reload()  -->  AccountService.lists()
+```
+
+A failure anywhere in the transaction rolls the row back with its audit entry (INT-4); the ViewModel keeps the
+typed text, shows a fixed message and logs only `entity_save_failed kind=ACCOUNT`.
+
 ## The core/app boundary
 
 `core` defines the persistence contracts; `app` implements them with Room (built in A4a; tables and

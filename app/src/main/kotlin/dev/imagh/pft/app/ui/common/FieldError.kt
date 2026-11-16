@@ -9,7 +9,7 @@ import dev.imagh.pft.R
  * cannot carry what the user typed). Rendered by [message] from string resources, which every field
  * block uses.
  *
- * Later slices add their own cases here when a field kind needs one (amount, date); [message] and
+ * Later slices add their own cases here when a field kind needs one (a date); [message] and
  * `LedgerError.toFieldError()` are exhaustive, so a new case fails compilation until it has both.
  */
 sealed interface FieldError {
@@ -24,6 +24,9 @@ sealed interface FieldError {
     /** The last-four identifier is not exactly four digits. */
     data object InvalidLastFour : FieldError
 
+    /** An amount field's text is not an amount: a sign, letters, a third decimal, bad grouping, or over the limit. */
+    data object InvalidAmount : FieldError
+
     /** Another record of the same kind already has this name (ignoring case); see `LedgerError.DuplicateName`. */
     data object Duplicate : FieldError
 }
@@ -35,5 +38,6 @@ internal fun FieldError.message(): String =
         FieldError.Required -> stringResource(R.string.field_required)
         is FieldError.TooLong -> stringResource(R.string.field_too_long, max)
         FieldError.InvalidLastFour -> stringResource(R.string.field_invalid_last_four)
+        FieldError.InvalidAmount -> stringResource(R.string.field_invalid_amount)
         FieldError.Duplicate -> stringResource(R.string.field_duplicate)
     }

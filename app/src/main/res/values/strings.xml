@@ -25,9 +25,11 @@
     <string name="field_required">Required</string>
     <string name="field_too_long">At most %1$d characters</string>
     <string name="field_invalid_last_four">Enter exactly 4 digits</string>
+    <string name="field_invalid_amount">Enter a valid amount</string>
     <string name="field_duplicate">Already in use</string>
     <!-- Default primary action of EditFormScaffold, and the spoken label of the Back button of EditFormScaffold and EntityListScreen. -->
     <string name="form_save">Save</string>
+    <string name="form_save_failed">Couldn\'t save. Try again.</string>
     <string name="form_back">Back</string>
     <!-- Entity lists (EntityListScreen, UndoDeleteSnackbar): the collapsible archived section, each row's overflow button, and the Undo action. -->
     <string name="entity_list_archived">Archived (%1$d)</string>
@@ -65,6 +67,17 @@
     <string name="entity_failed_unarchive">Couldn\'t unarchive. Try again.</string>
     <string name="entity_failed_delete">Couldn\'t delete. Try again.</string>
     <string name="entity_failed_restore">Couldn\'t undo. Try again.</string>
+    <string name="accounts_add">Add account</string>
+    <string name="accounts_not_found">That account no longer exists</string>
+    <!-- Account form (AccountEditScreen). The amount label follows the type: money owed on a card, the balance otherwise. -->
+    <string name="account_new_title">New account</string>
+    <string name="account_edit_title">Edit account</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_type_label">Type</string>
+    <string name="account_last_four_label">Last 4 digits (optional)</string>
+    <string name="account_issuer_label">Issuer (optional)</string>
+    <string name="account_balance_label">Current balance</string>
+    <string name="account_owed_label">Amount owed</string>
     <string name="account_type_bank">Bank</string>
     <string name="account_type_credit_card">Credit card</string>
     <string name="account_type_cash">Cash</string>

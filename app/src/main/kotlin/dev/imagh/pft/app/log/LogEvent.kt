@@ -72,6 +72,17 @@ sealed interface LogEvent {
         override fun line(): String =
             render("entity_action_failed", "kind" to LogValue(kind), "action" to LogValue(action))
     }
+
+    /**
+     * Saving a [kind] of record from its create or edit form failed unexpectedly; the form keeps what
+     * the user typed and asks them to try again. Enum only: not the exception, and never a name, an
+     * identifier or an amount (SEC-5). First emitted by the account form.
+     */
+    data class EntitySaveFailed(
+        val kind: EntityKind,
+    ) : LogEvent {
+        override fun line(): String = render("entity_save_failed", "kind" to LogValue(kind))
+    }
 }
 
 /**

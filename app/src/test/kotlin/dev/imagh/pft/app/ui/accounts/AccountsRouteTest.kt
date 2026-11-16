@@ -1,6 +1,9 @@
 package dev.imagh.pft.app.ui.accounts
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -23,6 +26,7 @@ import dev.imagh.pft.ledger.account.AccountDraft
 import dev.imagh.pft.ledger.account.AccountType
 import dev.imagh.pft.ledger.audit.AuditEntry
 import dev.imagh.pft.ledger.audit.AuditLog
+import dev.imagh.pft.ledger.ids.AccountId
 import dev.imagh.pft.money.Paise
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -78,12 +82,27 @@ class AccountsRouteTest {
                 .meta.id
         }
 
+    private var notFound by mutableStateOf(false)
+    private var notFoundShown = 0
+    private val added = mutableListOf<Unit>()
+    private val edited = mutableListOf<AccountId>()
+
     private fun show() {
         runBlocking { services.identity.initialise("Akash", "Pixel") }
         create("HDFC Savings")
         compose.setContent {
             CompositionLocalProvider(LocalLifecycleOwner provides owner) {
-                PftTheme(ThemePrefs(dynamicColor = false)) { AccountsRoute(services, onBack = {}) }
+                PftTheme(ThemePrefs(dynamicColor = false)) {
+                    AccountsRoute(
+                        services,
+                        AccountsNavigation(back = {}, add = { added += Unit }, edit = { edited += it }),
+                        notFound = notFound,
+                        onNotFoundShown = {
+                            notFoundShown++
+                            notFound = false
+                        },
+                    )
+                }
             }
         }
         awaitText("HDFC Savings")
@@ -146,5 +165,33 @@ class AccountsRouteTest {
         compose.onAllNodesWithText("secret detail", substring = true).fetchSemanticsNodes().size shouldBe 0
         compose.onAllNodesWithText("Archived", substring = true).fetchSemanticsNodes().size shouldBe 0
         runBlocking { services.accounts.lists() }.archived shouldBe emptyList()
+    }
+
+    @Test
+    fun `the Add button and a row tap reach the caller with the account's id`() {
+        show()
+        val id = runBlocking { services.accounts.all() }.single().meta.id
+
+        compose.onNodeWithContentDescription("Add account").performClick()
+        compose.onNodeWithText("HDFC Savings").performClick()
+
+        added.size shouldBe 1
+        edited shouldBe listOf(id)
+    }
+
+    @Test
+    fun `a not found flag shows the no longer exists message once, then asks the caller to clear it`() {
+        show()
+
+        notFound = true
+        awaitText("That account no longer exists")
+        notFoundShown shouldBe 0
+
+        // The message times out; only then is the flag cleared, so it is not shown twice.
+        compose.mainClock.advanceTimeBy(11_000)
+        awaitMain { notFoundShown == 1 }
+
+        compose.onAllNodesWithText("That account no longer exists").fetchSemanticsNodes().size shouldBe 0
+        notFound shouldBe false
     }
 }
