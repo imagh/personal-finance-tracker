@@ -68,8 +68,11 @@ class AccountRowMapperTest {
     @Test
     fun `a row carries the name as its title, the type badge labelled by the type and the given actions`() {
         val actions = listOf(RowAction("Archive") {})
+        var opened = 0
 
-        val row = account(AccountType.CREDIT_CARD, lastFour = "4321", issuer = "Axis").toRow("Credit card", actions)
+        val row =
+            account(AccountType.CREDIT_CARD, lastFour = "4321", issuer = "Axis")
+                .toRow("Credit card", onClick = { opened++ }, actions = actions)
 
         row.key shouldBe "a1"
         row.title shouldBe "HDFC Savings"
@@ -79,6 +82,8 @@ class AccountRowMapperTest {
         row.glyph?.label shouldBe "Credit card"
         row.actions shouldBe actions
         row.indent shouldBe false
-        row.onClick shouldBe null
+        // Tapping the row opens the account: the row's click is the one given.
+        row.onClick?.invoke()
+        opened shouldBe 1
     }
 }

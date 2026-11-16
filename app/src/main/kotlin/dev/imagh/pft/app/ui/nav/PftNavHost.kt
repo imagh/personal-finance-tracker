@@ -8,7 +8,6 @@ import androidx.navigation.compose.rememberNavController
 import dev.imagh.pft.app.DevHeaderActions
 import dev.imagh.pft.app.devRoutes
 import dev.imagh.pft.app.di.AppServices
-import dev.imagh.pft.app.ui.accounts.AccountsRoute
 import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.more.MoreScreen
 import dev.imagh.pft.app.ui.setup.SetupRoute
@@ -28,6 +27,10 @@ import dev.imagh.pft.app.ui.theme.PftMotion
  * - **Home to More to Accounts** are plain pushes (`navigate`); Back pops one screen, so Back from
  *   Accounts returns to More and from More to Home. Home's header More button is the entry point
  *   until C4's bottom navigation bar replaces it (plan D9).
+ *
+ * - **Accounts to the account form** is a push with an optional `id` argument (none: create). The form
+ *   pops on save. If the id is unknown, deleted or malformed the form pops too, after leaving a flag
+ *   on the accounts entry's saved state, and the list says "That account no longer exists".
  *
  * Debug builds add the design catalogue as a route, reached from a Home header action
  * (`devRoutes()`, `DevHeaderActions`); release adds nothing. There are no deep links: nothing
@@ -73,9 +76,7 @@ fun PftNavHost(
                 onOpenAccounts = { navController.navigate(Routes.ACCOUNTS) },
             )
         }
-        composable(Routes.ACCOUNTS) {
-            AccountsRoute(services, onBack = { navController.popBackStack() })
-        }
+        accountRoutes(navController, services)
         devRoutes()
     }
 }

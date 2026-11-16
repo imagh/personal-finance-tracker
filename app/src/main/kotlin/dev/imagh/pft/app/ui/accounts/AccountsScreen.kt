@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -26,7 +27,8 @@ import dev.imagh.pft.ledger.ids.AccountId
 /**
  * The accounts list drawn from [state] alone: the shared `EntityListScreen` over account rows
  * ([AccountRowMapper]). Active accounts offer Archive and Delete; archived ones offer Unarchive and
- * Delete. There is no add button and rows are not tappable yet: the create and edit form is B2b.
+ * Delete. The add button (and the empty state's "Add account") opens the create form, and tapping a
+ * row, active or archived, opens that account's edit form.
  *
  * @param state what to show; nothing is listed, and "No accounts yet" is not said, until
  *   [AccountsUiState.loaded].
@@ -47,10 +49,12 @@ fun AccountsScreen(
     val archive = stringResource(R.string.entity_action_archive)
     val unarchive = stringResource(R.string.entity_action_unarchive)
     val delete = stringResource(R.string.entity_action_delete)
+    val addLabel = stringResource(R.string.accounts_add)
 
     fun Account.row(vararg menu: Pair<String, (AccountId) -> Unit>): EntityRow =
         toRow(
             typeLabel = typeLabels.getValue(type),
+            onClick = { actions.edit(meta.id) },
             actions = menu.map { (label, run) -> RowAction(label) { run(meta.id) } },
         )
 
@@ -62,6 +66,7 @@ fun AccountsScreen(
         snackbarHost = { SnackbarHost(snackbars) },
         onBack = onBack,
         modifier = modifier,
+        add = RowAction(addLabel, actions.add),
         loaded = state.loaded,
     )
 }
@@ -75,14 +80,20 @@ fun AccountsScreen(
  *   ([UndoDeleteSnackbar]). The offer ends, and the delete stands, when the snackbar times out or the
  *   screen is paused or left.
  * - **Failures** show a fixed "Couldn't ... Try again." snackbar and are then cleared.
+ * - **Not found.** When the edit form was opened for an account that no longer exists, the caller sets
+ *   [notFound] and this shows "That account no longer exists", then calls [onNotFoundShown].
  *
  * @param services the open object graph the accounts service is taken from.
- * @param onBack called when Back is tapped.
+ * @param navigation where Back, the add button and a row tap go.
+ * @param notFound true while a "no longer exists" message is waiting to be shown.
+ * @param onNotFoundShown the message was shown; the caller clears [notFound].
  */
 @Composable
 fun AccountsRoute(
     services: AppServices,
-    onBack: () -> Unit,
+    navigation: AccountsNavigation,
+    notFound: Boolean,
+    onNotFoundShown: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val factory = remember(services) { AccountsViewModel.factory(services) }
@@ -110,9 +121,26 @@ fun AccountsRoute(
         }
     }
 
+    val notFoundText = stringResource(R.string.accounts_not_found)
+    LaunchedEffect(notFound) {
+        if (notFound) {
+            snackbars.showSnackbar(notFoundText)
+            onNotFoundShown()
+        }
+    }
+
+    val latestNavigation by rememberUpdatedState(navigation)
     val actions =
-        remember(viewModel) { AccountsActions(viewModel::archive, viewModel::unarchive, viewModel::delete) }
-    AccountsScreen(state, actions, snackbars, onBack, modifier)
+        remember(viewModel) {
+            AccountsActions(
+                archive = viewModel::archive,
+                unarchive = viewModel::unarchive,
+                delete = viewModel::delete,
+                add = { latestNavigation.add() },
+                edit = { latestNavigation.edit(it) },
+            )
+        }
+    AccountsScreen(state, actions, snackbars, onBack = { latestNavigation.back() }, modifier = modifier)
 }
 
 @StringRes

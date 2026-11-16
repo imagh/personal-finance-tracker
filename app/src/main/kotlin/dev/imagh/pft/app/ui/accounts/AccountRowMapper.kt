@@ -48,13 +48,15 @@ internal object AccountRowMapper {
 
 /**
  * This account as a list row: its name, the type badge (spoken as [typeLabel]), the supporting line,
- * and the given [actions]. It has no `onClick` until the edit screen exists (B2b).
+ * what tapping it does ([onClick]: open it for editing) and the given [actions].
  *
  * @param typeLabel the type's display name ("Bank"), already translated.
+ * @param onClick what tapping the row does.
  * @param actions the overflow menu entries the ViewModel offers for this account.
  */
 internal fun Account.toRow(
     typeLabel: String,
+    onClick: () -> Unit,
     actions: List<RowAction>,
 ): EntityRow {
     val badge = AccountRowMapper.badge(type)
@@ -63,6 +65,7 @@ internal fun Account.toRow(
         title = name,
         supporting = AccountRowMapper.supporting(typeLabel, issuer, maskedIdentifier),
         glyph = RowGlyph(GlyphSource.Symbol(badge.symbol), badge.colourKey, typeLabel),
+        onClick = onClick,
         actions = actions,
     )
 }

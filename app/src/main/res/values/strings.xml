@@ -67,6 +67,8 @@
     <string name="entity_failed_unarchive">Couldn\'t unarchive. Try again.</string>
     <string name="entity_failed_delete">Couldn\'t delete. Try again.</string>
     <string name="entity_failed_restore">Couldn\'t undo. Try again.</string>
+    <string name="accounts_add">Add account</string>
+    <string name="accounts_not_found">That account no longer exists</string>
     <!-- Account form (AccountEditScreen). The amount label follows the type: money owed on a card, the balance otherwise. -->
     <string name="account_new_title">New account</string>
     <string name="account_edit_title">Edit account</string>
