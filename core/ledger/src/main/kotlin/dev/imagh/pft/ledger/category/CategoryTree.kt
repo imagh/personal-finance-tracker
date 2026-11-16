@@ -55,6 +55,27 @@ internal object CategoryTree {
             .filterNot { it.meta.isArchived }
             .flatMap { top -> listOf(top) + siblings(all, top.meta.id, kind).filterNot { it.meta.isArchived } }
 
+    /**
+     * What a list screen shows for [kind], depth-first: every top-level category of [kind] in [ORDER],
+     * each followed by its own children in [ORDER]. A category goes to the archived list when it is
+     * archived or its parent is (the picker hides it either way); everything else is active. A child
+     * of a parent that is not in [all], or of a different kind than its parent, is in neither list.
+     */
+    fun lists(
+        all: List<Category>,
+        kind: CategoryKind,
+    ): CategoryLists {
+        val active = mutableListOf<Category>()
+        val archived = mutableListOf<Category>()
+        siblings(all, null, kind).forEach { top ->
+            (if (top.meta.isArchived) archived else active) += top
+            siblings(all, top.meta.id, kind).forEach { child ->
+                (if (top.meta.isArchived || child.meta.isArchived) archived else active) += child
+            }
+        }
+        return CategoryLists(active, archived)
+    }
+
     /** True if [ids] names every one of [siblings] exactly once and nothing else. */
     fun isExactly(
         siblings: List<Category>,

@@ -70,12 +70,7 @@ sealed interface GlyphSource {
         fun fromIconKey(
             iconKey: String?,
             name: String,
-        ): GlyphSource =
-            when (val icon = CategoryIcon.parse(iconKey)) {
-                is CategoryIcon.Symbol -> PftSymbol.fromKey(icon.key)?.let(::Symbol)
-                is CategoryIcon.Emoji -> Emoji(icon.text)
-                null -> null
-            } ?: letterFor(name)
+        ): GlyphSource = CategoryIcon.parse(iconKey).toGlyphSource(name)
 
         /**
          * The [Letter] for [name]: its first letter or digit (by code point, so a letter outside the

@@ -47,6 +47,14 @@ class LogEventTest {
     }
 
     @Test
+    fun `entity_action_failed renders a category reorder`() {
+        assertEquals(
+            "entity_action_failed kind=CATEGORY action=REORDER",
+            LogEvent.EntityActionFailed(EntityKind.CATEGORY, EntityAction.REORDER).line(),
+        )
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }

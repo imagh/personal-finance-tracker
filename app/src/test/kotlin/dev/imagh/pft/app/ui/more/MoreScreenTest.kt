@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The More screen (plan D9): a titled list with one row today, Accounts, and a labelled Back. */
+/** The More screen (plan D9): a titled list with an Accounts and a Categories row, and a labelled Back. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w393dp-h851dp-xxhdpi")
@@ -29,7 +29,11 @@ class MoreScreenTest {
     private fun show() =
         compose.setContent {
             PftTheme(ThemePrefs(dynamicColor = false)) {
-                MoreScreen(onBack = { taps += "back" }, onOpenAccounts = { taps += "accounts" })
+                MoreScreen(
+                    onBack = { taps += "back" },
+                    onOpenAccounts = { taps += "accounts" },
+                    onOpenCategories = { taps += "categories" },
+                )
             }
         }
 
@@ -41,6 +45,28 @@ class MoreScreenTest {
         compose.onNodeWithText("Accounts").assertIsDisplayed().performClick()
 
         taps shouldBe listOf("accounts")
+    }
+
+    @Test
+    fun `it has a Categories row that opens categories, below Accounts`() {
+        show()
+
+        val accounts =
+            compose
+                .onNodeWithText("Accounts")
+                .fetchSemanticsNode()
+                .boundsInRoot.top
+        val categories =
+            compose
+                .onNodeWithText("Categories")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot.top
+        (categories > accounts) shouldBe true
+
+        compose.onNodeWithText("Categories").performClick()
+
+        taps shouldBe listOf("categories")
     }
 
     @Test

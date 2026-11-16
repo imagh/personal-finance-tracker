@@ -15,11 +15,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.imagh.pft.R
 import dev.imagh.pft.app.di.AppServices
-import dev.imagh.pft.app.log.EntityAction
 import dev.imagh.pft.app.ui.common.EntityListScreen
 import dev.imagh.pft.app.ui.common.EntityRow
 import dev.imagh.pft.app.ui.common.RowAction
 import dev.imagh.pft.app.ui.common.UndoDeleteSnackbar
+import dev.imagh.pft.app.ui.common.failureRes
 import dev.imagh.pft.ledger.account.Account
 import dev.imagh.pft.ledger.account.AccountType
 import dev.imagh.pft.ledger.ids.AccountId
@@ -113,7 +113,7 @@ fun AccountsRoute(
         onDismissed = viewModel::dismissUndo,
     )
     val failed = state.failedAction
-    val failureText = failed?.let { stringResource(failureRes(it)) }
+    val failureText = failed?.let { stringResource(it.failureRes()) }
     LaunchedEffect(failed) {
         if (failureText != null) {
             snackbars.showSnackbar(failureText)
@@ -150,13 +150,4 @@ internal fun typeLabelRes(type: AccountType): Int =
         AccountType.CREDIT_CARD -> R.string.account_type_credit_card
         AccountType.CASH -> R.string.account_type_cash
         AccountType.WALLET -> R.string.account_type_wallet
-    }
-
-@StringRes
-private fun failureRes(action: EntityAction): Int =
-    when (action) {
-        EntityAction.ARCHIVE -> R.string.entity_failed_archive
-        EntityAction.UNARCHIVE -> R.string.entity_failed_unarchive
-        EntityAction.DELETE -> R.string.entity_failed_delete
-        EntityAction.RESTORE -> R.string.entity_failed_restore
     }

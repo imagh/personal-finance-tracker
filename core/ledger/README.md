@@ -48,7 +48,7 @@ entity step composes instead of re-implementing:
 | `IdentityService`, `Identity`, `UserProfile`, `Device`, `IdentityRepository` | `identity` | `initialise` / `initialiseForExistingUser` (first run), `currentIdentity()`, `requireIdentity()`, `users()` |
 | `SettingsService`, `AppSetting`, `AppSettingsRepository`, `SettingKeys` | `settings` | audited runtime settings: `get(key)`, `set(key, value)` |
 | `AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository` | `account` | accounts (PRD L-4): `create(draft)`, `edit(id, draft)`, `archive`/`unarchive`, `delete`/`restore`, `active()`, `all()`, `lists()` (active and archived, each sorted by name ignoring case, then by creation order); `AccountRules.requireMaskedIdentifier(text)` is public so a form can check the last four with core's rule. `AccountRepository` adds `allLive()` to `EntityRepository` |
-| `CategoryService`, `Category`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
+| `CategoryService`, `Category`, `CategoryLists`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `lists(kind)` (for a list screen: `CategoryLists(active, archived)`, B4a), `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
 | `TagService`, `Tag`, `TagLists`, `TagRepository` | `tag` | tags (PRD L-3): `create(name)`, `edit(id, name)` (rename), `archive`/`unarchive`, `delete`/`restore`, `lists()` (active and archived, each sorted by name ignoring case, then by id), `pickable()` (the active list). `TagRepository` adds `allLive()` to `EntityRepository`. The service takes a `TransactionRunner` for the check-then-write name rule |
 | `FirstRunService` | `setup` | `initialise(userName, deviceLabel)`: the identity (`IdentityService.initialise`) **and** `CategoryService.seedDefaults()` in one transaction. A plain coordinating class; `IdentityService` stays unaware of categories because the writer needs the identity service (a construction cycle otherwise) |
 
@@ -162,6 +162,12 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     followed by its own pickable children in `sort_order`; ties are broken by id, so the order never
     depends on what the repository returned. Unarchiving a parent brings its non-archived children
     back. Archive does not touch the children's own state.
+  - *Lists (B4a).* `lists(kind)` returns what a list screen shows: `CategoryLists(active, archived)`,
+    each depth-first (every top-level category in `sort_order`, then its own children). A category is in
+    `archived` when it is archived or its parent is (both are hidden from pickers); nothing deleted is in
+    either. `CategoryLists.siblingsOf(parentId)` gives the live categories under one parent from both
+    lists in display order (`sort_order`, then id): exactly the set `reorder` needs, archived ones
+    included, so a caller can swap two neighbours without knowing the tie-break.
   - *Delete and restore.* Delete is a tombstone, refused with `HasChildren` while the category has
     live children (archived ones count; there is no cascade). `restore` of a sub-category whose
     parent is deleted gives `Deleted("category")`. There is no "in use by a transaction item" check
@@ -277,7 +283,7 @@ Tests (Kotest on JUnit 5, `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/`): 
 `ValidationTest`, `validation/CategoryErrorsTest`, `account/AccountServiceTest`, `account/AccountRulesTest`,
 `category/CategoryIconTest` (the `icon_key` grammar, exhaustively), `category/CategoryColourTest`,
 `category/CategoryTreeTest`, `category/CategoryServiceTest` (create, edit), `category/CategoryLifecycleTest`
-(archive, delete, restore), `category/CategoryOrderTest` (reorder, `pickable`),
+(archive, delete, restore), `category/CategoryOrderTest` (reorder, `pickable`), `category/CategoryListsTest` (`lists`, `siblingsOf`),
 `category/DefaultCategoriesTest` (the exact default table, ids, SYSTEM source, no re-seeding),
 `tag/TagServiceTest` (create, rename, the name rule), `tag/TagLifecycleTest` (archive, delete, restore, the lists and `pickable`),
 `setup/FirstRunServiceTest` (identity plus defaults, all-or-nothing), `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including

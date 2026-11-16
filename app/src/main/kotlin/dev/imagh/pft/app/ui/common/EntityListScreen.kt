@@ -71,6 +71,8 @@ private val ROW_ICON_SIZE = 24.dp
  * @param loaded false until the consumer's first read has finished. While false, neither the rows nor
  *   the empty state are drawn (the header, Back and the add button stay), so an empty list never
  *   flashes "No accounts yet" before its rows arrive. True by default, for a list that is always known.
+ * @param header an optional block drawn above the rows, such as the categories' Expense/Income switch;
+ *   it shows before the first load and above the empty state. Null (the default) adds nothing.
  */
 @Composable
 fun EntityListScreen(
@@ -83,6 +85,7 @@ fun EntityListScreen(
     add: RowAction? = null,
     snackbarHost: @Composable () -> Unit = {},
     loaded: Boolean = true,
+    header: (@Composable () -> Unit)? = null,
 ) {
     val spacing = PftTheme.spacing
     val backLabel = stringResource(R.string.form_back)
@@ -100,6 +103,7 @@ fun EntityListScreen(
         },
         snackbarHost = snackbarHost,
     ) {
+        if (header != null) item(key = HEADER_KEY) { header() }
         if (!loaded) return@CollapsingHeaderScaffold
         if (active.isEmpty() && archived.isEmpty()) {
             item { EmptyState(emptyMessage, actionLabel = add?.label, onAction = add?.onClick) }
@@ -120,6 +124,7 @@ fun EntityListScreen(
     }
 }
 
+private const val HEADER_KEY = "entity-list-header"
 private const val ACTIVE_KEY = "entity-list-active"
 private const val ARCHIVED_HEADER_KEY = "entity-list-archived-header"
 private const val ARCHIVED_KEY = "entity-list-archived"
