@@ -7,21 +7,19 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.app.log.EntityKind
-import dev.imagh.pft.app.log.LogEvent
-import dev.imagh.pft.app.log.SafeLog
 import dev.imagh.pft.app.ui.common.FieldState
+import dev.imagh.pft.app.ui.common.SaveOutcome
 import dev.imagh.pft.app.ui.common.checkAmount
+import dev.imagh.pft.app.ui.common.launchSave
 import dev.imagh.pft.ledger.account.Account
 import dev.imagh.pft.ledger.account.AccountDraft
 import dev.imagh.pft.ledger.account.AccountRules
 import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.account.AccountType
-import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.ledger.validation.Validation
 import dev.imagh.pft.money.Paise
 import dev.imagh.pft.money.PaiseFormat
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,8 +61,9 @@ data class AccountEditUiState(
 )
 
 /**
- * Creates or edits one account (plan D4, D12, Q3). It copies `SetupViewModel`'s save shape, so the two
- * forms behave alike; the shared part is not extracted until a second form proves it is the same (D12).
+ * Creates or edits one account (plan D4, D12, Q3). Its save shape is [launchSave], shared with the
+ * category form (extracted in B4b once the second form proved it the same, D12); `SetupViewModel` keeps
+ * its own, which differs in the event it logs and has no vanished case.
  *
  * - **Validation is core's.** Each field goes through `FieldState.check` with core's own rule
  *   (`Validation.requireName`, `AccountRules.requireMaskedIdentifier`, `Validation.requireOptionalName`)
@@ -86,11 +85,11 @@ data class AccountEditUiState(
  *   the main thread (the UI does), which makes the check-then-set atomic.
  * - **A vanished account** (deleted after the form loaded) ends in [AccountEditUiState.notFound]
  *   with nothing logged: it is a stale screen, not an error.
- * - **An unexpected failure** (anything else, not a cancellation) is caught: saving is reset,
- *   [AccountEditUiState.saveFailed] is set (a fixed message, never exception text), the typed text is
- *   kept, and one enum-only `entity_save_failed` event is logged. Retrying is safe: the write is one
- *   audited transaction, so a failed attempt leaves nothing behind. A [CancellationException] is
- *   rethrown.
+ * - **An unexpected failure** (anything else, not a cancellation) saves nothing, resets
+ *   [AccountEditUiState.saving], sets [AccountEditUiState.saveFailed] (a fixed message, never exception
+ *   text), keeps the typed text, and logs one enum-only `entity_save_failed` event. Retrying is safe: the
+ *   write is one audited transaction, so a failed attempt leaves nothing behind. A cancellation is
+ *   rethrown, never reported.
  * - **Reading** the account is not caught: a corrupt row fails loudly, as on the list.
  *
  * @param accounts the accounts service.
@@ -160,7 +159,7 @@ class AccountEditViewModel(
         }
         val draft = AccountDraft(validName, current.type, balance(current, validAmount), lastFour.value, issuer.value)
         mutableState.value = checked.copy(saving = true, saveFailed = false)
-        viewModelScope.launch { save(draft) }
+        save(draft)
     }
 
     /** Reads the account asked for and prefills the form, or ends in not found. */
@@ -199,38 +198,22 @@ class AccountEditViewModel(
         }
     }
 
-    private suspend fun save(draft: AccountDraft) {
-        val outcome =
-            try {
-                val target = original
-                if (target == null) accounts.create(draft) else accounts.edit(target.meta.id, draft)
-                SaveOutcome.SAVED
-            } catch (_: LedgerError.NotFound) {
-                SaveOutcome.VANISHED
-            } catch (_: LedgerError.Deleted) {
-                SaveOutcome.VANISHED
-            } catch (_: LedgerError) {
-                SaveOutcome.FAILED
-            } catch (cancelled: CancellationException) {
-                // `saving` is deliberately left as it is: the scope is being cancelled (the ViewModel is
-                // cleared), so there is no screen left to update.
-                throw cancelled
-            } catch (_: Exception) {
-                // Deliberately broad: whatever went wrong (a full disk, a locked database, a bug), the user
-                // can retry, and the write is one transaction so nothing partial exists. The exception is
-                // dropped on purpose: logs and screens must not carry its text (SEC-5).
-                SaveOutcome.FAILED
-            }
-        when (outcome) {
-            SaveOutcome.SAVED -> mutableState.update { it.copy(saving = false, saved = true) }
-            // The account vanished since the form loaded: a stale screen, not an error, so nothing is logged.
-            SaveOutcome.VANISHED -> mutableState.update { it.copy(saving = false, notFound = true) }
-            SaveOutcome.FAILED -> {
-                SafeLog.event(LogEvent.EntitySaveFailed(EntityKind.ACCOUNT))
-                mutableState.update { it.copy(saving = false, saveFailed = true) }
+    private fun save(draft: AccountDraft) =
+        viewModelScope.launchSave(EntityKind.ACCOUNT, ::finished) {
+            val target = original
+            if (target == null) accounts.create(draft) else accounts.edit(target.meta.id, draft)
+        }
+
+    /** The save ended as [outcome] (see [launchSave]); the failure has been logged by now. */
+    private fun finished(outcome: SaveOutcome) =
+        mutableState.update {
+            when (outcome) {
+                SaveOutcome.SAVED -> it.copy(saving = false, saved = true)
+                // The account vanished since the form loaded: a stale screen, not an error.
+                SaveOutcome.VANISHED -> it.copy(saving = false, notFound = true)
+                SaveOutcome.FAILED -> it.copy(saving = false, saveFailed = true)
             }
         }
-    }
 
     companion object {
         /** The rupee sign [PaiseFormat] puts first; the form shows it as a prefix, not as text. */
@@ -254,6 +237,3 @@ private val AccountEditUiState.busy: Boolean get() = saving || !loaded
 
 /** The form's work is over: it saved, or the account is gone. */
 private val AccountEditUiState.closed: Boolean get() = saved || notFound
-
-/** How a save ended. */
-private enum class SaveOutcome { SAVED, VANISHED, FAILED }
