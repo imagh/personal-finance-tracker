@@ -1,12 +1,13 @@
 # Categories and tags
 
-Status: **Categories: the list is built** (More, then Categories: browse, reorder, archive, delete with
-Undo). Creating and editing a category, the picker and emoji icons come in later PRs of slice B (B4b,
-B4c). Tags: data and rules built (B5a), no screens yet (B5b). PRD: L-2 (categories), L-3 (tags). Plan:
+Status: **Categories: the list and the create/edit form are built** (More, then Categories: browse, reorder,
+archive, delete with Undo, add a category or sub-category, edit one). Emoji icons come in B4c; the category
+picker is built (B4b) and waits for the transaction form (C4b) to use it. Tags: data and rules built (B5a), no
+screens yet (B5b). PRD: L-2 (categories), L-3 (tags). Plan:
 [2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
 
-This page grows with each PR. Today it describes what a category is, the list you start with, the rules
-the app enforces underneath, and what the categories list does.
+This page grows with each PR. Today it describes what a category is, the list you start with, what the
+categories list does, how you create and edit a category, and the rules the app enforces underneath.
 
 ## What a category is
 
@@ -86,15 +87,67 @@ list below shows only that kind.
 - **Loan EMI** can be moved but its menu has no Archive and no Delete.
 - **If something goes wrong** (a save fails), a short fixed message such as "Couldn't archive. Try again."
   appears and the list is left as it was. The message never contains a name.
-- **No add button yet.** The "add category" button and tapping a row to edit arrive with the form (B4b).
-  A fresh setup already has the starter list; phones set up before slice B have no categories until then.
+- **Add and edit.** The **+** button (and the "Add category" button on an empty list) opens the form for a
+  new category of the kind on show, and tapping a row, active or archived, opens that category for editing
+  (see below). If the category was deleted elsewhere while you were looking at the list, you come back to
+  the list with "That category no longer exists".
+- A fresh setup already has the starter list; phones set up before slice B have no categories until you
+  add them.
 
 Nothing on this screen logs a name: failures log only the kind of record and the action.
+
+## Creating and editing a category
+
+Tap **+** on the categories list (or a row, to edit). The form has:
+
+- **Name.** Required, up to 100 characters. If another category with the same parent and kind already has
+  that name (ignoring capitals and surrounding spaces) the form says "Already in use" under the field and
+  saves nothing. The same name under a different parent is fine.
+- **Type.** Expense or Income. It is the kind on show in the list when you tapped **+**, and it is only
+  shown here: you cannot change it. To make an income category, switch the list to Income first.
+- **Parent category.** "None (top level)" makes a top-level category. Tap the row to make a sub-category
+  instead: a sheet "Choose parent category" lists only the top-level categories of that kind that are not
+  archived or deleted (never a sub-category, so there are never three levels). Pick one and the row shows its
+  name; "Make top level" clears it again.
+- **Colour.** Twelve colour swatches; the chosen one has a check mark and a ring. A new category starts
+  slate, the neutral colour.
+- **Symbol.** A grid of the app's category symbols, drawn in the chosen colour, with "No symbol" first
+  (the category then shows the first letter of its name, which you see change as you type). A new category
+  starts with no symbol. (Emoji icons arrive with B4c.)
+
+**Editing** shows the same form with everything filled in. You can change the name, the colour and the symbol.
+**The type and the parent are shown but fixed**, each with "Can't be changed after the category is created":
+to move a category or change its kind, delete it and create it again. The system category Loan EMI can be edited like any other.
+A category with an emoji icon keeps it until you pick a symbol. Saving without changing anything writes
+nothing.
+
+Behaviour worth knowing:
+
+- Save writes one audited change (who and from which phone, as for every record). If saving fails
+  unexpectedly, "Couldn't save. Try again." appears, what you typed is kept, and nothing was written; only
+  the kind of record is logged, never the name.
+- A second tap on Save while it is saving is ignored.
+- If the category was deleted after you opened it, you return to the list with "That category no longer
+  exists".
+- **Screen readers.** The type and parent rows are read as a label and a value. Every colour is read by its
+  name ("Amber") and every symbol by its name ("Local cafe"), as one group of choices with the chosen one
+  announced as selected. In the parent sheet each category is read once by name; a sub-category is followed by
+  "Under <parent>", so two sub-categories called "Misc" are told apart.
+
+The route (`categories/edit`) carries only ids and enum names, which the form treats as untrusted: an
+unknown or malformed category, parent or kind returns you to the list with the "no longer exists" message.
+
+### The category picker
+
+The same parent sheet, `CategoryPicker`, is what the transaction form (C4b) will use to choose an item's
+category. It offers only categories that can be used now: an archived category, and the sub-categories of an
+archived parent, are not listed, and the order is the list's. Each top-level category and its sub-categories
+sit together; tapping one chooses it and closes the sheet once. It logs nothing.
 
 ## Rules the app already enforces
 
 These live in core (`CategoryService`) and are tested there and through the real database; the screens
-will show their messages as they arrive.
+show their messages through the form above.
 
 - **Two levels.** A sub-category's parent must be a top-level category that is not archived or deleted.
 - **Kind and parent are fixed once created.** Editing changes the name, colour and icon only. To move a
@@ -126,7 +179,12 @@ and friends in core, and `RoomCategoryIntegrationTest`, `RoomCategoryMapperTest`
 `MigrationTest` and the Setup tests in `app`. The list: `ui/categories/` in `app`, with
 `CategoryService.lists(kind)` in core; tests `CategoryListsTest` (core), `CategoriesViewModelTest`,
 `CategoriesActionsTest`, `CategoryRowMapperTest`, `CategoriesScreenTest`, `CategoriesFlowTest` and the
-`CategoriesScreenshotTest` goldens in `app`.
+`CategoriesScreenshotTest` goldens in `app`. The form and picker: `ui/categories/` (`CategoryEditViewModel`,
+`CategoryEditScreen`, `SymbolGrid`, `ColourSwatches`) and `ui/common/CategoryPicker.kt` in `app`; tests
+`CategoryEditViewModelTest`, `CategoryEditScreenTest`, `SymbolGridTest`, `ColourSwatchesTest`,
+`CategoryPickerTest`, `CategoriesRouteTest`, `CategoryRoutesTest`, `LaunchSaveTest`, the form paths of
+`CategoriesFlowTest`, and the `category-edit-*`, `category-symbol-grid-*`, `category-swatches-*` and
+`category-picker-*` goldens.
 
 ## Tags
 
