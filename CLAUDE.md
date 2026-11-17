@@ -258,17 +258,38 @@ A unit of work is done only when **all** of these hold:
 - [ ] The `code-reviewer` report was produced and its blockers/required actions resolved.
 - [ ] The PR follows `.github/pull_request_template.md` with every checklist item complete.
 
-## 8. Model policy for role agents
+## 8. Model policy and usage budget
 
-Owner decision (2026-10-04). Builds run locally on the owner's Claude Pro plan, so cost discipline matters. Models and effort are pinned in each agent's frontmatter (the `effort` field overrides session effort per the [sub-agents docs](https://code.claude.com/docs/en/sub-agents)).
+Owner decisions (2026-10-04, revised 2026-11-17). Builds run locally on the owner's Claude Pro plan, so usage limits are a real constraint. Agent frontmatter pins each role's default model and effort (the `effort` field overrides session effort per the [sub-agents docs](https://code.claude.com/docs/en/sub-agents)); the spawner overrides them per run from the PR's tier. A user's explicit model choice on any invocation **always wins**.
 
-- **architect**: `model: opus`, `effort: high`.
-- **senior-full-stack-dev**: `model: sonnet`, `effort: high`. Also does all parser/template work.
-- **code-reviewer**: `model: sonnet`, `effort: high`. *(The owner did not specify the reviewer; set to match the developer. To confirm.)*
-- **Escape hatch**: for a genuinely hard step (a novel pattern, crypto, tricky concurrency, a subtle algorithm) the spawner may bump a run to Opus. Say so when doing it.
-- A user's explicit model choice on any invocation **always wins**.
+**Tiers.** The architect gives every PR a tier in the plan's PR table; the orchestrator applies it.
 
-Rationale in one line: **Opus plans, Sonnet builds, Sonnet reviews**, with strict TDD as the guard against rework.
+| Tier | Signals | Developer | Review | Orchestrating session |
+|---|---|---|---|---|
+| **T0** mechanical | docs only, graph refresh, renames, branch merges | none: the orchestrator does it | orchestrator, briefly | Sonnet |
+| **T1** routine | follows an existing pattern closely (another list or form) | `senior-full-stack-dev`, Sonnet, `medium` | orchestrator | Sonnet |
+| **T2** standard | new shared component, untrusted input, accessibility-heavy, tricky tests | `senior-full-stack-dev`, Sonnet, `high` | orchestrator, full recurring-findings list (`code-reviewer.md`) | Sonnet or Opus |
+| **T3** high-risk | crypto, schema or migration, sync, concurrency, a security boundary, a novel algorithm | `senior-full-stack-dev`, Opus, `high` | `code-reviewer` on Opus as well | Opus |
+
+The **architect** always runs on Opus at `high`.
+
+**Adjusting the tier:**
+- **Bump up by paths:** a diff that touches `data/`, `security/`, a migration or the manifest moves up a tier, whatever the plan says.
+- **Escalate on failure:** if a Sonnet developer misses the same review item twice, or stalls, the rest of that step goes to Opus.
+- **Step down:** a T2 step that turns out to be plain wiring may drop to `medium`.
+- Say so whenever you adjust a tier.
+- The orchestrating session's model is chosen by the owner at session start, so the next PR's tier is stated before the session begins.
+
+**Usage budget (every session and agent):**
+- **Read narrowly.** Read `docs/learnings/DIGEST.md`, not the full log. Read plans, the design plan and `app/README.md` by section (`grep -n` or `graphify query`, then offset/limit). `tools/agent/guard.py`, a PreToolUse hook, refuses whole reads over 48 KB.
+- **Brief by section.** A brief cites the step and decisions (`§6 Step X`, `§3 D2`), not whole files.
+- **Get the first hand-back clean.** The developer runs its self-review list before reporting, because a fix round on a loaded agent costs about as much as the build.
+- **Scale mutation evidence to risk** (see `senior-full-stack-dev.md`).
+- **Gradle tests only in the background.** The guard enforces it; `tools/agent/check-retry.sh` handles the known hang.
+- **One session per PR.** Open the PR, report, and end the session. The next PR starts fresh with `/orchestrate-pr`.
+- **Delegate bulk reading.** When one-off bulk reading is needed (a long log or file), hand it to a Sonnet agent and keep the orchestrating session's context small.
+
+Rationale in one line: **Opus plans and takes the risky work, Sonnet builds and reviews the rest, and every agent reads only what it needs**, with strict TDD as the guard against rework.
 
 ## 9. Conventions
 

@@ -65,11 +65,11 @@ If it's a **larger feature**, name the base/integration branch (`feat/<feature>`
 slice PRs below target that **base branch** (not the default branch), and a final single PR
 merges the base branch → the default branch once the feature is complete.
 
-| PR | Scope (which steps) | Target | Depends on | Why it's independently reviewable |
-|----|---------------------|--------|------------|-----------------------------------|
-| 1  | <steps / slice>     | `feat/<feature>` (or default branch if small) | — | <a coherent, self-contained slice> |
-| 2  | <steps / slice>     | `feat/<feature>` | PR 1 | <builds on PR 1; own concern> |
-| final | integrate the feature | default branch | PRs 1–N | one coherent feature PR (larger features only) |
+| PR | Scope (which steps) | Target | Depends on | Tier (CLAUDE.md §8) | Why it's independently reviewable |
+|----|---------------------|--------|------------|---------------------|-----------------------------------|
+| 1  | <steps / slice>     | `feat/<feature>` (or default branch if small) | — | T1 <why> | <a coherent, self-contained slice> |
+| 2  | <steps / slice>     | `feat/<feature>` | PR 1 | T2 <why> | <builds on PR 1; own concern> |
+| final | integrate the feature | default branch | PRs 1–N | T0 | one coherent feature PR (larger features only) |
 
 ## 7. Test plan
 
