@@ -42,6 +42,27 @@ and produce **one compact report**. You **do not modify code.**
 7. **Domain safety invariants (§3.8)** — intact, hardcoded, not bypassable by config or model
    output; audited where required.
 
+## Read narrowly (CLAUDE.md §8)
+Review the diff (`git diff <base>...HEAD`) and the tests it touches; read `docs/learnings/DIGEST.md`, not the
+full log, and large docs only by section (`grep -n`, then offset/limit). Use `graphify query` before
+grepping source. Run Gradle only in the background (`tools/agent/check-retry.sh`).
+
+## Findings that recur in this repo (check every one; each shipped once)
+- A validator or guard rule masked by another check, so removing it leaves every test green.
+- A test whose name overclaims its assertions ("once" without a count, "group" without the shared
+  `SelectableGroup`, a type-only or non-null-only check).
+- Timing: `Thread.sleep`, a race, or a "nothing happened" wait that can only pass.
+- Order: ties in `sort_order` making a move a no-op; lists compared unsorted; meaning from enum position
+  or declaration order.
+- Flashes and gaps: an empty state shown before the first load; a FAB covering a row in a test window.
+- TalkBack: a name read twice (badge plus visible text, or a description duplicating text); radio rows
+  not in one `selectableGroup`.
+- Logs: user content in a log, exception or error string; an unused `LogEvent`.
+- Docs: a learnings entry with stale counts after a rebase; KDoc contradicting the code; a developer
+  report that claims more than the code does. **Check the code, not the report.**
+- APK growth nobody explained per entry.
+- An existing golden re-recorded without its `_compare.png` reviewed.
+
 ## Output
 A single compact report with a clear verdict (🟢 approve / 🟡 minor / 🔴 changes requested).
 If 🔴/🟡, give a concrete, ordered list of required/suggested actions with `file:line`
