@@ -21,7 +21,8 @@ import java.time.Instant
 
 private val SAMPLE_TIME = Instant.parse("2026-01-01T00:00:00Z")
 
-private fun sample(
+/** A fake category for samples and tests; fake data only. */
+internal fun sampleCategory(
     id: String,
     name: String,
     colour: CategoryColour,
@@ -61,19 +62,32 @@ internal fun sampleCategoriesState(): CategoriesUiState {
         CategoryLists(
             active =
                 listOf(
-                    sample("food", "Food & dining", CategoryColour.CORAL, CategoryIcon.Symbol("restaurant")),
-                    sample("groceries", "Groceries", CategoryColour.CORAL, CategoryIcon.Symbol("grocery"), "food"),
-                    sample("cafe", "Eating out", CategoryColour.CORAL, CategoryIcon.Symbol("local_cafe"), "food", 1),
-                    sample(
+                    sampleCategory("food", "Food & dining", CategoryColour.CORAL, CategoryIcon.Symbol("restaurant")),
+                    sampleCategory(
+                        "groceries",
+                        "Groceries",
+                        CategoryColour.CORAL,
+                        CategoryIcon.Symbol("grocery"),
+                        "food",
+                    ),
+                    sampleCategory(
+                        "cafe",
+                        "Eating out",
+                        CategoryColour.CORAL,
+                        CategoryIcon.Symbol("local_cafe"),
+                        "food",
+                        1,
+                    ),
+                    sampleCategory(
                         "transport",
                         "Transport",
                         CategoryColour.SKY,
                         CategoryIcon.Symbol("directions_car"),
                         sortOrder = 1,
                     ),
-                    sample("pets", "Pets", CategoryColour.AMBER, CategoryIcon.Emoji("🐶"), sortOrder = 2),
-                    sample("misc", "Miscellaneous", CategoryColour.OLIVE, null, sortOrder = 3),
-                    sample(
+                    sampleCategory("pets", "Pets", CategoryColour.AMBER, CategoryIcon.Emoji("🐶"), sortOrder = 2),
+                    sampleCategory("misc", "Miscellaneous", CategoryColour.OLIVE, null, sortOrder = 3),
+                    sampleCategory(
                         "loan",
                         "Loan EMI",
                         CategoryColour.SLATE,
@@ -82,30 +96,33 @@ internal fun sampleCategoriesState(): CategoriesUiState {
                         system = SystemCategory.LOAN_EMI,
                     ),
                 ),
-            archived =
-                listOf(
-                    sample(
-                        "delivery",
-                        "Food delivery",
-                        CategoryColour.CORAL,
-                        CategoryIcon.Symbol("fastfood"),
-                        "food",
-                        2,
-                        true,
-                    ),
-                    sample(
-                        "shopping",
-                        "Shopping",
-                        CategoryColour.MAGENTA,
-                        CategoryIcon.Symbol("shopping_bag"),
-                        sortOrder = 4,
-                        archived = true,
-                    ),
-                ),
+            archived = archivedSamples(),
         )
     val (active, archived) = lists.toItems()
     return CategoriesUiState(kind = CategoryKind.EXPENSE, active = active, archived = archived, loaded = true)
 }
+
+/** The archived rows of [sampleCategoriesState]: a sub-category of an active parent, and a top-level one. */
+private fun archivedSamples(): List<Category> =
+    listOf(
+        sampleCategory(
+            "delivery",
+            "Food delivery",
+            CategoryColour.CORAL,
+            CategoryIcon.Symbol("fastfood"),
+            "food",
+            2,
+            true,
+        ),
+        sampleCategory(
+            "shopping",
+            "Shopping",
+            CategoryColour.MAGENTA,
+            CategoryIcon.Symbol("shopping_bag"),
+            sortOrder = 4,
+            archived = true,
+        ),
+    )
 
 /** The categories list over [sampleCategoriesState]. Same use as that function. */
 @Composable

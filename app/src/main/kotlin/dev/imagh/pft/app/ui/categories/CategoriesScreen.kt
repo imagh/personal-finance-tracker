@@ -156,8 +156,9 @@ private fun actionLabelRes(action: CategoryAction): Int =
         CategoryAction.DELETE -> R.string.entity_action_delete
     }
 
+/** The label of the kind's Expense/Income switch segment, also the form's fixed Type row. */
 @StringRes
-private fun kindLabelRes(kind: CategoryKind): Int =
+internal fun kindLabelRes(kind: CategoryKind): Int =
     when (kind) {
         CategoryKind.EXPENSE -> R.string.category_kind_expense
         CategoryKind.INCOME -> R.string.category_kind_income
