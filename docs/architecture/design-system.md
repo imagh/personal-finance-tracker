@@ -505,7 +505,7 @@ sources (M3's own internals may still use it).
   characters (invisible format characters such as zero-width space, word joiner, BOM and the bidi overrides are also refused;
   the zero-width joiner and tag characters are allowed, so ZWJ families, flags and subdivision flags work). Anything else, oversized
   input included, is the letter fallback (the name's first letter or digit, upper-cased). Whether a value is really a renderable
-  emoji is the B4 `EmojiInputValidator`'s job when a category is saved.
+  emoji is the B4c `EmojiInputValidator`'s job when an emoji is typed or pasted into the category form.
 - **`CategoryGlyph(source, name, colourKey, size, onClick)`** (`ui/common`) draws a symbol, one emoji or a letter on a
   `CategoryPalette` badge (12 hues, light and dark: `PftTheme.palette[colourKey]`; unknown name is `slate`). It is announced as the
   category name (or, with a null `name`, is decorative and silent, for a badge beside a title that already says it: category list rows),
@@ -513,6 +513,19 @@ sources (M3's own internals may still use it).
 - **Emoji** are drawn by the system emoji font, so they differ between phones (accepted; symbols are the consistent option).
   `EmojiCompatInitializer` is removed from the merged manifest (it fetches a font through Google Play services);
   `ManifestHardeningTest` asserts it is absent. Compose is not affected: it uses the platform emoji font (minSdk 33).
+- **Emoji input** (B4c, `ui/categories`): the category form's icon section is `IconChoice`, a Symbol | Emoji switch of
+  `SingleChoiceSegmentedButtonRow` buttons (the app's existing idiom, announced as radio buttons with a selected state; not tabs,
+  which would add a second idiom and a panel promise the form lacks) over `SymbolGrid` or `EmojiTab`. The side opens on Emoji when the
+  category's icon is an emoji, else Symbol, then the user's choice stands (it survives recreation), and switching never changes the
+  icon. `EmojiTab` is a quick-pick of 24 emoji (`QUICK_PICK_EMOJI`, an explicit ordered list of single code points from Unicode 11 or
+  older) as one `selectableGroup` of `Role.RadioButton` cells with **no** description (a visible emoji is read by its Unicode name,
+  so one would say it twice), a "Chosen emoji" row (the emoji as a badge in the category colour, named by the emoji itself) and a
+  type-or-paste field that is a **sink**: it always shows nothing and hands the text, untouched, to the ViewModel. `EmojiInputValidator`
+  (an `object`) accepts text only if core's `CategoryIcon.Emoji.isValid` (run as is, never copied: length first, so a huge paste costs
+  nothing), exactly one ICU grapheme cluster, a country flag or an `Extended_Pictographic` first code point followed only by emoji
+  parts (VS16, skin tone, tag characters, ZWJ joining pictographs, no dangling ZWJ), and `Paint.hasGlyph` on this device all hold.
+  Keycaps are refused, whitespace is refused and never trimmed. The ViewModel keeps only a validated `CategoryIcon.Emoji` or the fixed
+  `emojiRejected` flag, shown as one fixed message that never echoes the paste. Goldens `category-emoji-tab-{light,dark}`.
 - **Descriptions** (plan Q7): a transaction row's glyph is its sub-category's if set, otherwise its category's; free emoji
   typed in titles render in the system font. There is no per-transaction icon.
 - **Not changed in DS3 (on purpose).** DS5's `EmptyState` placeholder glyph stays as it is: its glyph slot is filled by its

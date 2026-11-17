@@ -1,7 +1,7 @@
 # Categories and tags
 
 Status: **Categories: the list and the create/edit form are built** (More, then Categories: browse, reorder,
-archive, delete with Undo, add a category or sub-category, edit one). Emoji icons come in B4c; the category
+archive, delete with Undo, add a category or sub-category, edit one, choose a symbol or an emoji as its icon). The category
 picker is built (B4b) and waits for the transaction form (C4b) to use it. Tags: data and rules built (B5a), no
 screens yet (B5b). PRD: L-2 (categories), L-3 (tags). Plan:
 [2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
@@ -111,15 +111,42 @@ Tap **+** on the categories list (or a row, to edit). The form has:
   name; "Make top level" clears it again.
 - **Colour.** Twelve colour swatches; the chosen one has a check mark and a ring. A new category starts
   slate, the neutral colour.
-- **Symbol.** A grid of the app's category symbols, drawn in the chosen colour, with "No symbol" first
-  (the category then shows the first letter of its name, which you see change as you type). A new category
-  starts with no symbol. (Emoji icons arrive with B4c.)
+- **Icon.** A **Symbol | Emoji** switch chooses how you pick the icon; switching only changes what is shown
+  and never changes the icon. The Symbol side is a grid of the app's category symbols, drawn in the chosen
+  colour, with "No symbol" first (the category then shows the first letter of its name, which you see change
+  as you type). A new category starts with no symbol. The Emoji side is described under "Emoji icons" below.
 
 **Editing** shows the same form with everything filled in. You can change the name, the colour and the symbol.
 **The type and the parent are shown but fixed**, each with "Can't be changed after the category is created":
 to move a category or change its kind, delete it and create it again. The system category Loan EMI can be edited like any other.
-A category with an emoji icon keeps it until you pick a symbol. Saving without changing anything writes
-nothing.
+A category with an emoji icon keeps it until you pick another icon, and the form opens on the Emoji side
+with that emoji shown as chosen (a category with a symbol, or none, opens on the Symbol side; with an emoji
+icon the Symbol side has no symbol selected). Saving without changing anything writes nothing.
+
+### Emoji icons
+
+On the Emoji side you can tap one of 24 finance and household emoji (money, a card, a bank, a receipt, a
+cart, groceries, fuel, a house, medicine, school and so on) or type or paste any other emoji (the
+keyboard's emoji panel puts it in the field). The field never keeps what you type: an accepted emoji
+becomes the icon and shows as "Chosen emoji" in the category's colour. The rules for typed or pasted text:
+
+- **Exactly one emoji.** Two emoji, an emoji and a letter, a word, or nothing are refused. A family
+  (several people joined together), a country flag, a regional flag such as England's, an emoji with a skin
+  tone, and an emoji followed by the emoji style selector are each one emoji and are accepted.
+- **No spaces, nothing trimmed.** An emoji with a space or a line break before or after it is refused rather
+  than quietly cleaned up, so the icon saved is exactly what you pasted. Invisible characters (zero-width
+  space, text direction controls) and joiner characters left hanging are refused too.
+- **Keycaps are refused.** The digit-in-a-box emoji (1 with a box) are not accepted; use a symbol, or the
+  first letter of the name.
+- **Your phone must be able to draw it.** An emoji newer than your phone's emoji font, or a combination it has
+  no picture for, would show as an empty box, so it is refused.
+- **A refused paste changes nothing.** The icon stays as it was and a fixed message says "Enter just one emoji
+  that this phone can show". The message never repeats what you pasted, and nothing you paste is logged.
+- **Text-style symbols such as (c) and (tm) are accepted.** Unicode counts them as emoji and the phone draws
+  them, so they can be an icon.
+- The stored value is `emoji:` followed by the emoji, at most 16 UTF-16 code units (a family emoji uses 11,
+  a single cart 2); the data layer enforces the same limit for every writer. Emoji look different on
+  different phones; that is accepted.
 
 Behaviour worth knowing:
 
