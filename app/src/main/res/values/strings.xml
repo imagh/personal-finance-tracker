@@ -98,6 +98,8 @@
     <string name="category_action_move_down">Move down</string>
     <!-- Second line of a sub-category listed away from its parent (an archived one): the parent\'s name. -->
     <string name="category_under_parent">Under %1$s</string>
+    <string name="categories_add">Add category</string>
+    <string name="categories_not_found">That category no longer exists</string>
     <!-- Category form (CategoryEditScreen). Type and parent are shown but fixed once the category exists. -->
     <string name="category_new_title">New category</string>
     <string name="category_edit_title">Edit category</string>

@@ -19,11 +19,13 @@ import dev.imagh.pft.ledger.ids.CategoryId
  * @param parentLine the second line for a sub-category listed away from its parent, from the parent's
  *   name ("Under Food & dining"), already translated.
  * @param choose what choosing [CategoryAction] on a category does (the ViewModel's `choose`).
+ * @param edit what tapping the row does: opens that category's edit form.
  */
 internal fun CategoryItem.toRow(
     actionLabel: (CategoryAction) -> String,
     parentLine: (String) -> String,
     choose: (CategoryId, CategoryAction) -> Unit,
+    edit: (CategoryId) -> Unit,
 ): EntityRow {
     val id = category.meta.id
     return EntityRow(
@@ -32,6 +34,7 @@ internal fun CategoryItem.toRow(
         supporting = parentName?.let(parentLine),
         glyph = RowGlyph(category.iconKey.toGlyphSource(category.name), category.colour.key, null),
         indent = indent,
+        onClick = { edit(id) },
         actions = actions.map { action -> RowAction(actionLabel(action)) { choose(id, action) } },
     )
 }

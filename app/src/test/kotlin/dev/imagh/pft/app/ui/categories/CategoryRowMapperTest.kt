@@ -38,6 +38,7 @@ class CategoryRowMapperTest {
     )
 
     private val taken = mutableListOf<Pair<CategoryId, CategoryAction>>()
+    private val opened = mutableListOf<CategoryId>()
 
     private fun row(
         item: CategoryItem,
@@ -46,6 +47,7 @@ class CategoryRowMapperTest {
         actionLabel = { it.name.lowercase() },
         parentLine = subCategoryOf,
         choose = { id, action -> taken += id to action },
+        edit = { opened += it },
     )
 
     private fun item(
@@ -97,6 +99,15 @@ class CategoryRowMapperTest {
                 CategoryId("c1") to CategoryAction.ARCHIVE,
                 CategoryId("c1") to CategoryAction.DELETE,
             )
+    }
+
+    @Test
+    fun `tapping the row opens that category for editing`() {
+        val row = row(item())
+
+        row.onClick?.invoke()
+
+        opened shouldBe listOf(CategoryId("c1"))
     }
 
     @Test

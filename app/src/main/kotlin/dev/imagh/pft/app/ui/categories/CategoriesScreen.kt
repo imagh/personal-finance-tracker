@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -22,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.imagh.pft.R
 import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.app.ui.common.EntityListScreen
+import dev.imagh.pft.app.ui.common.RowAction
 import dev.imagh.pft.app.ui.common.UndoDeleteSnackbar
 import dev.imagh.pft.app.ui.common.failureRes
 import dev.imagh.pft.app.ui.theme.PftTheme
@@ -31,7 +33,8 @@ import dev.imagh.pft.ledger.category.CategoryKind
  * The categories list drawn from [state] alone: an Expense/Income switch above the shared
  * `EntityListScreen` over category rows ([toRow]). Active rows offer Move up and Move down (not on
  * the first and last of their siblings), Archive and Delete; Loan EMI offers neither of the last two;
- * archived rows offer Unarchive and Delete. There is no add button until the form exists (B4b).
+ * archived rows offer Unarchive and Delete. The add button (and the empty state's "Add category") opens the create
+ * form for the kind on show; tapping a row, active or archived, opens that category's edit form.
  *
  * @param state what to show; nothing is listed, and "No categories yet" is not said, until
  *   [CategoriesUiState.loaded]. The switch is always there.
@@ -53,8 +56,16 @@ fun CategoriesScreen(
     val parentLine: (String) -> String = { name -> resources.getString(R.string.category_under_parent, name) }
 
     fun List<CategoryItem>.rows() =
-        map { it.toRow(actionLabel = labels::getValue, parentLine = parentLine, choose = actions.choose) }
+        map {
+            it.toRow(
+                actionLabel = labels::getValue,
+                parentLine = parentLine,
+                choose = actions.choose,
+                edit = actions.edit,
+            )
+        }
 
+    val addLabel = stringResource(R.string.categories_add)
     EntityListScreen(
         title = stringResource(R.string.categories_title),
         active = state.active.rows(),
@@ -64,6 +75,7 @@ fun CategoriesScreen(
         onBack = onBack,
         modifier = modifier,
         loaded = state.loaded,
+        add = RowAction(addLabel) { actions.add(state.kind) },
         header = { KindSwitch(state.kind, actions.selectKind) },
     )
 }
@@ -103,13 +115,20 @@ private fun KindSwitch(
  *   screen is paused or left.
  * - **Notices** (a refused delete, a failed action) show a fixed message and are then cleared.
  *
+ * - **Not found.** When the edit form was opened for a category that no longer exists, the caller sets
+ *   [notFound] and this shows "That category no longer exists", then calls [onNotFoundShown].
+ *
  * @param services the open object graph the categories service is taken from.
- * @param onBack called when Back is tapped.
+ * @param navigation where Back, the add button (with the kind on show) and a row tap go.
+ * @param notFound true while a "no longer exists" message is waiting to be shown.
+ * @param onNotFoundShown the message was shown; the caller clears [notFound].
  */
 @Composable
 fun CategoriesRoute(
     services: AppServices,
-    onBack: () -> Unit,
+    navigation: CategoriesNavigation,
+    notFound: Boolean,
+    onNotFoundShown: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val factory = remember(services) { CategoriesViewModel.factory(services) }
@@ -142,8 +161,25 @@ fun CategoriesRoute(
         }
     }
 
-    val actions = remember(viewModel) { CategoriesActions(viewModel::choose, viewModel::selectKind) }
-    CategoriesScreen(state, actions, snackbars, onBack, modifier)
+    val notFoundText = stringResource(R.string.categories_not_found)
+    LaunchedEffect(notFound) {
+        if (notFound) {
+            snackbars.showSnackbar(notFoundText)
+            onNotFoundShown()
+        }
+    }
+
+    val latestNavigation by rememberUpdatedState(navigation)
+    val actions =
+        remember(viewModel) {
+            CategoriesActions(
+                choose = viewModel::choose,
+                selectKind = viewModel::selectKind,
+                add = { latestNavigation.add(it) },
+                edit = { latestNavigation.edit(it) },
+            )
+        }
+    CategoriesScreen(state, actions, snackbars, onBack = { latestNavigation.back() }, modifier = modifier)
 }
 
 @StringRes

@@ -130,7 +130,7 @@ internal fun CategoriesSample() {
     val snackbars = remember { SnackbarHostState() }
     CategoriesScreen(
         state = sampleCategoriesState(),
-        actions = CategoriesActions(choose = { _, _ -> }, selectKind = {}),
+        actions = CategoriesActions(choose = { _, _ -> }, selectKind = {}, add = {}, edit = {}),
         snackbars = snackbars,
         onBack = {},
     )

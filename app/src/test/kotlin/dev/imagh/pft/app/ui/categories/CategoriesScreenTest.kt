@@ -45,7 +45,7 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(sdk = [35], qualifiers = "w393dp-h1400dp-xxhdpi")
 class CategoriesScreenTest {
     @get:Rule
     val compose = HostedComposeRule()
@@ -65,6 +65,8 @@ class CategoriesScreenTest {
                         CategoriesActions(
                             choose = { id: CategoryId, action -> asked += "${action.name} ${id.value}" },
                             selectKind = { asked += "kind ${it.name}" },
+                            add = { asked += "add ${it.name}" },
+                            edit = { asked += "edit ${it.value}" },
                         ),
                     snackbars = snackbars,
                     onBack = { asked += "back" },
@@ -203,15 +205,53 @@ class CategoriesScreenTest {
                 .onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Image), useUnmergedTree = true)
                 .fetchSemanticsNodes()
                 .flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
-        assertEquals(emptyList<String>(), images.filterNot { it == "Back" || it.startsWith("Actions for ") })
+        assertEquals(
+            emptyList<String>(),
+            images.filterNot {
+                it == "Back" ||
+                    it == "Add category" ||
+                    it.startsWith("Actions for ")
+            },
+        )
     }
 
     @Test
-    fun `once loaded with nothing at all, it says there are no categories and has no add button`() {
+    fun `once loaded with nothing at all, it says there are no categories and offers Add category`() {
         show(CategoriesUiState(loaded = true))
 
         compose.onNodeWithText("No categories yet").assertIsDisplayed()
-        compose.onAllNodesWithContentDescription("Add category").assertCountEquals(0)
+        compose.onNodeWithContentDescription("Add category").assertIsDisplayed()
+        compose.onNodeWithText("Add category").performClick()
+
+        asked shouldBe listOf("add EXPENSE")
+    }
+
+    @Test
+    fun `the add button asks to add a category of the kind on show`() {
+        show(sampleCategoriesState().copy(kind = CategoryKind.INCOME))
+
+        compose.onNodeWithContentDescription("Add category").performClick()
+
+        asked shouldBe listOf("add INCOME")
+    }
+
+    @Test
+    fun `the add button is there before the first load finishes, with no empty message`() {
+        show(CategoriesUiState())
+
+        compose.onNodeWithContentDescription("Add category").assertIsDisplayed()
+        compose.onAllNodesWithText("No categories yet").assertCountEquals(0)
+    }
+
+    @Test
+    fun `tapping a row, active or archived, asks to edit that category`() {
+        show()
+
+        compose.onNodeWithText("Groceries").performClick()
+        compose.onNodeWithText("Archived (2)").performClick()
+        compose.onNodeWithText("Shopping").performClick()
+
+        asked shouldBe listOf("edit groceries", "edit shopping")
     }
 
     @Test
