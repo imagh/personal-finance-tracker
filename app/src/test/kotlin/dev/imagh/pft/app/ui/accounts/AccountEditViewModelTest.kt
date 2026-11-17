@@ -15,7 +15,6 @@ import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.ids.AccountId
 import dev.imagh.pft.money.Paise
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Test
@@ -29,7 +28,8 @@ import org.robolectric.shadows.ShadowLog
  * [AccountEditViewModel] over real in-memory Room through the production wiring ([RoomTestKit]): what
  * it refuses, what it saves and audits, how the balance sign follows the account type (plan Q3), how
  * edit mode prefills, and what a failure does. The ViewModel runs on the main dispatcher, so tests
- * wait with [awaitMain].
+ * wait with [awaitMain]. A cancelled save is not tested here: the shared `launchSave` rethrows it, and
+ * `LaunchSaveTest` pins that deterministically (`job.join()` and `job.isCancelled`).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -548,23 +548,5 @@ class AccountEditViewModelTest {
         accountRows().single().name shouldBe "HDFC Savings"
         trail(id) shouldBe listOf(AuditAction.CREATE)
         ShadowLog.getLogs().map { it.msg } shouldBe listOf("entity_save_failed kind=ACCOUNT")
-    }
-
-    @Test
-    fun `a cancellation is not reported as a save failure`() {
-        val vm = createForm()
-        vm.fill()
-        failWith(CancellationException("cancelled"))
-        ShadowLog.clear()
-
-        vm.submit()
-        awaitMain { audit.failedAppends >= 1 }
-        repeat(10) {
-            shadowOf(Looper.getMainLooper()).idle()
-            Thread.sleep(10)
-        }
-
-        vm.state.value.saveFailed shouldBe false
-        ShadowLog.getLogs().map { it.msg } shouldBe emptyList()
     }
 }

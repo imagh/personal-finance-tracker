@@ -8,7 +8,6 @@ import androidx.navigation.compose.rememberNavController
 import dev.imagh.pft.app.DevHeaderActions
 import dev.imagh.pft.app.devRoutes
 import dev.imagh.pft.app.di.AppServices
-import dev.imagh.pft.app.ui.categories.CategoriesRoute
 import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.more.MoreScreen
 import dev.imagh.pft.app.ui.setup.SetupRoute
@@ -32,6 +31,11 @@ import dev.imagh.pft.app.ui.theme.PftMotion
  * - **Accounts to the account form** is a push with an optional `id` argument (none: create). The form
  *   pops on save. If the id is unknown, deleted or malformed the form pops too, after leaving a flag
  *   on the accounts entry's saved state, and the list says "That account no longer exists".
+ *
+ * - **Categories to the category form** is a push with optional `id`, `kind` and `parent` arguments (see
+ *   [categoryRoutes]): the add button passes the kind on show, a row tap passes the id. The form pops on
+ *   save; an unknown, deleted or malformed argument pops it too, with the list saying "That category no
+ *   longer exists".
  *
  * Debug builds add the design catalogue as a route, reached from a Home header action
  * (`devRoutes()`, `DevHeaderActions`); release adds nothing. There are no deep links: nothing
@@ -79,9 +83,7 @@ fun PftNavHost(
             )
         }
         accountRoutes(navController, services)
-        composable(Routes.CATEGORIES) {
-            CategoriesRoute(services, onBack = { navController.popBackStack() })
-        }
+        categoryRoutes(navController, services)
         devRoutes()
     }
 }

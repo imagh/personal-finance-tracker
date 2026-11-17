@@ -4,11 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import dev.imagh.pft.app.data.DatabaseStartup
 import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.di.AppContainer
@@ -20,6 +23,8 @@ import dev.imagh.pft.app.ui.PftRoot
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.ledger.audit.AuditAction
+import dev.imagh.pft.ledger.category.CategoryColour
+import dev.imagh.pft.ledger.category.CategoryIcon
 import dev.imagh.pft.ledger.category.CategoryKind
 import dev.imagh.pft.ledger.category.DefaultCategories
 import io.kotest.matchers.shouldBe
@@ -241,12 +246,190 @@ class CategoriesFlowTest {
         compose.onAllNodesWithText("Delete").assertCountEquals(0)
     }
 
+    // --- Create and edit (B4b)
+
+    private fun openAddForm() {
+        compose.onNodeWithContentDescription("Add category").performClick()
+        awaitText("New category")
+    }
+
+    private fun type(
+        label: String,
+        text: String,
+    ) = compose.onNodeWithText(label).performTextInput(text)
+
+    private fun save() = compose.onNodeWithText("Save").performClick()
+
+    private fun storedByName(name: String) =
+        CategoryKind.entries
+            .flatMap { runBlocking { kit.categories.lists(it) }.let { lists -> lists.active + lists.archived } }
+            .single { it.name == name }
+
+    private fun left(text: String) =
+        compose
+            .onNodeWithText(text, useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .boundsInRoot.left
+
     @Test
-    fun `there is no add control until the form exists`() {
+    fun `the add control opens the form for a new category of the kind on show`() {
         show()
         openCategories()
 
-        compose.onAllNodesWithContentDescription("Add category").assertCountEquals(0)
+        openAddForm()
+
+        compose.onNodeWithText("Expense").assertIsDisplayed()
+        compose.onNodeWithText("None (top level)").assertIsDisplayed()
+        compose.onNodeWithText("Save").assertIsDisplayed()
+    }
+
+    @Test
+    fun `creating Pets with the pets symbol and amber lists it, and Vet under it is shown indented`() {
+        show()
+        openCategories()
+
+        openAddForm()
+        type("Name", "Pets")
+        compose.onNodeWithContentDescription("Amber").performClick()
+        compose.onNodeWithContentDescription("Pets").performClick()
+        save()
+        awaitGone("New category")
+        awaitText("Pets")
+
+        val pets = storedByName("Pets")
+        pets.colour shouldBe CategoryColour.AMBER
+        pets.iconKey shouldBe CategoryIcon.Symbol("pets")
+        pets.kind shouldBe CategoryKind.EXPENSE
+        pets.parentId shouldBe null
+        runBlocking { kit.trailOf("category", pets.meta.id.value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE)
+        // A new category goes last among its siblings.
+        (top("Pets") > top("Loan EMI")) shouldBe true
+
+        openAddForm()
+        type("Name", "Vet")
+        compose.onNodeWithText("Parent category").performClick()
+        awaitText("Choose parent category")
+        compose.onNodeWithText("Pets").performClick()
+        awaitGone("Choose parent category")
+        save()
+        awaitGone("New category")
+        awaitText("Vet")
+
+        val vet = storedByName("Vet")
+        vet.parentId shouldBe pets.meta.id
+        vet.kind shouldBe CategoryKind.EXPENSE
+        (top("Vet") > top("Pets")) shouldBe true
+        (left("Vet") > left("Pets")) shouldBe true
+    }
+
+    @Test
+    fun `the parent picker offers only top-level categories of the kind, never a sub-category`() {
+        show()
+        openCategories()
+        openAddForm()
+
+        compose.onNodeWithText("Parent category").performClick()
+        awaitText("Choose parent category")
+
+        compose.onNodeWithText("Food & dining").assertIsDisplayed()
+        compose.onNodeWithText("Transport").assertIsDisplayed()
+        compose.onAllNodesWithText("Groceries").assertCountEquals(0)
+        compose.onAllNodesWithText("Salary").assertCountEquals(0)
+    }
+
+    @Test
+    fun `an income category is created under Income, and not under Expense`() {
+        show()
+        openCategories()
+        compose.onNodeWithText("Income").performClick()
+        awaitText("Salary")
+
+        openAddForm()
+        compose.onNodeWithText("Income").assertIsDisplayed()
+        type("Name", "Dividends")
+        save()
+        awaitGone("New category")
+        awaitText("Dividends")
+
+        storedByName("Dividends").kind shouldBe CategoryKind.INCOME
+        compose.onNodeWithText("Expense").performClick()
+        awaitText("Food & dining")
+        compose.onAllNodesWithText("Dividends").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a name another category already has is refused under the name field, and nothing is saved`() {
+        show()
+        openCategories()
+        openAddForm()
+        val rows = auditRows()
+
+        type("Name", "food & DINING")
+        save()
+        awaitText("Already in use")
+
+        compose.onNodeWithText("Already in use").assertIsDisplayed()
+        compose.onNodeWithText("Save").assertIsDisplayed()
+        auditRows() shouldBe rows
+    }
+
+    @Test
+    fun `tapping a row opens it for editing with its type and parent fixed, and a new name shows in the list`() {
+        show()
+        openCategories()
+
+        compose.onNodeWithText("Groceries").performClick()
+        // The form draws nothing until the category has been read.
+        awaitText("Colour")
+
+        compose.onNode(hasSetTextAction() and hasText("Groceries")).assertIsDisplayed()
+        compose.onAllNodesWithText("Can't be changed after the category is created").assertCountEquals(2)
+        compose.onNodeWithText("Food & dining").assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("Groceries")).performTextReplacement("Supermarket")
+        compose.onNodeWithContentDescription("Teal").performClick()
+        save()
+        awaitGone("Edit category")
+        awaitText("Supermarket")
+
+        compose.onAllNodesWithText("Groceries").assertCountEquals(0)
+        val stored = storedByName("Supermarket")
+        stored.meta.id shouldBe id("food_groceries")
+        stored.colour shouldBe CategoryColour.TEAL
+        stored.parentId shouldBe id("food")
+        runBlocking { kit.trailOf("category", id("food_groceries").value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE, AuditAction.UPDATE)
+    }
+
+    @Test
+    fun `Back from the form returns to the list without saving`() {
+        show()
+        openCategories()
+        openAddForm()
+        type("Name", "Unsaved")
+        val rows = auditRows()
+
+        compose.onNodeWithContentDescription("Back").performClick()
+        awaitGone("New category")
+
+        compose.onNodeWithText("Food & dining").assertIsDisplayed()
+        compose.onAllNodesWithText("Unsaved").assertCountEquals(0)
+        auditRows() shouldBe rows
+    }
+
+    @Test
+    fun `a category deleted elsewhere while the list is shown returns to the list with a no longer exists message`() {
+        show()
+        openCategories()
+        runBlocking { kit.categories.delete(id("gifts")) }
+
+        compose.onNodeWithText("Gifts & donations").performClick()
+        awaitText("That category no longer exists")
+
+        compose.onAllNodesWithText("Edit category").assertCountEquals(0)
+        awaitGone("Gifts & donations")
+        runBlocking { kit.trailOf("category", id("gifts").value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE, AuditAction.DELETE)
     }
 
     @Test

@@ -192,6 +192,8 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.categories.ComposableSingletons\$CategoriesSamples",
             "dev.imagh.pft.app.ui.common.AccountPickerSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$AccountPickerSamples",
+            "dev.imagh.pft.app.ui.common.CategoryPickerSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$CategoryPickerSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

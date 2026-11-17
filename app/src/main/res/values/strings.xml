@@ -98,4 +98,24 @@
     <string name="category_action_move_down">Move down</string>
     <!-- Second line of a sub-category listed away from its parent (an archived one): the parent\'s name. -->
     <string name="category_under_parent">Under %1$s</string>
+    <string name="categories_add">Add category</string>
+    <string name="categories_not_found">That category no longer exists</string>
+    <!-- Category form (CategoryEditScreen). Type and parent are shown but fixed once the category exists. -->
+    <string name="category_new_title">New category</string>
+    <string name="category_edit_title">Edit category</string>
+    <string name="category_name_label">Name</string>
+    <string name="category_kind_label">Type</string>
+    <string name="category_parent_label">Parent category</string>
+    <string name="category_parent_none">None (top level)</string>
+    <string name="category_parent_clear">Make top level</string>
+    <string name="category_fixed_note">Can\'t be changed after the category is created</string>
+    <string name="category_colour_label">Colour</string>
+    <string name="category_symbol_label">Symbol</string>
+    <!-- The symbol grid's first cell: no symbol, so the category shows the first letter of its name. -->
+    <string name="category_no_symbol">No symbol</string>
+    <!-- Category picker sheet (CategoryPicker). -->
+    <string name="category_picker_title">Choose category</string>
+    <!-- The same sheet when the category form asks for a parent. -->
+    <string name="category_parent_picker_title">Choose parent category</string>
+    <string name="category_picker_empty">No categories to choose from yet</string>
 </resources>

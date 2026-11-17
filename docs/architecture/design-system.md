@@ -378,6 +378,21 @@ primary action.
   (`AccountPickerScreenshotTest`; the sheet's dialog window is drawn directly because `captureToImage`
   cannot read it under Robolectric). `CategoryPicker` (B4b) and `TagPicker` (B5b) are separate components
   and share only the sheet.
+- **`CategoryPicker`, the symbol grid and the colour swatches (B4b).** Three choice grids, all stateless, all a
+  `selectableGroup` of `Role.RadioButton` cells with the chosen one marked by `selected` semantics and a
+  2dp primary ring (`selectionRing`: a shape cue, never colour alone), each cell at least 48dp, laid out by
+  `TileGrid` (a `Column` of `Row`s sized from the available width, no experimental `FlowRow`). **TalkBack
+  rule:** a cell is announced once. `CategoryPicker` cells have visible text, so the badge is decorative
+  (`CategoryGlyph(name = null)`) and the cell is read from its text, plus "Under <parent>" for a
+  sub-category (also shown, so two same-named sub-categories differ on screen and by ear). `SymbolGrid` and
+  `ColourSwatches` cells have no text, so the cell itself carries the spoken name (the key as words, "Local
+  cafe", "Amber") and the badge inside is decorative. `CategoryPicker` shows each top-level category and its
+  sub-categories as one group starting a new row and keeps the service's order; with `topLevelOnly` it is the
+  form's parent field. `SymbolGrid` draws every badge in the category's chosen colour and starts with a "No
+  symbol" cell that shows the name's first letter. A swatch is the colour's own badge fill with an outline in
+  its content colour and a check mark when chosen. Goldens `category-picker-{light,dark,parent-light,parent-dark}`
+  (the sheet window drawn with `drawSheetWindow`), `category-symbol-grid-{light,dark}`,
+  `category-swatches-{light,dark}` and the form `category-edit-{new-light,new-dark,editing-light}`.
 - **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
   subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
   about 56dp). A long hero shrinks to fit (DS5's `MoneyText`, below): `CollapsingHeaderScaffoldTest`
@@ -538,6 +553,11 @@ DS6e depends on the chrome keys `back`, `search`, `filter`, `overflow`, `chevron
    upstream commit, change `COMMIT` deliberately and re-run with `--update-hashes`, which accepts changed sources and overwrites their
    hashes; then review every changed drawable and hash.
 4. Add the entry to `PftSymbol` (`KEY("key", R.drawable.sym_key)`) and the key to `pft-symbol-keys.txt`.
+   **Then classify it.** A *category* symbol (one a category may have) must also be added to `CATEGORY_SYMBOLS`, the explicit
+   list directly under the enum in `PftSymbol.kt`, in display order: the category form's symbol grid offers exactly that
+   list and nothing else, so a symbol you forget is simply not offered (it fails closed). An *interface* icon (back, add,
+   share ...) must **not** go in that list; add it to `interfaceSymbols` in `PftSymbolCategoriesTest` instead.
+   `PftSymbolCategoriesTest` fails until every registry symbol is in one list or the other.
 5. Run `./gradlew :app:testDebugUnitTest --tests '*PftSymbolTest'`, then re-record the symbol goldens
    (`./gradlew :app:recordRoborazziDebug`) and review the PNG diff. Update the list above.
 6. The Apache-2.0 notice (`assets/licenses/material-symbols-APACHE-2.0.txt`) already covers every symbol from this source.
