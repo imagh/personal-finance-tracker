@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
@@ -321,6 +322,79 @@ class CategoriesFlowTest {
         vet.kind shouldBe CategoryKind.EXPENSE
         (top("Vet") > top("Pets")) shouldBe true
         (left("Vet") > left("Pets")) shouldBe true
+    }
+
+    private fun storedIconText(name: String): String? =
+        database.openHelper.readableDatabase.query("SELECT icon_key FROM category WHERE name = ?", arrayOf(name)).use {
+            it.moveToFirst()
+            it.getString(0)
+        }
+
+    private fun pasteEmoji(text: String) =
+        compose.onNode(hasSetTextAction() and hasText("Type or paste an emoji")).performTextInput(text)
+
+    @Test
+    fun `creating Pets with a quick-pick emoji stores the emoji, audited, and lists it`() {
+        show()
+        openCategories()
+
+        openAddForm()
+        type("Name", "Pets")
+        compose.onNodeWithText("Emoji").performClick()
+        compose.onNodeWithText("🐶").performClick()
+        save()
+        awaitGone("New category")
+        awaitText("Pets")
+
+        val pets = storedByName("Pets")
+        pets.iconKey shouldBe CategoryIcon.Emoji("🐶")
+        storedIconText("Pets") shouldBe "emoji:🐶"
+        runBlocking { kit.trailOf("category", pets.meta.id.value) }.map { it.action } shouldBe
+            listOf(AuditAction.CREATE)
+    }
+
+    @Test
+    fun `a pasted text that is not one emoji shows a fixed message and the symbol already chosen is saved`() {
+        show()
+        openCategories()
+        openAddForm()
+        type("Name", "Pets")
+        compose.onNodeWithContentDescription("Pets").performClick()
+        compose.onNodeWithText("Emoji").performClick()
+
+        pasteEmoji("not an emoji")
+        awaitText("Enter just one emoji that this phone can show")
+        compose.onAllNodesWithText("not an emoji", substring = true).assertCountEquals(0)
+        save()
+        awaitGone("New category")
+        awaitText("Pets")
+
+        storedByName("Pets").iconKey shouldBe CategoryIcon.Symbol("pets")
+    }
+
+    @Test
+    fun `a pasted emoji is saved, and editing the category reopens on the Emoji side with it chosen`() {
+        show()
+        openCategories()
+        openAddForm()
+        type("Name", "Pets")
+        compose.onNodeWithText("Emoji").performClick()
+        pasteEmoji("not an emoji")
+        awaitText("Enter just one emoji that this phone can show")
+
+        pasteEmoji("🦄")
+        awaitGone("Enter just one emoji that this phone can show")
+        awaitText("Chosen emoji")
+        save()
+        awaitGone("New category")
+        awaitText("Pets")
+
+        storedIconText("Pets") shouldBe "emoji:🦄"
+        compose.onNodeWithText("Pets").performClick()
+        awaitText("Edit category")
+        awaitText("Chosen emoji")
+        compose.onNodeWithText("Emoji").assertIsSelected()
+        compose.onAllNodesWithText("Type or paste an emoji").assertCountEquals(1)
     }
 
     @Test

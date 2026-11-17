@@ -26,8 +26,9 @@ import org.robolectric.annotation.GraphicsMode
  * screen with the committed Graphite colours (dynamic colour off, so the goldens are deterministic), in
  * light and dark. Fake data only ("Pets", "Vet", "Food & dining" are made up). The form screens are
  * 1500dp tall so the symbol grid is in the picture: a new category with an error under the name, and a
- * sub-category being edited with its fixed type and parent. The symbol grid and the colour swatches are
- * also drawn alone, so a change to either shows up in a small diff.
+ * sub-category being edited with its fixed type and parent. The symbol grid, the emoji tab (B4c: a chosen
+ * quick-pick emoji and a refused paste's fixed error) and the colour swatches are also drawn alone, so a
+ * change to any of them shows up in a small diff.
  *
  * `./gradlew check` verifies against `src/test/screenshots`; after a deliberate visual change run
  * `./gradlew :app:recordRoborazziDebug` and review the PNG diff. Pixels catch visual regressions;
@@ -40,7 +41,7 @@ class CategoryEditScreenshotTest {
     @get:Rule
     val compose = HostedComposeRule()
 
-    private val noActions = CategoryEditActions({}, {}, {}, {}, save = {})
+    private val noActions = CategoryEditActions({}, {}, {}, {}, {}, save = {})
 
     private val newWithError =
         CategoryEditUiState(
@@ -81,6 +82,19 @@ class CategoryEditScreenshotTest {
         }
     }
 
+    // A chosen emoji from the quick-pick (ringed), and a refused paste (the fixed error under the field).
+    private val emojiTab: @Composable () -> Unit = {
+        Column(Modifier.padding(vertical = PftTheme.spacing.lg)) {
+            EmojiTab(
+                selected = CategoryIcon.Emoji(QUICK_PICK_EMOJI[6]),
+                colour = CategoryColour.AMBER,
+                rejected = true,
+                onSelect = {},
+                onInput = {},
+            )
+        }
+    }
+
     private val swatches: @Composable () -> Unit = {
         Column(Modifier.padding(top = PftTheme.spacing.lg)) {
             ColourSwatches(CategoryColour.TEAL, onSelect = {})
@@ -106,6 +120,14 @@ class CategoryEditScreenshotTest {
     @Test
     @Config(qualifiers = "w393dp-h900dp-night-xxhdpi")
     fun symbolGridDark() = capture("category-symbol-grid-dark", grid)
+
+    @Test
+    @Config(qualifiers = "w393dp-h700dp-notnight-xxhdpi")
+    fun emojiTabLight() = capture("category-emoji-tab-light", emojiTab)
+
+    @Test
+    @Config(qualifiers = "w393dp-h700dp-night-xxhdpi")
+    fun emojiTabDark() = capture("category-emoji-tab-dark", emojiTab)
 
     @Test
     @Config(qualifiers = "w393dp-h300dp-notnight-xxhdpi")

@@ -40,8 +40,11 @@ private const val LETTER_FRACTION = 0.45f
  * (B2), the category picker and edit screen (B4), transaction rows (C4), budget rows (D4) and
  * recurring rows (E4).
  *
- * **Accessibility.** The badge is one image node announced as [name], the category's own name:
- * never the icon key, the emoji's Unicode name or the fallback letter. When the badge sits next to
+ * **Accessibility.** The badge is one image node announced as [name], what the badge stands for, which
+ * is usually the category's own name (never the icon key, the emoji's Unicode name or the fallback letter).
+ * The one exception is where the emoji itself is the thing being shown, such as the category form's
+ * "Chosen emoji" row: there the emoji is the [name], and a screen reader reads it by its Unicode name.
+ * When the badge sits next to
  * text that already says the name (a list row's title), pass a null [name]: the badge is then
  * decorative, announces nothing and is not an image, so the name is not read twice. A tappable badge
  * ([onClick]) must have a [name], or a screen reader would meet a button with no label. Its colours come from

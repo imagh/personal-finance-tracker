@@ -1,10 +1,12 @@
 package dev.imagh.pft.app.ui.categories
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -12,8 +14,13 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -58,6 +65,7 @@ class CategoryEditScreenTest {
     private var state by mutableStateOf(CategoryEditUiState())
     private var saves by mutableIntStateOf(0)
     private var backs by mutableIntStateOf(0)
+    private val pasted = mutableListOf<String>()
 
     private fun create(parent: Boolean = false) =
         CategoryEditUiState(
@@ -66,9 +74,12 @@ class CategoryEditScreenTest {
             parent = if (parent) transport else null,
         )
 
+    /** Set by the test that checks the screen survives recreation; null means the plain rule hosts the screen. */
+    private var restoration: StateRestorationTester? = null
+
     private fun show(initial: CategoryEditUiState = create()) {
         state = initial
-        compose.setContent {
+        val content: @Composable () -> Unit = {
             PftTheme(ThemePrefs(dynamicColor = false)) {
                 CategoryEditScreen(
                     state = state,
@@ -77,6 +88,7 @@ class CategoryEditScreenTest {
                             onNameChange = { state = state.copy(name = state.name.edit(it)) },
                             onColourChange = { state = state.copy(colour = it) },
                             onIconChange = { state = state.copy(icon = it) },
+                            onEmojiInput = { pasted += it },
                             onParentChange = { id ->
                                 state =
                                     state.copy(parent = state.parentOptions.firstOrNull { it.meta.id == id })
@@ -87,6 +99,7 @@ class CategoryEditScreenTest {
                 )
             }
         }
+        restoration?.setContent(content) ?: compose.setContent(content)
         compose.waitForIdle()
     }
 
@@ -151,6 +164,171 @@ class CategoryEditScreenTest {
         show(create().copy(name = FieldState("food", FieldError.Duplicate)))
 
         compose.onNodeWithText("Already in use").assertIsDisplayed()
+    }
+
+    // --- The icon: a Symbol side and an Emoji side (B4c)
+
+    private fun isSymbolGridShown(): Boolean =
+        compose.onAllNodesWithContentDescription("Restaurant").fetchSemanticsNodes().isNotEmpty()
+
+    private fun isEmojiTabShown(): Boolean =
+        compose.onAllNodesWithText("Type or paste an emoji").fetchSemanticsNodes().isNotEmpty()
+
+    @Test
+    fun `the icon section has Symbol and Emoji radio buttons, the side on show selected`() {
+        show()
+
+        compose.onNodeWithText("Icon").assertIsDisplayed()
+        compose.onNodeWithText("Symbol").assertIsSelected()
+        compose.onNodeWithText("Emoji").assertIsNotSelected()
+        listOf("Symbol", "Emoji").forEach {
+            compose.onNodeWithText(it).fetchSemanticsNode().config[SemanticsProperties.Role] shouldBe Role.RadioButton
+        }
+    }
+
+    @Test
+    fun `the Symbol and Emoji choices are in one selectable group`() {
+        show()
+
+        fun groupOf(label: String): Int {
+            var node = compose.onNodeWithText(label).fetchSemanticsNode()
+            while (!node.config.contains(SemanticsProperties.SelectableGroup)) {
+                node = checkNotNull(node.parent) { "$label is not inside a selectable group" }
+            }
+            return node.id
+        }
+
+        groupOf("Symbol") shouldBe groupOf("Emoji")
+    }
+
+    @Test
+    fun `a new category opens on the Symbol side`() {
+        show()
+
+        isSymbolGridShown() shouldBe true
+        isEmojiTabShown() shouldBe false
+    }
+
+    @Test
+    fun `choosing Emoji shows the quick-pick and the field, hides the symbol grid and changes no icon`() {
+        show(create().copy(icon = CategoryIcon.Symbol("pets")))
+
+        compose.onNodeWithText("Emoji").performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Emoji").assertIsSelected()
+        compose.onNodeWithText("Symbol").assertIsNotSelected()
+        isEmojiTabShown() shouldBe true
+        isSymbolGridShown() shouldBe false
+        compose.onNodeWithText(QUICK_PICK_EMOJI[0]).assertIsDisplayed()
+        state.icon shouldBe CategoryIcon.Symbol("pets")
+    }
+
+    @Test
+    fun `choosing Symbol again brings the grid back, still with no icon changed`() {
+        show(create().copy(icon = CategoryIcon.Symbol("pets")))
+        compose.onNodeWithText("Emoji").performClick()
+
+        compose.onNodeWithText("Symbol").performClick()
+        compose.waitForIdle()
+
+        isSymbolGridShown() shouldBe true
+        isEmojiTabShown() shouldBe false
+        compose.onNodeWithContentDescription("Pets").assertIsSelected()
+        state.icon shouldBe CategoryIcon.Symbol("pets")
+    }
+
+    @Test
+    fun `a category whose icon is an emoji opens on the Emoji side, with its emoji shown as chosen`() {
+        show(create().copy(icon = CategoryIcon.Emoji(QUICK_PICK_EMOJI[2])))
+
+        compose.onNodeWithText("Emoji").assertIsSelected()
+        isEmojiTabShown() shouldBe true
+        isSymbolGridShown() shouldBe false
+        compose.onNodeWithText("Chosen emoji").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an emoji category being edited opens on the Emoji side too`() {
+        show(editing().copy(icon = CategoryIcon.Emoji(QUICK_PICK_EMOJI[2])))
+
+        compose.onNodeWithText("Emoji").assertIsSelected()
+        isEmojiTabShown() shouldBe true
+    }
+
+    @Test
+    fun `a category with a symbol or no icon opens on the Symbol side, editing or not`() {
+        show(editing().copy(icon = CategoryIcon.Symbol("pets")))
+
+        compose.onNodeWithText("Symbol").assertIsSelected()
+        isSymbolGridShown() shouldBe true
+        isEmojiTabShown() shouldBe false
+    }
+
+    @Test
+    fun `an edit form with no icon opens on the Symbol side`() {
+        show(editing().copy(icon = null))
+
+        compose.onNodeWithText("Symbol").assertIsSelected()
+        isEmojiTabShown() shouldBe false
+    }
+
+    @Test
+    fun `with an emoji icon the Symbol side selects no symbol and keeps the emoji`() {
+        show(create().copy(icon = CategoryIcon.Emoji(QUICK_PICK_EMOJI[2])))
+
+        compose.onNodeWithText("Symbol").performClick()
+        compose.waitForIdle()
+
+        isSymbolGridShown() shouldBe true
+        compose.onNodeWithContentDescription("No symbol").assertIsNotSelected()
+        compose.onNodeWithContentDescription("Pets").assertIsNotSelected()
+        state.icon shouldBe CategoryIcon.Emoji(QUICK_PICK_EMOJI[2])
+    }
+
+    @Test
+    fun `the side the user chose survives the screen being recreated`() {
+        val tester = StateRestorationTester(compose)
+        restoration = tester
+        show(create().copy(icon = CategoryIcon.Symbol("pets")))
+        compose.onNodeWithText("Emoji").performClick()
+        compose.waitForIdle()
+
+        tester.emulateSavedInstanceStateRestore()
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Emoji").assertIsSelected()
+        isEmojiTabShown() shouldBe true
+        isSymbolGridShown() shouldBe false
+    }
+
+    @Test
+    fun `tapping a quick-pick emoji reports it as the icon and stays on the Emoji side`() {
+        show()
+        compose.onNodeWithText("Emoji").performClick()
+
+        compose.onNodeWithText(QUICK_PICK_EMOJI[4]).performClick()
+        compose.waitForIdle()
+
+        state.icon shouldBe CategoryIcon.Emoji(QUICK_PICK_EMOJI[4])
+        compose.onNodeWithText("Emoji").assertIsSelected()
+        compose.onNodeWithText("Chosen emoji").assertIsDisplayed()
+    }
+
+    @Test
+    fun `text typed into the emoji field is reported as typed, and a rejection shows the fixed message`() {
+        show(create().copy(icon = CategoryIcon.Symbol("pets")))
+        compose.onNodeWithText("Emoji").performClick()
+        compose.onAllNodesWithText("Enter just one emoji that this phone can show").assertCountEquals(0)
+
+        compose.onNode(hasSetTextAction() and hasText("Type or paste an emoji")).performTextInput("not an emoji")
+        state = state.copy(emojiRejected = true)
+        compose.waitForIdle()
+
+        pasted shouldBe listOf("not an emoji")
+        compose.onNodeWithText("Enter just one emoji that this phone can show").assertIsDisplayed()
+        compose.onAllNodesWithText("not an emoji", substring = true).assertCountEquals(0)
+        state.icon shouldBe CategoryIcon.Symbol("pets")
     }
 
     // --- The parent field
