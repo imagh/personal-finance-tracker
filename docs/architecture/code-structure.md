@@ -73,6 +73,7 @@ core/
 core/shared/            # none yet (promoted on the 2nd consumer outside the ledger chain)
 tools/redact/           # Python redaction tool (not part of the Gradle build)
 tools/material-symbols/ # Python importer for the Material Symbols drawables: symbols.txt (curated list), svg-sha256.txt (sources), unit tests (not part of the Gradle build)
+tools/agent/            # Claude Code agent tooling: guard.py (PreToolUse hook: no whole reads over 48 KB, no foreground Gradle tests) + tests, check-retry.sh, check-commits.sh (not part of the Gradle build)
 ```
 
 Package root `dev.imagh.pft` is permanent (plan §12 Q4).

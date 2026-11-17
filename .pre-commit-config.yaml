@@ -59,6 +59,14 @@ repos:
         always_run: true
         stages: [pre-push]
 
+      - id: tests-agent-guard
+        name: tools/agent guard unit tests
+        entry: python3 -I -m unittest discover -s tools/agent
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
       - id: tests-material-symbols
         name: tools/material-symbols unit tests
         entry: python3 -I -m unittest discover -s tools/material-symbols

@@ -372,6 +372,12 @@ Conventions (unchanged from M1a §6): core tests `core/ledger/src/test/kotlin/de
 | B5b | Tags UI, `TagPicker` | `feat/m1a-ledger-setup` | B2c, B4b, B5a | small screen set and one picker |
 | B-final | Docs; `feat/m1a-ledger-setup` → `main` | `main` | B1a–B5b | one coherent capability: the ledger's reference data |
 
+**Tiers (CLAUDE.md §8, added 2026-11-17 for the PRs still to come):**
+- **B5b:** T2 (a new multi-select picker with semantics to get right).
+- **The account-type TalkBack fix:** T1 (a small change following the decorative-badge rule; owner go-ahead first).
+- **B-final:** T0 (docs and a branch merge).
+- The PRs merged before 2026-11-17 predate tiers.
+
 B1a, B1b and B3a can be developed in parallel (separate worktrees); everything with a schema bump is sequential (B1c → B3b → B5a) because each migration builds on the previous version. Each PR carries its docs, its learnings entry, its security-review section and a `graphify update .`.
 
 ## 7. Test plan
