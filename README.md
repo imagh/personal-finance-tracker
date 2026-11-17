@@ -24,6 +24,7 @@ A private, offline-first Android app for tracking a household's expenses, budget
 | `build-logic/` | Convention plugins `pft.kotlin-core` and `pft.lint`. See [build-logic/README.md](build-logic/README.md) |
 | `tools/redact/` | Local redaction tool (Python) |
 | `tools/material-symbols/` | Importer for the Material Symbols drawables (Python; see `docs/architecture/design-system.md`, "Adding an icon") |
+| `tools/agent/` | Claude Code agent tooling: the usage-budget hook `guard.py` and the hang-safe `check-retry.sh` / `check-commits.sh` (see `CLAUDE.md` §8) |
 | `fixtures/` | Reviewed, redacted samples only (planned) |
 
 **Build and test** (JDK 17 and the Android SDK from [local setup](docs/guides/local-setup.md); `ANDROID_HOME` must be set):
