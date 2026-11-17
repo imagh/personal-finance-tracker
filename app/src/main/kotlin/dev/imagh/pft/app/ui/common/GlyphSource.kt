@@ -11,7 +11,8 @@ import dev.imagh.pft.ledger.category.CategoryIcon
  * The **grammar** of the column (symbol keys, which emoji text is allowed) is not defined here: it
  * lives once, in core's [CategoryIcon], which also enforces it when an icon is written; [fromIconKey]
  * delegates to [CategoryIcon.parse]. What stays the app's job is whether a symbol key *exists* in
- * the registry ([PftSymbol.fromKey]) and, later (B4c), whether an emoji renders.
+ * the registry ([PftSymbol.fromKey]); whether an emoji renders is checked when it is typed in, by
+ * `EmojiInputValidator` (B4c).
  *
  * `icon_key` is untrusted input at this boundary: a corrupt row or a key written by a newer
  * version synced in M2 must never crash a screen or draw something unexpected. So anything

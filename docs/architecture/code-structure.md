@@ -60,7 +60,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/categories/                       # B4a: CategoriesViewModel (+ CategoriesUiState, CategoriesNotice), CategoryItem (+ CategoryAction, the row rules),
                                          # CategoriesScreen (+ CategoriesActions, CategoriesNavigation, the Expense/Income switch), CategoriesRoute, CategoryRowMapper, CategoriesSamples;
                                          # B4b: CategoryEditViewModel (+ CategoryEditUiState), CategoryEditScreen (+ CategoryEditActions), CategoryEditRoute,
-                                         # SymbolGrid, ColourSwatches, SpokenName
+                                         # SymbolGrid, ColourSwatches, SpokenName;
+                                         # B4c: EmojiInputValidator (the untrusted-paste check), EmojiTab (quick-pick + field), IconChoice (the Symbol | Emoji switch)
     ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
     PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)

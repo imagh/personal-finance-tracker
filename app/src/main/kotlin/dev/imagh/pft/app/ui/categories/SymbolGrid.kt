@@ -31,7 +31,8 @@ private val CELL = 48.dp
 /**
  * The symbol choices of the category form: a grid of badges in the category's [colour], first a "No
  * symbol" cell (the letter the category gets without one) and then every category symbol of the
- * registry ([CATEGORY_SYMBOLS]). This is the form's symbol tab; B4c adds the emoji tab beside it.
+ * registry ([CATEGORY_SYMBOLS]). This is the form's symbol side; [EmojiTab] is the emoji side beside it, and
+ * [IconChoice] switches between them.
  *
  * **Accessibility.** The cells are one selectable group and each is a radio-style selectable. A cell
  * has no visible text, so it is announced by a spoken name ([spokenName], "Local cafe"; "No symbol" for

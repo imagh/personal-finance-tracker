@@ -110,7 +110,14 @@
     <string name="category_parent_clear">Make top level</string>
     <string name="category_fixed_note">Can\'t be changed after the category is created</string>
     <string name="category_colour_label">Colour</string>
+    <!-- The icon section: its heading, and the switch between the symbol grid and the emoji tab. -->
+    <string name="category_icon_label">Icon</string>
     <string name="category_symbol_label">Symbol</string>
+    <string name="category_emoji_label">Emoji</string>
+    <!-- Emoji tab: the field, its fixed error (never repeats what was typed) and the chosen emoji. -->
+    <string name="category_emoji_field_label">Type or paste an emoji</string>
+    <string name="category_emoji_rejected">Enter just one emoji that this phone can show</string>
+    <string name="category_emoji_chosen">Chosen emoji</string>
     <!-- The symbol grid's first cell: no symbol, so the category shows the first letter of its name. -->
     <string name="category_no_symbol">No symbol</string>
     <!-- Category picker sheet (CategoryPicker). -->

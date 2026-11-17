@@ -25,6 +25,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowLog
 
 /**
@@ -33,9 +34,11 @@ import org.robolectric.shadows.ShadowLog
  * leaves alone (kind and parent), how untrusted navigation arguments are handled, and what a failure
  * does. The ViewModel runs on the main dispatcher, so tests wait with [awaitMain]. A cancelled save is not
  * tested here: the shared `launchSave` rethrows it, and `LaunchSaveTest` pins that deterministically
- * (`job.join()` and `job.isCancelled`).
+ * (`job.join()` and `job.isCancelled`). The class runs on native graphics so the emoji checks use the
+ * platform's real `Paint.hasGlyph`, as `EmojiInputValidatorTest` does.
  */
 @RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35])
 class CategoryEditViewModelTest {
     private val database = TestDatabase.create()
@@ -620,11 +623,13 @@ class CategoryEditViewModelTest {
     }
 
     @Test
-    fun `editing a field, the colour or the symbol clears the failure message`() {
+    fun `editing a field, the colour, the icon or the emoji field clears the failure message`() {
         listOf<(CategoryEditViewModel) -> Unit>(
             { it.onNameChange("Pets 2") },
             { it.onColourChange(CategoryColour.TEAL) },
             { it.onIconChange(CategoryIcon.Symbol("pets")) },
+            { it.onEmojiInput("🛒") },
+            { it.onEmojiInput("not an emoji") },
         ).forEach { edit ->
             val vm = createForm()
             vm.onNameChange("Pets")

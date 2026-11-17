@@ -40,8 +40,9 @@ import kotlinx.coroutines.launch
  *   own when editing; it is shown, never edited.
  * @property name the category's name, as typed, with its error.
  * @property colour the chosen colour; a new category starts as slate, the neutral one.
- * @property icon the chosen symbol, or null for none (the name's first letter is drawn). When editing, a
- *   category's emoji icon is kept as it is until a symbol is chosen.
+ * @property icon the chosen symbol or emoji, or null for none (the name's first letter is drawn). An emoji
+ *   is only ever a validated one (a quick-pick, or text [EmojiInputValidator] accepted). When editing, a
+ *   category's emoji icon is kept as it is until another icon is chosen.
  * @property parent the top-level category this one is (or will be) under, or null for a top-level
  *   category. Chosen when creating; shown but not editable when editing.
  * @property parentOptions the live top-level categories of [kind] a new category can go under; empty when
@@ -50,6 +51,10 @@ import kotlinx.coroutines.launch
  * @property saved true once the category is saved; the route then leaves the screen.
  * @property saveFailed true after an unexpected failure to save: the screen shows a fixed "try again"
  *   message. It is cleared by editing anything or by submitting again; the typed text is kept.
+ * @property emojiRejected true after text typed or pasted into the emoji field was refused by
+ *   [EmojiInputValidator]: the screen shows a fixed message (never the text) and [icon] is what it was
+ *   before. Cleared by an accepted emoji or by choosing any icon. This flag is all the state keeps of a
+ *   refused paste.
  */
 data class CategoryEditUiState(
     val editing: Boolean = false,
@@ -64,6 +69,7 @@ data class CategoryEditUiState(
     val saving: Boolean = false,
     val saved: Boolean = false,
     val saveFailed: Boolean = false,
+    val emojiRejected: Boolean = false,
 )
 
 /**
@@ -97,8 +103,8 @@ data class CategoryEditRequest(
  *   (never turned into an id first) in both kinds, archived ones included, so an archived category can be
  *   edited. Name, colour and symbol are editable. **Kind and parent are fixed once created** (plan D7,
  *   owner Q7): [onParentChange] does nothing when editing, and the draft carries neither. A category with
- *   an emoji icon keeps it unless a symbol is chosen (the emoji tab arrives in B4c). An edit that changes
- *   nothing writes no audit entry (the core service sees identical values).
+ *   an emoji icon keeps it unless another icon is chosen (a symbol, or another emoji: [onEmojiInput]). An
+ *   edit that changes nothing writes no audit entry (the core service sees identical values).
  * - **One save.** [submit] sets [CategoryEditUiState.saving] before it launches the save and ignores
  *   calls while saving, once saved, before the form has loaded, or after not-found. It must be called on
  *   the main thread (the UI does), which makes the check-then-set atomic.
@@ -141,8 +147,31 @@ class CategoryEditViewModel(
     /** A colour was chosen; any save-failed message clears. */
     fun onColourChange(colour: CategoryColour) = mutableState.update { it.copy(colour = colour, saveFailed = false) }
 
-    /** A symbol was chosen, or null for none; any save-failed message clears. */
-    fun onIconChange(icon: CategoryIcon?) = mutableState.update { it.copy(icon = icon, saveFailed = false) }
+    /**
+     * A symbol was chosen, or null for none, or a quick-pick emoji (a fixed, trusted list; typed or pasted
+     * text goes through [onEmojiInput] instead). Any emoji rejection and any save-failed message clears.
+     */
+    fun onIconChange(icon: CategoryIcon?) =
+        mutableState.update { it.copy(icon = icon, emojiRejected = false, saveFailed = false) }
+
+    /**
+     * Text was typed or pasted into the emoji field. It is **untrusted**: it is checked by
+     * [EmojiInputValidator] here and only the validated [CategoryIcon.Emoji] it returns is kept. Accepted,
+     * it becomes the icon and clears [CategoryEditUiState.emojiRejected]. Rejected, nothing of the text is
+     * kept: the previous icon stays and [CategoryEditUiState.emojiRejected] is set, which the screen shows
+     * as a fixed message that never repeats the text. The text is never logged. Any save-failed message
+     * clears either way.
+     */
+    fun onEmojiInput(text: String) {
+        val emoji = EmojiInputValidator.validate(text)
+        mutableState.update {
+            if (emoji == null) {
+                it.copy(emojiRejected = true, saveFailed = false)
+            } else {
+                it.copy(icon = emoji, emojiRejected = false, saveFailed = false)
+            }
+        }
+    }
 
     /**
      * A parent was chosen, or null for top level. Only one of [CategoryEditUiState.parentOptions] is
@@ -176,7 +205,12 @@ class CategoryEditViewModel(
         }
         val draft = CategoryDraft(validName, current.colour, current.icon)
         mutableState.value = current.copy(name = name.state, saving = true, saveFailed = false)
-        save(draft, current.parent?.meta?.id, current.kind)
+        val target = original
+        val parentId = current.parent?.meta?.id
+        val kind = current.kind
+        viewModelScope.launchSave(EntityKind.CATEGORY, ::finished, ::showRefusal) {
+            if (target == null) categories.create(parentId, kind, draft) else categories.edit(target.meta.id, draft)
+        }
     }
 
     /** Reads the category asked for and prefills the form, or ends in not found. */
@@ -220,15 +254,6 @@ class CategoryEditViewModel(
                 parent = parent,
             )
         }
-    }
-
-    private fun save(
-        draft: CategoryDraft,
-        parentId: CategoryId?,
-        kind: CategoryKind,
-    ) = viewModelScope.launchSave(EntityKind.CATEGORY, ::finished, ::showRefusal) {
-        val target = original
-        if (target == null) categories.create(parentId, kind, draft) else categories.edit(target.meta.id, draft)
     }
 
     /** The save ended as [outcome] (see [launchSave]); the failure has been logged by now. */

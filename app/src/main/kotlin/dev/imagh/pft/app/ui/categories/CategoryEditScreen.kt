@@ -43,7 +43,7 @@ private val CHEVRON = 24.dp
 
 /**
  * The category create and edit form drawn from [state] alone, on the shared `EditFormScaffold`: the
- * name, the type and the parent, the colour swatches and the symbol grid, with Save in the bottom bar
+ * name, the type and the parent, the colour swatches and the icon choice, with Save in the bottom bar
  * and Back in the header.
  *
  * - **Type and parent.** The type (Expense or Income) is always shown and never edited here: the list's
@@ -51,8 +51,9 @@ private val CHEVRON = 24.dp
  *   row opens [CategoryPicker] over [CategoryEditUiState.parentOptions] (top-level categories only) and
  *   a "Make top level" button clears a chosen parent. When editing, both rows are plain text that says
  *   they cannot be changed (plan D7, owner Q7): no click action, so no picker can open.
- * - **Colour and symbol** are [ColourSwatches] and [SymbolGrid], previewing the chosen colour on every
- *   symbol; the name's first letter shows on the "No symbol" cell as the name is typed.
+ * - **Colour and icon.** [ColourSwatches], then [IconChoice]: a Symbol | Emoji switch over the [SymbolGrid]
+ *   (previewing the chosen colour on every symbol; the name's first letter shows on the "No symbol" cell as
+ *   the name is typed) or the [EmojiTab] (a quick-pick, and a field to type or paste an emoji).
  * - **The name shows its error** from [state] (required, too long, or already in use).
  * - **Nothing is drawn before the form has loaded** ([CategoryEditUiState.loaded]) and nothing once the
  *   category was not found, and Save is disabled in both, and while saving.
@@ -100,8 +101,8 @@ fun CategoryEditScreen(
         }
         item { SectionLabel(stringResource(R.string.category_colour_label)) }
         item { ColourSwatches(state.colour, actions.onColourChange) }
-        item { SectionLabel(stringResource(R.string.category_symbol_label)) }
-        item { SymbolGrid(state.icon, state.colour, state.name.text, actions.onIconChange) }
+        item { SectionLabel(stringResource(R.string.category_icon_label)) }
+        item { IconChoice(state, actions) }
         if (state.saveFailed) {
             item {
                 Text(
@@ -211,6 +212,7 @@ fun CategoryEditRoute(
                 onNameChange = viewModel::onNameChange,
                 onColourChange = viewModel::onColourChange,
                 onIconChange = viewModel::onIconChange,
+                onEmojiInput = viewModel::onEmojiInput,
                 onParentChange = viewModel::onParentChange,
                 save = viewModel::submit,
             )
