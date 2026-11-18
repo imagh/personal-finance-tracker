@@ -11,6 +11,8 @@ import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.settings.SettingsService
 import dev.imagh.pft.ledger.setup.FirstRunService
 import dev.imagh.pft.ledger.tag.TagService
+import dev.imagh.pft.ledger.transaction.TransactionLines
+import dev.imagh.pft.ledger.transaction.TransactionService
 
 /**
  * The core object graph wired over in-memory fakes, so a service test starts with one line
@@ -44,6 +46,12 @@ class LedgerTestKit {
     /** Tags. */
     val tagRepository = InMemoryTagRepository(store)
 
+    /** Transactions (the payment facts). */
+    val transactionRepository = InMemoryTransactionRepository(store)
+
+    /** Transaction lines (items). */
+    val transactionLineRepository = InMemoryTransactionLineRepository(store)
+
     /** Builds audit entries into [InMemoryLedgerStore.auditLog]. */
     val recorder = AuditRecorder(store.auditLog, ids, clock)
 
@@ -64,6 +72,17 @@ class LedgerTestKit {
 
     /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
     val tags = TagService(store, writer, tagRepository, ids)
+
+    /** Transactions: create, edit, delete, restore, mark verified and read, with their lines. */
+    val transactions =
+        TransactionService(
+            store,
+            writer,
+            transactionRepository,
+            TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository),
+            accountRepository,
+            ids,
+        )
 
     /** First-run setup: the identity and the default categories, in one transaction. */
     val firstRun = FirstRunService(store, identity, categories)

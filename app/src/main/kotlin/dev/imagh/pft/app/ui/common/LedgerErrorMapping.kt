@@ -33,5 +33,12 @@ fun LedgerError.toFieldError(): FieldError? =
         is LedgerError.InvalidOrder,
         is LedgerError.InvalidIcon,
         is LedgerError.SystemCategoryProtected,
+        // Transaction rules about the items as a whole, not one typed field: a form-level message.
+        is LedgerError.BreakdownMismatch,
+        is LedgerError.TooManyLines,
+        // Not about anything the user typed: a doubled item id, or a transfer sent to the plain
+        // transaction calls. No field to mark.
+        is LedgerError.DuplicateLine,
+        is LedgerError.IsTransfer,
         -> null
     }

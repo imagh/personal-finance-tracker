@@ -115,6 +115,10 @@ class FieldStateTest {
                 LedgerError.InvalidOrder(),
                 LedgerError.InvalidIcon(),
                 LedgerError.SystemCategoryProtected(),
+                LedgerError.BreakdownMismatch(),
+                LedgerError.TooManyLines(50),
+                LedgerError.DuplicateLine(),
+                LedgerError.IsTransfer(),
             )
 
         formLevel.forEach { assertNull(it.toFieldError(), it::class.simpleName) }

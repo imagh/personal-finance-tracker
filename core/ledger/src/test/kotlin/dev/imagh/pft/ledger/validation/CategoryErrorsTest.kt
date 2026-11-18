@@ -11,7 +11,7 @@ class CategoryErrorsTest :
     FunSpec({
         test("each message is fixed text") {
             LedgerError.DepthExceeded().message shouldBe "Categories can only be nested two levels"
-            LedgerError.KindMismatch().message shouldBe "A sub-category must be the same kind as its parent"
+            LedgerError.KindMismatch().message shouldBe "Category kind does not match"
             LedgerError.HasChildren().message shouldBe "Delete the sub-categories first"
             LedgerError.InvalidOrder().message shouldBe "The order does not match the current categories"
             LedgerError.InvalidIcon().message shouldBe "The icon is not valid"

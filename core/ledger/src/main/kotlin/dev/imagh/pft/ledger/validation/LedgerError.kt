@@ -73,8 +73,12 @@ sealed class LedgerError(
     /** A sub-category was put under a category that is itself a sub-category: two levels only. */
     class DepthExceeded : LedgerError("Categories can only be nested two levels")
 
-    /** A sub-category is not the same kind (expense or income) as its parent. */
-    class KindMismatch : LedgerError("A sub-category must be the same kind as its parent")
+    /**
+     * A category is the wrong kind (expense or income) for where it is used: a sub-category of a
+     * different kind than its parent, or a transaction line whose category does not match the
+     * transaction's type (an income category on an expense).
+     */
+    class KindMismatch : LedgerError("Category kind does not match")
 
     /** A category still has sub-categories, so it cannot be deleted yet. */
     class HasChildren : LedgerError("Delete the sub-categories first")
@@ -95,4 +99,25 @@ sealed class LedgerError(
 
     /** The category is a system category (such as Loan EMI), which can be renamed but not archived or deleted. */
     class SystemCategoryProtected : LedgerError("This category cannot be archived or deleted")
+
+    /**
+     * A transaction's lines (items) do not add up exactly to its amount, or it has none (the sum
+     * invariant, CLAUDE.md §3.8). The message names no amount.
+     */
+    class BreakdownMismatch : LedgerError("The items do not add up to the amount")
+
+    /** A transaction was given more than [max] lines (items). */
+    class TooManyLines(
+        val max: Int,
+    ) : LedgerError("A transaction may have at most $max items")
+
+    /** The same line id appears more than once in one list of lines. */
+    class DuplicateLine : LedgerError("An item appears more than once")
+
+    /**
+     * A transfer was sent to the plain transaction calls: a transfer leg cannot be created or edited
+     * there, and a transaction cannot change between transfer and expense or income (delete and
+     * re-create it instead). Transfers have their own calls (slice C2).
+     */
+    class IsTransfer : LedgerError("Transfers are created and edited as transfers")
 }

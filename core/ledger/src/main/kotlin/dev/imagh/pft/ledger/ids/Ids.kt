@@ -72,3 +72,23 @@ value class TagId(
         require(value.isNotBlank()) { "TagId must not be blank" }
     }
 }
+
+/** Identifies a [dev.imagh.pft.ledger.transaction.LedgerTransaction]. */
+@JvmInline
+value class TransactionId(
+    override val value: String,
+) : EntityId {
+    init {
+        require(value.isNotBlank()) { "TransactionId must not be blank" }
+    }
+}
+
+/** Identifies a [dev.imagh.pft.ledger.transaction.TransactionLine] (one item of a transaction). */
+@JvmInline
+value class TransactionLineId(
+    override val value: String,
+) : EntityId {
+    init {
+        require(value.isNotBlank()) { "TransactionLineId must not be blank" }
+    }
+}
