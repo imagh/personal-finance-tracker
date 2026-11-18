@@ -289,6 +289,8 @@ Conventions: package root `dev.imagh.pft` (**Open question Q4**). Core tests: `c
 
 ### Slice C — Transactions (`feat/m1a-transactions`)
 
+**Amendment (2026-11-18, slice C plan):** slice C is planned in [`2026-11-18-m1a-slice-c-transactions.md`](2026-11-18-m1a-slice-c-transactions.md), which reviewed the steps below and the itemised amendment against the code after slice B. Its §6 replaces the C1..C5 step text and the PR row; §2.2 lists what changed (in-use refusals in C1d, a `TransferService`, no `Flow`, no `recurring_rule_id` until E3, `spendingLinesBetween` in D, FTS rebuild rule, and smaller PRs C1a..C6).
+
 **Amendment (2026-11-10, itemised transactions):** every transaction has one or more **lines** (items), each with an amount, category, tags and note, and the live lines always sum exactly to the transaction amount. [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) §6 **supersedes C1** (now C1a, C1b, C1c) and adds C4b; its C2, C3, C4 and C5 entries are deltas to the steps below, which stay as the base. Where they conflict (a category or tags on the transaction, `transaction_tag`, `spendingBetween`), that plan wins.
 
 **C1 — Expense/income core + Room (v5)**
@@ -430,8 +432,8 @@ Added 2026-11-01: the owner un-deferred PRD D-1 (decision 32, roadmap R-2). This
 | B3 / B4 | categories core+Room / categories UI | `feat/m1a-ledger-setup` | B1 | hierarchy rules isolated from UI |
 | B5 | tags (core+Room+UI; small) | `feat/m1a-ledger-setup` | B3 | small entity |
 | B-final | ledger setup | `main` | B1–B5 | |
-| C1a, C1b, C1c, C2, C3, C4, C4b, C5 | transaction+line model; itemisation; Room v5; transfers; queries over lines+FTS+balances; list+plain edit UI; items editor; search+detail UI (amended 2026-11-10, see [`2026-11-10-itemised-transactions.md`](2026-11-10-itemised-transactions.md) PR table) | `feat/m1a-transactions` | B-final, P0, sequential | each is one behaviour |
-| C-final | transactions | `main` | C1a–C5 | **Owner can start daily manual entry here** |
+| C1a, C1b, C1c, C1d, C2, C3a, C3b, C4a, C4b, C4c, C5a, C5b, C6 | model; itemisation; Room v5; in-use refusals; transfers; reads; FTS v6; Home list; plain form; items editor; detail; search; keypad and motion (amended 2026-11-18, see [`2026-11-18-m1a-slice-c-transactions.md`](2026-11-18-m1a-slice-c-transactions.md) §6) | `feat/m1a-transactions` | B-final, P0 (2026-11-18), sequential | each is one behaviour |
+| C-final | transactions | `main` | C1a–C6 | **Owner can start daily manual entry here** |
 | D1, D2, D3, D4 | period maths; calculator+service; Room; UI | `feat/m1a-budgets` | C-final | |
 | E1, E2, E3, E4 | engine; service; Room; UI+trigger | `feat/m1a-recurring` | C-final (parallel with D allowed) | |
 | F1, F2, F3 | loan core (+schedule via recurring); Room; UI | `feat/m1a-loans` | E-final | needs recurring for LN-4 |
