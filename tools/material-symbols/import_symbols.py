@@ -17,6 +17,8 @@ one <path>, with the expected viewBox and a path-data string of path-command cha
 that path data is kept; nothing else from the file reaches the drawable. Output files are
 `sym_<key>.xml`; the key is the permanent one in app/src/test/resources/pft-symbol-keys.txt.
 """
+from __future__ import annotations
+
 import argparse
 import hashlib
 import re

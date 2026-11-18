@@ -398,3 +398,8 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **Tests:** `AccountRowMapperTest` (glyph label null) and `AccountPickerTest` (no type badge label in the unmerged tree) went red with the old labels, green after. No golden changed.
 - **Why:** a badge beside visible text that already says the same thing is decorative.
 - **How to apply:** before labelling a glyph, check the row's supporting text; only text-less controls carry the spoken name (already in DIGEST).
+
+### 2026-11-18 — Pre-push Python hooks must run on the system Python 3.9
+- **Learning:** the `tests-material-symbols` pre-push hook failed in the owner's shell with `TypeError: unsupported operand type(s) for |` because `python3` there is Apple's `/usr/bin/python3` (3.9.6) and `import_symbols.py` wrote `list[str] | None` in a signature, which needs 3.10. Agent sessions put `/opt/homebrew/bin` first (Python 3.13), so it never showed up. Fixed with `from __future__ import annotations` (all three tool suites pass on 3.9.6 and 3.13).
+- **Why:** hooks run `python3` from the pusher's PATH, so a script that only works on a newer Python passes in agent sessions and fails for the owner.
+- **How to apply:** run a new `tools/*` test with `/usr/bin/python3 -I -m unittest discover -s tools/<dir>` as well as the Homebrew one, and keep `X | None` annotations behind `from __future__ import annotations` (or use `Optional`).
