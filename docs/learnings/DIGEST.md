@@ -104,6 +104,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - Settings keys match `SettingsService.KEY_PATTERN` (`[a-z][a-z0-9_]*`), e.g. `ui_theme_mode`, not dotted [2026-10-30]
 - `AppContainer.open()` is the only entry (M1b's receiver calls it, never `DatabaseStartup.open`); open is a cached `Deferred` on a container-owned scope; keep blocking work off Main via an injected dispatcher; the open takes ~75 ms/connection key, so never on Main. M1b must handle credential-encrypted storage before first unlock and consider retrying `KeyUnavailable` only [2026-11-01, 2026-10-30]
 - App ID `dev.imagh.pft` and the release signing key are permanent: build and verify encrypted full export/import before changing either [2026-10-28]
+- C1 onwards: schema versions are C1 v5, C3 v6, D3 v7, E3 v8, F2 v9, G1 v10 (tag took v4); the plans' `CHECK (amount > 0)`/`CHECK (position > 0)` on transaction tables are enforced in core and mappers, never in the schema [2026-11-17]
 
 ## Core and ledger rules
 - Entities implement `LedgerEntity`, list every persisted field in `auditFields()`, and write only through `AuditedWriter` (it stamps meta; no non-persisted fields, use getters); `AuditFieldsCheck` fixes property names to column names (`iconKey`, not `icon`) and audits enums by `name` [2026-10-29, 2026-11-14]

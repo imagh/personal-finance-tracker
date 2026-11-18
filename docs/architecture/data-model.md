@@ -145,11 +145,11 @@ them.
 | 2 | B1c | `account` (built) |
 | 3 | B3b | `category` (built) |
 | 4 | B5a | `tag` (built) |
-| 4 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
-| 5 | C3 | `transaction_fts`, `transaction_line_fts` |
-| 6 | D3 | `budget`, `budget_scope`, `budget_revision` |
-| 7 | E3 | `recurring_rule`, `recurring_occurrence` |
-| 8 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
-| 9 | G1 | `goal`; `ledger_transaction.goal_id` |
+| 5 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
+| 6 | C3 | `transaction_fts`, `transaction_line_fts` |
+| 7 | D3 | `budget`, `budget_scope`, `budget_revision` |
+| 8 | E3 | `recurring_rule`, `recurring_occurrence` |
+| 9 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
+| 10 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-`tag` moved out of version 3 into its own migration (v4, slice B5a; plan 2026-11-10 D3), so every row from C1 on shifts by one (C1 becomes v5, shown below with its old number until the B-final PR renumbers this table and the plans that quote it). Only the `tag` row is built; the rest are planned (plan §4). Versions 4 and 5 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount.
+`tag` has its own migration (v4, slice B5a; plan 2026-11-10 D3), so every later slice is one version higher than the M1a plan first numbered it (C1 is v5 … G1 is v10); the M1a plan and the itemised-transactions plan were renumbered to match in the B-final PR. Only the rows up to `tag` are built; the rest are planned (M1a plan §4). Versions 5 and 6 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount. Those plans still write `CHECK (amount > 0)` and `CHECK (position > 0)` for the new tables: per the rule above, C1 enforces them in core and the mappers instead.

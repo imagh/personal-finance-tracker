@@ -174,20 +174,21 @@ Nothing goes in the database or the environment.
 
 ## 4. Data model & schema
 
-These are amendments to the planned v4/v5. **No change to the current v1 database and no data migration**, because v4 does not exist yet.
+These are amendments to the planned v5/v6 (renumbered at B-final: slice B built v2 to v4). **No change to the current v4 database and no data migration**, because v5 does not exist yet.
 
 | Version (slice) | Table | Change vs the M1a plan §4 |
 |---|---|---|
-| v4 (C1) | `ledger_transaction` | **Drop** `category_id` and its `(category_id)` index. Everything else as planned |
-| v4 (C1) | `transaction_line` (**new**) | meta columns (`id`, `created_at`, `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at`, `archived_at`); `transaction_id TEXT NOT NULL` FK → `ledger_transaction.id` ON DELETE RESTRICT; `position INTEGER NOT NULL CHECK (position > 0)`; `amount INTEGER NOT NULL CHECK (amount > 0)`; `category_id TEXT NULL` FK → `category.id` RESTRICT; `note TEXT NULL`. Indexes `(transaction_id)`, `(category_id)` |
-| v4 (C1) | `transaction_line_tag` (**replaces** `transaction_tag`) | `(line_id, tag_id)` PK, FKs RESTRICT, index `(tag_id)`. A join table: listed in `AuditedTables` as a non-entity table with its reason; its content is audited as `transaction_line.tag_ids` |
-| v5 (C3) | `transaction_fts` | as planned (title, description) |
-| v5 (C3) | `transaction_line_fts` (**new**) | FTS4 external content over `transaction_line.note` |
+| v5 (C1) | `ledger_transaction` | **Drop** `category_id` and its `(category_id)` index. Everything else as planned |
+| v5 (C1) | `transaction_line` (**new**) | meta columns (`id`, `created_at`, `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at`, `archived_at`); `transaction_id TEXT NOT NULL` FK → `ledger_transaction.id` ON DELETE RESTRICT; `position INTEGER NOT NULL CHECK (position > 0)`; `amount INTEGER NOT NULL CHECK (amount > 0)`; `category_id TEXT NULL` FK → `category.id` RESTRICT; `note TEXT NULL`. Indexes `(transaction_id)`, `(category_id)` |
+| v5 (C1) | `transaction_line_tag` (**replaces** `transaction_tag`) | `(line_id, tag_id)` PK, FKs RESTRICT, index `(tag_id)`. A join table: listed in `AuditedTables` as a non-entity table with its reason; its content is audited as `transaction_line.tag_ids` |
+| v6 (C3) | `transaction_fts` | as planned (title, description) |
+| v6 (C3) | `transaction_line_fts` (**new**) | FTS4 external content over `transaction_line.note` |
 
 - **Audit keys:**
   - `ledger_transaction` audits every column above, with no `category_id` and no `tag_ids`.
   - `transaction_line` audits `transaction_id`, `position`, `amount`, `category_id`, `note` and `tag_ids` (sorted ids joined with `,`).
   - `archived_at` is unused for lines; the meta column exists for uniformity.
+- **No `CHECK` constraints (finding from slice B, 2026-11-17).** Room cannot declare a `CHECK` or a partial index on an `@Entity`, so the `CHECK (position > 0)` and `CHECK (amount > 0)` above would exist only in migrated databases, not in fresh installs. C1c therefore creates the tables from Room's generated `CREATE TABLE` without them (`ledger_transaction.amount > 0` likewise), and core and the mappers reject a non-positive amount or position (tested). The `CHECK` wording in the rows above is the rule, not the schema.
 - **Why the invariant is not a DB trigger:** an edit is several statements (update line 1, insert lines 2 and 3). SQLite has no deferred CHECK across rows, and an immediate trigger would fire on the intermediate states. So the invariant is enforced in core (§3.3, rules 1 and 5), and `breakdownMismatchCount()` makes any violation visible.
 - **Join rows are replaced, not tombstoned.** When a line's tags change, `RoomTransactionLineRepository.update` deletes and re-inserts that line's `transaction_line_tag` rows inside the same Room transaction. Join rows are not entities. The record of the change is the line's audited `tag_ids` diff (old and new id lists), which satisfies INT-2/INT-3 as the original `transaction_tag` design did. No entity row is ever hard-deleted.
 - **No partial unique index on `(transaction_id, position)`:** Room cannot declare a partial index, and positions are display order only.
@@ -283,7 +284,7 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
 - **Green:** in `TransactionService`, `edit(id, draft)` plus a private `reconcileLines(...)` and `requireBalanced(txnId)`.
 - **Refactor:** none expected. The README "Behaviours" section gets the reconciliation rules.
 
-### Step C1c — Room v4 for transactions and lines
+### Step C1c — Room v5 for transactions and lines
 - **Red:**
   - `app/src/test/.../data/RoomTransactionIntegrationTest`:
     - create and itemise through `TransactionService` over Room;
@@ -293,13 +294,13 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
   - `AuditColumnsCheckTest`, extended:
     - a key declared stored in another table passes only if that table exists and is listed as a non-entity table;
     - a misspelt table fails.
-  - `MigrationTest.migrate3To4` (testDebug): v3 with a category and a tag migrates; the new tables exist, empty; existing rows are intact; the triggers survive.
+  - `MigrationTest.migrate4To5` (testDebug): v4 with a category and a tag migrates; the new tables exist, empty; existing rows are intact; the triggers survive.
 - **Green:**
   - in `app/src/main/kotlin/dev/imagh/pft/app/data/transaction/`: `LedgerTransactionEntity`, `TransactionLineEntity`, `TransactionLineTagEntity`, `TransactionDao`, `TransactionLineDao` (including the mismatch-count query), `RoomTransactionRepository`, `RoomTransactionLineRepository` (on `RoomEntityRepository`; tags written in the same Room transaction), and the mappers;
-  - `Migrations.kt` `MIGRATION_3_4`;
+  - `Migrations.kt` `MIGRATION_4_5`;
   - `AppServices` wiring;
   - test support: `AuditedTable` gains `keysStoredIn: Map<String, String>` (audited key → the join table holding it), checked by `AuditColumnsCheck`; `transaction_line_tag` is added as a non-entity table with its reason.
-- **Refactor:** `app/README.md`, `docs/architecture/data-model.md` (a real v4 section, plus the `keysStoredIn` convention), `docs/architecture/code-structure.md` (`data/transaction/`).
+- **Refactor:** `app/README.md`, `docs/architecture/data-model.md` (a real v5 section, plus the `keysStoredIn` convention), `docs/architecture/code-structure.md` (`data/transaction/`).
 
 ### Step C2 — Transfers (delta to the plan's C2)
 - **Red:** in `TransferTest`, each leg has exactly one line, with category NULL and the same tags. Editing the amount updates both transactions and both lines (the invariant holds on both). Supplying two lines for a leg → `TransferCannotBeItemised`; a category on a transfer line → `TransferCannotBeItemised`. A Room test shows that a failure on the second leg's line leaves zero rows.
@@ -313,7 +314,7 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
   - "notebook" matches a line note through `transaction_line_fts`;
   - `spendingLinesBetween` returns the three lines (not one transaction), excludes income, transfers, deleted transactions and deleted lines, and Σ equals the month's expense total;
   - `accountBalance` is unchanged by itemising.
-  `migrate4To5` backfills both FTS tables. The existing instrumented FTS check (plan risk table) also covers line notes.
+  `migrate5To6` backfills both FTS tables. The existing instrumented FTS check (plan risk table) also covers line notes.
 - **Green:** in `core/ledger/.../query/`, `TransactionFilter`, `TransactionQueries` (`month`, `search`, `spendingLinesBetween`, `SpendingLine`); `TransactionQueryDao`, the FTS entities and `MIGRATION_4_5` in `app`.
 
 ### Step C4 — List and plain add/edit UI (delta to the plan's C4)
@@ -377,9 +378,9 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
 | P0 | This plan; PRD L-1/L-11, roadmap R-4, roadmap R-5, §15, §2 note, decision 35; M1a plan amendments; data-model planned rows; learnings | `main` | — (parallel with slice B) | Docs only: the decision the owner approves |
 | C1a | Transaction + line model, `Breakdown`, plain create/edit/delete (core + fakes) | `feat/m1a-transactions` | B-final, P0 | Pure core; one behaviour (one-line transactions) |
 | C1b | Multi-line itemisation and reconciliation (core) | `feat/m1a-transactions` | C1a | The new rule set, isolated for a careful review |
-| C1c | Room v4, `keysStoredIn` test support, `migrate3To4` | `feat/m1a-transactions` | C1b | Persistence adapter and migration only |
+| C1c | Room v5, `keysStoredIn` test support, `migrate4To5` | `feat/m1a-transactions` | C1b | Persistence adapter and migration only |
 | C2 | Transfers (one line per leg) | `feat/m1a-transactions` | C1c | One behaviour |
-| C3 | Queries over lines, both FTS tables, `spendingLinesBetween`, v5 | `feat/m1a-transactions` | C2 | Read side only |
+| C3 | Queries over lines, both FTS tables, `spendingLinesBetween`, v6 | `feat/m1a-transactions` | C2 | Read side only |
 | C4 | List and plain add/edit UI | `feat/m1a-transactions` | C3 | First UI; no items editor yet |
 | C4b | Items editor UI | `feat/m1a-transactions` | C4 | One screen section |
 | C5 | Search UI, detail with items and merged history | `feat/m1a-transactions` | C4b | Read-only UI |
@@ -402,7 +403,7 @@ All assert stored rows and audit entries through the fakes' public reads, never 
 **Integration (app, Robolectric, real in-memory Room):**
 - `RoomTransactionIntegrationTest`: atomicity on a FK failure, and the mismatch count;
 - `RoomAuditColumnsTest` and `AuditColumnsCheckTest`: `keysStoredIn`;
-- `MigrationTest.migrate3To4` and `migrate4To5`, plus the chain test;
+- `MigrationTest.migrate4To5` and `migrate5To6`, plus the chain test;
 - `TransactionQueriesIntegrationTest`: per-line filters, filtered totals, line-note FTS, `spendingLinesBetween`;
 - `AuditQueriesIntegrationTest`;
 - `TransactionItemsFlowTest`, `TransactionsFlowTest`, `TransactionDetailTest`, `SearchFlowTest`: ViewModel → service → Room;
@@ -460,7 +461,7 @@ All assert stored rows and audit entries through the fakes' public reads, never 
 | This plan | new | P0 |
 | `docs/PRD.md` | L-1 amended, L-11, §6.2 roadmap R-4 and roadmap R-5, §15 pointer, §2 non-goal note, §12 decision 35 | P0 |
 | `docs/plans/2026-10-28-m1a-core-ledger.md` | amendment blocks (§4, slice C, deltas on D2/D3/E2/F1/G1/I1/H2), PR table | P0 |
-| `docs/architecture/data-model.md` | planned v4/v5 rows (P0); the real v4 section with `transaction_line`, `transaction_line_tag` and the `keysStoredIn` convention (C1c); v5 (C3) | P0, C1c, C3 |
+| `docs/architecture/data-model.md` | planned v5/v6 rows (P0); the real v5 section with `transaction_line`, `transaction_line_tag` and the `keysStoredIn` convention (C1c); v6 (C3) | P0, C1c, C3 |
 | Inline KDoc | every public class/function: `Breakdown`, `TransactionLine`, `TransactionService.edit` (the reconciliation rules), `SpendingLine`, `AuditQueries.forTransaction`, `AuditedTable.keysStoredIn` | each build PR |
 | `core/ledger/README.md` | public interface (transactions, lines, queries), "Behaviours" (the invariant, reconciliation, deterministic line ids), configuration (two new limits), data owned | C1a, C1b, C3 |
 | `app/README.md` | `data/transaction/`, the join table, FTS tables, test support | C1c, C3, C4b |
@@ -480,6 +481,7 @@ All assert stored rows and audit entries through the fakes' public reads, never 
 | Query cost of the extra join at 50k transactions | slow lists or budgets | indexes on `transaction_line(transaction_id)` and `(category_id)`; the list query reads lines only for the visible window; measured in H3 |
 | Renumbered positions make history noisy | harder-to-read history | history labels use the line's position at the time of the entry; reorder-only edits are rare (there is no drag-to-reorder in C4b) |
 | "Items" confused with M2 "split across users" | design drift | the naming rule in §1; PRD L-11 cross-references G-3 as distinct |
+| A `CHECK` or partial index on a line or transaction column exists only after migration | fresh and upgraded databases enforce different rules | none declared (Room cannot on an entity); core and the mappers hold the rules, with tests (slice B finding, §4) |
 | The two-way audit-column check blocks join-table keys | C1c stalls | the `keysStoredIn` extension, with its own tests, is part of C1c |
 | `MoneyText` throws on a negative "remaining" | crash in the editor | the editor state reports `Over(magnitude)`; `ItemsEditorStateTest` covers it |
 | Scope creep (per-item loan/goal, discount lines, recurring items) | slice C overruns | listed out of scope; roadmap R-4 owns discount lines |
