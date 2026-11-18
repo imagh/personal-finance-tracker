@@ -393,6 +393,12 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **Why:** (1) is the same vacuous-guard class the digest already warns about, in a place a copy-paste hides; (2) and (3) are what C4's tag field and any later multi-select will meet.
 - **How to apply:** when a guard's "do it again" test passes without the guard, vary the second input until the unguarded code would write; use `Role.Checkbox` for multi-select cells and `RadioButton` for single choice; give a sheet's scrolling content `weight(1f, fill = false)` when something sits below it.
 
+### 2026-11-17 — Account type badge was spoken twice
+- **Learning:** the accounts list (`AccountRowMapper.toRow`) and `AccountPicker` rows gave the type badge the type as its label while the supporting line starts with the same type ("Bank · HDFC"), so TalkBack said it twice. Both badges are now silent (`RowGlyph.label = null`, `CategoryGlyph(name = null)`). The account edit screen's type selector is text segments, so it already spoke once.
+- **Tests:** `AccountRowMapperTest` (glyph label null) and `AccountPickerTest` (no type badge label in the unmerged tree) went red with the old labels, green after. No golden changed.
+- **Why:** a badge beside visible text that already says the same thing is decorative.
+- **How to apply:** before labelling a glyph, check the row's supporting text; only text-less controls carry the spoken name (already in DIGEST).
+
 ### 2026-11-18 — Pre-push Python hooks must run on the system Python 3.9
 - **Learning:** the `tests-material-symbols` pre-push hook failed in the owner's shell with `TypeError: unsupported operand type(s) for |` because `python3` there is Apple's `/usr/bin/python3` (3.9.6) and `import_symbols.py` wrote `list[str] | None` in a signature, which needs 3.10. Agent sessions put `/opt/homebrew/bin` first (Python 3.13), so it never showed up. Fixed with `from __future__ import annotations` (all three tool suites pass on 3.9.6 and 3.13).
 - **Why:** hooks run `python3` from the pusher's PATH, so a script that only works on a newer Python passes in agent sessions and fails for the owner.

@@ -112,7 +112,7 @@ class AccountPickerTest {
             .fetchSemanticsNodes()
             .map { it.config[SemanticsProperties.Text].first().text }
 
-    /** The spoken label of each type badge, top to bottom (the badge is its own node, so read the unmerged tree). */
+    /** The spoken label of any type badge (the badge is its own node, so read the unmerged tree). */
     private fun badgeLabels(): List<String> {
         val labels = setOf("Bank", "Credit card", "Cash", "Wallet")
         val isTypeBadge =
@@ -126,11 +126,12 @@ class AccountPickerTest {
     }
 
     @Test
-    fun `lists only the active accounts, sorted by name ignoring case, each with its type badge`() {
+    fun `lists only the active accounts, sorted by name ignoring case, each with a silent type badge`() {
         show(seedAndLoadActive())
 
         rowNames() shouldBe listOf("axis Card", "Cash", "HDFC Savings", "Wallet")
-        badgeLabels() shouldBe listOf("Credit card", "Cash", "Bank", "Wallet")
+        // The supporting line speaks the type; a badge label would make TalkBack say it twice.
+        badgeLabels() shouldBe emptyList()
     }
 
     @Test

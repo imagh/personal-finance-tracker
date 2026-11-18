@@ -66,7 +66,7 @@ class AccountRowMapperTest {
     }
 
     @Test
-    fun `a row carries the name as its title, the type badge labelled by the type and the given actions`() {
+    fun `a row carries the name as its title, a silent type badge and the given actions`() {
         val actions = listOf(RowAction("Archive") {})
         var opened = 0
 
@@ -79,7 +79,8 @@ class AccountRowMapperTest {
         row.supporting shouldBe "Credit card · Axis · ••4321"
         row.glyph?.source shouldBe GlyphSource.Symbol(PftSymbol.CREDIT_CARD)
         row.glyph?.colourKey shouldBe "violet"
-        row.glyph?.label shouldBe "Credit card"
+        // The supporting line already starts with the type, so the badge must not speak it a second time.
+        row.glyph?.label shouldBe null
         row.actions shouldBe actions
         row.indent shouldBe false
         // Tapping the row opens the account: the row's click is the one given.
