@@ -134,4 +134,9 @@
     <string name="tag_new_title">New tag</string>
     <string name="tag_edit_title">Edit tag</string>
     <string name="tag_name_label">Name</string>
+    <!-- Tag picker sheet (TagPicker): multi-select with Done. "Archived" marks a chosen tag that is archived. -->
+    <string name="tag_picker_title">Choose tags</string>
+    <string name="tag_picker_done">Done</string>
+    <string name="tag_picker_empty">No tags yet. Add one from More.</string>
+    <string name="tag_picker_archived">Archived</string>
 </resources>
