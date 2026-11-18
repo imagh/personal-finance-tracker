@@ -2,12 +2,12 @@
 
 Status: **Categories: the list and the create/edit form are built** (More, then Categories: browse, reorder,
 archive, delete with Undo, add a category or sub-category, edit one, choose a symbol or an emoji as its icon). The category
-picker is built (B4b) and waits for the transaction form (C4b) to use it. Tags: data and rules built (B5a), no
-screens yet (B5b). PRD: L-2 (categories), L-3 (tags). Plan:
+picker is built (B4b) and waits for the transaction form (C4b) to use it. **Tags: the list, the create/rename form and
+the multi-select picker are built** (B5b; the picker waits for C4b). PRD: L-2 (categories), L-3 (tags). Plan:
 [2026-11-10-m1a-slice-b-ledger-setup.md](../plans/2026-11-10-m1a-slice-b-ledger-setup.md).
 
 This page grows with each PR. Today it describes what a category is, the list you start with, what the
-categories list does, how you create and edit a category, and the rules the app enforces underneath.
+categories list does, how you create and edit a category, the rules the app enforces underneath, and tags.
 
 ## What a category is
 
@@ -215,4 +215,56 @@ and friends in core, and `RoomCategoryIntegrationTest`, `RoomCategoryMapperTest`
 
 ## Tags
 
-Tags (PRD L-3): the data and rules are built (B5a) but nothing shows them yet; this section is written with the tags screens in B5b.
+A tag is a free-form label you can put on the items of a transaction ("Travel", "Reimbursable"; PRD L-3). It is
+only a name: no colour, no icon, no order. Putting tags on transaction items arrives with the transaction form
+(C4); until then you can manage the tags themselves.
+
+### The tags list
+
+More, then **Tags**. The list is the same screen as accounts and categories: your tags by name, ignoring case
+("Bills", "groceries", "Travel"), a collapsed **Archived (n)** section, and an **Add tag** button. Each row is the
+tag's name with a small neutral tag symbol; the symbol is decoration, so a screen reader says the name once. The
+row's menu offers **Archive** and **Delete** (**Unarchive** and **Delete** for an archived tag). There is no Move up
+or Move down, because tags have no order. Deleting shows "Tag deleted" with **Undo**; leaving the screen or letting
+the message time out makes the delete stand. If Undo is no longer possible (another tag took the name meanwhile) the
+tag simply stays deleted and the list shows the truth. An unexpected failure shows a fixed "Couldn't ... Try again."
+message and changes nothing.
+
+### Creating and renaming
+
+**Add tag** opens a form with one **Name** field; tapping a row opens the same form with the name filled in, for an
+active or an archived tag. Save writes it (an audited CREATE or UPDATE) and returns to the list; a rename that
+changes nothing writes nothing. The name is trimmed and must be 1 to 100 characters, or the field shows "Required"
+or "Too long" and nothing is saved.
+
+- **Names are unique, ignoring case and surrounding spaces.** "Travel" blocks "travel" and " TRAVEL ". An archived
+  tag still holds its name (so unarchiving it can never clash); a deleted tag does not. A clash shows **"Already in
+  use"** under the name field and keeps what you typed. Changing only the case of a tag's own name ("travel" to
+  "Travel") is allowed. The check is core's, inside the same transaction as the write, so two saves cannot both pass
+  it; it is also re-checked when Undo restores a deleted tag.
+- If the tag was deleted elsewhere while the form was open, or the screen is opened for a tag that does not exist,
+  the app returns to the list and says "That tag no longer exists". Nothing is saved, nothing crashes.
+
+### The tag picker
+
+`TagPicker` is the bottom sheet the transaction form's item editor (C4b) will open to choose an item's tags. No
+screen uses it yet. It is a **multi-select**: a grid of cells (a neutral tag symbol over the name); tapping a cell
+toggles it and the sheet stays open; **Done** hands back exactly the chosen set (an empty set is a valid choice) and
+closes the sheet. Back, a tap outside or a swipe down closes it **without** handing anything back.
+
+- Only **active** tags are offered, in the tags list's order.
+- **The selected-archived rule.** If a tag the item already carries has since been archived, it is still shown,
+  selected and marked "Archived", after the active tags. You see it, can deselect it on purpose, and an edit cannot
+  silently drop it. An archived tag that is *not* already chosen is never offered. A chosen tag that has been
+  deleted entirely cannot be drawn; the picker hands its id back untouched, like every id you did not change.
+- For a screen reader the cells are one group of checkboxes, each saying its name once ("Travel", plus "Archived"
+  where it applies) and whether it is checked; the symbol says nothing; the title is a heading. Cells and Done are at
+  least 48dp. With no tags the sheet says "No tags yet. Add one from More." and offers no Done.
+
+### Where the tags live
+
+Core and storage: see the "Where it lives" section above (`core/ledger/.../tag/`, `app/.../data/tag/`, schema v4).
+The screens: `ui/tags/` in `app` (`TagsViewModel`, `TagsScreen`, `TagsRoute`, `TagEditViewModel`, `TagEditScreen`,
+`TagEditRoute`, `TagsSamples`), `ui/common/TagPicker.kt` and `TagPickerSamples.kt`, `ui/nav/TagRoutes.kt` and the
+Tags row in `ui/more/MoreScreen`. Tests: `TagsViewModelTest`, `TagEditViewModelTest`, `TagsScreenTest`,
+`TagPickerTest`, `TagsFlowTest`, `MoreScreenTest`, and the goldens `tags-list-*`, `tag-edit-*` and `tag-picker-*`.

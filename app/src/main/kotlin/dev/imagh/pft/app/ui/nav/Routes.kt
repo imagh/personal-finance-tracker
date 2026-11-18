@@ -26,6 +26,9 @@ object Routes {
     /** The categories list, opened from More. */
     const val CATEGORIES = "categories"
 
+    /** The tags list, opened from More. */
+    const val TAGS = "tags"
+
     /** The argument name of an entity's id in the edit routes. */
     const val ARG_ID = "id"
 
@@ -37,6 +40,9 @@ object Routes {
 
     /** The account form: create when no id is given, edit when `id` is an account's id. Build it with [accountEdit]. */
     const val ACCOUNT_EDIT = "$ACCOUNT_EDIT_BASE?$ARG_ID={$ARG_ID}"
+
+    /** The tag form: create when no id is given, edit when `id` is a tag's id. Build it with [tagEdit]. */
+    const val TAG_EDIT = "$TAG_EDIT_BASE?$ARG_ID={$ARG_ID}"
 
     /**
      * The category form: create when no `id` is given (with the new category's `kind`, and a `parent` for a
@@ -62,6 +68,10 @@ object Routes {
     /** The route that opens the account form: for a new account when [id] is null, else for account [id]. */
     fun accountEdit(id: String? = null): String =
         if (id == null) ACCOUNT_EDIT_BASE else "$ACCOUNT_EDIT_BASE?$ARG_ID=${Uri.encode(id)}"
+
+    /** The route that opens the tag form: for a new tag when [id] is null, else for tag [id]. */
+    fun tagEdit(id: String? = null): String =
+        if (id == null) TAG_EDIT_BASE else "$TAG_EDIT_BASE?$ARG_ID=${Uri.encode(id)}"
 }
 
 /** The account form's path without its argument; the one place it is written. */
@@ -69,3 +79,6 @@ private const val ACCOUNT_EDIT_BASE = "accounts/edit"
 
 /** The category form's path without its arguments; the one place it is written. */
 private const val CATEGORY_EDIT_BASE = "categories/edit"
+
+/** The tag form's path without its argument; the one place it is written. */
+private const val TAG_EDIT_BASE = "tags/edit"

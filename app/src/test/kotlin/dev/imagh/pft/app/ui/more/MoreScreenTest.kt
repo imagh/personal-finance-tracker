@@ -33,6 +33,7 @@ class MoreScreenTest {
                     onBack = { taps += "back" },
                     onOpenAccounts = { taps += "accounts" },
                     onOpenCategories = { taps += "categories" },
+                    onOpenTags = { taps += "tags" },
                 )
             }
         }
@@ -67,6 +68,28 @@ class MoreScreenTest {
         compose.onNodeWithText("Categories").performClick()
 
         taps shouldBe listOf("categories")
+    }
+
+    @Test
+    fun `it has a Tags row that opens tags, below Categories`() {
+        show()
+
+        val categories =
+            compose
+                .onNodeWithText("Categories")
+                .fetchSemanticsNode()
+                .boundsInRoot.top
+        val tags =
+            compose
+                .onNodeWithText("Tags")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot.top
+        (tags > categories) shouldBe true
+
+        compose.onNodeWithText("Tags").performClick()
+
+        taps shouldBe listOf("tags")
     }
 
     @Test

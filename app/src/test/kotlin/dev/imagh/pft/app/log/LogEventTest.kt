@@ -55,6 +55,15 @@ class LogEventTest {
     }
 
     @Test
+    fun `entity events render a tag by its kind code only`() {
+        assertEquals("entity_save_failed kind=TAG", LogEvent.EntitySaveFailed(EntityKind.TAG).line())
+        assertEquals(
+            "entity_action_failed kind=TAG action=DELETE",
+            LogEvent.EntityActionFailed(EntityKind.TAG, EntityAction.DELETE).line(),
+        )
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }
