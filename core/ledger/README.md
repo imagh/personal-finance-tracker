@@ -8,7 +8,8 @@ settings. This is the **foundation** (plan step A3); accounts, categories, tags,
 loans and goals are added to this module by later slices, composed from the building blocks
 below. **Accounts** are the first entity built on them (slice B1b, package `account`), **categories**
 the second (slice B3a, package `category`, with first-run seeding in `setup`) and **tags** the third
-(slice B5a, package `tag`). Pure Kotlin/JVM, no
+(slice B5a, package `tag`). **Transactions** and their lines (items) are the fourth (slice C1a,
+package `transaction`). Pure Kotlin/JVM, no
 Android imports, no third-party runtime dependency (only `:core:money`).
 
 ## Responsibilities & boundaries
@@ -17,7 +18,8 @@ Android imports, no third-party runtime dependency (only `:core:money`).
   columns); the audit model, diff and the `AuditedWriter`; the `TransactionRunner` contract;
   `LedgerError` and `Validation`; users, devices and first-run setup; audited app settings;
   accounts (`AccountService`); categories (`CategoryService`, the default set and the `icon_key`
-  grammar); tags (`TagService`); first-run setup (`FirstRunService`); and the repository interfaces for all of these.
+  grammar); tags (`TagService`); transactions and their lines (`TransactionService`, `Breakdown`,
+  `TransactionLines`); first-run setup (`FirstRunService`); and the repository interfaces for all of these.
 - **Does not own:** persistence (Room implements the interfaces in `app`, built in A4a; SQLCipher follows in A4b),
   UI, logging, serialisation of audit `changes` (`app` does that with `org.json`), money
   representation (`:core:money`). Budget and recurring logic live in `:core:budget` and
@@ -25,9 +27,9 @@ Android imports, no third-party runtime dependency (only `:core:money`).
 - **Layering:** UI -> ViewModel -> service -> repository -> db. Services contain business rules;
   repositories hold none. The only interfaces here are the swap boundaries `core` and `app` meet
   at: `EntityRepository`, `IdentityRepository`, `AppSettingsRepository`, `AccountRepository`,
-  `CategoryRepository`, `TagRepository`, `AuditLog` and `TransactionRunner` (CLAUDE.md abstraction bar). Everything else is concrete.
-- **Untrusted input:** `Validation`, `IdentityService` and `SettingsService` are the boundary for
-  user-typed text. They trim, bound and type it before anything is stored.
+  `CategoryRepository`, `TagRepository`, `TransactionRepository`, `TransactionLineRepository`, `AuditLog` and `TransactionRunner` (CLAUDE.md abstraction bar). Everything else is concrete.
+- **Untrusted input:** `Validation`, `IdentityService`, `SettingsService`, `TransactionDraft.validated()`
+  and `Breakdown.of` are the boundary for user-typed text and amounts. They trim, bound and type it before anything is stored.
 
 ## Public interface
 
@@ -50,6 +52,7 @@ entity step composes instead of re-implementing:
 | `AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository` | `account` | accounts (PRD L-4): `create(draft)`, `edit(id, draft)`, `archive`/`unarchive`, `delete`/`restore`, `active()`, `all()`, `lists()` (active and archived, each sorted by name ignoring case, then by creation order); `AccountRules.requireMaskedIdentifier(text)` is public so a form can check the last four with core's rule. `AccountRepository` adds `allLive()` to `EntityRepository` |
 | `CategoryService`, `Category`, `CategoryLists`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `lists(kind)` (for a list screen: `CategoryLists(active, archived)`, B4a), `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
 | `TagService`, `Tag`, `TagLists`, `TagRepository` | `tag` | tags (PRD L-3): `create(name)`, `edit(id, name)` (rename), `archive`/`unarchive`, `delete`/`restore`, `lists()` (active and archived, each sorted by name ignoring case, then by id), `pickable()` (the active list). `TagRepository` adds `allLive()` to `EntityRepository`. The service takes a `TransactionRunner` for the check-then-write name rule |
+| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-6, L-9, L-11), slice C1a: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay), `markVerified(id)`, `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines` is the line logic the transaction and (from C2) transfer services share: its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised); `TransactionRepository` adds nothing yet. **C1a takes exactly one line per transaction**: itemising arrives in C1b |
 | `FirstRunService` | `setup` | `initialise(userName, deviceLabel)`: the identity (`IdentityService.initialise`) **and** `CategoryService.seedDefaults()` in one transaction. A plain coordinating class; `IdentityService` stays unaware of categories because the writer needs the identity service (a construction cycle otherwise) |
 
 ### Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
@@ -66,7 +69,8 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 | `InMemoryAccountRepository` | `AccountRepository` over `InMemoryEntityRepository` (adds `allLive()`, which returns rows newest first on purpose, so no test depends on an order the contract does not promise); `all()` returns every row, tombstones included, in insertion order |
 | `InMemoryCategoryRepository` | `CategoryRepository` over `InMemoryEntityRepository` (adds `allLive()`, newest first on purpose, and `bySystemKey`) |
 | `InMemoryTagRepository` | `TagRepository` over `InMemoryEntityRepository` (adds `allLive()`, newest first on purpose) |
-| `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `accountRepository`, `accounts` (an `AccountService`), `categoryRepository`, `categories` (a `CategoryService`), `tagRepository`, `tags` (a `TagService`), `firstRun` (a `FirstRunService`), `initialise()` (identity only, no defaults); `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
+| `InMemoryTransactionRepository`, `InMemoryTransactionLineRepository` | the transaction stores over `InMemoryEntityRepository`; `liveLinesOf` returns newest first on purpose |
+| `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `accountRepository`, `accounts` (an `AccountService`), `categoryRepository`, `categories` (a `CategoryService`), `tagRepository`, `tags` (a `TagService`), `transactionRepository`, `transactionLineRepository`, `transactions` (a `TransactionService`), `firstRun` (a `FirstRunService`), `initialise()` (identity only, no defaults); `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
 | `TestClock` | a hand-moved `java.time.Clock` |
 | `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write, with no opt-out |
 | `shouldHaveAudited` / `shouldNotHaveAudited` | Kotest matchers over an audit trail: `kit.store.auditLog.entries.shouldHaveAudited("account", id, AuditAction.CREATE, userId = ...)` |
@@ -193,6 +197,43 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
   - *Lists.* `lists()` and `pickable()` sort by `nameKey`, then by id, so tags that compare equal (two
     devices' tags after a sync, a restore that raced a create) never swap places with the repository's
     order. `auditFields()` is `name`.
+- **Transactions** (`TransactionService`, slice C D2/D3, IT §3.1 to §3.3).
+  - *The sum invariant* (hardcoded, CLAUDE.md §3.8): every live transaction has at least one live
+    line, and its live lines' amounts add up **exactly** to its amount. `ledger_transaction` holds no
+    category and no tags; they live on `transaction_line`. `TransactionService` is the only writer of
+    both, and every create and edit passes `Breakdown.of` before anything is written: 1 to 50 lines
+    (`TooManyLines(50)`), each amount positive and within the limit, notes trimmed and at most 200
+    characters (`NameTooLong(200)`), no line id twice (`DuplicateLine`), and the exact sum with
+    `Paise.plus` (`BreakdownMismatch`, also for an empty list). The transaction's own amount is
+    checked first, so a bad amount is reported as such and not as a mismatch.
+  - *Manual entries* are `MANUAL` and `VERIFIED` (L-6); `direction` follows the type (expense OUT,
+    income IN). Title, description and bank reference are optional: trimmed, blank stored as null,
+    at most 200, 2000 and 64 characters. A `TRANSFER` draft, or an edit of a stored transfer leg, is
+    refused with `IsTransfer`, and so are `delete`, `restore` and `markVerified` on a transfer leg, so
+    one leg never changes without the other (transfers get their own service in C2).
+  - *References are checked only where they change* (IT §3.3 rule 3): the account and a line's
+    category must be live when set or changed, an added tag must be live; what a transaction keeps
+    may have been archived since, so editing an old transaction's title never fails. The category's
+    kind must match the type **always** (`KindMismatch`), so expense ↔ income works only with a
+    matching category. A refused call writes no row and no audit entry (transaction and line are
+    written in one `runner.inTransaction`).
+  - *Line ids.* Line 1 of a new transaction is `NameBasedId.of("transaction-line", txnId, "1")`
+    (IT §3.3 rule 8), pinned by a test, so devices that derive the same transaction derive the same
+    line. On create a draft line must have no id; on edit it must name the transaction's live line
+    (`NotFound("transaction_line")`).
+  - *One line in C1a.* More than one draft line fails closed with `IllegalArgumentException` before
+    anything is written; C1b replaces this with the reconciliation of several lines and the
+    `requireBalanced` re-check.
+  - *Edit* audits only the changed fields of each row and keeps the state, source and message facts;
+    a no-op edit writes nothing. *Delete and restore* act on the transaction only: its lines stay,
+    hidden with it, so restore brings back exactly the lines it had. `get` reads the transaction and
+    its lines in one `runner.inTransaction`. `markVerified` audits
+    `state: UNVERIFIED -> VERIFIED`; on a verified one it is a no-op.
+  - *Audit keys.* `ledger_transaction`: `type`, `direction`, `amount`, `occurred_at`, `account_id`,
+    `title`, `description`, `state`, `source`, `bank_ref`, `source_message_id`, `account_fragment`,
+    `transfer_group_id` (no `recurring_rule_id`: E3 adds it, Q8). `transaction_line`:
+    `transaction_id`, `position`, `amount`, `category_id`, `note`, `tag_ids` (the ids sorted by their
+    text and joined with `,`; null when there are none).
 - **Default categories** (`DefaultCategories.LIST`, `CategoryService.seedDefaults()`): the 31
   starter categories of plan §4 (27 expense, with sub-categories, including the Loan EMI system
   category, and 4 income). They are only a starting set: users create their own through `create`.
@@ -240,6 +281,10 @@ column the persistence layer owns.
 
 `tag` (schema v4, persisted by `app` in slice B5a; the model is defined here): `name`.
 
+`ledger_transaction` and `transaction_line` (the models are defined here since C1a; `app` persists
+them from C1c, schema v5): the audit keys above are their columns, plus the `transaction_line_tag`
+join table that stores a line's `tag_ids`.
+
 Entity tables added by later slices share the `EntityMeta` columns (`id`, `created_at`,
 `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at`, plus archive state).
 
@@ -250,8 +295,11 @@ Per CLAUDE.md §3.5, chosen by how the value varies:
 - **Static limits -> typed code, `LedgerLimits`** (not user-tunable): `MAX_NAME_LENGTH = 100`
   (accounts, categories, tags, user and device names), `MAX_TITLE_LENGTH = 200`,
   `MAX_DESCRIPTION_LENGTH = 2000`, `MAX_AMOUNT = Paise.MAX_AMOUNT` (Rs 1e11),
+  `MAX_LINES_PER_TRANSACTION = 50` (items are per purpose, not per product), `MAX_LINE_NOTE_LENGTH = 200`,
+  `MAX_BANK_REF_LENGTH = 64`,
   `MAX_SETTING_KEY_LENGTH = 64`, `MAX_SETTING_VALUE_LENGTH = 256`. The hardcoded invariants
-  (integer paise, audit on every write, soft delete) cannot be switched off.
+  (integer paise, audit on every write, soft delete, the transaction sum invariant) cannot be switched
+  off.
 - **Runtime-varying values -> the database (`app_setting`), via `SettingsService`**, every change
   audited: for example the budget alert threshold, upcoming-lookahead days and auto-lock timeout.
   Keys are lower-case identifiers (`[a-z][a-z0-9_]*`); `current_device_id` is reserved for
@@ -265,8 +313,8 @@ Per CLAUDE.md §3.5, chosen by how the value varies:
 
 - `:core:money` (`api`: `Paise` is part of the validation API).
 - JDK only at runtime (`java.time`, `java.security`); Kotlin stdlib. No coroutines library: the
-  `suspend` contracts need only the language feature; `kotlinx-coroutines` arrives with the first
-  `Flow`-returning query (slice C).
+  `suspend` contracts need only the language feature. Slice C keeps it so (no `Flow` in core,
+  slice C Q1); revisit when background inserts exist (E4 or M1b).
 - Tests: JUnit 5 and Kotest (runner, assertions, property) from the `pft.kotlin-core` convention
   plugin; fixtures add `kotest-assertions-core` as an `api` dependency for the matchers.
 - Depended on by: `:app` (and later `:core:budget`, `:core:recurring`).
@@ -286,6 +334,10 @@ Tests (Kotest on JUnit 5, `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/`): 
 (archive, delete, restore), `category/CategoryOrderTest` (reorder, `pickable`), `category/CategoryListsTest` (`lists`, `siblingsOf`),
 `category/DefaultCategoriesTest` (the exact default table, ids, SYSTEM source, no re-seeding),
 `tag/TagServiceTest` (create, rename, the name rule), `tag/TagLifecycleTest` (archive, delete, restore, the lists and `pickable`),
+`transaction/LedgerTransactionTest` and `TransactionLineTest` (audit keys, `tag_ids`), `transaction/BreakdownTest`
+(every split rule, plus partition property tests), `transaction/TransactionServiceTest` (create: pinned line id,
+validation, references), `transaction/TransactionEditTest` (exact audit diffs, no-op, type change, rule 3),
+`transaction/TransactionLifecycleTest` (delete, restore, `markVerified`, `get` order), `validation/TransactionErrorsTest`,
 `setup/FirstRunServiceTest` (identity plus defaults, all-or-nothing), `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including
 rollback of the write and its audit entry), and `fakes/` tests that pin the fake runner's
 rollback semantics and the matcher. Services are tested against the in-memory fakes; the same
