@@ -87,7 +87,7 @@ sealed interface LogEvent {
 
 /**
  * The kind of record an entity log event is about. An entry is added with the screen that first
- * emits an event for it (tags come with their list, slice B).
+ * emits an event for it.
  */
 enum class EntityKind {
     /** An account. */
@@ -95,6 +95,9 @@ enum class EntityKind {
 
     /** A category or sub-category. */
     CATEGORY,
+
+    /** A tag. */
+    TAG,
 }
 
 /**
