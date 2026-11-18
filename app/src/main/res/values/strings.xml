@@ -125,4 +125,13 @@
     <!-- The same sheet when the category form asks for a parent. -->
     <string name="category_parent_picker_title">Choose parent category</string>
     <string name="category_picker_empty">No categories to choose from yet</string>
+    <!-- Tags list (TagsScreen) and form (TagEditScreen). A tag is only a name. -->
+    <string name="tags_title">Tags</string>
+    <string name="tags_empty">No tags yet</string>
+    <string name="tags_deleted">Tag deleted</string>
+    <string name="tags_add">Add tag</string>
+    <string name="tags_not_found">That tag no longer exists</string>
+    <string name="tag_new_title">New tag</string>
+    <string name="tag_edit_title">Edit tag</string>
+    <string name="tag_name_label">Name</string>
 </resources>
