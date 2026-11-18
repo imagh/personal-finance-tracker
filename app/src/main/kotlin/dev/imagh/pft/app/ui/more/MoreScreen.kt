@@ -23,7 +23,7 @@ private val CHEVRON_SIZE = 24.dp
 
 /**
  * The More screen (plan D9): the entry point to the lists that are not tabs of their own. Today it
- * has two rows, **Accounts** and **Categories**; the Tags row is added with its screen. It is a
+ * has three rows, **Accounts**, **Categories** and **Tags**. It is a
  * `CollapsingHeaderScaffold` with a Back button and one `GroupedSection`, reached from Home's header
  * until C4's bottom navigation bar gets a "More" tab, which will reuse this screen unchanged.
  *
@@ -32,12 +32,14 @@ private val CHEVRON_SIZE = 24.dp
  * @param onBack called when Back is tapped.
  * @param onOpenAccounts opens the accounts list.
  * @param onOpenCategories opens the categories list.
+ * @param onOpenTags opens the tags list.
  */
 @Composable
 fun MoreScreen(
     onBack: () -> Unit,
     onOpenAccounts: () -> Unit,
     onOpenCategories: () -> Unit,
+    onOpenTags: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val backLabel = stringResource(R.string.form_back)
@@ -50,6 +52,7 @@ fun MoreScreen(
             GroupedSection(Modifier.padding(top = PftTheme.spacing.sm)) {
                 row(onClick = onOpenAccounts) { MoreRow(stringResource(R.string.more_accounts)) }
                 row(onClick = onOpenCategories) { MoreRow(stringResource(R.string.more_categories)) }
+                row(onClick = onOpenTags) { MoreRow(stringResource(R.string.more_tags)) }
             }
         }
     }
