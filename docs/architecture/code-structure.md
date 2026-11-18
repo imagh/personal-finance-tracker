@@ -30,10 +30,10 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # EntityListScreen + EntityRow/RowGlyph/RowAction + UndoDeleteSnackbar (B2a: the one entity list screen),
                                          # CategoryIconGlyph (B4a: CategoryIcon to GlyphSource), EntityActionText (the fixed failure strings);
                                          # PftBottomSheet (the one ModalBottomSheet opt-in), AccountPicker (B2c: stateless account sheet),
-                                         # CategoryPicker (B4b: stateless category sheet), TileGrid + selectionRing (the grids' shared layout and ring),
+                                         # CategoryPicker (B4b: stateless category sheet), TagPicker (B5b: stateless multi-select tag sheet), TileGrid + selectionRing (the grids' shared layout and ring),
                                          # launchSave + SaveOutcome (B4b: the entity forms' save shape);
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
-                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples, AccountPickerSamples, CategoryPickerSamples: previews, catalogue and goldens share them, R8 drops them)
+                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples, AccountPickerSamples, CategoryPickerSamples, TagPickerSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v4), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
@@ -53,7 +53,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
     ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
     ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder, B2a: header More button), HomeRoute
-    ui/more/                             # B2a: MoreScreen (stateless: the Accounts and Categories rows; the Tags row comes with its screen)
+    ui/more/                             # B2a: MoreScreen (stateless: the Accounts, Categories and (B5b) Tags rows)
     ui/accounts/                         # B2a: AccountsViewModel (+ AccountsUiState), AccountsScreen (+ AccountsActions), AccountsRoute (reload on resume, Undo),
                                          # AccountRowMapper (type badge, supporting line; the only account-specific drawing logic);
                                          # B2b: AccountEditViewModel (+ AccountEditUiState), AccountEditScreen (+ AccountEditActions), AccountEditRoute
@@ -62,6 +62,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # B4b: CategoryEditViewModel (+ CategoryEditUiState), CategoryEditScreen (+ CategoryEditActions), CategoryEditRoute,
                                          # SymbolGrid, ColourSwatches, SpokenName;
                                          # B4c: EmojiInputValidator (the untrusted-paste check), EmojiTab (quick-pick + field), IconChoice (the Symbol | Emoji switch)
+    ui/tags/                             # B5b: TagsViewModel (+ TagsUiState), TagsScreen (+ TagsActions, TagsNavigation), TagsRoute (reload on resume, Undo),
+                                         # TagEditViewModel (+ TagEditUiState), TagEditScreen (+ TagEditActions), TagEditRoute, TagsSamples (goldens)
     ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
     PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
@@ -174,8 +176,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `PftBottomSheet` (the one `ModalBottomSheet` opt-in: theme shape and colour, title heading, `close` that slides out then reports one dismissal) | `AccountPicker` (B2c), `CategoryPicker` (B4b), `TagPicker` (B5b), C4 date picker | B2c |
 | app UI (`ui/common`) | `AccountPicker` (stateless: a `List<Account>` from `AccountService.active()`, the selection and `onPick`; reuses `AccountRowMapper.badge` and `typeLabelRes`) | C4 account chip; D budget and F loan account fields | B2c |
 | app UI (`ui/common`) | `CategoryPicker` (stateless: a `List<Category>` from `CategoryService.pickable(kind)`, the selection, `onPick`, `topLevelOnly`; a sub-category says "Under <parent>"; reuses `CategoryGlyph`, `toGlyphSource` and `PftBottomSheet`) | the category form's parent field (B4b), C4b item editor, D budget form | B4b |
-| app UI (`ui/common`) | `TileGrid` + `Modifier.selectionRing` (rows of equal tiles without the experimental `FlowRow`; the ring that marks the chosen tile) | `CategoryPicker`, `SymbolGrid`, `ColourSwatches` (B4b) | B4b |
-| app UI (`ui/common`) | `launchSave(kind, onOutcome, refused, write)` + `SaveOutcome` (the save shape: saved, vanished, failed with one enum-only log, cancellation rethrown) | `AccountEditViewModel`, `CategoryEditViewModel`; B5b `TagEditViewModel` | B4b |
+| app UI (`ui/common`) | `TagPicker` (stateless multi-select: `TagLists` from `TagService.lists()`, the selected ids, `onDone(Set<TagId>)`; an archived tag already selected stays visible and selected; reuses `TileGrid`, `selectionRing`, `CategoryGlyph` and `PftBottomSheet`) | C4b item editor (tags field) | B5b |
+| app UI (`ui/common`) | `TileGrid` + `Modifier.selectionRing` (rows of equal tiles without the experimental `FlowRow`; the ring that marks the chosen tile) | `CategoryPicker`, `SymbolGrid`, `ColourSwatches` (B4b); `TagPicker` (B5b) | B4b |
+| app UI (`ui/common`) | `launchSave(kind, onOutcome, refused, write)` + `SaveOutcome` (the save shape: saved, vanished, failed with one enum-only log, cancellation rethrown) | `AccountEditViewModel`, `CategoryEditViewModel`; `TagEditViewModel` (B5b) | B4b |
 
 The remaining app-UI building blocks (`AuditHistoryList`, ...) are
 added to this table by C5. `CategoryPicker` and `TagPicker` are separate components, not subclasses or instances of a
