@@ -20,6 +20,7 @@ import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.PftRoot
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.ledger.category.SystemCategory
 import dev.imagh.pft.ledger.settings.SettingKeys
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -98,7 +99,11 @@ class SetupFlowTest {
         compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().size shouldBe 0
         database.rowCount("user_profile") shouldBe 1
         database.rowCount("device") shouldBe 1
-        database.rowCount("audit_entry") shouldBe 3
+        // The user, device and setting (3 audit rows), then the 31 default categories, one CREATE each.
+        database.rowCount("audit_entry") shouldBe 34
+        database.rowCount("category") shouldBe 31
+        val kit = RoomTestKit(database)
+        runBlocking { kit.categoryRepository.bySystemKey(SystemCategory.LOAN_EMI) }?.name shouldBe "Loan EMI"
         val deviceId = checkNotNull(currentDeviceId()) { "current_device_id was not saved" }
         val identity = runBlocking { RoomTestKit(database).identity.currentIdentity() }
         identity?.device?.id?.value shouldBe deviceId
@@ -130,6 +135,7 @@ class SetupFlowTest {
         compose.onNodeWithText("Welcome").assertIsDisplayed()
         database.rowCount("user_profile") shouldBe 0
         database.rowCount("audit_entry") shouldBe 0
+        database.rowCount("category") shouldBe 0
     }
 
     @Test
@@ -146,5 +152,7 @@ class SetupFlowTest {
         database.rowCount("user_profile") shouldBe 1
         database.rowCount("device") shouldBe 1
         database.rowCount("audit_entry") shouldBe 3
+        // An identity that already existed is not given defaults (Q4).
+        database.rowCount("category") shouldBe 0
     }
 }

@@ -27,13 +27,21 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
                                          # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
                                          # FieldState/FieldError/FieldCheck + LedgerErrorMapping (A5d), NameField, EditFormScaffold (A5d);
+                                         # EntityListScreen + EntityRow/RowGlyph/RowAction + UndoDeleteSnackbar (B2a: the one entity list screen),
+                                         # CategoryIconGlyph (B4a: CategoryIcon to GlyphSource), EntityActionText (the fixed failure strings);
+                                         # PftBottomSheet (the one ModalBottomSheet opt-in), AccountPicker (B2c: stateless account sheet),
+                                         # CategoryPicker (B4b: stateless category sheet), TagPicker (B5b: stateless multi-select tag sheet), TileGrid + selectionRing (the grids' shared layout and ring),
+                                         # launchSave + SaveOutcome (B4b: the entity forms' save shape);
                                          # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
-                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples: previews, catalogue and goldens share them, R8 drops them)
+                                         # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples, AccountPickerSamples, CategoryPickerSamples, TagPickerSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
-      PftDatabase, Migrations, AuditTriggers   # the database (v1), its migration list, the audit_entry immutability triggers
+      PftDatabase, Migrations, AuditTriggers   # the database (v4), its migration list, the audit_entry immutability triggers
       RoomTransactionRunner                    # core TransactionRunner over withTransaction
       common/                                  # MetaColumns, MetaMapper, BaseDao, EntityMapper, RoomEntityRepository (shared by every entity)
       identity/ settings/ audit/               # entities, DAOs, Room repositories: users+devices, app settings, the audit trail (RoomAuditLog, AuditEntryMapper)
+      account/                                 # B1c: AccountEntity, AccountDao, AccountMapper (INR, fails closed), RoomAccountRepository
+      category/                                # B3b: CategoryEntity (self-FK, unique system_key), CategoryDao, CategoryMapper (colour key; bad colour/icon fall back, bad kind/system_key fail closed), RoomCategoryRepository
+      tag/                                     # B5a: TagEntity (name only, no index), TagDao, TagMapper, RoomTagRepository
       DatabaseFactory, PreMigrationBackup      # A4b: opens pft.db through SQLCipher (key first, backup, eager open); the pre-migration copy
       DatabaseStartup                          # how opening ended: Ready(db) or KeyUnavailable(reason)
     security/                            # A4b: DbKeyManager (wrapped SQLCipher key, fail closed), DbKeyUnavailable, KekSource +
@@ -43,8 +51,19 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
     ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
     ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
-    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts)
-    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder), HomeRoute
+    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
+    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder, B2a: header More button), HomeRoute
+    ui/more/                             # B2a: MoreScreen (stateless: the Accounts, Categories and (B5b) Tags rows)
+    ui/accounts/                         # B2a: AccountsViewModel (+ AccountsUiState), AccountsScreen (+ AccountsActions), AccountsRoute (reload on resume, Undo),
+                                         # AccountRowMapper (type badge, supporting line; the only account-specific drawing logic);
+                                         # B2b: AccountEditViewModel (+ AccountEditUiState), AccountEditScreen (+ AccountEditActions), AccountEditRoute
+    ui/categories/                       # B4a: CategoriesViewModel (+ CategoriesUiState, CategoriesNotice), CategoryItem (+ CategoryAction, the row rules),
+                                         # CategoriesScreen (+ CategoriesActions, CategoriesNavigation, the Expense/Income switch), CategoriesRoute, CategoryRowMapper, CategoriesSamples;
+                                         # B4b: CategoryEditViewModel (+ CategoryEditUiState), CategoryEditScreen (+ CategoryEditActions), CategoryEditRoute,
+                                         # SymbolGrid, ColourSwatches, SpokenName;
+                                         # B4c: EmojiInputValidator (the untrusted-paste check), EmojiTab (quick-pick + field), IconChoice (the Symbol | Emoji switch)
+    ui/tags/                             # B5b: TagsViewModel (+ TagsUiState), TagsScreen (+ TagsActions, TagsNavigation), TagsRoute (reload on resume, Undo),
+                                         # TagEditViewModel (+ TagEditUiState), TagEditScreen (+ TagEditActions), TagEditRoute, TagsSamples (goldens)
     ui/startup/                          # DataUnavailableScreen (the fail-closed screen: key unavailable, identity corrupt)
     PftApplication, MainActivity         # PftApplication.container is the AppContainer; MainActivity sets FLAG_SECURE, then shows PftRoot
   src/main/res/values{,-night}/          # window theme + colours (day/night; no light flash on a dark launch)
@@ -54,7 +73,8 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   src/debug/                             # debug-only: DevEntry (devRoutes(): the dev/catalog route; DevHeaderActions: Home's "Design catalogue" button) -> DesignCatalog (token sheet, motion page, header, bottom-bar, money, chip, section, empty-state, glyph, accent-check and palette pages, toggles), manifest removing ui-tooling's PreviewActivity
   src/release/kotlin/...                 # release twin of DevEntry (devRoutes() and DevHeaderActions() add nothing)
   src/androidTest/kotlin/dev/imagh/pft/app/  # instrumented tests on the pft35 emulator (not in `check`): DbKeyManagerTest (Keystore),
-                                         # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file)
+                                         # data/EncryptedDatabaseTest (SQLCipher, Room pairing, triggers, backup on the encrypted file),
+                                         # data/EncryptedMigrationTest (an encrypted v1 file migrated to the current version, with its backup)
   src/test/kotlin/dev/imagh/pft/app/     # Robolectric JVM tests (ui/theme/ for the design tokens, ui/common/ for the shared components,
                                          # data/ for Room: triggers, repositories, runner, audit, integration with the core services)
     testing/                             # test support: TestDatabase, RoomTestKit, MigrationTestSupport, AuditColumnsCheck + AuditedTables,
@@ -84,7 +104,7 @@ Package root `dev.imagh.pft` is permanent (plan §12 Q4).
 |--------|------|----------------|
 | `:app` | `PftApplication`, `MainActivity`, manifest, data-extraction rules, `ui/theme` (design tokens, `PftTheme`); `data/` (Room database v1 over SQLCipher, `DatabaseFactory`, `PreMigrationBackup`, DAOs, the Room implementations of the core repositories, runner and audit log); `security/` (Keystore-wrapped database key); `log/` (SafeLog, LogEvent); `di/` (AppContainer, AppServices); `ui/` (LaunchViewModel, PftRoot); `ui/startup/` (fail-closed screen); later: UI, app lock | Android layer; depends on `core`, never the reverse |
 | `:core:money` | `Paise`, `PaiseParser`, `PaiseFormat` (package `dev.imagh.pft.money`) | Integer-paise money: exact arithmetic, strict parsing of amount text, sign-free Indian-grouped formatting |
-| `:core:ledger` | `ids/` (`Uuid7`, `NameBasedId`, typed ids), `entity/` (`EntityMeta`, `LedgerEntity`, `Auditable`, `EntityRepository`), `audit/` (`AuditEntry`, `AuditDiff`, `AuditLog`, `AuditRecorder`, `AuditedWriter`), `tx/` (`TransactionRunner`), `validation/` (`LedgerError`, `LedgerLimits`, `Validation`), `identity/` (`IdentityService`, `UserProfile`, `Device`, `IdentityRepository`), `settings/` (`SettingsService`, `AppSettingsRepository`); test fixtures in `fakes/` and `matchers/` (package `dev.imagh.pft.ledger`) | Ledger foundations: ids, identity, the audit trail and its single audited write path, atomic transactions, validation, runtime settings. Later slices add accounts, categories, tags, transactions, loans, goals |
+| `:core:ledger` | `ids/` (`Uuid7`, `NameBasedId`, typed ids), `entity/` (`EntityMeta`, `LedgerEntity`, `Auditable`, `EntityRepository`), `audit/` (`AuditEntry`, `AuditDiff`, `AuditLog`, `AuditRecorder`, `AuditedWriter`), `tx/` (`TransactionRunner`), `validation/` (`LedgerError`, `LedgerLimits`, `Validation`, including `nameKey`, the shared name comparison), `identity/` (`IdentityService`, `UserProfile`, `Device`, `IdentityRepository`), `settings/` (`SettingsService`, `AppSettingsRepository`), `account/` (`AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository`), `category/` (`CategoryService`, `Category`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `CategoryTree` (internal), `DefaultCategories`, `CategoryRepository`), `tag/` (`TagService`, `Tag`, `TagLists`, `TagRepository`), `setup/` (`FirstRunService`); test fixtures in `fakes/` and `matchers/` (package `dev.imagh.pft.ledger`) | Ledger foundations: ids, identity, the audit trail and its single audited write path, atomic transactions, validation, runtime settings. Accounts (B1b), categories (B3a, with the `icon_key` grammar and first-run seeding) and tags (B5a) are in; later slices add transactions, loans, goals |
 | `build-logic` (included build) | `pft.kotlin-core`, `pft.lint` | Shared build configuration and quality gates |
 
 Planned (added by the slice that needs them): `:core:budget` (D1), `:core:recurring` (E1). See `docs/architecture/overview.md` for the dependency direction.
@@ -115,7 +135,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | core | `EntityRepository<T, Id>` (entityType, get, getLive, insert, update) | every repository | A3 |
 | core | `LedgerError` + `Validation` (`requireName`, `requireAmount`, `requireLive`) + `LedgerLimits` | every service | A3 |
 | core | `Uuid7` (time-sortable ids) and `NameBasedId` (deterministic UUIDv5 ids) | every entity; recurring-generated transactions | A3 |
-| core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `LedgerTestKit`, `TestClock`, `AuditFieldsCheck` (every entity's `auditFields()` is complete, checked on each fake write), and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
+| core test fixtures | `InMemoryLedgerStore` (fake runner that rolls back), `InMemoryEntityStore`, `InMemoryEntityRepository`, `InMemoryAccountRepository`, `LedgerTestKit`, `TestClock`, `AuditFieldsCheck` (every entity's `auditFields()` is complete, checked on each fake write), and the `shouldHaveAudited` matcher, published with `java-test-fixtures` | all core tests (`ledger`, `budget`, `recurring`) | A3 |
 | app data | `MetaColumns` (`@Embedded` shared columns, explicit snake_case names) + `MetaMapper` (`EntityMeta` <-> columns, the one mapping) | every Room entity | A4a |
 | app data | `EpochMillis` (`of`: the one instant -> epoch-ms conversion, refuses sub-millisecond; `clock()`: the millisecond `Clock` the app gives core) | every mapper, the settings repository, `AppContainer` | A4a |
 | app data | `BaseDao<E>` (insert, update returning the row count, `byId`) | every entity DAO | A4a |
@@ -144,10 +164,22 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `EmptyState` | B2 `EntityListScreen` (all lists), C4 empty month, C5 no results | DS5 |
 | app UI (`ui/theme`) | `PftSymbol` (92 Material Symbols, permanent keys, `fromKey`) | `CategoryGlyph`; chrome icons everywhere (DS6e `HeaderIconButton`, A5 nav, B4 symbol grid) | DS3 |
 | app UI (`ui/theme`) | `CategoryPalette` (`PftTheme.palette`, 12 named hues, light and dark), `GlyphSize` | `CategoryGlyph`; B4 palette swatches | DS3 |
-| app UI (`ui/common`) | `CategoryGlyph` + `GlyphSource` (`fromIconKey` parses `icon_key`) | B2 account type, B4, C4 rows, `CategoryPicker`, D4, E4 | DS3 |
+| app UI (`ui/common`) | `CategoryGlyph` + `GlyphSource` (`fromIconKey` reads `icon_key`; the grammar is core's `CategoryIcon.parse`, B3a) | B2 account type, B4, C4 rows, `CategoryPicker`, D4, E4 | DS3 |
 | app UI (`ui/common`) | `FieldState` / `FieldCheck` / `FieldError` + `LedgerError.toFieldError()` (exhaustive; non-field errors map to null) | A5e `SetupViewModel`, B2 account edit, B3/B5, every form ViewModel | A5d |
 | app UI (`ui/common`) | `NameField` (never truncates; error text from `FieldError`) | A5e Setup, B2 account edit, B3/B5 forms, D/E/F/G edit screens | A5d |
+| app UI (`ui/common`) | `AmountField` + `FieldState.checkAmount()` (decimal keyboard, never alters the text, magnitude only; wraps core's `PaiseParser`) | B2b account balance; C4 amount, C4b item amounts, D budget limit, F loan EMI | B2b |
 | app UI (`ui/common`) | `EditFormScaffold` (Standard header + `BottomActionBar`; optional Back; `saving` guard) | A5e Setup, B2 account edit, B3/B5 forms, D/E/F/G edit screens | A5d |
+| app UI (`ui/common`) | `EntityListScreen` + `EntityRow` / `RowGlyph` / `RowAction` (plain data; active rows, collapsed "Archived (n)", `EmptyState`, add FAB, row overflow menu, indent, optional `header` slot) | B2a accounts, B4a categories, B5b tags; later loans and goals | B2a |
+| app UI (`ui/common`) | `CategoryIcon?.toGlyphSource(name)` (the one core icon to `GlyphSource` mapping; `GlyphSource.fromIconKey` delegates to it) | B4a categories list, B4b `CategoryPicker`, C4 rows, D4, E4 | B4a |
+| app UI (`ui/common`) | `EntityAction.failureRes()` (the fixed "Couldn't ... Try again." strings) | B2a accounts, B4a categories, B5b tags | B4a |
+| app UI (`ui/common`) | `UndoDeleteSnackbar` (the delete Undo effect on a `SnackbarHostState`) and the `CollapsingHeaderScaffold` `snackbarHost` slot | B2a accounts, B4a categories, B5b tags, C4 transaction delete | B2a |
+| app UI (`ui/common`) | `PftBottomSheet` (the one `ModalBottomSheet` opt-in: theme shape and colour, title heading, `close` that slides out then reports one dismissal) | `AccountPicker` (B2c), `CategoryPicker` (B4b), `TagPicker` (B5b), C4 date picker | B2c |
+| app UI (`ui/common`) | `AccountPicker` (stateless: a `List<Account>` from `AccountService.active()`, the selection and `onPick`; reuses `AccountRowMapper.badge` and `typeLabelRes`) | C4 account chip; D budget and F loan account fields | B2c |
+| app UI (`ui/common`) | `CategoryPicker` (stateless: a `List<Category>` from `CategoryService.pickable(kind)`, the selection, `onPick`, `topLevelOnly`; a sub-category says "Under <parent>"; reuses `CategoryGlyph`, `toGlyphSource` and `PftBottomSheet`) | the category form's parent field (B4b), C4b item editor, D budget form | B4b |
+| app UI (`ui/common`) | `TagPicker` (stateless multi-select: `TagLists` from `TagService.lists()`, the selected ids, `onDone(Set<TagId>)`; an archived tag already selected stays visible and selected; reuses `TileGrid`, `selectionRing`, `CategoryGlyph` and `PftBottomSheet`) | C4b item editor (tags field) | B5b |
+| app UI (`ui/common`) | `TileGrid` + `Modifier.selectionRing` (rows of equal tiles without the experimental `FlowRow`; the ring that marks the chosen tile) | `CategoryPicker`, `SymbolGrid`, `ColourSwatches` (B4b); `TagPicker` (B5b) | B4b |
+| app UI (`ui/common`) | `launchSave(kind, onOutcome, refused, write)` + `SaveOutcome` (the save shape: saved, vanished, failed with one enum-only log, cancellation rethrown) | `AccountEditViewModel`, `CategoryEditViewModel`; `TagEditViewModel` (B5b) | B4b |
 
-The remaining app-UI building blocks (`EntityListScreen`, `AmountField`, `AuditHistoryList`, ...) are
-added to this table by A5, B2 and C5.
+The remaining app-UI building blocks (`AuditHistoryList`, ...) are
+added to this table by C5. `CategoryPicker` and `TagPicker` are separate components, not subclasses or instances of a
+generic picker; they share only `PftBottomSheet`.

@@ -21,12 +21,22 @@
     <string name="money_budget_under">Under budget</string>
     <string name="money_budget_near_limit">Budget near its limit</string>
     <string name="money_budget_over">Over budget</string>
-    <!-- Form blocks (NameField, EditFormScaffold). The limit in field_too_long comes from core's validation. -->
+    <!-- Form blocks (FieldError.message(), EditFormScaffold). The limit in field_too_long comes from core's validation. -->
     <string name="field_required">Required</string>
     <string name="field_too_long">At most %1$d characters</string>
-    <!-- Default primary action of EditFormScaffold, and the spoken label of its Back button. -->
+    <string name="field_invalid_last_four">Enter exactly 4 digits</string>
+    <string name="field_invalid_amount">Enter a valid amount</string>
+    <string name="field_duplicate">Already in use</string>
+    <!-- Default primary action of EditFormScaffold, and the spoken label of the Back button of EditFormScaffold and EntityListScreen. -->
     <string name="form_save">Save</string>
+    <string name="form_save_failed">Couldn\'t save. Try again.</string>
     <string name="form_back">Back</string>
+    <!-- Entity lists (EntityListScreen, UndoDeleteSnackbar): the collapsible archived section, each row's overflow button, and the Undo action. -->
+    <string name="entity_list_archived">Archived (%1$d)</string>
+    <string name="entity_list_expanded">Expanded</string>
+    <string name="entity_list_collapsed">Collapsed</string>
+    <string name="entity_row_actions">Actions for %1$s</string>
+    <string name="entity_undo">Undo</string>
     <!-- First-run setup (SetupScreen): who is using this phone. -->
     <string name="setup_title">Welcome</string>
     <string name="setup_subtitle">Set up this phone</string>
@@ -39,5 +49,95 @@
     <!-- Home placeholder (HomeScreen): who is using this phone, until C4 brings the real Home. -->
     <string name="home_title">Home</string>
     <string name="home_subtitle">%1$s · %2$s</string>
-    <string name="home_placeholder">Accounts and transactions arrive in the next update</string>
+    <string name="home_placeholder">Open More to manage your accounts. Transactions arrive in the next update</string>
+    <!-- Spoken label of Home's header button that opens the More screen. -->
+    <string name="home_more">More</string>
+    <!-- More screen (MoreScreen): the entry point to the entity lists. -->
+    <string name="more_title">More</string>
+    <string name="more_accounts">Accounts</string>
+    <string name="more_categories">Categories</string>
+    <string name="more_tags">Tags</string>
+    <!-- Accounts list (AccountsScreen): row actions, the fixed messages and the type names. -->
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_empty">No accounts yet</string>
+    <string name="accounts_deleted">Account deleted</string>
+    <string name="entity_action_archive">Archive</string>
+    <string name="entity_action_unarchive">Unarchive</string>
+    <string name="entity_action_delete">Delete</string>
+    <!-- Shown in a snackbar after an unexpected failure of a list action; fixed text, never exception text. -->
+    <string name="entity_failed_archive">Couldn\'t archive. Try again.</string>
+    <string name="entity_failed_unarchive">Couldn\'t unarchive. Try again.</string>
+    <string name="entity_failed_delete">Couldn\'t delete. Try again.</string>
+    <string name="entity_failed_restore">Couldn\'t undo. Try again.</string>
+    <string name="entity_failed_reorder">Couldn\'t move. Try again.</string>
+    <string name="accounts_add">Add account</string>
+    <string name="accounts_not_found">That account no longer exists</string>
+    <!-- Account form (AccountEditScreen). The amount label follows the type: money owed on a card, the balance otherwise. -->
+    <string name="account_new_title">New account</string>
+    <string name="account_edit_title">Edit account</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_type_label">Type</string>
+    <string name="account_last_four_label">Last 4 digits (optional)</string>
+    <string name="account_issuer_label">Issuer (optional)</string>
+    <string name="account_balance_label">Current balance</string>
+    <string name="account_owed_label">Amount owed</string>
+    <string name="account_type_bank">Bank</string>
+    <string name="account_type_credit_card">Credit card</string>
+    <string name="account_type_cash">Cash</string>
+    <string name="account_type_wallet">Wallet</string>
+    <!-- Account picker sheet (AccountPicker). -->
+    <string name="account_picker_title">Choose account</string>
+    <string name="account_picker_empty">No accounts yet. Add one from More.</string>
+    <!-- Categories list (CategoriesScreen): the kind switch, row actions and the fixed messages. -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_empty">No categories yet</string>
+    <string name="categories_deleted">Category deleted</string>
+    <string name="categories_delete_blocked">Delete its sub-categories first</string>
+    <string name="category_kind_expense">Expense</string>
+    <string name="category_kind_income">Income</string>
+    <string name="category_action_move_up">Move up</string>
+    <string name="category_action_move_down">Move down</string>
+    <!-- Second line of a sub-category listed away from its parent (an archived one): the parent\'s name. -->
+    <string name="category_under_parent">Under %1$s</string>
+    <string name="categories_add">Add category</string>
+    <string name="categories_not_found">That category no longer exists</string>
+    <!-- Category form (CategoryEditScreen). Type and parent are shown but fixed once the category exists. -->
+    <string name="category_new_title">New category</string>
+    <string name="category_edit_title">Edit category</string>
+    <string name="category_name_label">Name</string>
+    <string name="category_kind_label">Type</string>
+    <string name="category_parent_label">Parent category</string>
+    <string name="category_parent_none">None (top level)</string>
+    <string name="category_parent_clear">Make top level</string>
+    <string name="category_fixed_note">Can\'t be changed after the category is created</string>
+    <string name="category_colour_label">Colour</string>
+    <!-- The icon section: its heading, and the switch between the symbol grid and the emoji tab. -->
+    <string name="category_icon_label">Icon</string>
+    <string name="category_symbol_label">Symbol</string>
+    <string name="category_emoji_label">Emoji</string>
+    <!-- Emoji tab: the field, its fixed error (never repeats what was typed) and the chosen emoji. -->
+    <string name="category_emoji_field_label">Type or paste an emoji</string>
+    <string name="category_emoji_rejected">Enter just one emoji that this phone can show</string>
+    <string name="category_emoji_chosen">Chosen emoji</string>
+    <!-- The symbol grid's first cell: no symbol, so the category shows the first letter of its name. -->
+    <string name="category_no_symbol">No symbol</string>
+    <!-- Category picker sheet (CategoryPicker). -->
+    <string name="category_picker_title">Choose category</string>
+    <!-- The same sheet when the category form asks for a parent. -->
+    <string name="category_parent_picker_title">Choose parent category</string>
+    <string name="category_picker_empty">No categories to choose from yet</string>
+    <!-- Tags list (TagsScreen) and form (TagEditScreen). A tag is only a name. -->
+    <string name="tags_title">Tags</string>
+    <string name="tags_empty">No tags yet</string>
+    <string name="tags_deleted">Tag deleted</string>
+    <string name="tags_add">Add tag</string>
+    <string name="tags_not_found">That tag no longer exists</string>
+    <string name="tag_new_title">New tag</string>
+    <string name="tag_edit_title">Edit tag</string>
+    <string name="tag_name_label">Name</string>
+    <!-- Tag picker sheet (TagPicker): multi-select with Done. "Archived" marks a chosen tag that is archived. -->
+    <string name="tag_picker_title">Choose tags</string>
+    <string name="tag_picker_done">Done</string>
+    <string name="tag_picker_empty">No tags yet. Add one from More.</string>
+    <string name="tag_picker_archived">Archived</string>
 </resources>

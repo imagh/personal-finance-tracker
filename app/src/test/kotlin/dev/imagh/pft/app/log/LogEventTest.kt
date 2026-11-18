@@ -34,6 +34,36 @@ class LogEventTest {
     }
 
     @Test
+    fun `entity_action_failed renders the kind and the action codes`() {
+        assertEquals(
+            "entity_action_failed kind=ACCOUNT action=ARCHIVE",
+            LogEvent.EntityActionFailed(EntityKind.ACCOUNT, EntityAction.ARCHIVE).line(),
+        )
+    }
+
+    @Test
+    fun `entity_save_failed renders only the kind code`() {
+        assertEquals("entity_save_failed kind=ACCOUNT", LogEvent.EntitySaveFailed(EntityKind.ACCOUNT).line())
+    }
+
+    @Test
+    fun `entity_action_failed renders a category reorder`() {
+        assertEquals(
+            "entity_action_failed kind=CATEGORY action=REORDER",
+            LogEvent.EntityActionFailed(EntityKind.CATEGORY, EntityAction.REORDER).line(),
+        )
+    }
+
+    @Test
+    fun `entity events render a tag by its kind code only`() {
+        assertEquals("entity_save_failed kind=TAG", LogEvent.EntitySaveFailed(EntityKind.TAG).line())
+        assertEquals(
+            "entity_action_failed kind=TAG action=DELETE",
+            LogEvent.EntityActionFailed(EntityKind.TAG, EntityAction.DELETE).line(),
+        )
+    }
+
+    @Test
     fun `a zero duration renders as 0 ms`() {
         assertEquals("db_opened schema=1 ms=0", LogEvent.DbOpened(1, Duration.ZERO).line())
     }

@@ -40,8 +40,14 @@ private const val LETTER_FRACTION = 0.45f
  * (B2), the category picker and edit screen (B4), transaction rows (C4), budget rows (D4) and
  * recurring rows (E4).
  *
- * **Accessibility.** The badge is one image node announced as [name], the category's own name:
- * never the icon key, the emoji's Unicode name or the fallback letter. Its colours come from
+ * **Accessibility.** The badge is one image node announced as [name], what the badge stands for, which
+ * is usually the category's own name (never the icon key, the emoji's Unicode name or the fallback letter).
+ * The one exception is where the emoji itself is the thing being shown, such as the category form's
+ * "Chosen emoji" row: there the emoji is the [name], and a screen reader reads it by its Unicode name.
+ * When the badge sits next to
+ * text that already says the name (a list row's title), pass a null [name]: the badge is then
+ * decorative, announces nothing and is not an image, so the name is not read twice. A tappable badge
+ * ([onClick]) must have a [name], or a screen reader would meet a button with no label. Its colours come from
  * `PftTheme.palette` for the current light or dark theme, content at least 4.5:1 on container.
  * Colour is decoration only; the symbol, emoji or letter carries the identity.
  *
@@ -52,7 +58,8 @@ private const val LETTER_FRACTION = 0.45f
  * changing the drawn size, so the 28dp chip and 40dp row badges are still easy to hit.
  *
  * @param source what to draw; build it from a stored key with [GlyphSource.fromIconKey].
- * @param name the category's name, spoken by assistive technology.
+ * @param name what a screen reader says for the badge (the category's name, or an account's type), or
+ *   null to make the badge decorative: it then speaks nothing. Required when [onClick] is set.
  * @param colourKey the palette name stored in `category.colour`; null or unknown gets slate.
  * @param size the badge size.
  * @param onClick makes the badge tappable (for example in a picker); null leaves it inert.
@@ -60,12 +67,13 @@ private const val LETTER_FRACTION = 0.45f
 @Composable
 fun CategoryGlyph(
     source: GlyphSource,
-    name: String,
+    name: String?,
     colourKey: String?,
     modifier: Modifier = Modifier,
     size: GlyphSize = GlyphSize.Row,
     onClick: (() -> Unit)? = null,
 ) {
+    require(onClick == null || name != null) { "a tappable badge needs a name" }
     val colors = PftTheme.palette[colourKey]
     val tappable = onClick != null
     Box(
@@ -75,10 +83,13 @@ fun CategoryGlyph(
             .clip(PftTheme.shapes.glyph)
             .background(colors.container)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
-            // One node that speaks the name; the symbol, emoji or letter inside is decoration for it.
+            // One node that speaks the name (the symbol, emoji or letter inside is decoration for it), or,
+            // with no name, a node that speaks nothing at all: the row it sits in already says the name.
             .clearAndSetSemantics {
-                contentDescription = name
-                role = Role.Image
+                if (name != null) {
+                    contentDescription = name
+                    role = Role.Image
+                }
             },
         contentAlignment = Alignment.Center,
     ) {

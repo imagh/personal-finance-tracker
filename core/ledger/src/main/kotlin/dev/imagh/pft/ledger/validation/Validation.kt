@@ -2,6 +2,7 @@ package dev.imagh.pft.ledger.validation
 
 import dev.imagh.pft.ledger.entity.LedgerEntity
 import dev.imagh.pft.money.Paise
+import java.util.Locale
 
 /**
  * The validation helpers every service shares, so each rule is written once (plan §3.4).
@@ -42,6 +43,40 @@ object Validation {
         if (paise > max) throw LedgerError.AmountTooLarge(max)
         return paise
     }
+
+    /**
+     * [paise] if its size is at most [max] (inclusive), whatever its sign: a signed balance, where
+     * zero is allowed and negative means "owed" or overdrawn. The signed twin of [requireAmount].
+     *
+     * @throws LedgerError.AmountTooLarge if it is more than [max] above zero or below zero.
+     */
+    fun requireBalance(
+        paise: Paise,
+        max: Paise = LedgerLimits.MAX_AMOUNT,
+    ): Paise {
+        // Compare, never negate [paise]: -Long.MIN_VALUE overflows.
+        if (paise > max || paise.value < -max.value) throw LedgerError.AmountTooLarge(max)
+        return paise
+    }
+
+    /**
+     * The optional twin of [requireName]: null for null, empty or whitespace-only text (the field was
+     * left empty), otherwise the trimmed text if it is at most [max] characters.
+     *
+     * @throws LedgerError.NameTooLong if the trimmed text is longer than [max].
+     */
+    fun requireOptionalName(
+        text: String?,
+        max: Int,
+    ): String? = if (text.isNullOrBlank()) null else requireName(text, max)
+
+    /**
+     * The text two names are compared by to decide they are the same name (categories among their
+     * siblings, tags among all live tags): trimmed and lower-cased with Unicode rules and no locale
+     * ([Locale.ROOT]), because SQLite's `NOCASE` folds ASCII only and a device locale must not change
+     * the answer. One function so every "unique ignoring case" rule agrees.
+     */
+    fun nameKey(name: String): String = name.trim().lowercase(Locale.ROOT)
 
     /**
      * [entity] if it can be referenced from new data: it exists and is neither deleted nor

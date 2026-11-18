@@ -224,6 +224,39 @@ class PreMigrationBackupTest {
     }
 
     @Test
+    fun `a failed database copy leaves no log copy behind`() {
+        database.mkdirs() // a directory where the file should be: the .db copy fails after the log is copied
+        wal.writeBytes(byteArrayOf(2, 2, 2))
+        withMarker(1)
+
+        shouldThrow<PreMigrationBackupFailed> { backup(currentVersion = 2).backUpIfOlder() }
+
+        backupNames() shouldBe emptyList()
+    }
+
+    @Test
+    fun `prune removes an orphaned log copy but keeps the logs of the backups it keeps`() {
+        database.writeBytes(byteArrayOf(1))
+        wal.writeBytes(byteArrayOf(2))
+        backups.mkdirs()
+        // A log whose .db is missing (a crash, or an earlier failed copy), and a complete older pair.
+        File(backups, "pre-migration-v0.db-wal").writeBytes(byteArrayOf(9))
+        File(backups, "pre-migration-v1.db").writeBytes(byteArrayOf(3))
+        File(backups, "pre-migration-v1.db-wal").writeBytes(byteArrayOf(4))
+        withMarker(2)
+
+        backup(currentVersion = 3).backUpIfOlder()
+
+        backupNames() shouldContainExactlyInAnyOrder
+            listOf(
+                "pre-migration-v1.db",
+                "pre-migration-v1.db-wal",
+                "pre-migration-v2.db",
+                "pre-migration-v2.db-wal",
+            )
+    }
+
+    @Test
     fun `recordOpened stores the current version, and a later start sees it`() {
         backup(currentVersion = 3).lastOpenedVersion().shouldBeNull()
 

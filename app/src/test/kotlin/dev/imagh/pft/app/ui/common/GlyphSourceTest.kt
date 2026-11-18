@@ -2,15 +2,16 @@ package dev.imagh.pft.app.ui.common
 
 import dev.imagh.pft.app.ui.theme.PftSymbol
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * `GlyphSource.fromIconKey` parses `category.icon_key`, which is untrusted at this boundary
- * (it may be corrupt or written by a newer synced version): anything malformed, oversized or
- * unknown must land on the letter fallback and never throw.
+ * `GlyphSource.fromIconKey` reads `category.icon_key`, which is untrusted at this boundary (it may be
+ * corrupt or written by a newer synced version): anything malformed, oversized or unknown must land
+ * on the letter fallback and never throw. The grammar itself (what a valid symbol key or emoji is)
+ * lives in core's `CategoryIcon` and is pinned exhaustively by its own `CategoryIconTest`; these
+ * tests cover what is the app's: that the parser delegates to it, that a symbol key must also exist
+ * in the registry, and the letter rules.
  */
 class GlyphSourceTest {
     private fun parse(iconKey: String?) = GlyphSource.fromIconKey(iconKey, "Groceries")
@@ -40,13 +41,10 @@ class GlyphSourceTest {
     }
 
     @Test
-    fun `the symbol key grammar stops at 40 characters`() {
-        assertTrue(isSymbolKey("a".repeat(40)))
-        assertFalse(isSymbolKey("a".repeat(41)))
-        assertFalse(isSymbolKey(""))
-        assertTrue(isSymbolKey("a_0"))
-        listOf("A", "a-b", "a b", "a.b", "é", "a/b", "../a").forEach { assertFalse(isSymbolKey(it), it) }
+    fun `a well-formed symbol key that is not in the registry is the letter fallback`() {
+        // Existence is the app's job (PftSymbol.fromKey): core accepts any key in the grammar, 40 characters included.
         assertEquals(letterG, parse("sym:" + "a".repeat(40)))
+        assertEquals(letterG, parse("sym:a_0"))
         assertEquals(letterG, parse("sym:" + "a".repeat(41)))
     }
 
@@ -87,27 +85,22 @@ class GlyphSourceTest {
     }
 
     @Test
-    fun `an emoji value is at most 16 UTF-16 units`() {
+    fun `an emoji value of 16 UTF-16 units is an Emoji and 17 is the letter fallback`() {
         val sixteen = "😀".repeat(8)
-        val seventeen = sixteen + "a"
         assertEquals(16, sixteen.length)
-        assertTrue(isEmojiValue(sixteen))
-        assertFalse(isEmojiValue(seventeen))
         assertEquals(GlyphSource.Emoji(sixteen), parse("emoji:$sixteen"))
-        assertEquals(letterG, parse("emoji:$seventeen"))
+        assertEquals(letterG, parse("emoji:${sixteen}a"))
     }
 
     @Test
-    fun `surrogate pairs, ZWJ sequences, flags, keycaps and tag sequences are accepted`() {
+    fun `ZWJ sequences, flags, keycaps and tag sequences are Emoji values`() {
         val family = "👨‍👩‍👧‍👦"
         val india = "🇮🇳"
         val keycap = "1️⃣"
         val england = "🏴󠁧󠁢󠁥󠁮󠁧󠁿"
         listOf(family, india, keycap, england, "👍🏽", "❤️").forEach {
-            assertTrue(isEmojiValue(it), "$it (${it.length} units)")
             assertEquals(GlyphSource.Emoji(it), parse("emoji:$it"))
         }
-        assertEquals(14, england.length)
     }
 
     /** Builds a string from code points, so invisible characters are never typed (or reformatted) in source. */
@@ -115,48 +108,11 @@ class GlyphSourceTest {
 
     private val burger = text(0x1F354)
 
-    private fun describe(value: String) = value.map { it.code.toString(16) }.toString()
-
     @Test
-    fun `whitespace anywhere in an emoji value is rejected`() {
-        // space, tab, LF, CR, no-break space, em space, ideographic space, line and paragraph separators
-        listOf(0x20, 0x09, 0x0A, 0x0D, 0xA0, 0x2003, 0x3000, 0x2028, 0x2029).forEach { cp ->
-            val space = text(cp)
-            listOf(space, burger + space, space + burger, burger + space + burger).forEach {
-                assertFalse(isEmojiValue(it), describe(it))
-                assertEquals(letterG, parse("emoji:$it"), describe(it))
-            }
-        }
-    }
-
-    @Test
-    fun `control characters in an emoji value are rejected`() {
-        // NUL, BEL, ESC, DEL, NEL and the last C1 control
-        listOf(0x00, 0x07, 0x1B, 0x7F, 0x85, 0x9F).forEach { cp ->
-            listOf(text(cp), burger + text(cp)).forEach { assertFalse(isEmojiValue(it), describe(it)) }
-        }
-    }
-
-    @Test
-    fun `invisible format characters other than the joiner are rejected`() {
-        // ZWSP, word joiner, BOM, soft hyphen, LRM, RLM and the bidi embeddings, overrides and isolates
-        listOf(0x200B, 0x2060, 0xFEFF, 0xAD, 0x200E, 0x200F, 0x202A, 0x202E, 0x2066, 0x2069).forEach { cp ->
-            assertFalse(isEmojiValue(burger + text(cp)), describe(text(cp)))
-        }
-        assertTrue(isEmojiValue(text(0x1F468, 0x200D, 0x1F469)))
-    }
-
-    @Test
-    fun `unpaired surrogates are rejected`() {
-        // a lone high, a lone low, a reversed pair, and a lone surrogate at either end of a valid emoji
-        listOf(
-            text(0xD83D),
-            text(0xDE00),
-            text(0xDE00, 0xD83D),
-            burger + text(0xD83D),
-            text(0xD83D) + "a",
-            text(0xDE00) + burger,
-        ).forEach { assertFalse(isEmojiValue(it), describe(it)) }
+    fun `a malformed emoji value is the letter fallback`() {
+        // whitespace, a control character, a zero-width space, a bidi override and a lone surrogate
+        listOf(" ", burger + " ", "a b", text(0x07), burger + text(0x200B), burger + text(0x202E), text(0xD83D))
+            .forEach { assertEquals(letterG, parse("emoji:$it"), it.map { c -> c.code.toString(16) }.toString()) }
     }
 
     @Test

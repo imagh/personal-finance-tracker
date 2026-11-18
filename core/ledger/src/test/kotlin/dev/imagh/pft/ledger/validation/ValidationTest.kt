@@ -9,6 +9,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import java.time.Instant
+import java.util.Locale
 
 private data class Widget(
     override val meta: EntityMeta<UserId>,
@@ -60,6 +61,68 @@ class ValidationTest :
             }
         }
 
+        context("requireBalance") {
+            test("accepts zero, positive and negative values up to the limit inclusive") {
+                Validation.requireBalance(Paise.ZERO) shouldBe Paise.ZERO
+                Validation.requireBalance(LedgerLimits.MAX_AMOUNT) shouldBe LedgerLimits.MAX_AMOUNT
+                Validation.requireBalance(Paise(-LedgerLimits.MAX_AMOUNT.value)) shouldBe
+                    Paise(-LedgerLimits.MAX_AMOUNT.value)
+                Validation.requireBalance(Paise(-1)) shouldBe Paise(-1)
+            }
+            test("rejects one paisa beyond either end") {
+                val above = Paise(LedgerLimits.MAX_AMOUNT.value + 1)
+                val below = Paise(-LedgerLimits.MAX_AMOUNT.value - 1)
+                shouldThrow<LedgerError.AmountTooLarge> { Validation.requireBalance(above) }.max shouldBe
+                    LedgerLimits.MAX_AMOUNT
+                shouldThrow<LedgerError.AmountTooLarge> { Validation.requireBalance(below) }.max shouldBe
+                    LedgerLimits.MAX_AMOUNT
+            }
+            test("rejects the most negative Long without overflowing") {
+                shouldThrow<LedgerError.AmountTooLarge> { Validation.requireBalance(Paise(Long.MIN_VALUE)) }
+            }
+            test("honours a custom limit") {
+                Validation.requireBalance(Paise(-500), max = Paise(500)) shouldBe Paise(-500)
+                shouldThrow<LedgerError.AmountTooLarge> { Validation.requireBalance(Paise(-501), max = Paise(500)) }
+            }
+        }
+
+        context("requireOptionalName") {
+            test("returns null for null, empty and whitespace-only text") {
+                Validation.requireOptionalName(null, max = 20) shouldBe null
+                Validation.requireOptionalName("", max = 20) shouldBe null
+                Validation.requireOptionalName("  \t\n", max = 20) shouldBe null
+            }
+            test("returns the trimmed text otherwise") {
+                Validation.requireOptionalName("  HDFC Bank ", max = 20) shouldBe "HDFC Bank"
+            }
+            test("rejects text over the limit after trimming, and accepts exactly the limit") {
+                Validation.requireOptionalName("a".repeat(20), max = 20) shouldBe "a".repeat(20)
+                val error =
+                    shouldThrow<LedgerError.NameTooLong> { Validation.requireOptionalName("a".repeat(21), max = 20) }
+                error.max shouldBe 20
+            }
+        }
+
+        context("nameKey") {
+            test("trims and lower-cases with Unicode rules") {
+                Validation.nameKey("  Food & Dining ") shouldBe "food & dining"
+                Validation.nameKey("ÉCLAIR") shouldBe "éclair"
+            }
+            test("does not depend on the device locale") {
+                // Locale.ROOT: a Turkish default locale would turn "I" into a dotless i.
+                val original = Locale.getDefault()
+                try {
+                    Locale.setDefault(Locale.forLanguageTag("tr-TR"))
+                    Validation.nameKey("INTEREST") shouldBe "interest"
+                } finally {
+                    Locale.setDefault(original)
+                }
+            }
+            test("names that differ only by case or padding share a key") {
+                Validation.nameKey(" TRAVEL ") shouldBe Validation.nameKey("travel")
+            }
+        }
+
         context("requireLive") {
             val t0 = Instant.parse("2026-11-01T10:00:00Z")
             val meta = EntityMeta(UserId("w-1"), t0, t0, UserId("u-1"), DeviceId("d-1"))
@@ -99,5 +162,6 @@ class ValidationTest :
             LedgerError.BlankName().message shouldBe "A name is required"
             LedgerError.NameTooLong(20).message shouldBe "A name may be at most 20 characters"
             LedgerError.NotFound("account").message shouldBe "No such account"
+            LedgerError.InvalidMaskedIdentifier().message shouldBe "The identifier must be exactly four digits"
         }
     })

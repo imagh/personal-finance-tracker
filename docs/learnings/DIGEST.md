@@ -28,6 +28,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 ## Test quality (prove tests bite)
 - Every guard needs a test that fails when the guard is removed; run a mutation check and see red first. A happy-path outcome that is identical with and without the guard proves nothing (two rapid submits vs `saving`) [2026-11-02, 2026-11-16]
 - Absence checks ("release has no X", "Setup not shown") need a positive control and must first wait for the screen to be shown; sampling only claims "not shown", not "never composed" [2026-11-02]
+- A "do it again" guard test (second submit after saved) must use a different second input, or a core refusal (duplicate) hides a missing guard; mutate the guard to prove it [2026-11-17]
 - Never write sleep-based "nothing happened" tests (`repeat(10) { idle(); Thread.sleep(10) }`); cancellation is pinned with `job.join()` and `job.isCancelled` in `LaunchSaveTest` [2026-11-16]
 - Red phase for a new core class: compile-fail, then stubs with `TODO()` bodies so each test fails on `NotImplementedError` [2026-11-13]
 - To test a tie-break or order dependence, write colliding rows through `AuditedWriter` with chosen ids and make the fake's order (newest first) disagree with the expected one; build "gap" cases (delete a sibling first) so a naive reorder differs [2026-11-14]
@@ -62,6 +63,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - M3 `Scaffold` pads the list by bottom insets only when `bottomBar` emits no placeables: keep `bottomBar` nullable. `FlowRow` is still experimental in the BOM: use `TileGrid` (Column of Rows over `BoxWithConstraints`). Wrap very short segmented labels: row `height(IntrinsicSize.Min)`, `fillMaxHeight()` per button, `icon = {}` [2026-10-29, 2026-11-15, 2026-11-16]
 - Segmented buttons are the app's two-way switch idiom (not tabs); persist the side with `rememberSaveable`. An M3 `prefix` is hidden while the field is empty and unfocused [2026-11-17, 2026-11-15]
 - Pickers build on `TileGrid`, `selectionRing` and `PftBottomSheet` (content gets a `close` lambda, the only way to dismiss); a picker guards its own double tap with a `picked` flag; a bottom sheet title is a heading [2026-11-16]
+- Multi-select cells are `selectable(selected, role = Role.Checkbox)` inside one `selectableGroup` (radio is for single choice); a picker that edits a stored selection still draws an archived tag already chosen, marked, so it cannot be dropped silently (`TagPicker`); a button below a scrolling grid in a sheet needs `weight(1f, fill = false)` on the scroll [2026-11-17]
 - Modifier.composed does not recompose on state it read: drive an `Animatable` from the pointer coroutine; reading `collapsedFraction` in composition makes the header recompose every scroll frame; use `Float.NEGATIVE_INFINITY` for an "unset" float state [2026-10-29, 2026-10-31]
 - Category symbols come from the explicit `CATEGORY_SYMBOLS` list in `PftSymbol.kt`, never from enum order; an interface icon is listed in `PftSymbolCategoriesTest`. Import icons via `tools/material-symbols` only, keys permanent, check names against the pinned commit [2026-10-30, 2026-11-16]
 - Emoji input: judge pasted text with `EmojiInputValidator` first, keep only the validated `CategoryIcon.Emoji` plus an `emojiRejected` flag, show a fixed message; never trim or normalise; core `CategoryIcon.isValid` is the first check [2026-11-17]
@@ -102,6 +104,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - Settings keys match `SettingsService.KEY_PATTERN` (`[a-z][a-z0-9_]*`), e.g. `ui_theme_mode`, not dotted [2026-10-30]
 - `AppContainer.open()` is the only entry (M1b's receiver calls it, never `DatabaseStartup.open`); open is a cached `Deferred` on a container-owned scope; keep blocking work off Main via an injected dispatcher; the open takes ~75 ms/connection key, so never on Main. M1b must handle credential-encrypted storage before first unlock and consider retrying `KeyUnavailable` only [2026-11-01, 2026-10-30]
 - App ID `dev.imagh.pft` and the release signing key are permanent: build and verify encrypted full export/import before changing either [2026-10-28]
+- C1 onwards: schema versions are C1 v5, C3 v6, D3 v7, E3 v8, F2 v9, G1 v10 (tag took v4); the plans' `CHECK (amount > 0)`/`CHECK (position > 0)` on transaction tables are enforced in core and mappers, never in the schema [2026-11-17]
 
 ## Core and ledger rules
 - Entities implement `LedgerEntity`, list every persisted field in `auditFields()`, and write only through `AuditedWriter` (it stamps meta; no non-persisted fields, use getters); `AuditFieldsCheck` fixes property names to column names (`iconKey`, not `icon`) and audits enums by `name` [2026-10-29, 2026-11-14]
@@ -137,6 +140,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - A new Gradle plugin: lenient-verification lock write, then metadata with `--write-locks --refresh-dependencies`, then strict build on an empty `GRADLE_USER_HOME` [2026-10-29]
 - Library manifests add entries: keep `ManifestHardeningTest` green (`tools:node="remove"` for the exported `ProfileInstallReceiver` and the `androidx.core` permission); `ui-tooling`'s exported `PreviewActivity` is removed in `src/debug/AndroidManifest.xml` [2026-10-29]
 - Emulator: develop on `pft35`; cold boot with `emulator -avd pft35 -no-window -no-audio -no-snapshot-load -no-snapshot-save -gpu host` (snapshot boot can hang with adb `offline`); use a throwaway AVD on another port for spikes; only release-signed builds go to the owner's phone, never enable USB debugging on it; feed the emulator redacted fixtures only [2026-10-28, 2026-10-30]
+- Python in `tools/` must run on the system Python 3.9.6 (the pre-push hooks use the pusher's `python3`): `from __future__ import annotations` for `X | None`; test with `/usr/bin/python3` too [2026-11-18]
 
 ## APK size and release shrink
 - R8 minify and resource shrinking are on for release; `:app:verifyReleaseShrink` (in `check`) fails if `MainActivity` is unmapped or a `mustBeRemoved` class survives. A slice that adds preview/sample code adds its compiled class prefix to `mustBeRemoved` (from `app/build/tmp/kotlin-classes/release`); keep rules only for what R8 reports broken, with a comment [2026-10-30]

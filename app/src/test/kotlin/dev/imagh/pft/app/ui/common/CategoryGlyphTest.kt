@@ -3,7 +3,9 @@ package dev.imagh.pft.app.ui.common
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -13,6 +15,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
@@ -69,6 +72,30 @@ class CategoryGlyphTest {
         assertEquals(listOf("Groceries"), description)
         assertEquals(Role.Image, node.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
         compose.onAllNodes(anyText, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a glyph with no name is decorative whatever it draws, so nothing is spoken and it is not an image`() {
+        show {
+            Column {
+                CategoryGlyph(
+                    GlyphSource.Symbol(PftSymbol.SHOPPING_CART),
+                    null,
+                    "teal",
+                    modifier = Modifier.testTag("symbol"),
+                )
+                CategoryGlyph(GlyphSource.Emoji("🍔"), null, "coral", modifier = Modifier.testTag("emoji"))
+                CategoryGlyph(GlyphSource.Letter('G'), null, "violet", modifier = Modifier.testTag("letter"))
+            }
+        }
+
+        listOf("symbol", "emoji", "letter").forEach { tag ->
+            val config = compose.onNodeWithTag(tag).fetchSemanticsNode().config
+            assertEquals(tag, null, config.getOrNull(SemanticsProperties.ContentDescription))
+            assertEquals(tag, null, config.getOrNull(SemanticsProperties.Role))
+            assertEquals(tag, null, config.getOrNull(SemanticsProperties.Text))
+        }
+        compose.onNodeWithText("🍔", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

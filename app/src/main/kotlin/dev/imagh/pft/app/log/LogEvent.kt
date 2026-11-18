@@ -60,6 +60,65 @@ sealed interface LogEvent {
     data object SetupFailed : LogEvent {
         override fun line(): String = render("setup_failed")
     }
+
+    /**
+     * A list action ([action]: archive, unarchive, delete, restore or reorder) on a [kind] of record failed
+     * unexpectedly; the list is left as it was and the user is asked to try again. Enums only (SEC-5).
+     */
+    data class EntityActionFailed(
+        val kind: EntityKind,
+        val action: EntityAction,
+    ) : LogEvent {
+        override fun line(): String =
+            render("entity_action_failed", "kind" to LogValue(kind), "action" to LogValue(action))
+    }
+
+    /**
+     * Saving a [kind] of record from its create or edit form failed unexpectedly; the form keeps what
+     * the user typed and asks them to try again. Enum only: not the exception, and never a name, an
+     * identifier or an amount (SEC-5). First emitted by the account form.
+     */
+    data class EntitySaveFailed(
+        val kind: EntityKind,
+    ) : LogEvent {
+        override fun line(): String = render("entity_save_failed", "kind" to LogValue(kind))
+    }
+}
+
+/**
+ * The kind of record an entity log event is about. An entry is added with the screen that first
+ * emits an event for it.
+ */
+enum class EntityKind {
+    /** An account. */
+    ACCOUNT,
+
+    /** A category or sub-category. */
+    CATEGORY,
+
+    /** A tag. */
+    TAG,
+}
+
+/**
+ * The list action an [LogEvent.EntityActionFailed] is about. An entry is added only when something
+ * emits it.
+ */
+enum class EntityAction {
+    /** Hide a record from new entries, keeping it in the archived section. */
+    ARCHIVE,
+
+    /** Make an archived record active again. */
+    UNARCHIVE,
+
+    /** Delete a record (a tombstone). */
+    DELETE,
+
+    /** Undo a delete. */
+    RESTORE,
+
+    /** Move a category up or down among its siblings. */
+    REORDER,
 }
 
 /**

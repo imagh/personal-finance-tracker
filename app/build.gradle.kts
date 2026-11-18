@@ -60,6 +60,9 @@ android {
         // build only (a few KB of table definitions, no data) so the release APK does not carry
         // them; for that reason MigrationTest lives in src/testDebug.
         getByName("debug").assets.srcDir("$projectDir/schemas")
+        // The instrumented EncryptedMigrationTest reads the exported v1 schema from the test APK's
+        // assets to build an old encrypted database (the test APK is never shipped).
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
     }
 
     testOptions {
@@ -161,6 +164,8 @@ val verifyReleaseShrink by tasks.registering {
     // DS5 adds one *SamplesKt per component (GroupedSectionSamplesKt, MoneyTextSamplesKt, ...) holding
     // its fake-data samples and previews. DS6b adds PaletteSamplesKt (the four-palette swatch page).
     // A5d adds FormSamplesKt (the live form sample and its preview).
+    // B2a adds EntityListSamplesKt (the entity list samples and their previews).
+    // B5b adds TagsSamplesKt (the tags list sample and the fake tags) and TagPickerSamplesKt.
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
@@ -182,6 +187,18 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.theme.ComposableSingletons\$PaletteSamples",
             "dev.imagh.pft.app.ui.common.FormSamples",
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$FormSamples",
+            "dev.imagh.pft.app.ui.common.EntityListSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$EntityListSamples",
+            "dev.imagh.pft.app.ui.categories.CategoriesSamples",
+            "dev.imagh.pft.app.ui.categories.ComposableSingletons\$CategoriesSamples",
+            "dev.imagh.pft.app.ui.common.AccountPickerSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$AccountPickerSamples",
+            "dev.imagh.pft.app.ui.common.CategoryPickerSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$CategoryPickerSamples",
+            "dev.imagh.pft.app.ui.common.TagPickerSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$TagPickerSamples",
+            "dev.imagh.pft.app.ui.tags.TagsSamples",
+            "dev.imagh.pft.app.ui.tags.ComposableSingletons\$TagsSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

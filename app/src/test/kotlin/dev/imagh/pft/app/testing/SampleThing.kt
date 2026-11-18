@@ -7,7 +7,9 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Query
 import dev.imagh.pft.app.data.PftDatabase
+import dev.imagh.pft.app.data.account.AccountEntity
 import dev.imagh.pft.app.data.audit.AuditEntryEntity
+import dev.imagh.pft.app.data.category.CategoryEntity
 import dev.imagh.pft.app.data.common.BaseDao
 import dev.imagh.pft.app.data.common.EntityMapper
 import dev.imagh.pft.app.data.common.MetaColumns
@@ -16,6 +18,7 @@ import dev.imagh.pft.app.data.common.RoomEntityRepository
 import dev.imagh.pft.app.data.identity.DeviceEntity
 import dev.imagh.pft.app.data.identity.UserProfileEntity
 import dev.imagh.pft.app.data.settings.AppSettingEntity
+import dev.imagh.pft.app.data.tag.TagEntity
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.entity.LedgerEntity
 import dev.imagh.pft.ledger.ids.EntityId
@@ -82,6 +85,9 @@ class SampleThingRepository(
         DeviceEntity::class,
         AppSettingEntity::class,
         AuditEntryEntity::class,
+        AccountEntity::class,
+        CategoryEntity::class,
+        TagEntity::class,
         SampleThingEntity::class,
     ],
     version = 1,

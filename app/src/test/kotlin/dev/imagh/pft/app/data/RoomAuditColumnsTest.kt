@@ -66,7 +66,7 @@ class RoomAuditColumnsTest {
         // Every non-audited column must be named here with its reason. Adding one is a review decision.
         val allowlisted = AuditedTables.all.associate { it.table to it.nonAudited }.filterValues { it.isNotEmpty() }
 
-        allowlisted shouldBe mapOf("app_setting" to setOf("key"))
+        allowlisted shouldBe mapOf("app_setting" to setOf("key"), "account" to setOf("currency"))
     }
 
     // The check itself: it must catch what it exists to catch ----------------------------------

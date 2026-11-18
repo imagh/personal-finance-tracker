@@ -145,3 +145,87 @@ enum class PftSymbol(
         fun fromKey(key: String): PftSymbol? = byKey[key]
     }
 }
+
+/**
+ * The symbols a **category** can have, in the order the category form's symbol grid shows them. A symbol
+ * is offered there only if it is listed here: the registry also holds interface symbols (back, add, check ...)
+ * that must never become a category's icon, and an entry added to [PftSymbol] later is **not** offered until
+ * someone adds it to this list on purpose (it fails closed). `PftSymbolCategoriesTest` makes every symbol be
+ * classified as either a category symbol or an interface symbol, so a new one cannot be forgotten.
+ *
+ * Adding a category symbol therefore takes two edits: the enum entry and a line here (see "Adding an icon"
+ * in `docs/architecture/design-system.md`). Interface symbols are not listed.
+ */
+internal val CATEGORY_SYMBOLS: List<PftSymbol> =
+    listOf(
+        // Food and drink
+        PftSymbol.RESTAURANT,
+        PftSymbol.LOCAL_CAFE,
+        PftSymbol.FASTFOOD,
+        PftSymbol.LOCAL_BAR,
+        PftSymbol.BAKERY_DINING,
+        PftSymbol.LOCAL_PIZZA,
+        PftSymbol.ICECREAM,
+        // Shopping
+        PftSymbol.SHOPPING_CART,
+        PftSymbol.SHOPPING_BAG,
+        PftSymbol.GROCERY,
+        PftSymbol.CHECKROOM,
+        PftSymbol.REDEEM,
+        PftSymbol.DIAMOND,
+        // Transport
+        PftSymbol.DIRECTIONS_CAR,
+        PftSymbol.DIRECTIONS_BUS,
+        PftSymbol.TRAIN,
+        PftSymbol.LOCAL_TAXI,
+        PftSymbol.TWO_WHEELER,
+        PftSymbol.FLIGHT,
+        PftSymbol.LOCAL_GAS_STATION,
+        // Home and bills
+        PftSymbol.HOME,
+        PftSymbol.BED,
+        PftSymbol.CHAIR,
+        PftSymbol.BOLT,
+        PftSymbol.WATER_DROP,
+        PftSymbol.WIFI,
+        PftSymbol.CLEANING_SERVICES,
+        PftSymbol.HANDYMAN,
+        PftSymbol.RECEIPT_LONG,
+        PftSymbol.PHONE_IPHONE,
+        PftSymbol.TV,
+        // Health
+        PftSymbol.MEDICATION,
+        PftSymbol.LOCAL_HOSPITAL,
+        PftSymbol.FITNESS_CENTER,
+        PftSymbol.SPA,
+        PftSymbol.FAVORITE,
+        // Fun and travel
+        PftSymbol.MOVIE,
+        PftSymbol.SPORTS_ESPORTS,
+        PftSymbol.MUSIC_NOTE,
+        PftSymbol.THEATER_COMEDY,
+        PftSymbol.BEACH_ACCESS,
+        PftSymbol.LUGGAGE,
+        // Family and learning
+        PftSymbol.SCHOOL,
+        PftSymbol.MENU_BOOK,
+        PftSymbol.CHILD_CARE,
+        PftSymbol.PETS,
+        // Money and work
+        PftSymbol.WORK,
+        PftSymbol.PAYMENTS,
+        PftSymbol.ACCOUNT_BALANCE,
+        PftSymbol.SAVINGS,
+        PftSymbol.TRENDING_UP,
+        PftSymbol.CREDIT_CARD,
+        PftSymbol.ACCOUNT_BALANCE_WALLET,
+        PftSymbol.CURRENCY_RUPEE,
+        PftSymbol.LOCAL_ATM,
+        PftSymbol.RECEIPT,
+        PftSymbol.SUBSCRIPTIONS,
+        // Other
+        PftSymbol.CATEGORY,
+        PftSymbol.STAR,
+        PftSymbol.FLAG,
+        PftSymbol.VOLUNTEER_ACTIVISM,
+    )

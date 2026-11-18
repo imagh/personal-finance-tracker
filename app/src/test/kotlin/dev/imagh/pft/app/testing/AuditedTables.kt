@@ -1,12 +1,23 @@
 package dev.imagh.pft.app.testing
 
+import dev.imagh.pft.ledger.account.Account
+import dev.imagh.pft.ledger.account.AccountType
+import dev.imagh.pft.ledger.category.Category
+import dev.imagh.pft.ledger.category.CategoryColour
+import dev.imagh.pft.ledger.category.CategoryIcon
+import dev.imagh.pft.ledger.category.CategoryKind
+import dev.imagh.pft.ledger.category.SystemCategory
 import dev.imagh.pft.ledger.entity.Auditable
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.identity.Device
 import dev.imagh.pft.ledger.identity.UserProfile
+import dev.imagh.pft.ledger.ids.AccountId
+import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.DeviceId
+import dev.imagh.pft.ledger.ids.TagId
 import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.settings.AppSetting
+import dev.imagh.pft.ledger.tag.Tag
 import dev.imagh.pft.money.Paise
 import java.time.Instant
 
@@ -42,6 +53,40 @@ object AuditedTables {
             // `key` is the setting's identifier (its auditId), not an audited value; `updated_at` is
             // a meta column and the audit entry's own timestamp covers it.
             AuditedTable("app_setting", AppSetting("auto_lock_seconds", "60", at), nonAudited = setOf("key")),
+            // `currency` is always INR and not part of the model (plan D4): the mapper writes it and fails
+            // closed on anything else, so there is no value to audit.
+            AuditedTable(
+                "account",
+                Account(
+                    EntityMeta(AccountId("acc-1"), at, at, UserId("user-1"), DeviceId("device-1")),
+                    "HDFC Savings",
+                    AccountType.BANK,
+                    Paise(-250_000),
+                    "1234",
+                    "HDFC",
+                ),
+                nonAudited = setOf("currency"),
+            ),
+            // Every column of `category` is audited, none allowlisted. The sample sets every optional
+            // field (parent, icon, system key) so a column that were audited only when set cannot hide.
+            AuditedTable(
+                "category",
+                Category(
+                    EntityMeta(CategoryId("cat-1"), at, at, UserId("user-1"), DeviceId("device-1")),
+                    parentId = CategoryId("cat-0"),
+                    kind = CategoryKind.EXPENSE,
+                    name = "Groceries",
+                    colour = CategoryColour.CORAL,
+                    iconKey = CategoryIcon.Symbol("grocery"),
+                    sortOrder = 2,
+                    systemKey = SystemCategory.LOAN_EMI,
+                ),
+            ),
+            // The one business column of `tag` is its name, audited; no allowlist entry.
+            AuditedTable(
+                "tag",
+                Tag(EntityMeta(TagId("tag-1"), at, at, UserId("user-1"), DeviceId("device-1")), "Travel"),
+            ),
             AuditedTable("sample_thing", SampleThing(meta, "Chai", Paise(2_500), "hot")),
         )
 

@@ -340,6 +340,59 @@ primary action.
   capitalised) with the error as supporting text; it never clips what the user typed, so a length
   error is shown, not enforced. Goldens: `form-light`, `form-dark`, `form-light-2x` (`FormScreenshotTest`);
   the catalogue's Forms page is live.
+- **`snackbarHost` slot (B2a).** `CollapsingHeaderScaffold` passes a `snackbarHost: @Composable () -> Unit`
+  (empty by default, so no existing screen or golden changes) to M3's `Scaffold`, which places it above
+  the `bottomBar`, or above the bottom inset when there is none, and moves it clear of the FAB.
+  `CollapsingHeaderScaffoldTest` shows a snackbar through the slot with a 48dp navigation-bar inset
+  and checks it ends above it. Used for the delete Undo (`UndoDeleteSnackbar`) and the fixed
+  "Couldn't ... Try again." messages of the entity lists.
+- **`EntityListScreen` (B2a).** The one screen every entity list is (accounts now; categories and tags
+  in B4 and B5; loans and goals later): a `Standard` `CollapsingHeaderScaffold` with a labelled Back,
+  the **active** rows in a `GroupedSection`, a collapsed **"Archived (n)"** toggle (a 48dp button that
+  says "Collapsed" or "Expanded", with an expand chevron) over a second island, an `EmptyState` when
+  there are no rows at all, and the add FAB. A row is an M3 `ListItem` (`EntityRow`: title, optional
+  supporting line, optional leading `CategoryGlyph`, optional trailing overflow button that opens a
+  menu of exactly its `RowAction`s; `indent` insets a child by the 24dp spacing step). The overflow
+  button is labelled "Actions for <title>" and the badge is spoken as the row's glyph label when it has one (a category's and an account's are silent: their text already says it), so
+  nothing is read twice. `add` (a `RowAction`) is the FAB's label and callback and the empty state's
+  button; null hides both. The FAB sits in the scaffold's slot, so the list ends with a 96dp spacer
+  that keeps the last row clear of it. An optional `header` slot (B4a) draws a block as the first list
+  item, above the rows and above the empty state; the categories list puts its Expense/Income segmented
+  switch there. `EntityRow` and `RowAction` stay plain data: each consumer's
+  mapper (`AccountRowMapper`, `CategoryRowMapper`) owns what a row says. Goldens `entity-list-light`, `-dark`,
+  `-archived-light` (Archived expanded), `-empty-light`, `-empty-dark` (`EntityListScreenshotTest`) and
+  `categories-list-light`, `-dark`, `-archived-light` (`CategoriesScreenshotTest`, 1100dp and 1500dp tall
+  so the Archived section is in the picture).
+- **`PftBottomSheet` and `AccountPicker` (B2c).** Pickers (account, category, tag, date) open as
+  bottom sheets, never as top dropdowns. `PftBottomSheet(title, onDismiss) { close -> ... }` is the only
+  place that opts into `ExperimentalMaterial3Api` for `ModalBottomSheet`, so an M3 upgrade touches one
+  file. It adds no styling of its own: the sheet is M3's, so it takes `MaterialTheme.shapes.extraLarge`
+  (32dp, top corners only) and the theme's sheet container colour (never white `surfaceContainerLowest`),
+  with a dimming scrim and the standard slide. It opens at its full content height (`skipPartiallyExpanded`)
+  so a short picker is short and a long one scrolls. The title is a `titleLarge` heading. Back, a scrim tap,
+  a swipe down and the content's `close` all slide the sheet out and then call `onDismiss` once; the consumer
+  removes the sheet from the composition. `AccountPicker` is a stateless list of radio-style `ListItem` rows
+  (type badge, name, the list's supporting line): the selected row has `selected` semantics and a primary-
+  coloured check, and a tap picks, closes, and ignores further taps. The consumer's ViewModel supplies
+  `AccountService.active()`. Goldens `account-picker-{light,dark,empty-light,empty-dark}`
+  (`AccountPickerScreenshotTest`; the sheet's dialog window is drawn directly because `captureToImage`
+  cannot read it under Robolectric). `CategoryPicker` (B4b) and `TagPicker` (B5b) are separate components
+  and share only the sheet.
+- **`CategoryPicker`, the symbol grid and the colour swatches (B4b).** Three choice grids, all stateless, all a
+  `selectableGroup` of `Role.RadioButton` cells with the chosen one marked by `selected` semantics and a
+  2dp primary ring (`selectionRing`: a shape cue, never colour alone), each cell at least 48dp, laid out by
+  `TileGrid` (a `Column` of `Row`s sized from the available width, no experimental `FlowRow`). **TalkBack
+  rule:** a cell is announced once. `CategoryPicker` cells have visible text, so the badge is decorative
+  (`CategoryGlyph(name = null)`) and the cell is read from its text, plus "Under <parent>" for a
+  sub-category (also shown, so two same-named sub-categories differ on screen and by ear). `SymbolGrid` and
+  `ColourSwatches` cells have no text, so the cell itself carries the spoken name (the key as words, "Local
+  cafe", "Amber") and the badge inside is decorative. `CategoryPicker` shows each top-level category and its
+  sub-categories as one group starting a new row and keeps the service's order; with `topLevelOnly` it is the
+  form's parent field. `SymbolGrid` draws every badge in the category's chosen colour and starts with a "No
+  symbol" cell that shows the name's first letter. A swatch is the colour's own badge fill with an outline in
+  its content colour and a check mark when chosen. Goldens `category-picker-{light,dark,parent-light,parent-dark}`
+  (the sheet window drawn with `drawSheetWindow`), `category-symbol-grid-{light,dark}`,
+  `category-swatches-{light,dark}` and the form `category-edit-{new-light,new-dark,editing-light}`.
 - **Font scale.** Tested at 2.0x on the 393x851dp reference window with a subtitle: the title and
   subtitle end 67dp above the hero (Android's non-linear font scaling grows the 48sp hero only to
   about 56dp). A long hero shrinks to fit (DS5's `MoneyText`, below): `CollapsingHeaderScaffoldTest`
@@ -452,13 +505,27 @@ sources (M3's own internals may still use it).
   characters (invisible format characters such as zero-width space, word joiner, BOM and the bidi overrides are also refused;
   the zero-width joiner and tag characters are allowed, so ZWJ families, flags and subdivision flags work). Anything else, oversized
   input included, is the letter fallback (the name's first letter or digit, upper-cased). Whether a value is really a renderable
-  emoji is the B4 `EmojiInputValidator`'s job when a category is saved.
+  emoji is the B4c `EmojiInputValidator`'s job when an emoji is typed or pasted into the category form.
 - **`CategoryGlyph(source, name, colourKey, size, onClick)`** (`ui/common`) draws a symbol, one emoji or a letter on a
   `CategoryPalette` badge (12 hues, light and dark: `PftTheme.palette[colourKey]`; unknown name is `slate`). It is announced as the
-  category name, at a fixed dp size (`GlyphSize`: chip 28, row 40, hero 56), and is a button only when given `onClick`.
+  category name (or, with a null `name`, is decorative and silent, for a badge beside a title that already says it: category list rows),
+  at a fixed dp size (`GlyphSize`: chip 28, row 40, hero 56), and is a button only when given `onClick`.
 - **Emoji** are drawn by the system emoji font, so they differ between phones (accepted; symbols are the consistent option).
   `EmojiCompatInitializer` is removed from the merged manifest (it fetches a font through Google Play services);
   `ManifestHardeningTest` asserts it is absent. Compose is not affected: it uses the platform emoji font (minSdk 33).
+- **Emoji input** (B4c, `ui/categories`): the category form's icon section is `IconChoice`, a Symbol | Emoji switch of
+  `SingleChoiceSegmentedButtonRow` buttons (the app's existing idiom, announced as radio buttons with a selected state; not tabs,
+  which would add a second idiom and a panel promise the form lacks) over `SymbolGrid` or `EmojiTab`. The side opens on Emoji when the
+  category's icon is an emoji, else Symbol, then the user's choice stands (it survives recreation), and switching never changes the
+  icon. `EmojiTab` is a quick-pick of 24 emoji (`QUICK_PICK_EMOJI`, an explicit ordered list of single code points from Unicode 11 or
+  older) as one `selectableGroup` of `Role.RadioButton` cells with **no** description (a visible emoji is read by its Unicode name,
+  so one would say it twice), a "Chosen emoji" row (the emoji as a badge in the category colour, named by the emoji itself) and a
+  type-or-paste field that is a **sink**: it always shows nothing and hands the text, untouched, to the ViewModel. `EmojiInputValidator`
+  (an `object`) accepts text only if core's `CategoryIcon.Emoji.isValid` (run as is, never copied: length first, so a huge paste costs
+  nothing), exactly one ICU grapheme cluster, a country flag or an `Extended_Pictographic` first code point followed only by emoji
+  parts (VS16, skin tone, tag characters, ZWJ joining pictographs, no dangling ZWJ), and `Paint.hasGlyph` on this device all hold.
+  Keycaps are refused, whitespace is refused and never trimmed. The ViewModel keeps only a validated `CategoryIcon.Emoji` or the fixed
+  `emojiRejected` flag, shown as one fixed message that never echoes the paste. Goldens `category-emoji-tab-{light,dark}`.
 - **Descriptions** (plan Q7): a transaction row's glyph is its sub-category's if set, otherwise its category's; free emoji
   typed in titles render in the system font. There is no per-transaction icon.
 - **Not changed in DS3 (on purpose).** DS5's `EmptyState` placeholder glyph stays as it is: its glyph slot is filled by its
@@ -499,6 +566,11 @@ DS6e depends on the chrome keys `back`, `search`, `filter`, `overflow`, `chevron
    upstream commit, change `COMMIT` deliberately and re-run with `--update-hashes`, which accepts changed sources and overwrites their
    hashes; then review every changed drawable and hash.
 4. Add the entry to `PftSymbol` (`KEY("key", R.drawable.sym_key)`) and the key to `pft-symbol-keys.txt`.
+   **Then classify it.** A *category* symbol (one a category may have) must also be added to `CATEGORY_SYMBOLS`, the explicit
+   list directly under the enum in `PftSymbol.kt`, in display order: the category form's symbol grid offers exactly that
+   list and nothing else, so a symbol you forget is simply not offered (it fails closed). An *interface* icon (back, add,
+   share ...) must **not** go in that list; add it to `interfaceSymbols` in `PftSymbolCategoriesTest` instead.
+   `PftSymbolCategoriesTest` fails until every registry symbol is in one list or the other.
 5. Run `./gradlew :app:testDebugUnitTest --tests '*PftSymbolTest'`, then re-record the symbol goldens
    (`./gradlew :app:recordRoborazziDebug`) and review the PNG diff. Update the list above.
 6. The Apache-2.0 notice (`assets/licenses/material-symbols-APACHE-2.0.txt`) already covers every symbol from this source.

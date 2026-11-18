@@ -162,7 +162,9 @@ version the copy holds). It keeps the newest three. The last-opened schema versi
   a missing one.
 - **WAL.** The database is not open at backup time and SQLCipher cannot checkpoint without the
   key, so `pft.db-wal` is copied alongside as `pre-migration-v{n}.db-wal`, written first; the `.db`
-  rename is the commit point. To restore, put both files back under the database's name and open
+  rename is the commit point. If the `.db` copy fails, the log copy just written is deleted, so no
+  orphan is left, and `prune()` also deletes any `-wal` copy whose `.db` is absent (for example after
+  a crash between the two copies). To restore, put both files back under the database's name and open
   with the key; SQLCipher replays the log. On the emulator a force-stopped app really leaves tens of
   KB of committed data in the `-wal` file, so a copy of the `.db` alone would be stale.
 - **Never overwritten, never the key.** An existing backup for a version is kept (a crash after a
@@ -176,8 +178,27 @@ version the copy holds). It keeps the newest three. The last-opened schema versi
 - **When nothing is copied.** Fresh install, equal versions, or a stored version newer than the app
   (Room refuses a downgrade by itself).
 
-Migrations on an encrypted database get their instrumented test with the first real migration (B1,
-`migrate1To2` against `SupportOpenHelperFactory`): `Migrations.ALL` is empty at schema v1.
+### Migrations on the encrypted file (`EncryptedMigrationTest`)
+
+The first real migration (v1 to v2, `account`) is proven on the encrypted file, on the `pft35`
+emulator, by the instrumented `EncryptedMigrationTest` (not part of `check`). The recipe, which each
+later migration re-runs without edits because the test targets `PftDatabase.VERSION`:
+
+1. Create the managed key (`DbKeyManager`, own Keystore alias and directory) and take **a copy** of it.
+2. Build a **version 1** file with SQLCipher directly and that copy: every table and index statement
+   and the `room_master_table` identity row from the exported `schemas/.../1.json` (read from the test
+   APK's assets), `PRAGMA user_version = 1`, one user row. Never hand SQLCipher the array `useKey`
+   zero-fills (learnings 2026-10-30).
+3. Write `1` to the schema-version record, so the next start sees a migration is due.
+4. Open through `DatabaseFactory` (the real path: key, backup, eager open).
+5. Assert: `backups/pre-migration-v1.db` exists and does not start with `SQLite format 3\0`; the
+   database is at `PftDatabase.VERSION`; the user row survived; the audit triggers are all present; an
+   account row can be written and read back. The test fails with "A migration from 1 to 2 was
+   required but not found" when the migration is missing from `Migrations.ALL`.
+
+The v1 file is built from the exported JSON instead of with Room's `MigrationTestHelper` because the
+helper needs `room-testing` on the instrumented runtime classpath, which means new dependency-lock
+entries and checksums for artifacts the test APK has never resolved.
 
 ## Audit triggers
 

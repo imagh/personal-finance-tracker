@@ -86,6 +86,16 @@ class FieldStateTest {
     }
 
     @Test
+    fun `InvalidMaskedIdentifier maps to InvalidLastFour`() {
+        assertSame(FieldError.InvalidLastFour, LedgerError.InvalidMaskedIdentifier().toFieldError())
+    }
+
+    @Test
+    fun `DuplicateName maps to Duplicate`() {
+        assertSame(FieldError.Duplicate, LedgerError.DuplicateName("category").toFieldError())
+    }
+
+    @Test
     fun `form-level errors map to null`() {
         val formLevel: List<LedgerError> =
             listOf(
@@ -99,6 +109,12 @@ class FieldStateTest {
                 LedgerError.Archived("account"),
                 LedgerError.InvalidSettingKey(),
                 LedgerError.SettingValueTooLong(10),
+                LedgerError.DepthExceeded(),
+                LedgerError.KindMismatch(),
+                LedgerError.HasChildren(),
+                LedgerError.InvalidOrder(),
+                LedgerError.InvalidIcon(),
+                LedgerError.SystemCategoryProtected(),
             )
 
         formLevel.forEach { assertNull(it.toFieldError(), it::class.simpleName) }
