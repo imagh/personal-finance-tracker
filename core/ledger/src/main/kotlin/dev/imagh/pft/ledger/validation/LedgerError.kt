@@ -99,4 +99,25 @@ sealed class LedgerError(
 
     /** The category is a system category (such as Loan EMI), which can be renamed but not archived or deleted. */
     class SystemCategoryProtected : LedgerError("This category cannot be archived or deleted")
+
+    /**
+     * A transaction's lines (items) do not add up exactly to its amount, or it has none (the sum
+     * invariant, CLAUDE.md §3.8). The message names no amount.
+     */
+    class BreakdownMismatch : LedgerError("The items do not add up to the amount")
+
+    /** A transaction was given more than [max] lines (items). */
+    class TooManyLines(
+        val max: Int,
+    ) : LedgerError("A transaction may have at most $max items")
+
+    /** The same line id appears more than once in one list of lines. */
+    class DuplicateLine : LedgerError("An item appears more than once")
+
+    /**
+     * A transfer was sent to the plain transaction calls: a transfer leg cannot be created or edited
+     * there, and a transaction cannot change between transfer and expense or income (delete and
+     * re-create it instead). Transfers have their own calls (slice C2).
+     */
+    class IsTransfer : LedgerError("Transfers are created and edited as transfers")
 }

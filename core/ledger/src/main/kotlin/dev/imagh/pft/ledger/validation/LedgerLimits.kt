@@ -18,6 +18,15 @@ object LedgerLimits {
     /** Longest transaction description, in characters (plan §3.2 decision 8). */
     const val MAX_DESCRIPTION_LENGTH = 2_000
 
+    /** Most lines (items) on one transaction (IT §3.6). */
+    const val MAX_LINES_PER_TRANSACTION = 50
+
+    /** Longest note on a transaction line, in characters: the same bound as a title (IT §3.6). */
+    const val MAX_LINE_NOTE_LENGTH = 200
+
+    /** Longest bank reference (UTR, UPI or cheque number) on a transaction, in characters (slice C D2). */
+    const val MAX_BANK_REF_LENGTH = 64
+
     /** Longest app-setting key, in characters. */
     const val MAX_SETTING_KEY_LENGTH = 64
 

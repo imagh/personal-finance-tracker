@@ -22,6 +22,13 @@ class IdsTest :
             shouldThrow<IllegalArgumentException> { TagId("") }
         }
 
+        test("transaction and line ids keep their text and reject a blank one") {
+            TransactionId("x-1").value shouldBe "x-1"
+            TransactionLineId("l-1").value shouldBe "l-1"
+            shouldThrow<IllegalArgumentException> { TransactionId(" ") }
+            shouldThrow<IllegalArgumentException> { TransactionLineId("") }
+        }
+
         test("ids of different entities are distinct types with equal text") {
             (UserId("same") as EntityId).value shouldBe (DeviceId("same") as EntityId).value
             (UserId("same") as Any == DeviceId("same") as Any) shouldBe false
