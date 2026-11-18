@@ -353,8 +353,8 @@ primary action.
   there are no rows at all, and the add FAB. A row is an M3 `ListItem` (`EntityRow`: title, optional
   supporting line, optional leading `CategoryGlyph`, optional trailing overflow button that opens a
   menu of exactly its `RowAction`s; `indent` insets a child by the 24dp spacing step). The overflow
-  button is labelled "Actions for <title>" and the badge is spoken as the row's glyph label, so the
-  title is read once. `add` (a `RowAction`) is the FAB's label and callback and the empty state's
+  button is labelled "Actions for <title>" and the badge is spoken as the row's glyph label when it has one (a category's and an account's are silent: their text already says it), so
+  nothing is read twice. `add` (a `RowAction`) is the FAB's label and callback and the empty state's
   button; null hides both. The FAB sits in the scaffold's slot, so the list ends with a 96dp spacer
   that keeps the last row clear of it. An optional `header` slot (B4a) draws a block as the first list
   item, above the rows and above the empty state; the categories list puts its Expense/Income segmented
