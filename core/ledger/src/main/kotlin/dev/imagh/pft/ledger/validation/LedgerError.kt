@@ -73,8 +73,12 @@ sealed class LedgerError(
     /** A sub-category was put under a category that is itself a sub-category: two levels only. */
     class DepthExceeded : LedgerError("Categories can only be nested two levels")
 
-    /** A sub-category is not the same kind (expense or income) as its parent. */
-    class KindMismatch : LedgerError("A sub-category must be the same kind as its parent")
+    /**
+     * A category is the wrong kind (expense or income) for where it is used: a sub-category of a
+     * different kind than its parent, or a transaction line whose category does not match the
+     * transaction's type (an income category on an expense).
+     */
+    class KindMismatch : LedgerError("Category kind does not match")
 
     /** A category still has sub-categories, so it cannot be deleted yet. */
     class HasChildren : LedgerError("Delete the sub-categories first")
