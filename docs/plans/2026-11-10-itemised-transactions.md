@@ -217,6 +217,8 @@ These are amendments to the planned v5/v6 (renumbered at B-final: slice B built 
 
 ## 6. Implementation steps (TDD-ordered)
 
+**Superseded for slice C (2026-11-18):** the step text and PR table for C1a..C5 below are replaced by [`2026-11-18-m1a-slice-c-transactions.md`](2026-11-18-m1a-slice-c-transactions.md) §6, which reviewed them against the code after slice B. This plan's design (§3, §4) and its answered questions stay binding. IDs moved: this plan's C4b (items editor) is C4c there; C3 is C3a + C3b; C4 is C4a + C4b; C5 is C5a + C5b; C1d and C6 are new; `spendingLinesBetween` moves to D2/D3. The later-slice deltas below still apply.
+
 Conventions are those of the M1a plan (line 196): core tests use Kotest under `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/…`, fakes live in `core/ledger/src/testFixtures/…/fakes/`, app tests use Robolectric under `app/src/test/kotlin/dev/imagh/pft/app/…`, and migration tests go in `app/src/testDebug/…/data/MigrationTest.kt`. Every step ends with `./gradlew check` green. **Steps C1a..C5 replace the M1a plan's C1..C5 step text.** Steps marked "delta" add to an existing step in a later slice and ride in that slice's PR.
 
 ### Step P0 — Record the decision (docs only, this plan's PR)
@@ -315,7 +317,7 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
   - `spendingLinesBetween` returns the three lines (not one transaction), excludes income, transfers, deleted transactions and deleted lines, and Σ equals the month's expense total;
   - `accountBalance` is unchanged by itemising.
   `migrate5To6` backfills both FTS tables. The existing instrumented FTS check (plan risk table) also covers line notes.
-- **Green:** in `core/ledger/.../query/`, `TransactionFilter`, `TransactionQueries` (`month`, `search`, `spendingLinesBetween`, `SpendingLine`); `TransactionQueryDao`, the FTS entities and `MIGRATION_4_5` in `app`.
+- **Green:** in `core/ledger/.../query/`, `TransactionFilter`, `TransactionQueries` (`month`, `search`, `spendingLinesBetween`, `SpendingLine`); `TransactionQueryDao`, the FTS entities and `MIGRATION_5_6` in `app`.
 
 ### Step C4 — List and plain add/edit UI (delta to the plan's C4)
 - **Red:**
@@ -367,6 +369,8 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
   - **M1c:** the sync merge must run the invariant per transaction after a merge and send any violation to review. It must never be auto-fixed, and the losing values are kept (Y-5).
 
 ### PR breakdown (incremental — required)
+
+**Superseded (2026-11-18):** slice C's PR table is in [`2026-11-18-m1a-slice-c-transactions.md`](2026-11-18-m1a-slice-c-transactions.md) §6.
 
 **Target branches.**
 - P0 is a small docs change: one branch `docs/itemised-transactions-plan` → `main`.
