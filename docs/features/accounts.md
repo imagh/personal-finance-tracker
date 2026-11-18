@@ -91,8 +91,7 @@ first user.
 
 - **Only active accounts are listed.** Archived and deleted accounts never appear, so a new transaction
   cannot be put on one. They are sorted by name ignoring capital letters, like the list.
-- **Each row shows** the type badge (the same colours as the list; TalkBack says the type, for example
-  "Bank"), the name, and under it the type, issuer and last four digits ("Bank · HDFC · ••1234"), so two
+- **Each row shows** the type badge (the same colours as the list; silent for TalkBack), the name, and under it the type, issuer and last four digits ("Bank · HDFC · ••1234"), so two
   accounts with similar names can be told apart.
 - **The current account is marked** with a check mark, and TalkBack says it is selected. If the current
   account has since been archived it is simply not in the list, and nothing is marked.

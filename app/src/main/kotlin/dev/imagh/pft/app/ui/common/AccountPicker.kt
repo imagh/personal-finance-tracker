@@ -38,7 +38,7 @@ private val CHECK_SIZE = 24.dp
  *
  * - **Rows.** The list is one selectable group (TalkBack presents the rows as a set of choices) and each
  *   account is a radio-style row: its type badge (the same symbol and colour as the accounts list, from
- *   `AccountRowMapper`, spoken as the type, for example "Bank"), its name, and the supporting line of the
+ *   `AccountRowMapper`, silent because the supporting line speaks the type), its name, and the supporting line of the
  *   list ("Bank · HDFC · ••1234") so two similar names can be told apart.
  * - **Selection.** The row of [selected] has `selected` semantics (TalkBack says "selected") and a
  *   check mark. A [selected] id that is not among [accounts] (the transaction's account was archived
@@ -103,7 +103,7 @@ private fun AccountPickerRow(
         supportingContent = {
             Text(AccountRowMapper.supporting(typeLabel, account.issuer, account.maskedIdentifier))
         },
-        leadingContent = { CategoryGlyph(GlyphSource.Symbol(badge.symbol), typeLabel, badge.colourKey) },
+        leadingContent = { CategoryGlyph(GlyphSource.Symbol(badge.symbol), name = null, colourKey = badge.colourKey) },
         trailingContent =
             if (selected) {
                 {

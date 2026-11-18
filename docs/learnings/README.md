@@ -398,3 +398,14 @@ each entry short: what we learned, why it matters, and how to apply it next time
 - **Finding for C1:** the M1a and itemised plans still say `CHECK (amount > 0)` and `CHECK (position > 0)`. Room cannot declare a `CHECK` on an entity (learnings 2026-11-10), so C1c must hold those rules in core and the mappers, with no `CHECK` in the schema. Both plans now say so (M1a As built (B); itemised §4 and §10).
 - **Why:** a renumbering done only in the docs a PR happens to touch leaves stale `migrate3To4` names that a later session would copy; one grep for `migrate\d` and `(v\d)` over the plans finds them all.
 - **How to apply:** when a migration is inserted or split, grep every plan, `data-model.md` and READMEs for the old version and test names in the same PR, and bump the later ones together.
+
+### 2026-11-17 — Account type badge was spoken twice
+- **Learning:** the accounts list (`AccountRowMapper.toRow`) and `AccountPicker` rows gave the type badge the type as its label while the supporting line starts with the same type ("Bank · HDFC"), so TalkBack said it twice. Both badges are now silent (`RowGlyph.label = null`, `CategoryGlyph(name = null)`). The account edit screen's type selector is text segments, so it already spoke once.
+- **Tests:** `AccountRowMapperTest` (glyph label null) and `AccountPickerTest` (no type badge label in the unmerged tree) went red with the old labels, green after. No golden changed.
+- **Why:** a badge beside visible text that already says the same thing is decorative.
+- **How to apply:** before labelling a glyph, check the row's supporting text; only text-less controls carry the spoken name (already in DIGEST).
+
+### 2026-11-18 — Pre-push Python hooks must run on the system Python 3.9
+- **Learning:** the `tests-material-symbols` pre-push hook failed in the owner's shell with `TypeError: unsupported operand type(s) for |` because `python3` there is Apple's `/usr/bin/python3` (3.9.6) and `import_symbols.py` wrote `list[str] | None` in a signature, which needs 3.10. Agent sessions put `/opt/homebrew/bin` first (Python 3.13), so it never showed up. Fixed with `from __future__ import annotations` (all three tool suites pass on 3.9.6 and 3.13).
+- **Why:** hooks run `python3` from the pusher's PATH, so a script that only works on a newer Python passes in agent sessions and fails for the owner.
+- **How to apply:** run a new `tools/*` test with `/usr/bin/python3 -I -m unittest discover -s tools/<dir>` as well as the Homebrew one, and keep `X | None` annotations behind `from __future__ import annotations` (or use `Optional`).

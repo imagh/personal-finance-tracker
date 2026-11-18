@@ -47,7 +47,8 @@ internal object AccountRowMapper {
 }
 
 /**
- * This account as a list row: its name, the type badge (spoken as [typeLabel]), the supporting line,
+ * This account as a list row: its name, the type badge (silent: the supporting line already speaks
+ * [typeLabel]), the supporting line,
  * what tapping it does ([onClick]: open it for editing) and the given [actions].
  *
  * @param typeLabel the type's display name ("Bank"), already translated.
@@ -64,7 +65,7 @@ internal fun Account.toRow(
         key = meta.id.value,
         title = name,
         supporting = AccountRowMapper.supporting(typeLabel, issuer, maskedIdentifier),
-        glyph = RowGlyph(GlyphSource.Symbol(badge.symbol), badge.colourKey, typeLabel),
+        glyph = RowGlyph(GlyphSource.Symbol(badge.symbol), badge.colourKey, label = null),
         onClick = onClick,
         actions = actions,
     )

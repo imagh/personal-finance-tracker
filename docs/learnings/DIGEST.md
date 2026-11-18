@@ -140,6 +140,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - A new Gradle plugin: lenient-verification lock write, then metadata with `--write-locks --refresh-dependencies`, then strict build on an empty `GRADLE_USER_HOME` [2026-10-29]
 - Library manifests add entries: keep `ManifestHardeningTest` green (`tools:node="remove"` for the exported `ProfileInstallReceiver` and the `androidx.core` permission); `ui-tooling`'s exported `PreviewActivity` is removed in `src/debug/AndroidManifest.xml` [2026-10-29]
 - Emulator: develop on `pft35`; cold boot with `emulator -avd pft35 -no-window -no-audio -no-snapshot-load -no-snapshot-save -gpu host` (snapshot boot can hang with adb `offline`); use a throwaway AVD on another port for spikes; only release-signed builds go to the owner's phone, never enable USB debugging on it; feed the emulator redacted fixtures only [2026-10-28, 2026-10-30]
+- Python in `tools/` must run on the system Python 3.9.6 (the pre-push hooks use the pusher's `python3`): `from __future__ import annotations` for `X | None`; test with `/usr/bin/python3` too [2026-11-18]
 
 ## APK size and release shrink
 - R8 minify and resource shrinking are on for release; `:app:verifyReleaseShrink` (in `check`) fails if `MainActivity` is unmapped or a `mustBeRemoved` class survives. A slice that adds preview/sample code adds its compiled class prefix to `mustBeRemoved` (from `app/build/tmp/kotlin-classes/release`); keep rules only for what R8 reports broken, with a comment [2026-10-30]
