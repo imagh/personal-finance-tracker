@@ -5,6 +5,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -129,7 +130,8 @@ class AccountsFlowTest {
         awaitText("HDFC Savings")
 
         compose.onNodeWithText("Bank · HDFC · ••1234").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Bank").assertIsDisplayed()
+        // The badge is silent: the supporting line above already speaks the type once.
+        compose.onAllNodesWithContentDescription("Bank").fetchSemanticsNodes().size shouldBe 0
         compose.onAllNodesWithText("No accounts yet").fetchSemanticsNodes().size shouldBe 0
     }
 
