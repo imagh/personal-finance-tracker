@@ -105,6 +105,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - `AppContainer.open()` is the only entry (M1b's receiver calls it, never `DatabaseStartup.open`); open is a cached `Deferred` on a container-owned scope; keep blocking work off Main via an injected dispatcher; the open takes ~75 ms/connection key, so never on Main. M1b must handle credential-encrypted storage before first unlock and consider retrying `KeyUnavailable` only [2026-11-01, 2026-10-30]
 - App ID `dev.imagh.pft` and the release signing key are permanent: build and verify encrypted full export/import before changing either [2026-10-28]
 - C1 onwards: schema versions are C1 v5, C3 v6, D3 v7, E3 v8, F2 v9, G1 v10 (tag took v4); the plans' `CHECK (amount > 0)`/`CHECK (position > 0)` on transaction tables are enforced in core and mappers, never in the schema [2026-11-17]
+- FTS4 external content joins on the content table's implicit `rowid`; with TEXT ids it is not an alias and `VACUUM`/`VACUUM INTO` may renumber it, so an external-content index needs a `rebuild` rule and its shadow tables registered in the audit-columns test (slice C plan D6) [2026-11-18]
 
 ## Core and ledger rules
 - Entities implement `LedgerEntity`, list every persisted field in `auditFields()`, and write only through `AuditedWriter` (it stamps meta; no non-persisted fields, use getters); `AuditFieldsCheck` fixes property names to column names (`iconKey`, not `icon`) and audits enums by `name` [2026-10-29, 2026-11-14]
@@ -119,6 +120,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - EMIs are expenses linked to their loan; transfers and card bill payments are not income/expense (PRD LN-5 avoids double count) [2026-10-04]
 - Bank SMS are untrusted; parsing is on-device templates only; auto-logged transactions are flagged unverified [2026-10-04]
 - Reuse by layer: extract a shared block when the plan names two concrete consumers; composition, at most one generic base class; both re-implementing a shared block and a single-consumer abstraction block the PR [2026-10-28]
+- A core PR that adds a `LedgerError` maps it in `app/.../ui/common/LedgerErrorMapping.kt` in the same PR (exhaustive `when`, no `else`, so the app does not compile otherwise); a core service constructor change breaks `di/AppServices.kt` until its new dependency has a Room implementation, so it lands after that Room PR [2026-11-18]
 
 ## Logging and privacy
 - Log only through `SafeLog.event` with a sealed `LogEvent` subclass of numbers, enums or durations; never a `String` field or overload; add its sample to `LogEventShapeTest`; the event is added by the PR that first emits it (`EntitySaveFailed` came with B2b, not B2a) [2026-11-01, 2026-11-14]
@@ -161,3 +163,4 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - When a deferred human check is done, update every place that deferred it (design doc, module README, the learnings entry, the plan's pending row) in the same change [2026-11-03]
 - Decisions log is PRD §12 (§16 is delivery constraints); amend plan text rather than replace it when later plans are deltas to it [2026-11-03, 2026-11-10]
 - Design checks for look and feel: render an HTML mockup in headless Chrome and show the owner screenshots before writing plan text; verify font facts from the file (cmap/GSUB/fvar/hmtx), never assume; compute hues, don't assume them [2026-10-29, 2026-10-30]
+- Before the first PR of a slice whose plan predates the last slice's merge, check its steps against `main` (named classes, constructors, new errors, detekt function counts) and record the drift in the plan first [2026-11-18]
