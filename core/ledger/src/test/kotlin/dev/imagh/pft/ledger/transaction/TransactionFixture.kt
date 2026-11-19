@@ -18,7 +18,6 @@ import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.tag.Tag
 import dev.imagh.pft.money.Paise
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import java.time.Instant
 import java.util.Random
@@ -35,19 +34,9 @@ internal class TransactionFixture(
     seed: Long? = null,
 ) {
     val kit = LedgerTestKit()
+    private val ids = if (seed == null) kit.ids else Uuid7(kit.clock, Random(seed))
     val service =
-        if (seed == null) {
-            kit.transactions
-        } else {
-            TransactionService(
-                kit.store,
-                kit.writer,
-                kit.transactionRepository,
-                TransactionLines(kit.writer, kit.transactionLineRepository, kit.categoryRepository, kit.tagRepository),
-                kit.accountRepository,
-                Uuid7(kit.clock, Random(seed)),
-            )
-        }
+        if (seed == null) kit.transactions else serviceOver(kit.transactionLineRepository)
     val trail get() = kit.store.auditLog.entries
 
     lateinit var me: Identity
@@ -55,6 +44,20 @@ internal class TransactionFixture(
     lateinit var food: Category
     lateinit var salary: Category
     lateinit var travel: Tag
+
+    /**
+     * A [TransactionService] over the kit's fakes but with [lineRepository] as the line store: how a
+     * test injects a failing store. It uses this fixture's id source, so its ids follow the seed.
+     */
+    fun serviceOver(lineRepository: TransactionLineRepository) =
+        TransactionService(
+            kit.store,
+            kit.writer,
+            kit.transactionRepository,
+            TransactionLines(kit.writer, lineRepository, kit.categoryRepository, kit.tagRepository, ids),
+            kit.accountRepository,
+            ids,
+        )
 
     /** Sets up the identity and the references the drafts use. */
     suspend fun start(): TransactionFixture {
@@ -153,16 +156,17 @@ internal class TransactionFixture(
 }
 
 /**
- * Runs [block], which must be refused with an [E], and checks the refusal changed nothing: no
- * transaction or line written (tombstones and all) and no audit entry appended. Returns the error.
+ * Runs [block], which must be refused with an [E], and checks the refusal changed nothing: the stored
+ * transactions and lines (tombstones and all) and the audit trail are equal to their snapshots from
+ * before, not merely the same size. Returns the error.
  */
 internal suspend inline fun <reified E : Throwable> TransactionFixture.shouldRefuse(block: () -> Any?): E {
     val transactions = storedTransactions()
     val lines = storedLines()
-    val trailSize = trail.size
+    val written = trail.toList()
     val error = shouldThrow<E> { block() }
     storedTransactions() shouldBe transactions
     storedLines() shouldBe lines
-    trail shouldHaveSize trailSize
+    trail.toList() shouldBe written
     return error
 }

@@ -6,6 +6,7 @@ import dev.imagh.pft.ledger.ids.TransactionId
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.tx.TransactionRunner
 import dev.imagh.pft.ledger.validation.LedgerError
+import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.ledger.validation.Validation
 
 /**
@@ -20,6 +21,11 @@ import dev.imagh.pft.ledger.validation.Validation
  * - the draft passes [TransactionDraft.validated]: expense or income only ([LedgerError.IsTransfer]),
  *   a positive amount within the limit, bounded optional texts, and lines that split the amount
  *   exactly ([Breakdown]);
+ * - the lines ([TransactionLines]): one to [LedgerLimits.MAX_LINES_PER_TRANSACTION], their amounts adding
+ *   up exactly to the amount, matched to the stored lines by id on an edit (a draft id that is not a
+ *   live line of this transaction is `NotFound("transaction_line")`), positions renumbered in draft
+ *   order, a removed line tombstoned; the sum is re-read before commit and a mismatch fails closed
+ *   with [IllegalStateException] (IT §3.3 rules 4 and 5);
  * - the account must be live when it is set or changed; a category must be live when it is set or
  *   changed, and of the transaction's kind always; an added tag must be live (IT §3.3 rule 3);
  * - a manual entry is [TxnSource.MANUAL] and [TxnState.VERIFIED] (L-6); the direction follows the type;
@@ -29,8 +35,6 @@ import dev.imagh.pft.ledger.validation.Validation
  *   back exactly the lines it had (IT §3.3 rule 7).
  * - a transfer leg is refused by every call here ([LedgerError.IsTransfer]): one leg must never be
  *   edited, deleted, restored or verified without the other. The transfer service (C2) acts on both.
- *
- * **One line in C1a.** Create and edit take exactly one line until itemising (C1b) adds several.
  *
  * Nothing here logs or puts user text in an error (CLAUDE.md §3.7).
  *
@@ -50,20 +54,19 @@ class TransactionService(
     private val ids: Uuid7,
 ) {
     /**
-     * Creates a manual expense or income from [draft], with its line, and audits a CREATE of each.
+     * Creates a manual expense or income from [draft], with its lines, and audits a CREATE of each.
      *
-     * @return the transaction and its line.
+     * @return the transaction and its lines.
      * @throws LedgerError.IsTransfer for a transfer.
      * @throws LedgerError the amount, text and line errors of [TransactionDraft.validated].
      * @throws LedgerError.NotFound / [LedgerError.Deleted] / [LedgerError.Archived] for the account,
-     *   the category or a tag; [LedgerError.NotFound] (`transaction_line`) if the line names an id.
-     * @throws LedgerError.KindMismatch if the category is not of the transaction's kind.
+     *   the category or a tag; [LedgerError.NotFound] (`transaction_line`) if a line names an id.
+     * @throws LedgerError.KindMismatch if a line's category is not of the transaction's kind.
      * @throws LedgerError.NotInitialised before first-run setup.
-     * @throws IllegalArgumentException for more than one line (until C1b).
+     * @throws IllegalStateException if the stored lines do not add up to the amount (fails closed).
      */
     suspend fun create(draft: TransactionDraft): TransactionWithLines {
         val valid = draft.validated()
-        val only = valid.onlyLine()
         return runner.inTransaction {
             Validation.requireLive(accounts.get(valid.accountId), ACCOUNT)
             val txn =
@@ -85,27 +88,27 @@ class TransactionService(
                         transferGroupId = null,
                     )
                 }
-            TransactionWithLines(txn, listOf(lines.createFirst(txn, only)))
+            TransactionWithLines(txn, lines.create(txn, valid.lines))
         }
     }
 
     /**
-     * Replaces the payment facts and the line of transaction [id] with [draft] and audits an UPDATE
-     * of each row whose fields changed. Expense and income may swap when the category matches the new
-     * kind. The state, source and message facts are kept.
+     * Replaces the payment facts and the lines of transaction [id] with [draft] and audits each row
+     * written: an UPDATE of the fields that changed, a CREATE of an added line, a DELETE of a removed
+     * one. Expense and income may swap when every category matches the new kind. The state, source and
+     * message facts are kept, so itemising an auto-captured transaction changes lines only.
      *
      * @throws LedgerError.NotFound / [LedgerError.Deleted] for an unknown or deleted transaction.
      * @throws LedgerError.IsTransfer for a transfer leg, or a draft that would make one.
-     * @throws LedgerError.NotFound (`transaction_line`) unless the draft line names the transaction's line.
+     * @throws LedgerError.NotFound (`transaction_line`) for a draft line id that is not one of its live lines.
      * @throws LedgerError the validation and reference errors of [create], for what changed.
-     * @throws IllegalArgumentException for more than one line (until C1b).
+     * @throws IllegalStateException if the stored lines do not add up to the amount (fails closed).
      */
     suspend fun edit(
         id: TransactionId,
         draft: TransactionDraft,
     ): TransactionWithLines {
         val valid = draft.validated()
-        val only = valid.onlyLine()
         return runner.inTransaction {
             val txn =
                 writer.update(transactions, id) { old ->
@@ -122,7 +125,7 @@ class TransactionService(
                         bankRef = valid.bankRef,
                     )
                 }
-            TransactionWithLines(txn, listOf(lines.updateOnly(txn, only)))
+            TransactionWithLines(txn, lines.reconcile(txn, valid.lines))
         }
     }
 
@@ -185,14 +188,4 @@ class TransactionService(
         fun directionOf(type: TransactionType): Direction =
             if (type == TransactionType.INCOME) Direction.IN else Direction.OUT
     }
-}
-
-/**
- * The draft's one line. C1b: itemising replaces this with the reconciliation of several lines, and
- * the refusal goes. Until then more than one line fails closed, before anything is written.
- */
-private fun TransactionDraft.onlyLine(): LineDraft {
-    // C1b: remove with the reconciliation (IT §3.3 rule 4).
-    require(lines.size == 1) { "Only one item per transaction is supported yet" }
-    return lines.first()
 }

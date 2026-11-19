@@ -13,7 +13,6 @@ import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.money.Paise
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 
 /** Creating a plain (one-line) transaction and the rules that guard it (slice C C1a; IT §3.1 to §3.3). */
@@ -294,16 +293,6 @@ class TransactionServiceTest :
                     .shouldRefuse<LedgerError.NotFound> {
                         f.service.create(f.draft(lineId = TransactionLineId("l-1")))
                     }.what shouldBe "transaction_line"
-            }
-
-            test("more than one line is refused until itemising arrives (C1b), writing nothing") {
-                val f = TransactionFixture().start()
-                val lines = listOf(100L, 200L).map { LineDraft(amount = Paise(it), categoryId = f.food.meta.id) }
-                val two = f.draft(amount = 300).copy(lines = lines)
-
-                f.shouldRefuse<IllegalArgumentException> { f.service.create(two) }
-                f.storedTransactions() shouldHaveSize 0
-                f.trail.none { it.entityType == "ledger_transaction" } shouldBe true
             }
 
             test("nothing is written before first-run setup") {

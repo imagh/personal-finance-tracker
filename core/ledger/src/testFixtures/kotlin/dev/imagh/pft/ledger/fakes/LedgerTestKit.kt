@@ -79,7 +79,7 @@ class LedgerTestKit {
             store,
             writer,
             transactionRepository,
-            TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository),
+            TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository, ids),
             accountRepository,
             ids,
         )

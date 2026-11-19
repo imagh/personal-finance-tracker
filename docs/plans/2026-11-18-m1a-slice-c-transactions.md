@@ -382,7 +382,7 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
     - `delete` tombstones the transaction only and `restore` brings back the same lines;
     - `markVerified` on an UNVERIFIED row (seeded through the fake) is audited, and on a VERIFIED one is a no-op.
 - **Green:**
-  - in `core/ledger/.../transaction/`: `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `Breakdown`, `TransactionDraft` (+ `validated()`), `LineDraft`, `TransactionWithLines`, `TransactionRepository`, `TransactionLineRepository` (`liveLinesOf`, `allLineIdsOf`), `TransactionService`;
+  - in `core/ledger/.../transaction/`: `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `Breakdown`, `TransactionDraft` (+ `validated()`), `LineDraft`, `TransactionWithLines`, `TransactionRepository`, `TransactionLineRepository` (`liveLinesOf`; `allLineIdsOf` deferred to its first caller, C1b learnings), `TransactionService`;
   - `TransactionId` and `TransactionLineId` in `ids/Ids.kt`;
   - `LedgerError`: `BreakdownMismatch`, `TooManyLines(max)`, `DuplicateLine`, `IsTransfer`;
   - `LedgerLimits`: `MAX_LINES_PER_TRANSACTION`, `MAX_LINE_NOTE_LENGTH`, `MAX_BANK_REF_LENGTH`;

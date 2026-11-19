@@ -259,16 +259,12 @@ class TransactionEditTest :
         }
 
         context("which transaction and which line") {
-            test("the draft line must name the transaction's line") {
+            test("a draft line id that is not one of the transaction's live lines is refused") {
                 val (f, saved) = saved()
                 val other = f.service.create(f.draft(title = "Other"))
                 val draft = f.draftOf(saved)
                 val line = draft.lines.single()
 
-                f
-                    .shouldRefuse<LedgerError.NotFound> {
-                        f.service.edit(saved.transaction.meta.id, draft.copy(lines = listOf(line.copy(id = null))))
-                    }.what shouldBe "transaction_line"
                 f
                     .shouldRefuse<LedgerError.NotFound> {
                         val foreign = other.line().meta.id
