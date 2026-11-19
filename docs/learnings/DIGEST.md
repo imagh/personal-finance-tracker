@@ -39,6 +39,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - JUnit 4 `assertEquals` takes the message first, JUnit 5 last [2026-10-30]
 - Tests that assert "the sans" name it (`sansFamily(SansFont.FIGTREE)`), not `FontFamily.Default`; negative-control a check that could pass vacuously (a tabular-figures check needs a no-`tnum` control) [2026-10-31]
 - Pre-commit does not run `check`: run `./gradlew :core:<module>:check` before committing; keep each commit's code and tests together; JaCoCo coverage is on `core`, `requireTestsForProductionCode` closes fail-open [2026-10-29]
+- An exact-equality guard (sum == amount) needs a fault in each direction: a store that drops a write and one that stores an extra, or `==` mutated to `>=` survives; inject it with a test-local `Repository by real` wrapper, not a wider kit [2026-11-18]
 - Delete a bad test rather than keep an unfalsifiable guard (an `AtomicBoolean` "report once" guard no test could fail was removed as YAGNI) [2026-11-16]
 
 ## Goldens (Roborazzi)

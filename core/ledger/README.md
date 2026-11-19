@@ -8,8 +8,8 @@ settings. This is the **foundation** (plan step A3); accounts, categories, tags,
 loans and goals are added to this module by later slices, composed from the building blocks
 below. **Accounts** are the first entity built on them (slice B1b, package `account`), **categories**
 the second (slice B3a, package `category`, with first-run seeding in `setup`) and **tags** the third
-(slice B5a, package `tag`). **Transactions** and their lines (items) are the fourth (slice C1a,
-package `transaction`). Pure Kotlin/JVM, no
+(slice B5a, package `tag`). **Transactions** and their lines (items) are the fourth (slices C1a and
+C1b, package `transaction`). Pure Kotlin/JVM, no
 Android imports, no third-party runtime dependency (only `:core:money`).
 
 ## Responsibilities & boundaries
@@ -52,7 +52,7 @@ entity step composes instead of re-implementing:
 | `AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository` | `account` | accounts (PRD L-4): `create(draft)`, `edit(id, draft)`, `archive`/`unarchive`, `delete`/`restore`, `active()`, `all()`, `lists()` (active and archived, each sorted by name ignoring case, then by creation order); `AccountRules.requireMaskedIdentifier(text)` is public so a form can check the last four with core's rule. `AccountRepository` adds `allLive()` to `EntityRepository` |
 | `CategoryService`, `Category`, `CategoryLists`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `lists(kind)` (for a list screen: `CategoryLists(active, archived)`, B4a), `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
 | `TagService`, `Tag`, `TagLists`, `TagRepository` | `tag` | tags (PRD L-3): `create(name)`, `edit(id, name)` (rename), `archive`/`unarchive`, `delete`/`restore`, `lists()` (active and archived, each sorted by name ignoring case, then by id), `pickable()` (the active list). `TagRepository` adds `allLive()` to `EntityRepository`. The service takes a `TransactionRunner` for the check-then-write name rule |
-| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-6, L-9, L-11), slice C1a: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay), `markVerified(id)`, `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines` is the line logic the transaction and (from C2) transfer services share: its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised); `TransactionRepository` adds nothing yet. **C1a takes exactly one line per transaction**: itemising arrives in C1b |
+| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-6, L-9, L-11), slices C1a and C1b: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay), `markVerified(id)`, `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines(writer, lines, categories, tags, ids)` is the line logic the transaction and (from C2) transfer services share (create, reconcile, the reference checks and the sum re-check): its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised); `TransactionRepository` adds nothing yet. Create and edit take 1 to 50 lines (itemising, C1b) |
 | `FirstRunService` | `setup` | `initialise(userName, deviceLabel)`: the identity (`IdentityService.initialise`) **and** `CategoryService.seedDefaults()` in one transaction. A plain coordinating class; `IdentityService` stays unaware of categories because the writer needs the identity service (a construction cycle otherwise) |
 
 ### Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
@@ -215,15 +215,30 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     category must be live when set or changed, an added tag must be live; what a transaction keeps
     may have been archived since, so editing an old transaction's title never fails. The category's
     kind must match the type **always** (`KindMismatch`), so expense ↔ income works only with a
-    matching category. A refused call writes no row and no audit entry (transaction and line are
+    matching category. A refused call writes no row and no audit entry (the transaction and its lines are
     written in one `runner.inTransaction`).
-  - *Line ids.* Line 1 of a new transaction is `NameBasedId.of("transaction-line", txnId, "1")`
-    (IT §3.3 rule 8), pinned by a test, so devices that derive the same transaction derive the same
-    line. On create a draft line must have no id; on edit it must name the transaction's live line
-    (`NotFound("transaction_line")`).
-  - *One line in C1a.* More than one draft line fails closed with `IllegalArgumentException` before
-    anything is written; C1b replaces this with the reconciliation of several lines and the
-    `requireBalanced` re-check.
+  - *Several lines, reconciled (C1b; IT §3.3 rules 4 to 8).* `create` and `edit` take 1 to 50 lines
+    (`TransactionLines`). On **create** every line is new (a draft line must name no id,
+    `NotFound("transaction_line")`) and gets the id `NameBasedId.of("transaction-line", txnId,
+    position)` for position 1..n, so the same transaction derives the same lines on every device.
+    On **edit** the drafts are matched to the live lines **by id**: a draft with the id of a live line
+    of this transaction updates it (a change-free one writes nothing), a draft with no id adds a line
+    (a random time-ordered `Uuid7`), and a live line no draft names is tombstoned (audited DELETE; its
+    row stays, so its id can never be used again). **Positions are renumbered 1..n in draft order**,
+    so a reordering changes only the `position` fields. A draft id that is another transaction's
+    line, a tombstoned line or unknown is `NotFound("transaction_line")`: a line can never be
+    re-parented or brought back through a draft. References are checked as above on every line: the
+    kind always, liveness only for a new line, a changed category or an added tag. Itemising changes
+    lines only: the payment facts of an auto-captured transaction (`amount`, `account_id`,
+    `occurred_at`, `bank_ref`, `source_message_id`, `source`, `state`) are untouched and no
+    `ledger_transaction` entry is written. Changing the amount needs lines that add up to the new
+    amount in the same edit (`BreakdownMismatch` otherwise).
+  - *Defence in depth.* Before `create` or `edit` returns, `TransactionLines` reads the live lines
+    back; if they do not add up to the amount it throws `IllegalStateException` (fixed text, no
+    amounts), which rolls back the whole `runner.inTransaction`: the transaction, its lines and the
+    audit entries. `Breakdown` has already checked the drafts, so this only fires on a bug in the
+    reconciliation or a store that misbehaves; since the sum must match exactly, tests inject a store that
+    drops an insert and one that stores an extra line.
   - *Edit* audits only the changed fields of each row and keeps the state, source and message facts;
     a no-op edit writes nothing. *Delete and restore* act on the transaction only: its lines stay,
     hidden with it, so restore brings back exactly the lines it had. `get` reads the transaction and
@@ -337,6 +352,7 @@ Tests (Kotest on JUnit 5, `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/`): 
 `transaction/LedgerTransactionTest` and `TransactionLineTest` (audit keys, `tag_ids`), `transaction/BreakdownTest`
 (every split rule, plus partition property tests), `transaction/TransactionServiceTest` (create: pinned line id,
 validation, references), `transaction/TransactionEditTest` (exact audit diffs, no-op, type change, rule 3),
+`transaction/TransactionItemisationTest` (several lines, reconciliation by id, foreign and tombstoned ids, positions, auto-captured facts, the fail-closed sum re-check over a faulty store),
 `transaction/TransactionLifecycleTest` (delete, restore, `markVerified`, `get` order), `validation/TransactionErrorsTest`,
 `setup/FirstRunServiceTest` (identity plus defaults, all-or-nothing), `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including
 rollback of the write and its audit entry), and `fakes/` tests that pin the fake runner's
