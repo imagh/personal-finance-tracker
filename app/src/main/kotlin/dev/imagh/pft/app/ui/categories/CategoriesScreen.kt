@@ -152,6 +152,7 @@ fun CategoriesRoute(
         when (notice) {
             null -> null
             CategoriesNotice.DeleteBlocked -> stringResource(R.string.categories_delete_blocked)
+            CategoriesNotice.InUse -> stringResource(R.string.entity_delete_in_use)
             is CategoriesNotice.Failed -> stringResource(notice.action.failureRes())
         }
     LaunchedEffect(notice) {

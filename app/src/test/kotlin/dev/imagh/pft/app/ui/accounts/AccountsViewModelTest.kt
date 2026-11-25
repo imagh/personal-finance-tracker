@@ -5,6 +5,7 @@ import dev.imagh.pft.app.data.audit.RoomAuditLog
 import dev.imagh.pft.app.log.EntityAction
 import dev.imagh.pft.app.log.EntityKind
 import dev.imagh.pft.app.log.LogEvent
+import dev.imagh.pft.app.log.SafeLog
 import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
@@ -15,6 +16,9 @@ import dev.imagh.pft.ledger.audit.AuditAction
 import dev.imagh.pft.ledger.audit.AuditEntry
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.ids.AccountId
+import dev.imagh.pft.ledger.transaction.LineDraft
+import dev.imagh.pft.ledger.transaction.TransactionDraft
+import dev.imagh.pft.ledger.transaction.TransactionType
 import dev.imagh.pft.money.Paise
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CancellationException
@@ -26,6 +30,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
+import java.time.Instant
 
 /**
  * [AccountsViewModel] over real in-memory Room through the production wiring ([RoomTestKit]): what the
@@ -68,6 +73,22 @@ class AccountsViewModelTest {
         database.openHelper.readableDatabase.query("SELECT COUNT(*) FROM audit_entry").use { cursor ->
             cursor.moveToFirst()
             cursor.getLong(0)
+        }
+
+    /** What this app logged through [SafeLog], by message: the framework's own lines are not ours to judge. */
+    private fun logged() = ShadowLog.getLogs().filter { it.tag == SafeLog.TAG }.map { it.msg }
+
+    private fun spendOn(id: AccountId) =
+        blocking {
+            kit.transactions.create(
+                TransactionDraft(
+                    TransactionType.EXPENSE,
+                    Paise(1_000),
+                    Instant.parse("2026-11-20T10:00:00Z"),
+                    id,
+                    lines = listOf(LineDraft(null, Paise(1_000), null)),
+                ),
+            )
         }
 
     private fun trail(id: AccountId) = blocking { kit.trailOf("account", id.value) }.map { it.action }
@@ -300,6 +321,42 @@ class AccountsViewModelTest {
     }
 
     @Test
+    fun `deleting an account that a transaction uses shows the in-use notice, writes nothing and logs nothing`() {
+        val ids = seed()
+        spendOn(ids.getValue("Wallet"))
+        val vm = viewModel()
+        val auditRows = auditRowCount()
+        ShadowLog.clear()
+
+        vm.delete(ids.getValue("Wallet"))
+        awaitMain { vm.state.value.inUse }
+
+        vm.state.value.undo shouldBe null
+        vm.state.value.failedAction shouldBe null
+        vm.names { it.active } shouldBe listOf("Axis Card", "HDFC Savings", "Wallet")
+        auditRowCount() shouldBe auditRows
+        trail(ids.getValue("Wallet")) shouldBe listOf(AuditAction.CREATE)
+        // A refused delete is an answer, not a failure: nothing of ours is logged.
+        logged() shouldBe emptyList()
+
+        vm.inUseShown()
+        vm.state.value.inUse shouldBe false
+    }
+
+    @Test
+    fun `an account that no transaction uses is still deleted while another is in use, with no notice`() {
+        val ids = seed()
+        spendOn(ids.getValue("Wallet"))
+        val vm = viewModel()
+
+        vm.delete(ids.getValue("Axis Card"))
+        awaitMain { vm.state.value.undo != null }
+
+        vm.state.value.inUse shouldBe false
+        vm.names { it.active } shouldBe listOf("HDFC Savings", "Wallet")
+    }
+
+    @Test
     fun `a failing delete reports DELETE, keeps the account and offers no undo`() {
         val ids = seed()
         val vm = viewModel()
@@ -313,6 +370,8 @@ class AccountsViewModelTest {
         vm.state.value.undo shouldBe null
         vm.names { it.active } shouldBe listOf("Axis Card", "HDFC Savings", "Wallet")
         ShadowLog.getLogs().single().msg shouldBe "entity_action_failed kind=ACCOUNT action=DELETE"
+        // Another failure is not the in-use answer: it logs and shows the failure, never the in-use notice.
+        vm.state.value.inUse shouldBe false
     }
 
     @Test

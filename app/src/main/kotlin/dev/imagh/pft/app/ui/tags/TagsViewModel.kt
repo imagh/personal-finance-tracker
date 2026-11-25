@@ -33,6 +33,9 @@ import kotlinx.coroutines.sync.withLock
  *   Never shown or logged: it only identifies the offer.
  * @property failedAction the action that failed unexpectedly and has not been shown yet; the screen
  *   shows a fixed "Couldn't ... Try again." message and calls [TagsViewModel.failureShown].
+ * @property inUse true after a delete was refused because transactions use the tag and has not been
+ *   shown yet; the screen shows the fixed "In use by transactions. Archive it instead." message and calls
+ *   [TagsViewModel.inUseShown].
  */
 data class TagsUiState(
     val active: List<Tag> = emptyList(),
@@ -40,6 +43,7 @@ data class TagsUiState(
     val loaded: Boolean = false,
     val undo: TagId? = null,
     val failedAction: EntityAction? = null,
+    val inUse: Boolean = false,
 )
 
 /**
@@ -52,8 +56,9 @@ data class TagsUiState(
  *   `HomeViewModel` rather than showing a made-up list.
  * - **One at a time.** Actions and reads run one after another (a [Mutex]), so a read that started
  *   before an action never overwrites the list with older data.
- * - **Failures (A5 save shape).** A [LedgerError] (the tag was deleted or never existed, from another
- *   path; or an undo whose name was taken meanwhile) is an answer, not a failure: nothing is written, the
+ * - **Failures (A5 save shape).** Deleting a tag that transactions use ([LedgerError.InUse]) sets
+ *   [TagsUiState.inUse], a fixed message. Any other [LedgerError] (the tag was deleted or never existed,
+ *   from another path; or an undo whose name was taken meanwhile) is an answer too: nothing is written, the
  *   list is refreshed and nothing is logged. Any other exception leaves the list as it was, sets
  *   [TagsUiState.failedAction] (a fixed message, never exception text) and logs one enum-only
  *   `entity_action_failed` event. A cancellation is rethrown. Every action is one audited transaction, so
@@ -102,7 +107,13 @@ class TagsViewModel(
     /** The screen showed the failure message. */
     fun failureShown() = mutableState.update { it.copy(failedAction = null) }
 
-    private suspend fun refresh(offerUndoFor: TagId? = null) {
+    /** The screen showed the in-use message. */
+    fun inUseShown() = mutableState.update { it.copy(inUse = false) }
+
+    private suspend fun refresh(
+        offerUndoFor: TagId? = null,
+        inUse: Boolean = false,
+    ) {
         val lists = tags.lists()
         mutableState.update {
             it.copy(
@@ -110,6 +121,7 @@ class TagsViewModel(
                 archived = lists.archived,
                 loaded = true,
                 undo = offerUndoFor ?: it.undo,
+                inUse = inUse || it.inUse,
             )
         }
     }
@@ -123,9 +135,13 @@ class TagsViewModel(
         viewModelScope.launch {
             serial.withLock {
                 var offer: TagId? = null
+                var blocked = false
                 try {
                     write()
                     offer = offerUndoFor
+                } catch (_: LedgerError.InUse) {
+                    // An answer, not a failure: transactions use it. Nothing was written and nothing is logged.
+                    blocked = true
                 } catch (_: LedgerError) {
                     // The tag is gone, or its name was taken since it was deleted: an answer, not a failure.
                     // The refresh below shows the truth.
@@ -141,7 +157,7 @@ class TagsViewModel(
                     }
                     return@withLock
                 }
-                refresh(offer)
+                refresh(offer, blocked)
                 if (consumesOffer) mutableState.update { it.copy(undo = null) }
             }
         }

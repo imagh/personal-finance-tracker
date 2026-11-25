@@ -7,11 +7,17 @@ import dev.imagh.pft.app.log.SafeLog
 import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
+import dev.imagh.pft.ledger.account.AccountDraft
+import dev.imagh.pft.ledger.account.AccountType
 import dev.imagh.pft.ledger.audit.AuditAction
 import dev.imagh.pft.ledger.audit.AuditEntry
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.ids.TagId
 import dev.imagh.pft.ledger.tag.Tag
+import dev.imagh.pft.ledger.transaction.LineDraft
+import dev.imagh.pft.ledger.transaction.TransactionDraft
+import dev.imagh.pft.ledger.transaction.TransactionType
+import dev.imagh.pft.money.Paise
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -22,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
+import java.time.Instant
 
 /**
  * [TagsViewModel] over real in-memory Room through the production wiring ([RoomTestKit]): what the list
@@ -57,6 +64,21 @@ class TagsViewModelTest {
     }
 
     private fun TagsViewModel.names(list: (TagsUiState) -> List<Tag>) = list(state.value).map { it.name }
+
+    /** A transaction whose only line carries tag [id]. */
+    private fun carryTag(id: TagId) =
+        blocking {
+            val account = kit.accounts.create(AccountDraft("Cash", AccountType.CASH, Paise(0)))
+            kit.transactions.create(
+                TransactionDraft(
+                    TransactionType.EXPENSE,
+                    Paise(1_000),
+                    Instant.parse("2026-11-20T10:00:00Z"),
+                    account.meta.id,
+                    lines = listOf(LineDraft(null, Paise(1_000), null, setOf(id))),
+                ),
+            )
+        }
 
     private fun trail(id: TagId) = blocking { kit.trailOf("tag", id.value) }.map { it.action }
 
@@ -262,6 +284,40 @@ class TagsViewModelTest {
     }
 
     @Test
+    fun `deleting a tag that a transaction carries shows the in-use notice, writes nothing and logs nothing`() {
+        val ids = seed()
+        carryTag(ids.getValue("Travel"))
+        val vm = viewModel()
+        ShadowLog.clear()
+
+        vm.delete(ids.getValue("Travel"))
+        awaitMain { vm.state.value.inUse }
+
+        vm.state.value.undo shouldBe null
+        vm.state.value.failedAction shouldBe null
+        vm.names { it.active } shouldBe listOf("Bills", "groceries", "Travel")
+        trail(ids.getValue("Travel")) shouldBe listOf(AuditAction.CREATE)
+        // A refused delete is an answer, not a failure: nothing of ours is logged.
+        logged() shouldBe emptyList()
+
+        vm.inUseShown()
+        vm.state.value.inUse shouldBe false
+    }
+
+    @Test
+    fun `a tag no transaction carries is still deleted while another is in use, with no notice`() {
+        val ids = seed()
+        carryTag(ids.getValue("Travel"))
+        val vm = viewModel()
+
+        vm.delete(ids.getValue("Bills"))
+        awaitMain { vm.state.value.undo != null }
+
+        vm.state.value.inUse shouldBe false
+        vm.names { it.active } shouldBe listOf("groceries", "Travel")
+    }
+
+    @Test
     fun `a failing audit on archive leaves the list unchanged, sets the failure and logs only the enums`() {
         val ids = seed()
         val vm = viewModel()
@@ -310,6 +366,8 @@ class TagsViewModelTest {
         vm.state.value.undo shouldBe null
         vm.names { it.active } shouldBe listOf("Bills", "groceries", "Travel")
         logged() shouldBe listOf("entity_action_failed kind=TAG action=DELETE")
+        // Another failure is not the in-use answer.
+        vm.state.value.inUse shouldBe false
     }
 
     @Test
