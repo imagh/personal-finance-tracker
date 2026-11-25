@@ -134,6 +134,7 @@ internal fun DesignCatalog() {
                             options =
                                 listOf(
                                     "Bundled serif" to DisplayFont.BUNDLED_SERIF,
+                                    "Bundled grotesque" to DisplayFont.BUNDLED_GROTESQUE,
                                     "System serif" to DisplayFont.SYSTEM_SERIF,
                                     "Same as text" to DisplayFont.TEXT,
                                 ),
@@ -154,6 +155,7 @@ internal fun DesignCatalog() {
                                 listOf(
                                     "Sans: Figtree" to SansFont.FIGTREE,
                                     "Sans: Plus Jakarta Sans" to SansFont.PLUS_JAKARTA_SANS,
+                                    "Sans: Manrope" to SansFont.MANROPE,
                                     "Sans: System font" to SansFont.SYSTEM,
                                 ),
                             selected = sansFont,

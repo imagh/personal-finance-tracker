@@ -173,6 +173,31 @@ class DesignCatalogTest {
         assertTrue(compose.onNodeWithText("bodyLarge").usesFigtree())
     }
 
+    @Test
+    fun `the sans toggle offers Manrope and selecting it switches the body samples to Manrope`() {
+        compose.setContent { PftTheme { DesignCatalog() } }
+        compose.onNodeWithText("Sans: Manrope").assertIsNotSelected()
+        compose.onNodeWithText("Sans: Manrope").performClick()
+        compose.onNodeWithText("Sans: Manrope").assertIsSelected()
+        compose.onNodeWithText("Sans: Figtree").assertIsNotSelected()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("bodyLarge"))
+        assertTrue(compose.onNodeWithText("bodyLarge").usesFont(R.font.manrope))
+        assertFalse(compose.onNodeWithText("bodyLarge").usesFigtree())
+    }
+
+    @Test
+    fun `the display font toggle offers the bundled grotesque and Editorial then sets the titles in Bricolage`() {
+        compose.setContent { PftTheme { DesignCatalog() } }
+        compose.onNodeWithText("Bundled grotesque").assertIsNotSelected()
+        compose.onNodeWithText("Bundled grotesque").performClick()
+        compose.onNodeWithText("Bundled grotesque").assertIsSelected()
+        compose.onNodeWithText("Bundled serif").assertIsNotSelected()
+        compose.onNodeWithText("Pairing: Editorial").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("titleLarge"))
+        assertTrue(compose.onNodeWithText("titleLarge").usesFont(R.font.bricolage_grotesque))
+        assertFalse(compose.onNodeWithText("titleLarge").usesNewsreader())
+    }
+
     private fun SemanticsNodeInteraction.usesFigtree(): Boolean = usesFont(R.font.figtree)
 
     private fun SemanticsNodeInteraction.usesPlusJakartaSans(): Boolean = usesFont(R.font.plus_jakarta_sans)

@@ -27,8 +27,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.TextUnit
 import dev.imagh.pft.R
-import dev.imagh.pft.app.ui.theme.HeroSizeSteps
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.heroSizeSteps
 import dev.imagh.pft.money.Paise
 import dev.imagh.pft.money.PaiseFormat
 
@@ -105,10 +105,10 @@ fun MoneyText(
 }
 
 /**
- * The hero figure, set on one line at the largest of [HeroSizeSteps] (48sp down to 12sp) that fits
- * the width it is given, so a long amount shrinks instead of wrapping or clipping. If it is
- * measured with an unbounded width it takes the first (largest) step. If even the smallest step
- * does not fit (an extreme amount at 200% font scale on a very narrow window) it wraps there
+ * The hero figure, set on one line at the largest of [heroSizeSteps] (the hero's own size, 48sp or
+ * 34sp, down to 12sp) that fits the width it is given, so a long amount shrinks instead of wrapping
+ * or clipping. If it is measured with an unbounded width it takes the first (largest) step. If even
+ * the smallest step does not fit (an extreme amount at 200% font scale on a very narrow window) it wraps there
  * instead: a money figure is never cut off, because a truncated amount would misreport the money.
  * With `animate` that fallback is plain wrapping text too, since rolling digits cannot wrap.
  */
@@ -197,7 +197,7 @@ private fun fitHero(
     base: TextStyle,
     maxWidthPx: Int,
 ): HeroFit {
-    val candidates = HeroSizeSteps.map { base.atSize(it) }
+    val candidates = heroSizeSteps(base.fontSize).map { base.atSize(it) }
     val fitting =
         candidates.firstOrNull {
             measurer.measure(text, it, softWrap = false, maxLines = 1).size.width <= maxWidthPx

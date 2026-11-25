@@ -31,11 +31,14 @@ import androidx.compose.ui.text.font.ResourceFont
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.HeroSizeSteps
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.app.ui.theme.heroSizeSteps
 import dev.imagh.pft.money.Paise
 import dev.imagh.pft.money.PaiseFormat
 import org.junit.Assert.assertEquals
@@ -312,11 +315,12 @@ class MoneyTextTest {
         widthDp: Int,
         fontScale: Float = 1f,
         animate: Boolean = false,
+        prefs: ThemePrefs = ThemePrefs(dynamicColor = false),
     ) {
         boxWidthDp = widthDp
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                PftTheme(ThemePrefs(dynamicColor = false)) {
+                PftTheme(prefs) {
                     Column {
                         Box(Modifier.width(boxWidthDp.dp)) {
                             MoneyText(amount, MoneySemantic.Expense, Modifier.testTag(tag), MoneySize.Hero, animate)
@@ -357,15 +361,53 @@ class MoneyTextTest {
         node().layout().assertShownInFull()
     }
 
+    @Test
+    fun `a Bricolage Grotesque hero starts at its own 34sp, never at 48sp`() {
+        showHero(Paise(8_245_000), widthDp = 393, prefs = grotesque)
+        assertEquals(34f, heroSizeSp(), 0f)
+        node().layout().assertShownInFull()
+    }
+
+    @Test
+    fun `a Bricolage Grotesque hero shrinks through the steps at or below 34sp, each the largest that fits`() {
+        val steps = heroSizeSteps(34.sp)
+        val stepSizes = steps.map { it.value }
+        showHero(maxAmount, widthDp = 420, prefs = grotesque)
+        val sizes =
+            listOf(420, 353, 300, 280).map { width ->
+                boxWidthDp = width
+                compose.waitForIdle()
+                node().layout().assertShownInFull("at $width")
+                assertTrue("size ${heroSizeSp()} at $width is not a step at or below 34sp", heroSizeSp() in stepSizes)
+                assertNextLargerStepWouldOverflow(width, steps)
+                heroSizeSp()
+            }
+        assertEquals(sizes.sortedDescending(), sizes)
+        assertTrue("the widest and narrowest should differ: $sizes", sizes.first() > sizes.last())
+        assertTrue("it never exceeds its own 34sp: $sizes", sizes.all { it <= 34f })
+    }
+
+    @Test
+    fun `a Bricolage Grotesque hero wraps only at its own smallest step, 12sp`() {
+        showHero(maxAmount, widthDp = 150, fontScale = 2f, prefs = grotesque)
+        assertEquals(12f, heroSizeSp(), 0f)
+        assertTrue(node().layout().lineCount > 1)
+    }
+
+    private val grotesque = ThemePrefs(dynamicColor = false, displayFont = DisplayFont.BUNDLED_GROTESQUE)
+
     /** The step just above the one the hero chose, rendered as plain text in the same box, must overflow. */
-    private fun assertNextLargerStepWouldOverflow(width: Int) {
-        val chosen = HeroSizeSteps.indexOfFirst { it.value == heroSizeSp() }
+    private fun assertNextLargerStepWouldOverflow(
+        width: Int,
+        steps: List<TextUnit> = HeroSizeSteps,
+    ) {
+        val chosen = steps.indexOfFirst { it.value == heroSizeSp() }
         assertTrue("size ${heroSizeSp()} at $width is not a step", chosen >= 0)
         if (chosen == 0) return
-        probeSize = HeroSizeSteps[chosen - 1]
+        probeSize = steps[chosen - 1]
         compose.waitForIdle()
         assertTrue(
-            "${HeroSizeSteps[chosen - 1]} would have fitted at $width, but the hero chose ${heroSizeSp()}",
+            "${steps[chosen - 1]} would have fitted at $width, but the hero chose ${heroSizeSp()}",
             !compose.onNodeWithTag("probe").layout().isShownInFull(),
         )
         probeSize = null
