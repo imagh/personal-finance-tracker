@@ -57,15 +57,16 @@ choices will live in the database (CLAUDE.md §3.5).
 ### Typography (UI-2, UI-3, UI-15, owner decision Q10)
 
 Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the display family is:
-`BUNDLED_SERIF` (Newsreader, the default), `SYSTEM_SERIF` or `TEXT` ("same as text").
+`BUNDLED_SERIF` (Newsreader, the default), `BUNDLED_GROTESQUE` (Bricolage Grotesque, K2), `SYSTEM_SERIF` or
+`TEXT` ("same as text").
 `ThemePrefs.typePairing` chooses **which roles** use it. The text family ("text" in the table) is
-`ThemePrefs.sansFont`: the bundled **Figtree** by default, the bundled **Plus Jakarta Sans**, or `SYSTEM`
-(`FontFamily.Default`); see
+`ThemePrefs.sansFont`: the bundled **Figtree** by default, the bundled **Plus Jakarta Sans**, the bundled
+**Manrope** (K2), or `SYSTEM` (`FontFamily.Default`); see
 "The sans font" below.
 
 | Role | `HERO_ONLY` (default) | `EDITORIAL` | Size / line (sp) | Weight | Features |
 |---|---|---|---|---|---|
-| `PftTheme.type.amountHero` | display | display | 48/60, +0.01em | 400 | `tnum`, `lnum` |
+| `PftTheme.type.amountHero` | display | display | 48/60, +0.01em (34/42.5 for `BUNDLED_GROTESQUE`) | 400 (700 for `BUNDLED_GROTESQUE`) | `tnum`, `lnum` |
 | `PftTheme.type.amountLarge` | text | display | 32/40 | 500 | `tnum`, `lnum` |
 | `PftTheme.type.amountRow` | text | text | 16/24 | 500 | `tnum` |
 | `display*` | text | display | M3 (57, 45, 36) | M3 | |
@@ -87,6 +88,25 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   of the chosen pairing. The variation settings apply to the bundled Newsreader only; the system serif
   and the text family get none. The hero keeps the 48sp cut at every shrink step.
 - **The hero weight is 400** (owner decision after the DS6f device check); the mockup's 350 was not adopted.
+- **Bricolage Grotesque (K2, Cobalt plan D2).** `DisplayFont.BUNDLED_GROTESQUE` makes the hero **Bricolage at
+  weight 700, 34sp**, line height 1.25x (42.5sp), the same +0.01em, `tnum, lnum`; the size and weight come from one
+  private `heroSpec(display)` that every other display font answers with the regular 48sp. The font is one variable
+  file with axes `opsz` 12-96 (default 96), `wdth` 75-100 (default 100) and `wght` 200-800 (default 800), so
+  `bricolage(weight, size)` pins all three: `wght` to the weight, `opsz` to the size (clamped to 12-96, so the hero
+  is `opsz` 34 and keeps that cut at every shrink step, as Newsreader keeps its 48) and `wdth` to 100. Under
+  `EDITORIAL` the same function cuts each serif role for its own size and weight. **`HeroSizeSteps` stays the full
+  ladder (48 down to 12sp); `heroSizeSteps(heroSize)` is the steps at or below the hero's own size**, which
+  `MoneyText` uses, so the 48sp hero keeps its eight steps and the 34sp hero shrinks 34, 28, 24, 20, 16, 12sp and
+  never grows to a larger step. Nothing is the default yet: `ThemePrefs.Default` is still Graphite, Figtree and
+  Newsreader (K4 flips it).
+- **Manrope (K2).** `SansFont.MANROPE` is one family of three `Font(R.font.manrope, ...)` entries for 400, 500 and
+  600 pinned on `wght` (its axis is 200-800 with default 200, so an unpinned axis would render everything too light),
+  built by the same `sansWeights` helper. Nothing in Cobalt needs 700. Its default digits are already tabular, so
+  `tnum` is a harmless no-op there, as for Newsreader.
+- **Verified from the font files (K2, `FontFileFacts` in `TabularFiguresTest`).** Both Manrope and Bricolage have a
+  `tnum` GSUB feature (Bricolage also `lnum`) and their own `cmap` glyphs for the rupee sign U+20B9 and the true minus
+  U+2212. `Paint.hasGlyph` cannot prove that: under Robolectric native graphics it also consults the system fallback
+  fonts and answered true for a CJK ideograph, so the tests read the `cmap` and `GSUB` tables of the bundled bytes.
 - `tnum` stays on all three amount roles in every pairing.
 - **The sans font (UI-2, UI-16, DS6h, DS6i).** `SansFont` is `{ FIGTREE, PLUS_JAKARTA_SANS, SYSTEM }` (names
   persisted by AP1; AP2 adds `CUSTOM`, without a migration). `sansFamily(SansFont)` maps `SYSTEM` to
@@ -102,7 +122,9 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   proportional by default; only `tnum` makes them equal, so the three amount roles keep it, while body text digits
   stay proportional by design (neither has `lnum`, so that half of `"tnum, lnum"` is a no-op).
   `TabularFiguresTest` measures `₹11,111.11` against `₹00,000.00` under each amount style in Figtree, Plus
-  Jakarta Sans and Newsreader (equal within 0.5px), with a no-`tnum` control that differs for each sans. Fonts are referenced only as `R.font.<name>` from main code, because release resource shrinking
+  Jakarta Sans, Manrope, Newsreader and the Bricolage hero (equal within 0.5px), with a no-`tnum` control that
+  differs for Figtree, Plus Jakarta Sans and the Bricolage hero, and a `pnum` control for Manrope (its default digits
+  are already tabular, so dropping `tnum` cannot make it differ). Fonts are referenced only as `R.font.<name>` from main code, because release resource shrinking
   removes an unreferenced font; `FontBudgetTest` holds all of `res/font` to 3 MiB.
 - `TypePairing` is `{ HERO_ONLY, EDITORIAL }`; its names are persisted by AP1. An all-serif value can be
   added later without a migration, because an unknown stored value reads as the default.
@@ -518,8 +540,9 @@ is the only way an amount is drawn (plan §5.2).
   resources: Income, Transfer, Balance, Negative balance, Under budget, Budget near its limit, Over
   budget), so colour is never the only cue.
 - **Sizes.** `Hero` is `amountHero`, `Large` is `amountLarge`, `Row` is `amountRow`.
-- **Hero shrink-to-fit.** The hero is one line at the largest of `HeroSizeSteps` (48, 40, 34, 28, 24,
-  20, 16, 12sp; the plan's four plus four more) whose width fits the width it is given, measured with
+- **Hero shrink-to-fit.** The hero is one line at the largest of `heroSizeSteps(its own size)` (from the ladder
+  `HeroSizeSteps`: 48, 40, 34, 28, 24, 20, 16, 12sp, the plan's four plus four more; a 34sp Bricolage hero uses the
+  six at or below 34sp) whose width fits the width it is given, measured with
   a `TextMeasurer` (so it tracks font scale and density) inside `BoxWithConstraints`. The line height
   scales with the size and the optical size stays at the 48sp display cut. The steps go below the plan's
   28sp because the plan's example amount (Rs 1e10) is shorter than the real limit `Paise.MAX_AMOUNT`
@@ -726,15 +749,21 @@ Screenshot rules:
 | Figtree licence text `OFL.txt` | same directory, same commit | | | 4,388 B upstream | upstream `140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268` | `app/src/main/assets/licenses/figtree-OFL.txt` (4,383 B, shipped sha256 `4504180d840bfb94a6445f6145574256aac1c7da5e6d4be55da5b9e710772490`: identical to upstream apart from trailing whitespace trimmed by the repo's pre-commit hooks; the file already ended with a newline) |
 | Plus Jakarta Sans variable font `PlusJakartaSans[wght].ttf` (the Plus Jakarta Sans Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/plusjakartasans (google/fonts `ofl/plusjakartasans`; upstream project https://github.com/tokotype/PlusJakartaSans) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (2026-10-30, the single DS6f pin); `wght` 200-800, default 400 | SIL OFL 1.1, **Reserved Font Name: none** | 176,288 B | `89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8` | `app/src/main/res/font/plus_jakarta_sans.ttf`, unmodified; weights 400, 500 and 600 are declared in `sansFamily()` |
 | Plus Jakarta Sans licence text `OFL.txt` | same directory, same commit | | | 4,402 B upstream | upstream `995c7199cab65954f545996326755daee7b63cc6b42b06c13da1f9502ab08a99` | `app/src/main/assets/licenses/plus-jakarta-sans-OFL.txt` (4,401 B, shipped sha256 `f9a8e776b4b048227f2f046b8716083eb04b1539d9ad1d4b87e81c1df28f86e3`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the file already ended with a newline) |
+| Manrope variable font `Manrope[wght].ttf` (the Manrope Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/manrope (google/fonts `ofl/manrope`; upstream project https://github.com/googlefonts/manrope) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (the single DS6f pin, reused in K2); name table Version 4.505; `wght` 200-800, default 200 | SIL OFL 1.1, **Reserved Font Name: none** | 164,700 B | `3ae11c49db0455a3cc33e37d380f20fdb8c7f8b41dc07625c177e3d87a9d6ae6` | `app/src/main/res/font/manrope.ttf`, unmodified; weights 400, 500 and 600 are declared in `sansFamily()` |
+| Manrope licence text `OFL.txt` | same directory, same commit | | | 4,387 B upstream | upstream `58172e0c0fac2cda8a37b348164bb55e44b0e69051e557e92b1d3f6910141f7b` | `app/src/main/assets/licenses/manrope-OFL.txt` (4,386 B, shipped sha256 `d6a309fcfb963d329a93baf9df66fa5f3c23a4be2b5f67edf24d6cafecde12ac`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the copyright line is "Copyright 2018 The Manrope Project Authors") |
+| Bricolage Grotesque variable font `BricolageGrotesque[opsz,wdth,wght].ttf` (the Bricolage Grotesque Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/bricolagegrotesque (google/fonts `ofl/bricolagegrotesque`; upstream project https://github.com/ateliertriay/bricolage) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (K2); name table Version 1.001; `opsz` 12-96 (default 96), `wdth` 75-100 (default 100), `wght` 200-800 (default 800) | SIL OFL 1.1, **Reserved Font Name: none** (checked in the upstream `OFL.txt`; `BundledFontTest` asserts it) | 408,496 B (under the 500 KB pre-commit large-file limit, so no hook exception) | `413e7357809ddd12fd80a96a8a396de0e401638d4acd3cb3e37532f0472ac682` | `app/src/main/res/font/bricolage_grotesque.ttf`, unmodified; used by `bricolage(weight, size)` |
+| Bricolage Grotesque licence text `OFL.txt` | same directory, same commit | | | 4,403 B upstream | upstream `4b5a7d8f37f5602621c8a8d7358a6a2e71317e6c231c661e15aef0275d3e07ba` | `app/src/main/assets/licenses/bricolage-grotesque-OFL.txt` (4,402 B, shipped sha256 `46ba5f18ee20ea529f21d96c0ef8637a8314c1a5cfb2aa84018bc8157cbeff41`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the copyright line is "Copyright 2022 The Bricolage Grotesque Project Authors") |
 | Material Symbols Rounded (92 icons, SVG path data only) | https://github.com/google/material-design-icons (`symbols/web/<name>/materialsymbolsrounded/<name>_24px.svg`) | commit `10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7` (2026-10-23) | Apache-2.0 | 73 KB of drawables | per-icon SVG hashes in `tools/material-symbols/svg-sha256.txt`; upstream `LICENSE` 11,357 B, `58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd` | `app/src/main/res/drawable/sym_<key>.xml` (path data unchanged, wrapped in a group that shifts the SVG's -960 origin); licence in `app/src/main/assets/licenses/material-symbols-APACHE-2.0.txt` (attribution header, then the upstream text with trailing whitespace trimmed) |
 
 `BundledSymbolsLicenceTest` checks that the Apache-2.0 text and the attribution (source and pinned commit) ship.
 `BundledFontTest` pins each font's size and SHA-256 and checks that the OFL text and the copyright line
 ("Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)",
 "Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)", and the Plus Jakarta Sans
-Project Authors line "2020 The Plus Jakarta Sans Project Authors") ship.
+Project Authors line "2020 The Plus Jakarta Sans Project Authors", "Copyright 2018 The Manrope Project Authors
+(https://github.com/googlefonts/manrope)" and "Copyright 2022 The Bricolage Grotesque Project Authors
+(https://github.com/ateliertriay/bricolage)") ship, and that neither Manrope nor Bricolage declares a Reserved Font Name.
 OFL section 2 requires the licence to accompany every copy; AP1 adds an in-app licences viewer.
-No Reserved Font Name is declared, so subsetting is allowed later if APK size matters; it is not
+No bundled font declares a Reserved Font Name, so subsetting is allowed later if APK size matters; it is not
 done, so provenance stays checkable by hash. To update the font, download from google/fonts into a
 scratch directory, verify, and change the commit, size and hash here and in `BundledFontTest`
 together.
