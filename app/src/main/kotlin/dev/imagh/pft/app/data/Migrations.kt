@@ -90,6 +90,79 @@ object Migrations {
             }
         }
 
+    /**
+     * 4 to 5 (slice C1c): adds `ledger_transaction`, `transaction_line` and `transaction_line_tag`, with
+     * their indexes and foreign keys, in that order (a child after its parent). The statements are Room's
+     * own for the three entities, copied from the exported `schemas/.../5.json` with the table names
+     * filled in, so a migrated database and a fresh one are identical (`MigrationTest` validates it
+     * against that schema). Embedded meta columns come last because Room lists them there.
+     *
+     * No `CHECK` constraint, no partial or unique index on `(transaction_id, position)` and no
+     * `ON DELETE` action: Room cannot declare a `CHECK` or a partial index on an entity (plan §2), and rows
+     * are tombstoned, never removed. The amount and position rules live in core and in the mappers; the
+     * "live lines add up to the amount" invariant is checked by core and counted by
+     * `TransactionLineDao.breakdownMismatchCount`, not enforced by a trigger (data-model.md). Nothing is
+     * seeded: the tables start empty, and no old row changes.
+     */
+    val MIGRATION_4_5: Migration =
+        object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `ledger_transaction` (`type` TEXT NOT NULL, " +
+                        "`direction` TEXT NOT NULL, `amount` INTEGER NOT NULL, `occurred_at` INTEGER NOT NULL, " +
+                        "`account_id` TEXT NOT NULL, `title` TEXT, `description` TEXT, `state` TEXT NOT NULL, " +
+                        "`source` TEXT NOT NULL, `bank_ref` TEXT, `source_message_id` TEXT, " +
+                        "`account_fragment` TEXT, `transfer_group_id` TEXT, `id` TEXT NOT NULL, " +
+                        "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                        "`created_by_user_id` TEXT NOT NULL, `created_on_device_id` TEXT NOT NULL, " +
+                        "`deleted_at` INTEGER, `archived_at` INTEGER, PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`account_id`) REFERENCES `account`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE NO ACTION )",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ledger_transaction_occurred_at` " +
+                        "ON `ledger_transaction` (`occurred_at`)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ledger_transaction_account_id_occurred_at` " +
+                        "ON `ledger_transaction` (`account_id`, `occurred_at`)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ledger_transaction_transfer_group_id` " +
+                        "ON `ledger_transaction` (`transfer_group_id`)",
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `transaction_line` (`transaction_id` TEXT NOT NULL, " +
+                        "`position` INTEGER NOT NULL, `amount` INTEGER NOT NULL, `category_id` TEXT, " +
+                        "`note` TEXT, `id` TEXT NOT NULL, `created_at` INTEGER NOT NULL, " +
+                        "`updated_at` INTEGER NOT NULL, `created_by_user_id` TEXT NOT NULL, " +
+                        "`created_on_device_id` TEXT NOT NULL, `deleted_at` INTEGER, `archived_at` INTEGER, " +
+                        "PRIMARY KEY(`id`), FOREIGN KEY(`transaction_id`) REFERENCES `ledger_transaction`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`category_id`) " +
+                        "REFERENCES `category`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_transaction_line_transaction_id` " +
+                        "ON `transaction_line` (`transaction_id`)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_transaction_line_category_id` " +
+                        "ON `transaction_line` (`category_id`)",
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `transaction_line_tag` (`line_id` TEXT NOT NULL, " +
+                        "`tag_id` TEXT NOT NULL, PRIMARY KEY(`line_id`, `tag_id`), " +
+                        "FOREIGN KEY(`line_id`) REFERENCES `transaction_line`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`tag_id`) " +
+                        "REFERENCES `tag`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_transaction_line_tag_tag_id` " +
+                        "ON `transaction_line_tag` (`tag_id`)",
+                )
+            }
+        }
+
     /** All migrations for `Room.databaseBuilder(...).addMigrations(*Migrations.ALL.toTypedArray())`. */
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

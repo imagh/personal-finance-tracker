@@ -126,6 +126,8 @@ own rules (the reuse-by-layer table is in `docs/architecture/code-structure.md`)
 (`IdentityService`) and runtime settings (`SettingsService`) are audited through the same
 `AuditRecorder`, since they carry no `EntityMeta`.
 
+A transaction (`ledger_transaction`) holds only the payment facts; its classification (category, tags, note) lives on its lines (`transaction_line`, tags in the join table `transaction_line_tag`), and the live lines always add up to its amount, which core checks before commit (`data-model.md`, version 5).
+
 ## Build and quality gates
 
 | Concern | Choice |

@@ -297,8 +297,9 @@ column the persistence layer owns.
 `tag` (schema v4, persisted by `app` in slice B5a; the model is defined here): `name`.
 
 `ledger_transaction` and `transaction_line` (the models are defined here since C1a; `app` persists
-them from C1c, schema v5): the audit keys above are their columns, plus the `transaction_line_tag`
-join table that stores a line's `tag_ids`.
+them since C1c, schema v5): the audit keys above are their columns, except that a line's `tag_ids` is
+not a column but the rows of the `transaction_line_tag` join table (a non-entity table; the audit check's
+`keysStoredIn`, `docs/architecture/data-model.md`).
 
 Entity tables added by later slices share the `EntityMeta` columns (`id`, `created_at`,
 `updated_at`, `created_by_user_id`, `created_on_device_id`, `deleted_at`, plus archive state).

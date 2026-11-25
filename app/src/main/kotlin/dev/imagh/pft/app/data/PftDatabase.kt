@@ -18,11 +18,17 @@ import dev.imagh.pft.app.data.settings.AppSettingDao
 import dev.imagh.pft.app.data.settings.AppSettingEntity
 import dev.imagh.pft.app.data.tag.TagDao
 import dev.imagh.pft.app.data.tag.TagEntity
+import dev.imagh.pft.app.data.transaction.LedgerTransactionEntity
+import dev.imagh.pft.app.data.transaction.TransactionDao
+import dev.imagh.pft.app.data.transaction.TransactionLineDao
+import dev.imagh.pft.app.data.transaction.TransactionLineEntity
+import dev.imagh.pft.app.data.transaction.TransactionLineTagEntity
 
 /**
  * The app's Room database, `pft.db` (plan §4). Version 1 holds the identity, settings and audit
- * tables, version 2 adds `account` (slice B1), version 3 adds `category` (slice B3) and version 4 adds `tag`
- * (slice B5); each later slice adds its tables through its own migration and a migration test.
+ * tables, version 2 adds `account` (slice B1), version 3 adds `category` (slice B3), version 4 adds `tag`
+ * (slice B5) and version 5 adds `ledger_transaction`, `transaction_line` and `transaction_line_tag` (slice
+ * C1c); each later slice adds its tables through its own migration and a migration test.
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
  * and tests alike), which is `internal` to the app module: the only production caller is
@@ -41,6 +47,9 @@ import dev.imagh.pft.app.data.tag.TagEntity
         AccountEntity::class,
         CategoryEntity::class,
         TagEntity::class,
+        LedgerTransactionEntity::class,
+        TransactionLineEntity::class,
+        TransactionLineTagEntity::class,
     ],
     version = PftDatabase.VERSION,
     exportSchema = true,
@@ -48,7 +57,7 @@ import dev.imagh.pft.app.data.tag.TagEntity
 abstract class PftDatabase : RoomDatabase() {
     companion object {
         /** The current schema version; bump it with a migration in [Migrations] and a migration test. */
-        const val VERSION = 4
+        const val VERSION = 5
 
         /** The database file name. */
         const val NAME = "pft.db"
@@ -105,4 +114,10 @@ abstract class PftDatabase : RoomDatabase() {
 
     /** Tags (schema v4). */
     abstract fun tagDao(): TagDao
+
+    /** Transactions (schema v5). */
+    abstract fun transactionDao(): TransactionDao
+
+    /** Transaction lines and their tag rows (schema v5). */
+    abstract fun transactionLineDao(): TransactionLineDao
 }

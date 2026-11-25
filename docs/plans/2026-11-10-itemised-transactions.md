@@ -298,7 +298,7 @@ Conventions are those of the M1a plan (line 196): core tests use Kotest under `c
     - a misspelt table fails.
   - `MigrationTest.migrate4To5` (testDebug): v4 with a category and a tag migrates; the new tables exist, empty; existing rows are intact; the triggers survive.
 - **Green:**
-  - in `app/src/main/kotlin/dev/imagh/pft/app/data/transaction/`: `LedgerTransactionEntity`, `TransactionLineEntity`, `TransactionLineTagEntity`, `TransactionDao`, `TransactionLineDao` (including the mismatch-count query), `RoomTransactionRepository`, `RoomTransactionLineRepository` (on `RoomEntityRepository`; tags written in the same Room transaction), and the mappers;
+  - in `app/src/main/kotlin/dev/imagh/pft/app/data/transaction/`: `LedgerTransactionEntity`, `TransactionLineEntity`, `TransactionLineTagEntity`, `TransactionDao`, `TransactionLineDao` (including the mismatch-count query), `RoomTransactionRepository`, `RoomTransactionLineRepository` (tags written in the same Room transaction), and the mappers. **Amended 2026-11-24 (C1c as built):** the line repository implements `TransactionLineRepository` directly instead of extending `RoomEntityRepository`, because the base's one-argument mapper cannot return a line with its tags; see the 2026-11-18 C1c entry in `docs/learnings/README.md`;
   - `Migrations.kt` `MIGRATION_4_5`;
   - `AppServices` wiring;
   - test support: `AuditedTable` gains `keysStoredIn: Map<String, String>` (audited key → the join table holding it), checked by `AuditColumnsCheck`; `transaction_line_tag` is added as a non-entity table with its reason.
