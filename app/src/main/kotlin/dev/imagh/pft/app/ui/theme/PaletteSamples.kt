@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * The four palettes' role swatches side by side, in [dark] or light, whatever theme surrounds
+ * The palettes' role swatches side by side, in [dark] or light, whatever theme surrounds
  * them: each column is drawn from its own palette's colours, so one page compares every option.
  * Each column shows the tonal `canvas` with its text colours, the `island` with its
  * `outlineVariant` hairline, and the `primary` and `primaryContainer` fills with their text. The
@@ -34,9 +34,10 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun PaletteSwatches(dark: Boolean) {
     val spacing = PftTheme.spacing
+    // Five columns on a phone: tight gaps and padding keep every name and label on one line.
     Row(
-        Modifier.fillMaxWidth().padding(spacing.lg),
-        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        Modifier.fillMaxWidth().padding(spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         ThemePalette.entries.forEach { palette ->
             PaletteColumn(palette, palette.colors(dark), Modifier.weight(1f))
@@ -58,13 +59,13 @@ private fun PaletteColumn(
             .testTag("swatches-${palette.name}")
             .background(colors.canvas, shape)
             .border(BorderStroke(1.dp, scheme.outlineVariant), shape)
-            .padding(spacing.sm),
+            .padding(spacing.xs),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Text(
             palette.displayName,
             color = scheme.onSurface,
-            fontSize = 13.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Text("Text", color = scheme.onSurface, fontSize = 11.sp)
@@ -92,7 +93,7 @@ private fun Swatch(
             .height(56.dp)
             .background(container, shape)
             .border(BorderStroke(1.dp, edge), shape)
-            .padding(PftTheme.spacing.sm),
+            .padding(PftTheme.spacing.xs),
     ) {
         Text(label, color = content, fontSize = 11.sp)
     }

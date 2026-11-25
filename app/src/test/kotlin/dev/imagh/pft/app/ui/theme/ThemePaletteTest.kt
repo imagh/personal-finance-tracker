@@ -168,6 +168,124 @@ class ThemePaletteTest {
     }
 
     @Test
+    fun `Cobalt pins the owner-approved mockup values, with the two tone adjustments`() {
+        // docs/plans/2026-11-25-m1a-cobalt-redesign.md D1: light #687187 (mockup #7A8399 fails 4.5:1 text),
+        // dark primary #9DB1FF (the mockup --icon; #2251FF fails as text on dark).
+        fun assertCobalt(
+            dark: Boolean,
+            canvas: Long,
+            island: Long,
+            on: Long,
+            onvar: Long,
+            line: Long,
+            primary: Long,
+            soft: Long,
+            wash: Long,
+        ) {
+            val colors = ThemePalette.COBALT.colors(dark)
+            val s = colors.scheme
+            val where = "COBALT ${if (dark) "dark" else "light"}"
+            assertEquals(Color(canvas), colors.canvas, "$where canvas")
+            assertEquals(Color(island), colors.island, "$where island")
+            assertEquals(Color(on), s.onSurface, "$where on -> onSurface")
+            assertEquals(Color(on), s.onBackground, "$where on -> onBackground")
+            assertEquals(Color(onvar), s.onSurfaceVariant, "$where onvar -> onSurfaceVariant")
+            assertEquals(Color(line), s.outlineVariant, "$where line -> outlineVariant")
+            assertEquals(Color(primary), s.primary, "$where primary")
+            assertEquals(Color(primary), s.surfaceTint, "$where surfaceTint follows primary")
+            assertEquals(Color(soft), s.primaryContainer, "$where primary-soft -> primaryContainer")
+            assertEquals(Color(wash), colors.wash, "$where wash")
+        }
+        assertCobalt(
+            dark = false,
+            canvas = 0xFFF5F7FB,
+            island = 0xFFFFFFFF,
+            on = 0xFF0E1B3D,
+            onvar = 0xFF687187,
+            line = 0xFFE9ECF3,
+            primary = 0xFF2251FF,
+            soft = 0xFFE7EDFF,
+            // Not primary-soft: #687187 over primary-soft at the glow's 72% is 4.28:1 (CobaltPalette KDoc).
+            wash = 0xFFFFFFFF,
+        )
+        assertCobalt(
+            dark = true,
+            canvas = 0xFF0B0E17,
+            island = 0xFF151A27,
+            on = 0xFFE8EBF4,
+            onvar = 0xFF8E97AD,
+            line = 0xFF222838,
+            primary = 0xFF9DB1FF,
+            soft = 0xFF1D2647,
+            wash = 0xFF1D2647,
+        )
+    }
+
+    @Test
+    fun `Cobalt pins the brand tokens, with the dark navigation bar on the island tone`() {
+        // D1: dark nav #151A27, not the mockup's #181D2B (the active pill gets 2.95:1 on it, 3.05:1 on the island).
+        assertEquals(
+            BrandColors(
+                brand = Color(0xFF2251FF),
+                onBrand = Color(0xFFFFFFFF),
+                brandSoft = Color(0xFFE7EDFF),
+                onBrandSoft = Color(0xFF2251FF),
+                cardStart = Color(0xFF3463FF),
+                cardMid = Color(0xFF2251FF),
+                cardEnd = Color(0xFF1B44E0),
+                onCard = Color(0xFFFFFFFF),
+                cardGhost = Color(0xFFC7D4FF),
+                cardGhost2 = Color(0xFFE2E9FF),
+                nav = Color(0xFFFFFFFF),
+            ),
+            ThemePalette.COBALT.colors(dark = false).brand,
+        )
+        assertEquals(
+            BrandColors(
+                brand = Color(0xFF2251FF),
+                onBrand = Color(0xFFFFFFFF),
+                brandSoft = Color(0xFF1D2647),
+                onBrandSoft = Color(0xFF9DB1FF),
+                cardStart = Color(0xFF2D5BFF),
+                cardMid = Color(0xFF2251FF),
+                cardEnd = Color(0xFF1A3FCC),
+                onCard = Color(0xFFFFFFFF),
+                cardGhost = Color(0xFF22306A),
+                cardGhost2 = Color(0xFF182148),
+                nav = Color(0xFF151A27),
+            ),
+            ThemePalette.COBALT.colors(dark = true).brand,
+        )
+    }
+
+    @Test
+    fun `every palette in both modes has a complete, opaque set of brand tokens`() {
+        for (palette in ThemePalette.entries) {
+            for (dark in listOf(false, true)) {
+                val b = palette.colors(dark).brand
+                val tokens =
+                    mapOf(
+                        "brand" to b.brand,
+                        "onBrand" to b.onBrand,
+                        "brandSoft" to b.brandSoft,
+                        "onBrandSoft" to b.onBrandSoft,
+                        "cardStart" to b.cardStart,
+                        "cardMid" to b.cardMid,
+                        "cardEnd" to b.cardEnd,
+                        "onCard" to b.onCard,
+                        "cardGhost" to b.cardGhost,
+                        "cardGhost2" to b.cardGhost2,
+                        "nav" to b.nav,
+                    )
+                for ((name, token) in tokens) {
+                    assertEquals(1f, token.alpha, "$palette dark=$dark $name is not opaque")
+                    assertNotEquals(Color.Unspecified, token, "$palette dark=$dark $name is unspecified")
+                }
+            }
+        }
+    }
+
+    @Test
     fun `the island is lighter than the canvas in light and in dark in every palette`() {
         // Tonal depth: the card lifts off the screen in both modes (mockup canvas vs island).
         for (palette in ThemePalette.entries) {
@@ -185,7 +303,7 @@ class ThemePaletteTest {
     fun `the persisted names are permanent`() {
         // AP1 stores `name`, so a rename or removal would silently reset a user's choice. Adding is fine.
         val names = ThemePalette.entries.map { it.name }
-        listOf("GRAPHITE", "MIDNIGHT", "IVORY", "AUBERGINE").forEach {
+        listOf("GRAPHITE", "MIDNIGHT", "IVORY", "AUBERGINE", "COBALT").forEach {
             assertTrue(it in names, "$it must stay a ThemePalette entry")
         }
     }
@@ -216,6 +334,7 @@ class ThemePaletteTest {
                 ThemePalette.MIDNIGHT to "Midnight",
                 ThemePalette.IVORY to "Ivory",
                 ThemePalette.AUBERGINE to "Aubergine",
+                ThemePalette.COBALT to "Cobalt",
             ),
             ThemePalette.entries.associateWith { it.displayName },
         )

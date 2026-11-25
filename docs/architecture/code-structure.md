@@ -16,8 +16,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   schemas/                               # exported Room schemas, one JSON per version (committed; served to migration tests as debug assets)
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, ThemePalette (+ colors(dark)), GraphitePalette (+ PaletteColors), MidnightPalette,
-                                         # IvoryPalette, AuberginePalette (DS6b: one generated, pinned object per palette), PaletteSamples
-                                         # (the four-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces,
+                                         # IvoryPalette, AuberginePalette, CobaltPalette (DS6b, Cobalt K1: one generated, pinned object per
+                                         # palette), BrandColors (the brand tokens and `derivedBrand`), PaletteSamples
+                                         # (the five-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces,
                                          # the glow tint and LocalPftSurfaces, DS6c, DS6d), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography (the type roles, DS6g `newsreader(weight, size)`, DS6h `sansFamily(SansFont)`), PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
                                          # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
@@ -125,7 +126,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | build | `pft.lint` convention plugin (ktlint + detekt) | `pft.kotlin-core`, `:app`, root project (lints `build-logic` and build scripts) | A1 |
 | app UI (`ui/theme`) | `PftTheme`, `ThemePrefs`/`ThemeMode`, `MoneyColors` (colour tokens, CompositionLocals) | every screen | DS1 |
 | app UI (`ui/theme`) | `GraphitePalette` / `PaletteColors` (the default scheme; replaces the deleted `BrandColors`) | `resolveColorScheme` | DS6a |
-| app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette` (the other three curated palettes; the names are persisted by AP1) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, the debug catalogue toggles | DS6b |
+| app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette`, `CobaltPalette` (the other curated palettes; the names are persisted by AP1), `BrandColors` + `derivedBrand` (brand tokens, `PftTheme.brand`) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, `PftTheme.brand`, the debug catalogue toggles | DS6b, Cobalt K1 |
 | app UI (`ui/theme`) | `PftSurfaces` / `BackgroundStyle` / `pftSurfaces` / `LocalPftSurfaces` (tonal or flat canvas, island, edge, highlight; `PaletteColors.canvas` and `island`; `dynamicPaletteColors`) | `CollapsingHeaderScaffold`, `BottomActionBar`, `GroupedSection`, `MainActivity`, the debug catalogue toggle | DS6c |
 | app UI (`ui/theme`) | `WindowBackground` (`SyncWindowBackground(window)`, with `pft_window_background` in `res/values{,-night}`) | `MainActivity` | DS6c |
 | app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont`, `TypePairing` | every screen | DS2 |

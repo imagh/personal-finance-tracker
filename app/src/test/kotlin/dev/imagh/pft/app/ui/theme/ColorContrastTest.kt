@@ -1,6 +1,9 @@
 package dev.imagh.pft.app.ui.theme
 
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import dev.imagh.pft.app.ui.common.MoneyTone
 import dev.imagh.pft.app.ui.common.chipColors
@@ -253,6 +256,96 @@ class ColorContrastTest {
             assertAtLeast(textMin, "$case onSurface on surface", s.onSurface, s.surface)
             assertAtLeast(textMin, "$case onSurfaceVariant on surface", s.onSurfaceVariant, s.surface)
             assertAtLeast(nonTextMin, "$case primary on surface", s.primary, s.surface)
+        }
+    }
+
+    /** The card's secondary text (the decimals and captions) is `onCard` at this alpha (plan 2026-11-25 D4). */
+    private val fadedCardAlpha = 0.68f
+
+    /**
+     * Every pair the brand tokens promise (plan 2026-11-25 D1): filled brand with its text, the card's
+     * text solid and faded on every gradient stop, the brand fill as a graphic on the screen, the cards and
+     * the tab bar, the soft brand fill with its icon, and the secondary text on the tab bar.
+     */
+    private fun assertBrandPairs(
+        where: String,
+        brand: BrandColors,
+        canvas: Color,
+        island: Color,
+        onSurfaceVariant: Color,
+    ) {
+        assertAtLeast(textMin, "$where onBrand on brand", brand.onBrand, brand.brand)
+        val stops = mapOf("start" to brand.cardStart, "mid" to brand.cardMid, "end" to brand.cardEnd)
+        for ((stopName, stop) in stops) {
+            assertAtLeast(textMin, "$where onCard on card $stopName", brand.onCard, stop)
+            val faded = brand.onCard.copy(alpha = fadedCardAlpha).compositeOver(stop)
+            assertAtLeast(nonTextMin, "$where faded onCard on card $stopName", faded, stop)
+        }
+        mapOf("nav" to brand.nav, "canvas" to canvas, "island" to island).forEach { (name, surface) ->
+            assertAtLeast(nonTextMin, "$where brand on $name", brand.brand, surface)
+        }
+        assertAtLeast(nonTextMin, "$where onBrandSoft on brandSoft", brand.onBrandSoft, brand.brandSoft)
+        assertAtLeast(textMin, "$where onSurfaceVariant on nav", onSurfaceVariant, brand.nav)
+    }
+
+    @Test
+    fun `the brand tokens clear their pairs in every palette and mode`() {
+        for (case in cases) {
+            val colors = case.palette.colors(dark = case.theme == Theme.DARK)
+            assertBrandPairs("$case", colors.brand, colors.canvas, colors.island, colors.scheme.onSurfaceVariant)
+        }
+    }
+
+    /**
+     * A synthetic dynamic scheme of greys at the M3 mapping, with [primaryTone] and [containerTone] swept (light:
+     * onPrimary 100, onPrimaryContainer 10, outlineVariant 80, onSurfaceVariant 30, canvas 92, island 96; dark: 20,
+     * 90, 30, 80, 4 and 10).
+     */
+    private fun dynamicGreyScheme(
+        dark: Boolean,
+        primaryTone: Int,
+        containerTone: Int,
+    ) = if (dark) {
+        darkColorScheme(
+            primary = greyAtTone(primaryTone),
+            onPrimary = greyAtTone(20),
+            primaryContainer = greyAtTone(containerTone),
+            onPrimaryContainer = greyAtTone(90),
+            outlineVariant = greyAtTone(30),
+            onSurfaceVariant = greyAtTone(80),
+            surfaceContainerLowest = greyAtTone(4),
+            surfaceContainerLow = greyAtTone(10),
+        )
+    } else {
+        lightColorScheme(
+            primary = greyAtTone(primaryTone),
+            onPrimary = greyAtTone(100),
+            primaryContainer = greyAtTone(containerTone),
+            onPrimaryContainer = greyAtTone(10),
+            outlineVariant = greyAtTone(80),
+            onSurfaceVariant = greyAtTone(30),
+            surfaceContainerHigh = greyAtTone(92),
+            surfaceContainerLow = greyAtTone(96),
+        )
+    }
+
+    @Test
+    fun `the derived brand tokens clear their pairs for the dynamic tones M3 maps and five tones either side`() {
+        // Same grey-tone approach as the dynamic glow above: primary and its container are swept.
+        for (dark in listOf(false, true)) {
+            val primaryTones = if (dark) 75..85 else 35..45
+            val containerTones = if (dark) 25..35 else 85..95
+            for ((primaryTone, containerTone) in primaryTones.flatMap { p -> containerTones.map { p to it } }) {
+                val scheme = dynamicGreyScheme(dark, primaryTone, containerTone)
+                val colors = dynamicPaletteColors(scheme, dark)
+                assertBrandPairs(
+                    "dynamic dark=$dark primary $primaryTone container $containerTone",
+                    colors.brand,
+                    colors.canvas,
+                    colors.island,
+                    scheme.onSurfaceVariant,
+                )
+            }
         }
     }
 
