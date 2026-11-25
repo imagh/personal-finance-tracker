@@ -94,4 +94,21 @@ object Validation {
         if (found.meta.isActive) return found
         throw if (found.meta.isDeleted) LedgerError.Deleted(what) else LedgerError.Archived(what)
     }
+
+    /**
+     * Returns [entity] if it exists and is not deleted; **archived is fine**. For a reference that
+     * only has to still exist, such as what a deleted transaction points at when it is restored
+     * (an archived account keeps its history), where [requireLive] would also refuse archived.
+     *
+     * @throws LedgerError.NotFound if [entity] is null.
+     * @throws LedgerError.Deleted if it is tombstoned.
+     */
+    fun <T : LedgerEntity<*, *>> requireNotDeleted(
+        entity: T?,
+        what: String,
+    ): T {
+        val found = entity ?: throw LedgerError.NotFound(what)
+        if (found.meta.isDeleted) throw LedgerError.Deleted(what)
+        return found
+    }
 }
