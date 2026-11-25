@@ -28,11 +28,16 @@ import java.time.Instant
  * @param nonAudited columns that are not in `auditFields()` on purpose (the table's own key when it
  *   is not `id`, a denormalised sort key, a join table's second key...). Each needs a reason at the
  *   registration site, and a reviewer approves every new entry.
+ * @param keysStoredIn audited keys that have no column in [table] because the value is held in another
+ *   table, as audited key to that table's name (a line's `tag_ids` is held in `transaction_line_tag`).
+ *   [AuditColumnsCheck] accepts each only when that table exists and is in
+ *   [AuditedTables.notEntityTables], and the sample audits the key.
  */
 class AuditedTable(
     val table: String,
     val sample: Auditable,
     val nonAudited: Set<String> = emptySet(),
+    val keysStoredIn: Map<String, String> = emptyMap(),
 )
 
 /**
