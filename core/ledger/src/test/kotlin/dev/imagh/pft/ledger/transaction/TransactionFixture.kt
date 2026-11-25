@@ -16,6 +16,7 @@ import dev.imagh.pft.ledger.ids.TransactionId
 import dev.imagh.pft.ledger.ids.TransactionLineId
 import dev.imagh.pft.ledger.ids.Uuid7
 import dev.imagh.pft.ledger.tag.Tag
+import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.money.Paise
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
@@ -168,5 +169,26 @@ internal suspend inline fun <reified E : Throwable> TransactionFixture.shouldRef
     storedTransactions() shouldBe transactions
     storedLines() shouldBe lines
     trail.toList() shouldBe written
+    return error
+}
+
+/**
+ * Runs [block], which must be refused with [LedgerError.InUse] for [what], and checks the refusal
+ * changed nothing anywhere: no account, category, tag, transaction or line row (tombstones and all)
+ * and no audit entry differs from its snapshot from before. Returns the error.
+ */
+internal suspend inline fun TransactionFixture.shouldRefuseInUse(
+    what: String,
+    block: () -> Any?,
+): LedgerError.InUse {
+    val accounts = kit.accountRepository.all()
+    val categories = kit.categoryRepository.all()
+    val tags = kit.tagRepository.all()
+    // Transactions, lines and the audit trail are compared by shouldRefuse.
+    val error = shouldRefuse<LedgerError.InUse>(block)
+    error.what shouldBe what
+    kit.accountRepository.all() shouldBe accounts
+    kit.categoryRepository.all() shouldBe categories
+    kit.tagRepository.all() shouldBe tags
     return error
 }

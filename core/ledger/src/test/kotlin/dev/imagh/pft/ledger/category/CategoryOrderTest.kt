@@ -331,7 +331,13 @@ class CategoryOrderTest :
                         }
                     }
                 val broken =
-                    CategoryService(f.kit.store, f.kit.writerWith(failing), f.kit.categoryRepository, f.kit.ids)
+                    CategoryService(
+                        f.kit.store,
+                        f.kit.writerWith(failing),
+                        f.kit.categoryRepository,
+                        f.kit.transactionLineRepository,
+                        f.kit.ids,
+                    )
 
                 shouldThrow<IllegalStateException> {
                     broken.reorder(null, CategoryKind.EXPENSE, listOf(c.meta.id, a.meta.id, b.meta.id))

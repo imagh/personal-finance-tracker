@@ -3,6 +3,8 @@ package dev.imagh.pft.ledger.account
 import dev.imagh.pft.ledger.audit.AuditedWriter
 import dev.imagh.pft.ledger.ids.AccountId
 import dev.imagh.pft.ledger.ids.Uuid7
+import dev.imagh.pft.ledger.transaction.TransactionRepository
+import dev.imagh.pft.ledger.tx.TransactionRunner
 import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.ledger.validation.Validation
@@ -20,18 +22,23 @@ import dev.imagh.pft.ledger.validation.Validation
  *   blank means none and is stored as null.
  *
  * **Lifecycle.** Archive hides an account from new entries but keeps it in the list's archived
- * section. Delete is a tombstone and [restore] undoes it (INT-3). Each call is idempotent and audited.
- * There is no "in use" check on delete yet: it arrives with transactions (slice C).
+ * section. Delete is a tombstone and [restore] undoes it (INT-3); it is refused while a live
+ * transaction is on the account ([LedgerError.InUse]), so the user archives it instead (L-2; archiving
+ * never touches history). Each call is idempotent and audited.
  *
  * Nothing here logs or puts user text in an error (CLAUDE.md §3.7).
  *
+ * @param runner the transaction the in-use check and the delete it guards run in.
  * @param writer the audited write path.
  * @param repository the account store.
+ * @param transactions asked whether a live transaction uses an account.
  * @param ids source of new account ids.
  */
 class AccountService(
+    private val runner: TransactionRunner,
     private val writer: AuditedWriter,
     private val repository: AccountRepository,
+    private val transactions: TransactionRepository,
     private val ids: Uuid7,
 ) {
     /**
@@ -78,8 +85,19 @@ class AccountService(
     /** Makes archived account [id] active again (audited UNARCHIVE); not archived is a no-op. */
     suspend fun unarchive(id: AccountId): Account = writer.unarchive(repository, id)
 
-    /** Deletes account [id] as a tombstone (audited DELETE); already deleted is a no-op. */
-    suspend fun delete(id: AccountId): Account = writer.delete(repository, id)
+    /**
+     * Deletes account [id] as a tombstone (audited DELETE); already deleted is a no-op. The check and
+     * the delete run in one transaction, so a transaction saved meanwhile cannot slip between them.
+     *
+     * @throws LedgerError.InUse while a live transaction is on the account (archive it instead);
+     *   nothing is written.
+     * @throws LedgerError.NotFound for an unknown account.
+     */
+    suspend fun delete(id: AccountId): Account =
+        runner.inTransaction {
+            if (transactions.isAccountInUse(id)) throw LedgerError.InUse(WHAT)
+            writer.delete(repository, id)
+        }
 
     /** Brings a deleted account back (audited RESTORE); not deleted is a no-op. */
     suspend fun restore(id: AccountId): Account = writer.restore(repository, id)
@@ -109,4 +127,9 @@ class AccountService(
             maskedIdentifier = AccountRules.requireMaskedIdentifier(draft.maskedIdentifier),
             issuer = Validation.requireOptionalName(draft.issuer, LedgerLimits.MAX_NAME_LENGTH),
         )
+
+    private companion object {
+        /** The kind of record, for errors (never a name). */
+        const val WHAT = "account"
+    }
 }

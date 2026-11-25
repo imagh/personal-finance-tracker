@@ -85,13 +85,13 @@ class AppServices(
     val writer = AuditedWriter(runner, identity, recorder, clock)
 
     /** Accounts: create, edit, archive, delete, restore and the lists. */
-    val accounts = AccountService(writer, accountRepository, ids)
+    val accounts = AccountService(runner, writer, accountRepository, transactionRepository, ids)
 
     /** Categories: create, edit, archive, delete, restore, reorder, the pickable list and the default seeding. */
-    val categories = CategoryService(runner, writer, categoryRepository, ids)
+    val categories = CategoryService(runner, writer, categoryRepository, transactionLineRepository, ids)
 
     /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
-    val tags = TagService(runner, writer, tagRepository, ids)
+    val tags = TagService(runner, writer, tagRepository, transactionLineRepository, ids)
 
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = FirstRunService(runner, identity, categories)

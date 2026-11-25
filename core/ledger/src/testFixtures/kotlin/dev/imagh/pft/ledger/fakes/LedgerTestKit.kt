@@ -50,7 +50,7 @@ class LedgerTestKit {
     val transactionRepository = InMemoryTransactionRepository(store)
 
     /** Transaction lines (items). */
-    val transactionLineRepository = InMemoryTransactionLineRepository(store)
+    val transactionLineRepository = InMemoryTransactionLineRepository(store, transactionRepository)
 
     /** Builds audit entries into [InMemoryLedgerStore.auditLog]. */
     val recorder = AuditRecorder(store.auditLog, ids, clock)
@@ -65,13 +65,13 @@ class LedgerTestKit {
     val writer = AuditedWriter(store, identity, recorder, clock)
 
     /** Accounts: create, edit, archive, delete, restore and the lists. */
-    val accounts = AccountService(writer, accountRepository, ids)
+    val accounts = AccountService(store, writer, accountRepository, transactionRepository, ids)
 
     /** Categories: create, edit, reorder, archive, delete, restore, the picker list and the defaults. */
-    val categories = CategoryService(store, writer, categoryRepository, ids)
+    val categories = CategoryService(store, writer, categoryRepository, transactionLineRepository, ids)
 
     /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
-    val tags = TagService(store, writer, tagRepository, ids)
+    val tags = TagService(store, writer, tagRepository, transactionLineRepository, ids)
 
     /** Transactions: create, edit, delete, restore, mark verified and read, with their lines. */
     val transactions =

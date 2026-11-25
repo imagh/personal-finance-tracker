@@ -10,7 +10,7 @@ import io.kotest.matchers.shouldBe
 /** The wiring every category service test starts from: the kit's fakes and a few shorthand writers. */
 internal class CategoryFixture {
     val kit = LedgerTestKit()
-    val service = CategoryService(kit.store, kit.writer, kit.categoryRepository, kit.ids)
+    val service = CategoryService(kit.store, kit.writer, kit.categoryRepository, kit.transactionLineRepository, kit.ids)
     val trail get() = kit.store.auditLog.entries
 
     fun draft(

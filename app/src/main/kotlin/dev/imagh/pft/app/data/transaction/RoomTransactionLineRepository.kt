@@ -1,5 +1,6 @@
 package dev.imagh.pft.app.data.transaction
 
+import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.TagId
 import dev.imagh.pft.ledger.ids.TransactionId
 import dev.imagh.pft.ledger.ids.TransactionLineId
@@ -50,6 +51,10 @@ class RoomTransactionLineRepository(
 
     override suspend fun liveLinesOf(transactionId: TransactionId): List<TransactionLine> =
         withTags(dao.liveOf(transactionId.value))
+
+    override suspend fun isCategoryInUse(id: CategoryId): Boolean = dao.isCategoryUsed(id.value)
+
+    override suspend fun isTagInUse(id: TagId): Boolean = dao.isTagUsed(id.value)
 
     private suspend fun insertTags(line: TransactionLine) {
         if (line.tagIds.isEmpty()) return

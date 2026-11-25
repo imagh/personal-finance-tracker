@@ -20,7 +20,7 @@ import java.time.Duration
 
 private class Fixture {
     val kit = LedgerTestKit()
-    val service = AccountService(kit.writer, kit.accountRepository, kit.ids)
+    val service = AccountService(kit.store, kit.writer, kit.accountRepository, kit.transactionRepository, kit.ids)
     val trail get() = kit.store.auditLog.entries
 
     fun draft(
@@ -193,7 +193,14 @@ class AccountServiceTest :
                     object : AuditLog {
                         override suspend fun append(entry: AuditEntry) = error("audit store unavailable")
                     }
-                val broken = AccountService(f.kit.writerWith(failing), f.kit.accountRepository, f.kit.ids)
+                val broken =
+                    AccountService(
+                        f.kit.store,
+                        f.kit.writerWith(failing),
+                        f.kit.accountRepository,
+                        f.kit.transactionRepository,
+                        f.kit.ids,
+                    )
 
                 shouldThrow<IllegalStateException> { broken.create(f.draft()) }
 

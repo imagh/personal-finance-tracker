@@ -58,7 +58,13 @@ class FirstRunServiceTest :
                 FirstRunService(
                     kit.store,
                     kit.identityServiceWith(failsOnTenth),
-                    CategoryService(kit.store, kit.writerWith(failsOnTenth), kit.categoryRepository, kit.ids),
+                    CategoryService(
+                        kit.store,
+                        kit.writerWith(failsOnTenth),
+                        kit.categoryRepository,
+                        kit.transactionLineRepository,
+                        kit.ids,
+                    ),
                 )
 
             shouldThrow<IllegalStateException> { broken.initialise("Akash", "Pixel") }
