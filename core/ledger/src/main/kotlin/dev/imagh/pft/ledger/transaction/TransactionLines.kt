@@ -94,6 +94,18 @@ class TransactionLines(
         lines.liveLinesOf(id).sortedWith(compareBy({ it.position }, { it.meta.id.value }))
 
     /**
+     * Refuses with [LedgerError.Deleted] (`category` or `tag`) if a category or tag of a **live** line of
+     * transaction [id] was deleted: the check before a deleted transaction is restored. Archived ones
+     * pass, and a tombstoned line is not looked at.
+     */
+    internal suspend fun requireReferencesNotDeleted(id: TransactionId) {
+        liveLinesOf(id).forEach { line ->
+            line.categoryId?.let { Validation.requireNotDeleted(categories.get(it), CATEGORY) }
+            line.tagIds.forEach { Validation.requireNotDeleted(tags.get(it), TAG) }
+        }
+    }
+
+    /**
      * The shared body of [create] and [reconcile]: one write per draft in order (an update of the
      * [existing] line it names, or a new line whose id [newId] makes from its position), a
      * tombstone for each of [existing] that no draft names, then the sum check.
@@ -169,13 +181,14 @@ class TransactionLines(
 
     /** Refuses any of [added] that is not live: tags a line keeps are not checked again. */
     private suspend fun requireNewTags(added: Set<TagId>) {
-        added.forEach { Validation.requireLive(tags.get(it), "tag") }
+        added.forEach { Validation.requireLive(tags.get(it), TAG) }
     }
 
     private companion object {
         /** The kinds of record, for errors. */
         const val WHAT = "transaction_line"
         const val CATEGORY = "category"
+        const val TAG = "tag"
 
         /** The category kind a line of [type] needs; a transfer leg's line has no category. */
         fun kindOf(type: TransactionType): CategoryKind? =

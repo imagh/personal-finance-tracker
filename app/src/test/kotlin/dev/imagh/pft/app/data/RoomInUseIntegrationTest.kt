@@ -33,7 +33,7 @@ import java.time.Instant
  * and their join queries. A delete is refused while a **live line of a live transaction** (an account: a live
  * transaction) uses the record, and the refusal leaves **every row of every table, as text, exactly as it
  * was**, so no tombstone and no audit entry leaks. Deleting a transaction leaves its lines live, so the
- * count must join to the transaction.
+ * count must join to the transaction. A restore is refused when what the transaction uses was deleted since.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -328,5 +328,52 @@ class RoomInUseIntegrationTest {
             kit.tags
                 .delete(w.trip.meta.id)
                 .meta.isDeleted shouldBe true
+        }
+
+    // Restoring a transaction whose references were deleted since -----------------------------------
+
+    @Test
+    fun `a deleted transaction is not restored after its account, category or tag was deleted, and nothing changes`() =
+        runSuspending {
+            val w = world()
+            val saved = w.spend(w.line(100_00, w.food, setOf(w.trip)))
+            val id = saved.transaction.meta.id
+            kit.transactions.delete(id)
+            kit.tags.delete(w.trip.meta.id)
+            kit.categories.delete(w.food.meta.id)
+            kit.accounts.delete(w.account.meta.id)
+
+            suspend fun refusedRestore(what: String) {
+                val before = everything()
+                shouldThrow<LedgerError.Deleted> { kit.transactions.restore(id) }.what shouldBe what
+                everything() shouldBe before
+            }
+            refusedRestore("account")
+            kit.accounts.restore(w.account.meta.id)
+            refusedRestore("category")
+            kit.categories.restore(w.food.meta.id)
+            refusedRestore("tag")
+            kit.tags.restore(w.trip.meta.id)
+
+            kit.transactions
+                .restore(id)
+                .meta.isDeleted shouldBe false
+            kit.transactions.get(id) shouldBe saved
+        }
+
+    @Test
+    fun `a deleted transaction whose references are only archived is restored`() =
+        runSuspending {
+            val w = world()
+            val saved = w.spend(w.line(100_00, w.food, setOf(w.trip)))
+            kit.transactions.delete(saved.transaction.meta.id)
+            kit.accounts.archive(w.account.meta.id)
+            kit.categories.archive(w.food.meta.id)
+            kit.tags.archive(w.trip.meta.id)
+
+            kit.transactions
+                .restore(saved.transaction.meta.id)
+                .meta.isDeleted shouldBe false
+            kit.transactions.get(saved.transaction.meta.id) shouldBe saved
         }
 }
