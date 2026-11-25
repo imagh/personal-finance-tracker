@@ -84,6 +84,10 @@ list below shows only that kind.
   screen ends the offer (the delete stands).
 - **A parent with sub-categories cannot be deleted.** Choosing Delete shows "Delete its sub-categories
   first" and changes nothing; delete or archive-and-delete its sub-categories first.
+- **A category that transactions use cannot be deleted.** If any transaction item uses it, Delete shows
+  "In use by transactions. Archive it instead." and changes nothing. Archive it instead: it stays on the
+  transactions that already have it. A deleted transaction no longer counts. Bringing a deleted
+  transaction back is refused if one of its items' categories was deleted meanwhile.
 - **Loan EMI** can be moved but its menu has no Archive and no Delete.
 - **If something goes wrong** (a save fails), a short fixed message such as "Couldn't archive. Try again."
   appears and the list is left as it was. The message never contains a name.
@@ -225,7 +229,10 @@ More, then **Tags**. The list is the same screen as accounts and categories: you
 ("Bills", "groceries", "Travel"), a collapsed **Archived (n)** section, and an **Add tag** button. Each row is the
 tag's name with a small neutral tag symbol; the symbol is decoration, so a screen reader says the name once. The
 row's menu offers **Archive** and **Delete** (**Unarchive** and **Delete** for an archived tag). There is no Move up
-or Move down, because tags have no order. Deleting shows "Tag deleted" with **Undo**; leaving the screen or letting
+or Move down, because tags have no order. A tag that a transaction item carries cannot be deleted: Delete shows "In use by transactions. Archive it
+instead." and changes nothing (archiving keeps it on those items; a deleted transaction no longer counts).
+Bringing a deleted transaction back is refused if one of its items' tags was deleted meanwhile.
+Deleting an unused tag shows "Tag deleted" with **Undo**; leaving the screen or letting
 the message time out makes the delete stand. If Undo is no longer possible (another tag took the name meanwhile) the
 tag simply stays deleted and the list shows the truth. An unexpected failure shows a fixed "Couldn't ... Try again."
 message and changes nothing.

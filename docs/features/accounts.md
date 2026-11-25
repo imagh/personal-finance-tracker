@@ -108,6 +108,11 @@ first user.
 - **Delete** is for a mistake or something you never want to see. The account disappears from every
   list. It is not erased: the app keeps it as a deleted record in the audit trail, which is what lets
   Undo bring it back.
+- **An account with transactions cannot be deleted.** If any transaction (including a transfer) is on the
+  account, Delete shows "In use by transactions. Archive it instead." and changes nothing. Archive it
+  instead: it keeps its history. Once you delete its transactions the account can be deleted. Restoring a
+  deleted transaction is refused if its account was deleted meanwhile; restore the account
+  first.
 
 ## Undo
 
