@@ -1,7 +1,7 @@
 # Data model
 
-The Room database `pft.db`: tables, conventions and the version table. Status: **schema v4 (plan
-slice B5a)**. Each later slice adds its tables through its own migration and a migration test and
+The Room database `pft.db`: tables, conventions and the version table. Status: **schema v5 (plan
+slice C1c)**. Each later slice adds its tables through its own migration and a migration test and
 updates this file in the same PR. The full table plan is in
 `docs/plans/2026-10-28-m1a-core-ledger.md` §4; the encryption layer (SQLCipher, Keystore key) is
 A4b and is described in [persistence-and-security.md](persistence-and-security.md).
@@ -28,6 +28,16 @@ allowlist) with the keys of a fully populated sample's `auditFields()`. A new ta
 registered in `AuditedTables` (test support) or the same test fails. Current allowlist (unchanged by `category` and `tag`):
 `app_setting.key` (the setting's identifier, not an audited value) and `account.currency` (always
 `INR`, not part of the model; the mapper writes it and refuses anything else on read).
+
+**`keysStoredIn`: an audited value that is not a column.** A line's tags are rows of the join table
+`transaction_line_tag`, so the line audits `tag_ids` (the sorted ids joined with `,`) with no `tag_ids`
+column on `transaction_line`. The registry entry says so: `AuditedTable(..., keysStoredIn = mapOf("tag_ids"
+to "transaction_line_tag"))` (audited key to the table that holds it). `AuditColumnsCheck` then accepts the
+missing column only when **the holder table exists in the database and is listed in
+`AuditedTables.notEntityTables`** (with its reason), and the sample audits the key; a misspelt table, an
+unlisted table or a stale entry each fails. Join tables are not ledger entities: no meta columns, no
+`AuditedTables.all` entry, and their rows are replaced rather than tombstoned (the audited diff of the
+owning entity is the record). E3's `recurring_rule.tag_ids` will use the same convention.
 
 ## Version 1 (A4a)
 
@@ -121,7 +131,7 @@ them.
 
 | Table | Columns | Notes |
 |---|---|---|
-| `tag` | shared columns, `name` | A free-form label for the items of a transaction (PRD L-3). A name and nothing else: no colour, icon or order. No foreign keys and **no index** (tens of rows). The link from an item to its tags (`transaction_line_tag`) arrives with C1 |
+| `tag` | shared columns, `name` | A free-form label for the items of a transaction (PRD L-3). A name and nothing else: no colour, icon or order. No foreign keys and **no index** (tens of rows). The link from an item to its tags is `transaction_line_tag` (v5) |
 
 - **Name uniqueness is a core rule, not a table rule.** The plan says "unique among live tags, ignoring
   case". SQL could only say that with a partial unique index (`WHERE deleted_at IS NULL`) or a `NOCASE`
@@ -137,6 +147,45 @@ them.
   row, validates the result against that schema, and checks the columns, that no index or key was added,
   the surviving rows and the audit triggers. Nothing is seeded: tags start empty.
 
+## Version 5 (C1c)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `ledger_transaction` | shared columns, `type`, `direction`, `amount` (positive paise), `occurred_at` (epoch ms), `account_id` (FK -> `account.id`), `title` NULL, `description` NULL, `state`, `source`, `bank_ref` NULL, `source_message_id` NULL, `account_fragment` NULL, `transfer_group_id` NULL | One payment fact (PRD L-1, L-9): what moved, how much, when, on which account. **No `category_id`, no tag column and no `recurring_rule_id`**: classification lives on lines. `type`, `direction`, `state` and `source` are enum names. Indexes `index_ledger_transaction_occurred_at`, `..._account_id_occurred_at` (also serves the foreign key) and `..._transfer_group_id` |
+| `transaction_line` | shared columns, `transaction_id` (FK -> `ledger_transaction.id`), `position` (from 1, display order only), `amount` (positive paise), `category_id` NULL (FK -> `category.id`), `note` NULL | One item of a transaction (PRD L-11): its own category, tags and note. `archived_at` is never set for a line. Indexes on `transaction_id` and `category_id` |
+| `transaction_line_tag` | `line_id` (FK -> `transaction_line.id`), `tag_id` (FK -> `tag.id`); primary key `(line_id, tag_id)` | Which tags a line carries. **A join table, not an entity** (see `keysStoredIn` above): audited as the line's `tag_ids`, rows replaced when the tag set changes. Index on `tag_id` (the in-use check of C1d) |
+
+- **No `CHECK` and no `ON DELETE` action, as for `category`.** Room cannot declare a `CHECK` on an
+  `@Entity`, so `amount > 0` and `position > 0` would exist only in migrated databases; the plans' `CHECK`
+  wording is the rule, not the schema. Core validates before writing and the mappers **fail closed** on an
+  unknown `type`, `direction`, `state` or `source` and on a non-positive amount or position (the message
+  names the column, never the value). Foreign keys use Room's default action: rows are tombstoned, never
+  removed, and SQLite enforces the keys on both engines. There is no unique index on
+  `(transaction_id, position)` either: Room cannot declare a partial one, and positions are display order.
+- **Why the line-sum invariant is not a trigger.** The invariant (a live transaction has at least one live
+  line, and its live lines add up to its amount, CLAUDE.md §3.8) holds between operations, not between
+  statements: an edit updates line 1, then inserts lines 2 and 3, and SQLite has no deferred cross-row
+  `CHECK`, so an immediate trigger would fire on a correct intermediate state and refuse legitimate edits.
+  Core enforces it instead: `Breakdown` before anything is written, and a re-read of the stored lines
+  before commit that fails closed (and rolls the transaction back) on a mismatch. A database-level check
+  stays visible through `TransactionLineDao.breakdownMismatchCount()`: live transactions with no live line
+  or with live lines that do not sum to the amount (a tombstoned transaction is not counted; a tombstoned
+  line does not count towards the sum). It is 0 whenever only `TransactionService` has written, and the
+  Room integration tests assert that after every scenario and that a raw-SQL line planted by the test
+  makes it 1.
+- **A line and its tags are one write.** `RoomTransactionLineRepository` writes the line row and its
+  `transaction_line_tag` rows in one Room transaction (it nests inside the service's), and `update`
+  replaces the tag set. A tag id with no row fails the foreign key and rolls back the whole service
+  transaction: the transaction row, every line and every audit entry (INT-4).
+- **Every column is audited; the allowlist did not grow.** `ledger_transaction` and `transaction_line` are
+  registered with fully populated samples and no allowlist entry; `transaction_line.tag_ids` uses
+  `keysStoredIn`, and `transaction_line_tag` is a listed non-entity table.
+- **Migration `4 -> 5`** is the three `CREATE TABLE` statements and their five indexes copied from the
+  exported `schemas/.../5.json`, in parent-first order. `MigrationTest.migrate4To5` starts from a v4
+  database with an account, a category and a tag (parents seeded before children), validates the result
+  against that schema, and checks the columns, that the new tables are empty, the indexes and keys, the
+  surviving rows and the audit triggers. Nothing is seeded.
+
 ## Version table
 
 | Version | Slice | Adds |
@@ -145,11 +194,11 @@ them.
 | 2 | B1c | `account` (built) |
 | 3 | B3b | `category` (built) |
 | 4 | B5a | `tag` (built) |
-| 5 | C1 | `ledger_transaction`, `transaction_line`, `transaction_line_tag` |
+| 5 | C1c | `ledger_transaction`, `transaction_line`, `transaction_line_tag` (built) |
 | 6 | C3 | `transaction_fts`, `transaction_line_fts` |
 | 7 | D3 | `budget`, `budget_scope`, `budget_revision` |
 | 8 | E3 | `recurring_rule`, `recurring_occurrence` |
 | 9 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
 | 10 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-`tag` has its own migration (v4, slice B5a; plan 2026-11-10 D3), so every later slice is one version higher than the M1a plan first numbered it (C1 is v5 … G1 is v10); the M1a plan and the itemised-transactions plan were renumbered to match in the B-final PR. Only the rows up to `tag` are built; the rest are planned (M1a plan §4). Versions 5 and 6 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount. Those plans still write `CHECK (amount > 0)` and `CHECK (position > 0)` for the new tables: per the rule above, C1 enforces them in core and the mappers instead.
+`tag` has its own migration (v4, slice B5a; plan 2026-11-10 D3), so every later slice is one version higher than the M1a plan first numbered it (C1 is v5 … G1 is v10); the M1a plan and the itemised-transactions plan were renumbered to match in the B-final PR. Only the rows up to `transaction_line_tag` (v5) are built; the rest are planned (M1a plan §4). Versions 5 and 6 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount. Those plans still write `CHECK (amount > 0)` and `CHECK (position > 0)` for the new tables: per the rule above, C1 enforces them in core and the mappers instead (version 5 above).
