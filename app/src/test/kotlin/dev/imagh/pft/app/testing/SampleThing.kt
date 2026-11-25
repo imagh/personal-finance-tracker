@@ -19,6 +19,9 @@ import dev.imagh.pft.app.data.identity.DeviceEntity
 import dev.imagh.pft.app.data.identity.UserProfileEntity
 import dev.imagh.pft.app.data.settings.AppSettingEntity
 import dev.imagh.pft.app.data.tag.TagEntity
+import dev.imagh.pft.app.data.transaction.LedgerTransactionEntity
+import dev.imagh.pft.app.data.transaction.TransactionLineEntity
+import dev.imagh.pft.app.data.transaction.TransactionLineTagEntity
 import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.entity.LedgerEntity
 import dev.imagh.pft.ledger.ids.EntityId
@@ -88,6 +91,9 @@ class SampleThingRepository(
         AccountEntity::class,
         CategoryEntity::class,
         TagEntity::class,
+        LedgerTransactionEntity::class,
+        TransactionLineEntity::class,
+        TransactionLineTagEntity::class,
         SampleThingEntity::class,
     ],
     version = 1,

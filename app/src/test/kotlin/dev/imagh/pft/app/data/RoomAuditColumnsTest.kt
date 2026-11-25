@@ -69,6 +69,13 @@ class RoomAuditColumnsTest {
         allowlisted shouldBe mapOf("app_setting" to setOf("key"), "account" to setOf("currency"))
     }
 
+    @Test
+    fun `the only audited key held in another table is a line's tag ids, in its join table`() {
+        val declared = AuditedTables.all.associate { it.table to it.keysStoredIn }.filterValues { it.isNotEmpty() }
+
+        declared shouldBe mapOf("transaction_line" to mapOf("tag_ids" to "transaction_line_tag"))
+    }
+
     // The check itself: it must catch what it exists to catch ----------------------------------
 
     private fun probe(vararg keys: String) = Probe(keys.associateWith { "x" })
