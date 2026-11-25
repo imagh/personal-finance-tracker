@@ -42,6 +42,7 @@ object:
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
 | `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge, top highlight and header glow tint (null while the glow is off) for the palette, mode, `BackgroundStyle` and `ThemePrefs.headerGlow` (DS6c, DS6d); see "Surfaces and window colour" and "One-hand layout" |
+| `PftTheme.brand` | `BrandColors` | the brand fill, the balance card gradient and the tab bar fill: hand-picked for Cobalt, derived from the scheme for every other palette and for dynamic colour (K1) |
 | `PftTheme.type` | `PftTypography` | the three amount styles |
 | `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge) |
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
@@ -125,7 +126,7 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
 
 ### Colour
 
-There are four curated palettes (`ThemePalette`, DS6b), each an `object` in `ui/theme` with a light and a dark
+There are five curated palettes (`ThemePalette`, DS6b; Cobalt added by the Cobalt plan, K1), each an `object` in `ui/theme` with a light and a dark
 `PaletteColors`, generated offline and pinned to the owner-approved mockup values (each file's KDoc lists the
 provenance and every override). **The user picks the light palette and the dark palette independently**
 (`ThemePrefs.lightPalette`, `ThemePrefs.darkPalette`, both `GRAPHITE` by default); `PftTheme` uses
@@ -139,10 +140,81 @@ never rename or remove one, and never depend on the order of the entries.
 | Midnight | `MIDNIGHT` | `#7D5F26` | `#D4B572` | navy with a brass (light) or champagne (dark) accent | 44.7 / 73.0, 56.1 / 69.3 |
 | Ivory | `IVORY` | `#2E3A59` | `#AEB9DA` | warm paper with an ink-navy (light) or periwinkle (dark) accent | 113.6 / 128.7, 110.4 / 124.2 |
 | Aubergine | `AUBERGINE` | `#5B2A66` | `#D9BE8A` | deep plum with a champagne accent in dark | 74.8 / 167.5, 55.4 / 70.0 |
+| Cobalt | `COBALT` | `#2251FF` | `#9DB1FF` | cobalt blue on a cool white canvas (white islands); periwinkle on a blue-tinted ink in dark | 97.5 / 144.8, 104.2 / 130.3 |
+
+Graphite stays the default until the Cobalt plan's K4 flips it (`docs/plans/2026-11-25-m1a-cobalt-redesign.md`).
+
+#### Cobalt and the brand tokens (Cobalt plan 2026-11-25, K1)
+
+`CobaltPalette` is generated with Graphite's procedure (a CAM16 / HCT run outside the repository, from the mockup
+hues) and pinned to the owner-approved mockup (`.cobalt-light`, `.cobalt-dark` in
+`docs/plans/2026-11-25-home-redesign-mockup.html`); its KDoc lists the provenance and every override:
+
+| Mockup token | Role | Light | Dark |
+|---|---|---|---|
+| `canvas` | `canvas` | `#F5F7FB` | `#0B0E17` |
+| `island` | `island` | `#FFFFFF` | `#151A27` |
+| `on` | `onSurface`, `onBackground` | `#0E1B3D` | `#E8EBF4` |
+| `onvar` | `onSurfaceVariant` | `#687187` | `#8E97AD` |
+| `line` | `outlineVariant` | `#E9ECF3` | `#222838` |
+| `primary` / `icon` | `primary` | `#2251FF` | `#9DB1FF` |
+| `primary-soft` | `primaryContainer`; `wash` in dark | `#E7EDFF` | `#1D2647` |
+
+The mockup values that failed WCAG are adjusted, each to the nearest value that passes (owner accepted):
+
+- **Light `onSurfaceVariant` `#687187`** (mockup `#7A8399`, 3.6:1 on the canvas).
+- **Dark tab bar `nav` `#151A27`** (mockup `#181D2B` gives the active pill 2.95:1; the island tone gives 3.05:1).
+- **Dark `primary` `#9DB1FF`**, the mockup's `--icon`: the mockup's `#2251FF` fails as text on dark. The filled brand
+  stays `#2251FF` in `BrandColors.brand`.
+- **Faded card text** is `onCard` at 68% alpha (and solid below 24sp), not the mockup's 55%.
+
+Two more adjustments were forced by the pins, because `ColorContrastTest` holds `onSurfaceVariant` to 4.5:1 on every
+surface role and on the header glow at its strongest, and the pinned light `#687187` and dark `#8E97AD` only reach that on
+a narrow band of surfaces:
+
+- **The M3 surface ladder is compressed** for the roles the mockup does not pin: light `surfaceDim` and
+  `surfaceContainerHighest` tone 97, `surfaceContainerHigh` 97.5, `surfaceContainer` and `surface` 98,
+  `surfaceContainerLow` 99; dark `surfaceContainerHighest` tone 18 and `surfaceBright` 19 (M3 says 22 and 24). Screens
+  read `canvas` and `island` (pinned), so only M3's own filled components (text fields, menus, sheets) show the narrower
+  ladder.
+- **Light `wash` is white**, not `primary-soft` (`#687187` over `primary-soft` at the glow's 72% is 4.28:1). The header
+  glow is opt-in and off by default.
+
+**Brand tokens.** M3 has no role for a filled brand, the balance card's gradient or the floating tab bar, so
+`PaletteColors.brand` is a `BrandColors` (`brand`, `onBrand`, `brandSoft`, `onBrandSoft`, `cardStart`, `cardMid`,
+`cardEnd`, `onCard`, `cardGhost`, `cardGhost2`, `nav`), read as `PftTheme.brand` (a `staticCompositionLocalOf`, like
+`PftTheme.surfaces`). Cobalt pins the mockup values:
+
+| Token | Light | Dark |
+|---|---|---|
+| `brand`, `onBrand` | `#2251FF`, `#FFFFFF` | `#2251FF`, `#FFFFFF` |
+| `brandSoft`, `onBrandSoft` | `#E7EDFF`, `#2251FF` | `#1D2647`, `#9DB1FF` |
+| `cardStart` to `cardMid` to `cardEnd` | `#3463FF`, `#2251FF`, `#1B44E0` | `#2D5BFF`, `#2251FF`, `#1A3FCC` |
+| `onCard` | `#FFFFFF` | `#FFFFFF` |
+| `cardGhost`, `cardGhost2` | `#C7D4FF`, `#E2E9FF` | `#22306A`, `#182148` |
+| `nav` | `#FFFFFF` | `#151A27` |
+
+The other four palettes and dynamic colour **derive** theirs (`derivedBrand(scheme, island)`, no hand-picked values):
+`brand` and the three card stops are `primary` (a flat card), `onBrand` and `onCard` are `onPrimary`, `brandSoft` and
+`cardGhost` are `primaryContainer`, `onBrandSoft` is `onPrimaryContainer`, `cardGhost2` is `outlineVariant`, `nav` is the
+island. `PaletteColors.brand` defaults to `derivedBrand`, so only Cobalt passes its own. `ColorContrastTest` checks the
+pairs for every palette and mode, and for dynamic colour across five tones either side of the M3 mapping: `onBrand` on
+`brand` and `onCard` on each card stop at 4.5:1; faded `onCard` (68%) on each card stop, `brand` on the nav, canvas and
+island, and `onBrandSoft` on `brandSoft` at 3:1; `onSurfaceVariant` on the nav at 4.5:1. If a derived pair fails, fix
+`derivedBrand`; never exempt a palette.
+
+**Blue never for text.** App-drawn text (titles, body, amounts, captions) is never `primary` or `brand`. M3 draws
+`primary` as text in a few controls (`TextButton` labels, a focused field's label); that is accepted as a control-label
+exception (`#2251FF` light, `#9DB1FF` dark, both above 4.5:1). Money tokens are unchanged by Cobalt: they are global
+(`MoneyColors`) and pass on every Cobalt surface.
+
+**White islands.** Cobalt light is the one palette whose island is white (owner-approved, D10); `GroupedSectionColorsTest`
+says so ("never white, except Cobalt light") with Graphite light as the positive control. Light
+`surfaceContainerLowest` is still white and still never a card, sheet or dialog fill.
 
 To pick: choose the light palette for daytime use and the dark palette for night, independently (for example Ivory by
 day and Midnight by night). Add a palette by adding one `<Name>Palette.kt` (the Graphite procedure), one `ThemePalette`
-entry, its pins in `ThemePaletteTest`, and re-running the loops in `ColorContrastTest`, `AccentHueTest` and
+entry (its brand tokens are derived unless it passes its own), its pins in `ThemePaletteTest`, and re-running the loops in `ColorContrastTest`, `AccentHueTest` and
 `ChipColorsTest`, which cover every entry automatically.
 
 **Accent safety.** The accent is for interactive chrome only (FAB, selected navigation item, buttons, switches, focus),
@@ -187,7 +259,8 @@ persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
 `PftSurfaces.glow` (DS6d) is the palette's `wash` while `ThemePrefs.headerGlow` is on, else `null`, in either style (the glow itself is described under "One-hand layout").
 
 - The canvas and island of each palette are the owner-approved mockup values (`canvas`, `island`), pinned in the
-  palette files; the island is lighter than the canvas in every palette and both modes, and never white.
+  palette files; the island is lighter than the canvas in every palette and both modes, and never white except in
+  Cobalt light (owner-approved, Cobalt plan D10).
   `FLAT` reproduces the pre-DS6c look exactly.
 - **Dynamic colour** has no such roles, so they are derived (`dynamicPaletteColors`): canvas is
   `surfaceContainerHigh` (light, tone 92) or `surfaceContainerLowest` (dark, tone 4); island is
@@ -471,7 +544,7 @@ Neutral. `labelMedium`, `extraLarge` shape, one merged semantics node. Not inter
 ### `GroupedSection`
 
 `GroupedSection { row(onClick?) { ... } }`: the replacement for cards. Inset by the 20dp gutter,
-`large` shape, filled with `PftTheme.surfaces.island` (never `surfaceVariant`, never white; with TONAL a
+`large` shape, filled with `PftTheme.surfaces.island` (never `surfaceVariant`, never white except in Cobalt light; with TONAL a
 one-pixel edge, lit along the top in dark mode; see "Surfaces and window colour"), one
 physical-pixel `outlineVariant` divider between rows, inset 16dp from the start (N rows give N-1
 dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. A rows lambda rather than a
@@ -599,8 +672,8 @@ composable on `surface` (393dp wide): `money-text-<light|dark>[-2x].png` (the 2x
 2.0), `status-chip-`, `grouped-section-` and `empty-state-<light|dark>.png`, 19 to 170 KB each. The
 Dashboard header sample uses a `MoneyText` hero, so its two expanded goldens show the money red.
 
-Palette goldens (DS6b) come from `PaletteScreenshotTest`: `palettes-<light|dark>.png`, the four palettes' role swatches
-side by side (`PaletteSwatches`, each column drawn from its own palette's colours, 393dp wide, about 130 KB each). They
+Palette goldens (DS6b) come from `PaletteScreenshotTest`: `palettes-<light|dark>.png`, the five palettes' role swatches
+side by side (`PaletteSwatches`, each column drawn from its own palette's colours, 393dp wide). They
 render byte-identically on the debug and release unit-test variants.
 
 Glyph goldens (DS3) come from `CategoryGlyphScreenshotTest`: every `PftSymbol` on a teal, an amber and a violet badge

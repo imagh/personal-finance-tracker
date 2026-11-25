@@ -10,10 +10,12 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
 
 ## What it does for you
 
-- **You choose the colour mood of the app.** There are four palettes: **Graphite** (a grey with a
+- **You choose the colour mood of the app.** There are five palettes: **Graphite** (a grey with a
   platinum accent), **Midnight** (navy with a brass accent by day and champagne by night),
-  **Ivory** (warm paper with an ink-navy accent by day and a soft periwinkle by night) and
-  **Aubergine** (deep plum, with a champagne accent at night).
+  **Ivory** (warm paper with an ink-navy accent by day and a soft periwinkle by night),
+  **Aubergine** (deep plum, with a champagne accent at night) and **Cobalt** (a vivid cobalt blue
+  on a cool white background by day, a periwinkle blue on a blue-tinted ink at night). Cobalt is
+  new; Graphite is still the one the app starts with.
 - **Light and dark are chosen separately.** You can use Ivory in the daytime and Midnight at
   night. The palette used is the one for the mode you are in: with the app set to follow the phone,
   that is the phone's light or dark setting; if you force light or dark, it is that mode's palette.
@@ -23,7 +25,8 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
 - **The background is tonal or flat.** With **Tonal** (the default) the screen is a tinted
   background and your lists and settings sit on lighter, softly rounded panels ("islands") with a
   hairline edge, so the panels read as raised without shadows. In dark mode a faint light line
-  runs along the top of each panel. The panels are never white. With **Flat** the screen and the
+  runs along the top of each panel. The panels are never white, except in Cobalt by day, where they are white on a cool,
+  slightly blue background. With **Flat** the screen and the
   panels are the plain surface colours, as before. Both follow the palette you picked (or the
   wallpaper colours, with dynamic colour on).
 - **The header glow is optional and off by default.** Turn it on and the top of each screen gets a
