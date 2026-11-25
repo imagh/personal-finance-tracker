@@ -32,6 +32,25 @@ interface TransactionLineDao : BaseDao<TransactionLineEntity> {
     suspend fun deleteTagsOf(lineId: String)
 
     /**
+     * True if a line that is not tombstoned, of a transaction that is not tombstoned, names [categoryId]
+     * (the in-use check). The join to the transaction matters: deleting a transaction leaves its lines live.
+     */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM transaction_line l JOIN ledger_transaction t ON t.id = l.transaction_id " +
+            "WHERE l.category_id = :categoryId AND l.deleted_at IS NULL AND t.deleted_at IS NULL)",
+    )
+    suspend fun isCategoryUsed(categoryId: String): Boolean
+
+    /** The same check for a tag, over the join table `transaction_line_tag` (indexed by `tag_id`). */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM transaction_line_tag x " +
+            "JOIN transaction_line l ON l.id = x.line_id " +
+            "JOIN ledger_transaction t ON t.id = l.transaction_id " +
+            "WHERE x.tag_id = :tagId AND l.deleted_at IS NULL AND t.deleted_at IS NULL)",
+    )
+    suspend fun isTagUsed(tagId: String): Boolean
+
+    /**
      * How many live transactions break the sum invariant (hardcoded, CLAUDE.md §3.8): one that has no live
      * line, or whose live lines do not add up to its amount. Always 0 when only `TransactionService` has
      * written. A tombstoned transaction is not counted (its lines stay as they were), and a tombstoned line

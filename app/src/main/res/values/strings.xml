@@ -70,6 +70,7 @@
     <string name="entity_failed_delete">Couldn\'t delete. Try again.</string>
     <string name="entity_failed_restore">Couldn\'t undo. Try again.</string>
     <string name="entity_failed_reorder">Couldn\'t move. Try again.</string>
+    <string name="entity_delete_in_use">In use by transactions. Archive it instead.</string>
     <string name="accounts_add">Add account</string>
     <string name="accounts_not_found">That account no longer exists</string>
     <!-- Account form (AccountEditScreen). The amount label follows the type: money owed on a card, the balance otherwise. -->

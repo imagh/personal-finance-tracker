@@ -3,15 +3,22 @@ package dev.imagh.pft.app.ui.categories
 import android.os.Looper
 import dev.imagh.pft.app.data.audit.RoomAuditLog
 import dev.imagh.pft.app.log.EntityAction
+import dev.imagh.pft.app.log.SafeLog
 import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
+import dev.imagh.pft.ledger.account.AccountDraft
+import dev.imagh.pft.ledger.account.AccountType
 import dev.imagh.pft.ledger.audit.AuditAction
 import dev.imagh.pft.ledger.audit.AuditEntry
 import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.category.CategoryKind
 import dev.imagh.pft.ledger.category.DefaultCategories
 import dev.imagh.pft.ledger.ids.CategoryId
+import dev.imagh.pft.ledger.transaction.LineDraft
+import dev.imagh.pft.ledger.transaction.TransactionDraft
+import dev.imagh.pft.ledger.transaction.TransactionType
+import dev.imagh.pft.money.Paise
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
@@ -22,6 +29,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
+import java.time.Instant
 
 /**
  * [CategoriesViewModel]'s delete and undo, the refused delete of a parent, and what a failure does:
@@ -94,7 +102,26 @@ class CategoriesActionsTest {
             }
         }
 
-    private fun logLines() = ShadowLog.getLogs().map { it.msg }
+    /**
+     * What this app logged through [SafeLog], by message. The framework's own lines (for example another
+     * test's leaked-connection warning) are not ours to judge, so they are filtered out.
+     */
+    private fun logLines() = ShadowLog.getLogs().filter { it.tag == SafeLog.TAG }.map { it.msg }
+
+    /** A transaction whose only line is in category [id]. */
+    private fun spendIn(id: CategoryId) =
+        blocking {
+            val account = kit.accounts.create(AccountDraft("Cash", AccountType.CASH, Paise(0)))
+            kit.transactions.create(
+                TransactionDraft(
+                    TransactionType.EXPENSE,
+                    Paise(1_000),
+                    Instant.parse("2026-11-20T10:00:00Z"),
+                    account.meta.id,
+                    lines = listOf(LineDraft(null, Paise(1_000), id)),
+                ),
+            )
+        }
 
     @Test
     fun `delete removes a sub-category, audits a DELETE and offers an undo of it`() {
@@ -178,6 +205,42 @@ class CategoriesActionsTest {
         logLines() shouldBe emptyList()
 
         vm.noticeShown()
+        vm.state.value.notice shouldBe null
+    }
+
+    @Test
+    fun `deleting a category that a transaction uses shows the in-use notice, writes nothing and logs nothing`() {
+        withDefaults()
+        spendIn(id("food_groceries"))
+        val vm = viewModel()
+        val rows = categoryRows()
+        val auditRows = scalar("SELECT COUNT(*) FROM audit_entry")
+        ShadowLog.clear()
+
+        vm.choose(id("food_groceries"), CategoryAction.DELETE)
+        awaitMain { vm.state.value.notice == CategoriesNotice.InUse }
+
+        categoryRows() shouldBe rows
+        scalar("SELECT COUNT(*) FROM audit_entry") shouldBe auditRows
+        vm.state.value.undo shouldBe null
+        vm.state.value.notice shouldBe CategoriesNotice.InUse
+        vm.names().take(3) shouldBe listOf("Food & dining", "Groceries", "Eating out")
+        // A refused delete is an answer, not a failure: nothing of ours is logged.
+        logLines() shouldBe emptyList()
+
+        vm.noticeShown()
+        vm.state.value.notice shouldBe null
+    }
+
+    @Test
+    fun `a category no transaction uses is still deleted while another is in use`() {
+        withDefaults()
+        spendIn(id("food_groceries"))
+        val vm = viewModel()
+
+        vm.choose(id("food_delivery"), CategoryAction.DELETE)
+        awaitMain { vm.state.value.undo == id("food_delivery") }
+
         vm.state.value.notice shouldBe null
     }
 

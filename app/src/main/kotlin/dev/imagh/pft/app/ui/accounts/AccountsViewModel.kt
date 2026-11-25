@@ -33,6 +33,9 @@ import kotlinx.coroutines.sync.withLock
  *   offered. Never shown or logged: it only identifies the offer.
  * @property failedAction the action that failed unexpectedly and has not been shown yet; the screen
  *   shows a fixed "Couldn't ... Try again." message and calls [AccountsViewModel.failureShown].
+ * @property inUse true after a delete was refused because transactions use the account and has not been
+ *   shown yet; the screen shows the fixed "In use by transactions. Archive it instead." message and calls
+ *   [AccountsViewModel.inUseShown].
  */
 data class AccountsUiState(
     val active: List<Account> = emptyList(),
@@ -40,6 +43,7 @@ data class AccountsUiState(
     val loaded: Boolean = false,
     val undo: AccountId? = null,
     val failedAction: EntityAction? = null,
+    val inUse: Boolean = false,
 )
 
 /**
@@ -51,8 +55,10 @@ data class AccountsUiState(
  *   fails loudly like `HomeViewModel` rather than showing a made-up list.
  * - **One at a time.** Actions and reads run one after another (a [Mutex]), so a read that started
  *   before an action never overwrites the list with older data.
- * - **Failures (A5 save shape).** A [LedgerError] (the account was deleted or never existed, for
- *   example from another path) is a stale list, not an error: the list is simply refreshed. Any other
+ * - **Failures (A5 save shape).** Deleting an account that transactions use ([LedgerError.InUse]) is an
+ *   answer: [AccountsUiState.inUse] shows a fixed message, nothing is written and nothing is logged. Any
+ *   other [LedgerError] (the account was deleted or never existed, for example from another path) is a
+ *   stale list, not an error: the list is simply refreshed. Any other
  *   exception leaves the list as it was, sets [AccountsUiState.failedAction] (a fixed message, never
  *   exception text) and logs one enum-only `entity_action_failed` event. A cancellation is rethrown.
  *   Every action is one audited transaction, so a failed one leaves nothing behind and can be retried.
@@ -100,7 +106,13 @@ class AccountsViewModel(
     /** The screen showed the failure message. */
     fun failureShown() = mutableState.update { it.copy(failedAction = null) }
 
-    private suspend fun refresh(offerUndoFor: AccountId? = null) {
+    /** The screen showed the in-use message. */
+    fun inUseShown() = mutableState.update { it.copy(inUse = false) }
+
+    private suspend fun refresh(
+        offerUndoFor: AccountId? = null,
+        inUse: Boolean = false,
+    ) {
         val lists = accounts.lists()
         mutableState.update {
             it.copy(
@@ -108,6 +120,7 @@ class AccountsViewModel(
                 archived = lists.archived,
                 loaded = true,
                 undo = offerUndoFor ?: it.undo,
+                inUse = inUse || it.inUse,
             )
         }
     }
@@ -121,9 +134,13 @@ class AccountsViewModel(
         viewModelScope.launch {
             serial.withLock {
                 var offer: AccountId? = null
+                var blocked = false
                 try {
                     write()
                     offer = offerUndoFor
+                } catch (_: LedgerError.InUse) {
+                    // An answer, not a failure: transactions use it. Nothing was written and nothing is logged.
+                    blocked = true
                 } catch (_: LedgerError) {
                     // The account is gone or was never there (changed elsewhere): the refresh below shows the truth.
                 } catch (cancelled: CancellationException) {
@@ -138,7 +155,7 @@ class AccountsViewModel(
                     }
                     return@withLock
                 }
-                refresh(offer)
+                refresh(offer, blocked)
                 if (consumesOffer) mutableState.update { it.copy(undo = null) }
             }
         }

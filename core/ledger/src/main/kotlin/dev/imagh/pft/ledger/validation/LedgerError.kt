@@ -97,6 +97,15 @@ sealed class LedgerError(
         val what: String,
     ) : LedgerError("A $what with this name already exists")
 
+    /**
+     * A live transaction still uses the account, category or tag ([what] is the kind of record, never
+     * its name), so it cannot be deleted: archive it instead (L-2). Counts only live
+     * transactions (for a category or tag, their live lines), so a deleted transaction never blocks.
+     */
+    class InUse(
+        val what: String,
+    ) : LedgerError("This $what is in use by transactions")
+
     /** The category is a system category (such as Loan EMI), which can be renamed but not archived or deleted. */
     class SystemCategoryProtected : LedgerError("This category cannot be archived or deleted")
 

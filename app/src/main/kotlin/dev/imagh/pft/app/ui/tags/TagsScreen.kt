@@ -134,6 +134,14 @@ fun TagsRoute(
             viewModel.failureShown()
         }
     }
+    val inUse = state.inUse
+    val inUseText = stringResource(R.string.entity_delete_in_use)
+    LaunchedEffect(inUse) {
+        if (inUse) {
+            snackbars.showSnackbar(inUseText)
+            viewModel.inUseShown()
+        }
+    }
 
     val notFoundText = stringResource(R.string.tags_not_found)
     LaunchedEffect(notFound) {

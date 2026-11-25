@@ -304,7 +304,14 @@ class DefaultCategoriesTest :
                             kit.store.auditLog.append(entry)
                         }
                     }
-                val broken = CategoryService(kit.store, kit.writerWith(failing), kit.categoryRepository, kit.ids)
+                val broken =
+                    CategoryService(
+                        kit.store,
+                        kit.writerWith(failing),
+                        kit.categoryRepository,
+                        kit.transactionLineRepository,
+                        kit.ids,
+                    )
 
                 shouldThrow<IllegalStateException> { broken.seedDefaults() }
 

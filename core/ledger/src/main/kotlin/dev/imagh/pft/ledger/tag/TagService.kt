@@ -3,6 +3,7 @@ package dev.imagh.pft.ledger.tag
 import dev.imagh.pft.ledger.audit.AuditedWriter
 import dev.imagh.pft.ledger.ids.TagId
 import dev.imagh.pft.ledger.ids.Uuid7
+import dev.imagh.pft.ledger.transaction.TransactionLineRepository
 import dev.imagh.pft.ledger.tx.TransactionRunner
 import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.ledger.validation.LedgerLimits
@@ -22,8 +23,8 @@ import dev.imagh.pft.ledger.validation.Validation
  *
  * **Lifecycle.** Archive hides a tag from new entries but keeps it in the list's archived section and
  * on the items that already carry it. Delete is a tombstone and [restore] undoes it (INT-3). Each call
- * is idempotent and audited. There is no "in use by a transaction item" check on delete yet: it arrives
- * with transaction items (slice C).
+ * is idempotent and audited. Delete is refused while a live line of a live transaction carries the tag
+ * ([LedgerError.InUse]); archive it instead (L-3), which keeps it on the items that already have it.
  *
  * Nothing here logs or puts user text in an error (CLAUDE.md §3.7): [LedgerError.DuplicateName] names
  * the kind of record (`tag`), never the name.
@@ -31,12 +32,14 @@ import dev.imagh.pft.ledger.validation.Validation
  * @param runner the transaction the check-then-write sequences run in.
  * @param writer the audited write path.
  * @param repository the tag store.
+ * @param lines asked whether a live line of a live transaction carries a tag.
  * @param ids source of new tag ids.
  */
 class TagService(
     private val runner: TransactionRunner,
     private val writer: AuditedWriter,
     private val repository: TagRepository,
+    private val lines: TransactionLineRepository,
     private val ids: Uuid7,
 ) {
     /**
@@ -89,9 +92,14 @@ class TagService(
     /**
      * Deletes tag [id] as a tombstone (audited DELETE); already deleted is a no-op.
      *
+     * @throws LedgerError.InUse while a live line of a live transaction carries it (archive it instead).
      * @throws LedgerError.NotFound for an unknown tag.
      */
-    suspend fun delete(id: TagId): Tag = writer.delete(repository, id)
+    suspend fun delete(id: TagId): Tag =
+        runner.inTransaction {
+            if (lines.isTagInUse(id)) throw LedgerError.InUse(WHAT)
+            writer.delete(repository, id)
+        }
 
     /**
      * Brings a deleted tag back (audited RESTORE); not deleted is a no-op. It comes back as it was,

@@ -33,6 +33,8 @@ fun LedgerError.toFieldError(): FieldError? =
         is LedgerError.InvalidOrder,
         is LedgerError.InvalidIcon,
         is LedgerError.SystemCategoryProtected,
+        // Delete was refused because transactions use it: a list notice, never a field of a form.
+        is LedgerError.InUse,
         // Transaction rules about the items as a whole, not one typed field: a form-level message.
         is LedgerError.BreakdownMismatch,
         is LedgerError.TooManyLines,

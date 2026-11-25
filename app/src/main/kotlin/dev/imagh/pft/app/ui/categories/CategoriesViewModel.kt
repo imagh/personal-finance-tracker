@@ -28,6 +28,9 @@ sealed interface CategoriesNotice {
     /** Delete was refused because the category still has sub-categories ("Delete its sub-categories first"). */
     data object DeleteBlocked : CategoriesNotice
 
+    /** Delete was refused because transactions use the category ("In use by transactions. Archive it instead."). */
+    data object InUse : CategoriesNotice
+
     /** [action] failed unexpectedly ("Couldn't ... Try again."); the list is as it was. */
     data class Failed(
         val action: EntityAction,
@@ -70,6 +73,7 @@ data class CategoriesUiState(
  *   a category that is no longer listed, or already first or last, does nothing.
  * - **Failures.** Deleting a parent that still has sub-categories ([LedgerError.HasChildren]) is an
  *   answer, not a failure: it sets [CategoriesNotice.DeleteBlocked], writes nothing and logs nothing.
+ *   So is deleting a category that transactions use ([LedgerError.InUse]): [CategoriesNotice.InUse].
  *   Any other exception (including a [LedgerError] such as a category deleted elsewhere) leaves the
  *   data as it was (every action is one audited transaction), sets [CategoriesNotice.Failed] with a
  *   fixed message, logs one enum-only `entity_action_failed` event (kind and action, never text) and
@@ -196,6 +200,8 @@ class CategoriesViewModel(
                     offer = offerUndoFor
                 } catch (_: LedgerError.HasChildren) {
                     notice = CategoriesNotice.DeleteBlocked
+                } catch (_: LedgerError.InUse) {
+                    notice = CategoriesNotice.InUse
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

@@ -123,7 +123,14 @@ class TagServiceTest :
                     object : AuditLog {
                         override suspend fun append(entry: AuditEntry) = error("audit store unavailable")
                     }
-                val broken = TagService(f.kit.store, f.kit.writerWith(failing), f.kit.tagRepository, f.kit.ids)
+                val broken =
+                    TagService(
+                        f.kit.store,
+                        f.kit.writerWith(failing),
+                        f.kit.tagRepository,
+                        f.kit.transactionLineRepository,
+                        f.kit.ids,
+                    )
 
                 shouldThrow<IllegalStateException> { broken.create("Travel") }
 

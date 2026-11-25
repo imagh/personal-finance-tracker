@@ -123,6 +123,7 @@ The full log is `docs/learnings/README.md`. A learnings entry that adds or chang
 - EMIs are expenses linked to their loan; transfers and card bill payments are not income/expense (PRD LN-5 avoids double count) [2026-10-04]
 - Bank SMS are untrusted; parsing is on-device templates only; auto-logged transactions are flagged unverified [2026-10-04]
 - Reuse by layer: extract a shared block when the plan names two concrete consumers; composition, at most one generic base class; both re-implementing a shared block and a single-consumer abstraction block the PR [2026-10-28]
+- "In use" refusals count live children of **live** parents (delete leaves a transaction's lines live): the query joins to the parent's deleted state, and a restore of the parent checks what it points at with `Validation.requireNotDeleted` (archived is fine); the check and the delete share one `runner.inTransaction` [2026-11-24]
 - A core PR that adds a `LedgerError` maps it in `app/.../ui/common/LedgerErrorMapping.kt` in the same PR (exhaustive `when`, no `else`, so the app does not compile otherwise); a core service constructor change breaks `di/AppServices.kt` until its new dependency has a Room implementation, so it lands after that Room PR [2026-11-18]
 
 ## Logging and privacy

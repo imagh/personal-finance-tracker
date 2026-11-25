@@ -52,7 +52,7 @@ entity step composes instead of re-implementing:
 | `AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository` | `account` | accounts (PRD L-4): `create(draft)`, `edit(id, draft)`, `archive`/`unarchive`, `delete`/`restore`, `active()`, `all()`, `lists()` (active and archived, each sorted by name ignoring case, then by creation order); `AccountRules.requireMaskedIdentifier(text)` is public so a form can check the last four with core's rule. `AccountRepository` adds `allLive()` to `EntityRepository` |
 | `CategoryService`, `Category`, `CategoryLists`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `lists(kind)` (for a list screen: `CategoryLists(active, archived)`, B4a), `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
 | `TagService`, `Tag`, `TagLists`, `TagRepository` | `tag` | tags (PRD L-3): `create(name)`, `edit(id, name)` (rename), `archive`/`unarchive`, `delete`/`restore`, `lists()` (active and archived, each sorted by name ignoring case, then by id), `pickable()` (the active list). `TagRepository` adds `allLive()` to `EntityRepository`. The service takes a `TransactionRunner` for the check-then-write name rule |
-| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-6, L-9, L-11), slices C1a and C1b: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay), `markVerified(id)`, `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines(writer, lines, categories, tags, ids)` is the line logic the transaction and (from C2) transfer services share (create, reconcile, the reference checks and the sum re-check): its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised); `TransactionRepository` adds nothing yet. Create and edit take 1 to 50 lines (itemising, C1b) |
+| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-6, L-9, L-11), slices C1a and C1b: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay), `markVerified(id)`, `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines(writer, lines, categories, tags, ids)` is the line logic the transaction and (from C2) transfer services share (create, reconcile, the reference checks and the sum re-check): its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised), `isCategoryInUse(id)` and `isTagInUse(id)` (a live line of a live transaction uses it); `TransactionRepository` adds `isAccountInUse(id)` (a live transaction is on it). `AccountService`, `CategoryService` and `TagService` take these repositories to refuse a delete with `LedgerError.InUse(what)`. Create and edit take 1 to 50 lines (itemising, C1b) |
 | `FirstRunService` | `setup` | `initialise(userName, deviceLabel)`: the identity (`IdentityService.initialise`) **and** `CategoryService.seedDefaults()` in one transaction. A plain coordinating class; `IdentityService` stays unaware of categories because the writer needs the identity service (a construction cycle otherwise) |
 
 ### Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
@@ -69,7 +69,7 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 | `InMemoryAccountRepository` | `AccountRepository` over `InMemoryEntityRepository` (adds `allLive()`, which returns rows newest first on purpose, so no test depends on an order the contract does not promise); `all()` returns every row, tombstones included, in insertion order |
 | `InMemoryCategoryRepository` | `CategoryRepository` over `InMemoryEntityRepository` (adds `allLive()`, newest first on purpose, and `bySystemKey`) |
 | `InMemoryTagRepository` | `TagRepository` over `InMemoryEntityRepository` (adds `allLive()`, newest first on purpose) |
-| `InMemoryTransactionRepository`, `InMemoryTransactionLineRepository` | the transaction stores over `InMemoryEntityRepository`; `liveLinesOf` returns newest first on purpose |
+| `InMemoryTransactionRepository`, `InMemoryTransactionLineRepository` | the transaction stores over `InMemoryEntityRepository`; `liveLinesOf` returns newest first on purpose; the line store joins to the transaction store for the in-use queries, as the SQL does |
 | `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `accountRepository`, `accounts` (an `AccountService`), `categoryRepository`, `categories` (a `CategoryService`), `tagRepository`, `tags` (a `TagService`), `transactionRepository`, `transactionLineRepository`, `transactions` (a `TransactionService`), `firstRun` (a `FirstRunService`), `initialise()` (identity only, no defaults); `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
 | `TestClock` | a hand-moved `java.time.Clock` |
 | `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write, with no opt-out |
@@ -132,8 +132,10 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
   limit). The currency is always INR and is not on the model: the persistence layer writes it and
   refuses anything else. There is no stored balance (INT-6). All checks run before anything is
   written, so a refused call leaves no row and no audit entry. `edit` audits only the changed
-  fields, and an identical edit writes nothing. Archive and delete are idempotent; delete has no
-  "in use" check until transactions exist (slice C).
+  fields, and an identical edit writes nothing. Archive and delete are idempotent. `delete` is refused
+  with `InUse("account")` while a **live transaction** is on the account (archived or not; a transfer
+  leg counts; a deleted transaction does not), and the check and the delete run in one
+  `runner.inTransaction`, so a transaction saved meanwhile cannot slip between them (C1d, D4).
 - **Categories** (`CategoryService`, plan D5-D7, D10). Two levels only, and a sub-category has the
   kind of its parent:
   - *Hierarchy.* A sub-category's parent must exist, be live (`NotFound` / `Deleted` / `Archived`),
@@ -174,8 +176,9 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     included, so a caller can swap two neighbours without knowing the tie-break.
   - *Delete and restore.* Delete is a tombstone, refused with `HasChildren` while the category has
     live children (archived ones count; there is no cascade). `restore` of a sub-category whose
-    parent is deleted gives `Deleted("category")`. There is no "in use by a transaction item" check
-    until slice C.
+    parent is deleted gives `Deleted("category")`. Delete is also refused with `InUse("category")`
+    while a **live line of a live transaction** uses the category (C1d, D4); archive it instead. A
+    deleted transaction keeps its lines as they were, so the check joins to the transaction.
   - *System category.* `LOAN_EMI` (`systemKey != null`) can be renamed, recoloured and re-iconed but
     `archive` and `delete` give `SystemCategoryProtected`, nothing written.
   - *Audit.* `auditFields()` uses the column names (`parent_id`, `kind`, `name`, `colour`,
@@ -192,8 +195,9 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     deleted. There is no database index behind this (Room cannot declare a partial or `NOCASE`
     unique index), so this rule is the only guard.
   - *Lifecycle.* Archive hides a tag from `pickable()` but keeps it in `lists().archived`; delete is a
-    tombstone, `restore` undoes it, and each call is idempotent and audited. There is no "in use by a
-    transaction item" check until slice C.
+    tombstone, `restore` undoes it, and each call is idempotent and audited. Delete is refused with
+    `InUse("tag")` while a live line of a live transaction carries the tag (C1d, D4); archive it
+    instead, which keeps it on the lines that have it.
   - *Lists.* `lists()` and `pickable()` sort by `nameKey`, then by id, so tags that compare equal (two
     devices' tags after a sync, a restore that raced a create) never swap places with the repository's
     order. `auditFields()` is `name`.
@@ -241,7 +245,11 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     drops an insert and one that stores an extra line.
   - *Edit* audits only the changed fields of each row and keeps the state, source and message facts;
     a no-op edit writes nothing. *Delete and restore* act on the transaction only: its lines stay,
-    hidden with it, so restore brings back exactly the lines it had. `get` reads the transaction and
+    hidden with it, so restore brings back exactly the lines it had. Because the in-use check counts
+    live transactions only, a deleted one may point at something deleted since, so `restore` first
+    checks that its account, and the category and tags of its **live** lines, are not deleted
+    (`Deleted("account" | "category" | "tag")`, nothing written; archived ones are fine, like a
+    sub-category restored under a deleted parent). `get` reads the transaction and
     its lines in one `runner.inTransaction`. `markVerified` audits
     `state: UNVERIFIED -> VERIFIED`; on a verified one it is a no-op.
   - *Audit keys.* `ledger_transaction`: `type`, `direction`, `amount`, `occurred_at`, `account_id`,
@@ -354,7 +362,8 @@ Tests (Kotest on JUnit 5, `core/ledger/src/test/kotlin/dev/imagh/pft/ledger/`): 
 (every split rule, plus partition property tests), `transaction/TransactionServiceTest` (create: pinned line id,
 validation, references), `transaction/TransactionEditTest` (exact audit diffs, no-op, type change, rule 3),
 `transaction/TransactionItemisationTest` (several lines, reconciliation by id, foreign and tombstoned ids, positions, auto-captured facts, the fail-closed sum re-check over a faulty store),
-`transaction/TransactionLifecycleTest` (delete, restore, `markVerified`, `get` order), `validation/TransactionErrorsTest`,
+`transaction/TransactionLifecycleTest` (delete, restore, `markVerified`, `get` order), `transaction/TransactionRestoreReferencesTest` (restore refused after a reference was deleted),
+`account/AccountInUseTest`, `category/CategoryInUseTest`, `tag/TagInUseTest` (the in-use refusals), `validation/TransactionErrorsTest`,
 `setup/FirstRunServiceTest` (identity plus defaults, all-or-nothing), `IdentityServiceTest`, `SettingsServiceTest`, `AuditedWriterTest` (including
 rollback of the write and its audit entry), and `fakes/` tests that pin the fake runner's
 rollback semantics and the matcher. Services are tested against the in-memory fakes; the same

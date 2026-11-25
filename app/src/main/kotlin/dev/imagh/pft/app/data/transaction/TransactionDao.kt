@@ -12,4 +12,8 @@ import dev.imagh.pft.app.data.common.BaseDao
 interface TransactionDao : BaseDao<LedgerTransactionEntity> {
     @Query("SELECT * FROM ledger_transaction WHERE id = :id")
     override suspend fun byId(id: String): LedgerTransactionEntity?
+
+    /** True if a transaction on [accountId] is not tombstoned (the in-use check; indexed by `account_id`). */
+    @Query("SELECT EXISTS(SELECT 1 FROM ledger_transaction WHERE account_id = :accountId AND deleted_at IS NULL)")
+    suspend fun isAccountUsed(accountId: String): Boolean
 }

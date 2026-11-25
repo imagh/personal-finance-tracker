@@ -32,7 +32,9 @@ import dev.imagh.pft.ledger.validation.Validation
  * - an edit keeps the state, source and message facts, refuses a transfer leg ([LedgerError.IsTransfer]),
  *   and audits only the fields that changed (an edit that changes nothing writes nothing);
  * - delete and restore act on the transaction only: its lines stay as they are, so a restore brings
- *   back exactly the lines it had (IT §3.3 rule 7).
+ *   back exactly the lines it had (IT §3.3 rule 7). A restore is refused ([LedgerError.Deleted]) when its
+ *   account, or the category or tag of a live line, was deleted since: deleting a transaction frees them
+ *   to be deleted, as a sub-category is not restored under a deleted parent. Archived ones are fine.
  * - a transfer leg is refused by every call here ([LedgerError.IsTransfer]): one leg must never be
  *   edited, deleted, restored or verified without the other. The transfer service (C2) acts on both.
  *
@@ -140,12 +142,23 @@ class TransactionService(
 
     /**
      * Brings deleted transaction [id] back (audited RESTORE), with the lines it had. Not deleted is a
-     * no-op.
+     * no-op. Deleting a transaction frees its account, categories and tags to be deleted, so the
+     * restore first checks that none of them was deleted since; archived ones are fine (D4, Q4).
      *
      * @throws LedgerError.IsTransfer for a transfer leg.
      * @throws LedgerError.NotFound for an unknown transaction.
+     * @throws LedgerError.Deleted (`account`, `category` or `tag`) if its account, or a category or tag of
+     *   one of its live lines, was deleted since; nothing is written.
      */
-    suspend fun restore(id: TransactionId): LedgerTransaction = notTransfer(id) { writer.restore(transactions, id) }
+    suspend fun restore(id: TransactionId): LedgerTransaction =
+        notTransfer(id) {
+            val txn = transactions.get(id)
+            if (txn != null && txn.meta.isDeleted) {
+                Validation.requireNotDeleted(accounts.get(txn.accountId), ACCOUNT)
+                lines.requireReferencesNotDeleted(id)
+            }
+            writer.restore(transactions, id)
+        }
 
     /**
      * Marks transaction [id] as confirmed by the user (L-6): an audited UPDATE of `state`. Already

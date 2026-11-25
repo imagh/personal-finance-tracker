@@ -149,6 +149,27 @@ class ValidationTest :
             }
         }
 
+        context("requireNotDeleted") {
+            val t0 = Instant.parse("2026-11-01T10:00:00Z")
+            val meta = EntityMeta(UserId("w-1"), t0, t0, UserId("u-1"), DeviceId("d-1"))
+
+            test("returns an active or an archived entity unchanged") {
+                Widget(meta).let { Validation.requireNotDeleted(it, "widget") shouldBe it }
+                Widget(meta.copy(archivedAt = t0)).let { Validation.requireNotDeleted(it, "widget") shouldBe it }
+            }
+            test("rejects a missing reference") {
+                val error = shouldThrow<LedgerError.NotFound> { Validation.requireNotDeleted<Widget>(null, "widget") }
+                error.what shouldBe "widget"
+            }
+            test("rejects a deleted reference, archived or not") {
+                val deleted = Widget(meta.copy(deletedAt = t0))
+                val error = shouldThrow<LedgerError.Deleted> { Validation.requireNotDeleted(deleted, "widget") }
+                error.what shouldBe "widget"
+                val both = Widget(meta.copy(deletedAt = t0, archivedAt = t0))
+                shouldThrow<LedgerError.Deleted> { Validation.requireNotDeleted(both, "widget") }
+            }
+        }
+
         test("LedgerLimits are the documented static limits") {
             LedgerLimits.MAX_NAME_LENGTH shouldBe 100
             LedgerLimits.MAX_TITLE_LENGTH shouldBe 200
@@ -163,5 +184,6 @@ class ValidationTest :
             LedgerError.NameTooLong(20).message shouldBe "A name may be at most 20 characters"
             LedgerError.NotFound("account").message shouldBe "No such account"
             LedgerError.InvalidMaskedIdentifier().message shouldBe "The identifier must be exactly four digits"
+            LedgerError.InUse("category").message shouldBe "This category is in use by transactions"
         }
     })

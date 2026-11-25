@@ -4,6 +4,7 @@ import dev.imagh.pft.ledger.audit.AuditSource
 import dev.imagh.pft.ledger.audit.AuditedWriter
 import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.Uuid7
+import dev.imagh.pft.ledger.transaction.TransactionLineRepository
 import dev.imagh.pft.ledger.tx.TransactionRunner
 import dev.imagh.pft.ledger.validation.LedgerError
 
@@ -29,19 +30,23 @@ import dev.imagh.pft.ledger.validation.LedgerError
  * - **Delete** is a tombstone, refused while the category has live children, archived ones included
  *   ([LedgerError.HasChildren]); there is no cascade. [restore] undoes it (INT-3).
  *
- * Each lifecycle call is idempotent and audited. There is no "in use by a transaction" check on
- * delete yet: it arrives with transaction items (slice C). Nothing here logs or puts user text in an
- * error (CLAUDE.md §3.7).
+ * - **In use.** Delete is also refused while a live line of a live transaction uses the category
+ *   ([LedgerError.InUse]); archive it instead. A deleted transaction keeps its lines, which do not count.
+ *
+ * Each lifecycle call is idempotent and audited. Nothing here logs or puts user text in an error
+ * (CLAUDE.md §3.7).
  *
  * @param runner the transaction the check-then-write sequences run in.
  * @param writer the audited write path.
  * @param repository the category store.
+ * @param lines asked whether a live line of a live transaction uses a category.
  * @param ids source of new category ids.
  */
 class CategoryService(
     private val runner: TransactionRunner,
     private val writer: AuditedWriter,
     private val repository: CategoryRepository,
+    private val lines: TransactionLineRepository,
     private val ids: Uuid7,
 ) {
     /**
@@ -119,12 +124,14 @@ class CategoryService(
      *
      * @throws LedgerError.SystemCategoryProtected for a system category.
      * @throws LedgerError.HasChildren while it has live (including archived) sub-categories.
+     * @throws LedgerError.InUse while a live line of a live transaction uses it (archive it instead).
      * @throws LedgerError.NotFound for an unknown category.
      */
     suspend fun delete(id: CategoryId): Category =
         runner.inTransaction {
             repository.requireNotSystem(id)
             if (repository.allLive().any { it.parentId == id }) throw LedgerError.HasChildren()
+            if (lines.isCategoryInUse(id)) throw LedgerError.InUse(WHAT)
             writer.delete(repository, id)
         }
 
