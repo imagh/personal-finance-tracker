@@ -34,7 +34,8 @@ internal object GroupedSectionTags {
  *
  * @property fill the island background: `PftTheme.surfaces.island`. Never `surfaceVariant`, because
  *   rows hold money text and the money tokens do not clear 4.5:1 there (`ColorContrastTest` sweeps
- *   this colour for every palette, mode and style), and never white.
+ *   this colour for every palette, mode and style), and never white, except Cobalt light where the
+ *   owner approved a white island (2026-11-25, Cobalt plan D10).
  * @property borderTop the colour of the 1 physical pixel edge at the island's top; `null` when no
  *   edge is drawn (FLAT). In dark TONAL it is the hairline lit by the top highlight.
  * @property borderBottom the edge colour at the island's bottom: the hairline. The edge is a vertical

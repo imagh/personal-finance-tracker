@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Golden screenshots of the four palettes' role swatches side by side, light and dark, on a
+ * Golden screenshots of the five palettes' role swatches side by side, light and dark, on a
  * 393x851dp xxhdpi screen. The swatches draw each palette's own colours, so the surrounding theme
  * (Graphite, dynamic colour off) does not change the picture. Fake data only.
  *

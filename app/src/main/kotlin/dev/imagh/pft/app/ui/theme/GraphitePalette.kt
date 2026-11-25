@@ -15,11 +15,14 @@ import androidx.compose.ui.graphics.Color
  * @property canvas the tonal screen background (header, list, bottom bar): a step off
  *   `scheme.surface`, which is the flat background. Mockup token `canvas`.
  * @property island the tonal card fill (`PftSurfaces.island`): a step lighter than [canvas] in both
- *   modes, never white. Mockup token `island`.
+ *   modes, and never white except in Cobalt light, where the owner approved it (2026-11-25, Cobalt
+ *   plan D10). Mockup token `island`.
  * @property wash the header glow tint (`PftSurfaces.glow`, DS6d): a tinted step off [canvas]
  *   (lighter in dark, a deeper tone of the palette hue in light). Mockup token `pc`; the mockup's
  *   `onpc` is unused because no text sits on a wash fill, only on the glow, which is swept for
  *   contrast at its strongest (the wash at 72% over the canvas).
+ * @property brand the brand tokens ([BrandColors]). Defaults to [derivedBrand] of [scheme] and
+ *   [island], which is what every palette but Cobalt and dynamic colour carry; Cobalt passes its own.
  */
 @Immutable
 internal data class PaletteColors(
@@ -27,6 +30,7 @@ internal data class PaletteColors(
     val canvas: Color,
     val island: Color,
     val wash: Color,
+    val brand: BrandColors = derivedBrand(scheme, island),
 )
 
 /**

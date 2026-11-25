@@ -76,8 +76,19 @@ class GroupedSectionColorsTest {
         }
     }
 
+    /** The one island the owner approved as white (D10, 2026-11-25): Cobalt light, tonal. */
+    private fun Case.isCobaltLightTonal() = palette == ThemePalette.COBALT && !dark && style == BackgroundStyle.TONAL
+
     @Test
-    fun `the fill is never white`() {
-        forEvery { assertNotEquals(Color.White, it.colors.fill, "$it") }
+    fun `the fill is never white, except Cobalt light`() {
+        forEvery { if (!it.isCobaltLightTonal()) assertNotEquals(Color.White, it.colors.fill, "$it") }
+    }
+
+    @Test
+    fun `Cobalt light is the white island, as a positive control, and Graphite light still is not`() {
+        assertEquals(Color.White, Case(ThemePalette.COBALT, dark = false, BackgroundStyle.TONAL).colors.fill)
+        assertNotEquals(Color.White, Case(ThemePalette.GRAPHITE, dark = false, BackgroundStyle.TONAL).colors.fill)
+        assertNotEquals(Color.White, Case(ThemePalette.COBALT, dark = true, BackgroundStyle.TONAL).colors.fill)
+        assertNotEquals(Color.White, Case(ThemePalette.COBALT, dark = false, BackgroundStyle.FLAT).colors.fill)
     }
 }
