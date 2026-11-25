@@ -47,7 +47,23 @@ class ThemePrefsTest {
     @Test
     fun `the persisted sans font names are permanent`() {
         // AP1 stores these names; AP2 adds CUSTOM, only ever added.
-        assertEquals(listOf("FIGTREE", "PLUS_JAKARTA_SANS", "SYSTEM"), SansFont.entries.map { it.name })
+        // Additive only: MANROPE joined with the Cobalt fonts (K2); the existing names did not change.
+        assertEquals(
+            setOf("FIGTREE", "PLUS_JAKARTA_SANS", "SYSTEM", "MANROPE"),
+            SansFont.entries.map { it.name }.toSet(),
+        )
+        assertEquals(4, SansFont.entries.size)
+    }
+
+    @Test
+    fun `the persisted display font names are permanent and the default is still the bundled serif`() {
+        // Additive only: BUNDLED_GROTESQUE joined with the Cobalt fonts (K2); K4 changes the default, not K2.
+        assertEquals(
+            setOf("BUNDLED_SERIF", "SYSTEM_SERIF", "TEXT", "BUNDLED_GROTESQUE"),
+            DisplayFont.entries.map { it.name }.toSet(),
+        )
+        assertEquals(4, DisplayFont.entries.size)
+        assertEquals(DisplayFont.BUNDLED_SERIF, ThemePrefs.Default.displayFont)
     }
 
     @Test

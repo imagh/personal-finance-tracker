@@ -18,10 +18,17 @@ enum class ThemeMode {
  * What the display family is (UI-2, UI-3). [TypePairing] chooses which roles use it: by default
  * only `PftTheme.type.amountHero`, every other text role being the system sans. A custom font file
  * joins this enum with the import feature (AP2).
+ *
+ * The enum names are persisted by the appearance settings (AP1), so they are permanent: only ever
+ * add. [BUNDLED_GROTESQUE] was added with the Cobalt fonts (K2). Whatever stores these names must read
+ * an unknown one as the default.
  */
 enum class DisplayFont {
     /** The bundled Newsreader serif (the default). */
     BUNDLED_SERIF,
+
+    /** The bundled Bricolage Grotesque (display grotesque, OFL-1.1). */
+    BUNDLED_GROTESQUE,
 
     /** The platform's serif family. */
     SYSTEM_SERIF,
@@ -66,6 +73,9 @@ enum class SansFont {
     /** The bundled Plus Jakarta Sans variable font (OFL-1.1). */
     PLUS_JAKARTA_SANS,
 
+    /** The bundled Manrope variable font (OFL-1.1). */
+    MANROPE,
+
     /**
      * The platform's default family (Roboto on stock Android, the vendor font elsewhere).
      * Tabular figures there depend on the device font; that is accepted.
@@ -93,7 +103,7 @@ enum class SansFont {
  * @property typePairing which roles use the display family; see [TypePairing]. [TypePairing.HERO_ONLY]
  *   by default, the look before the pairing existed.
  * @property sansFont the sans text family: the bundled Figtree by default, the bundled Plus Jakarta
- *   Sans, or the system font; see [SansFont].
+ *   Sans or Manrope, or the system font; see [SansFont].
  */
 @Immutable
 data class ThemePrefs(
