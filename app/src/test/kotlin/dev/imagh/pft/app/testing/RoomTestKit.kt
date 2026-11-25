@@ -54,6 +54,12 @@ class RoomTestKit(
     /** Tags. */
     val tagRepository = services.tagRepository
 
+    /** Transactions. */
+    val transactionRepository = services.transactionRepository
+
+    /** Transaction lines with their tags. */
+    val transactionLineRepository = services.transactionLineRepository
+
     /** Builds audit entries into [auditLog]. */
     val recorder = services.recorder
 
@@ -74,6 +80,9 @@ class RoomTestKit(
 
     /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
     val tags = services.tags
+
+    /** Transactions: create, edit, delete, restore, mark verified and read, each with its lines. */
+    val transactions = services.transactions
 
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = services.firstRun
