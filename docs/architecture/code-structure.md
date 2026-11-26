@@ -54,6 +54,7 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
     ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
     ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
     ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder, B2a: header More button), HomeRoute
+                                         # K6: BalanceCard (+ BalanceCardModel, BudgetMeter), QuickActionRow (+ QuickAction), HomeSamples (not yet on Home)
     ui/more/                             # B2a: MoreScreen (stateless: the Accounts, Categories and (B5b) Tags rows)
     ui/accounts/                         # B2a: AccountsViewModel (+ AccountsUiState), AccountsScreen (+ AccountsActions), AccountsRoute (reload on resume, Undo),
                                          # AccountRowMapper (type badge, supporting line; the only account-specific drawing logic);

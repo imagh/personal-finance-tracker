@@ -620,6 +620,40 @@ today, rows, total?)` puts a day header over one `GroupedSection` island of them
 - **Day label.** "Today" or "Yesterday" from the passed-in `today` (the caller owns the clock and zone), else the
   device-locale `yMMMd` date. The header is a heading.
 
+### `BalanceCard` and `QuickActionRow` (K6)
+
+Home's two dashboard blocks, in `ui/home` with `HomeSamples.kt` (preview, catalogue page "Home", goldens
+`balance-card-*` and `quick-actions-*`). Plain data in, no entity or ViewModel; nothing renders them on Home until
+slice C (C4d) wires the month's totals.
+
+- **`BalanceCard(model: BalanceCardModel)`.** The month's spend as a `MoneyText(Expense, Hero, onColor = onCard,
+  fadeDecimals = true)` on the `cardStart`, `cardMid`, `cardEnd` gradient, `PftShapes.card`, with two decorative slabs
+  (`cardGhost2`, `cardGhost`) peeking above it. Over the hero: the caller's title and the caption "Spent this month".
+  Under it: "In" and "Out" (unsigned `PaiseFormat` figures in `amountRow`: `MoneyText` cannot draw income on the blue),
+  side by side when both fit and stacked otherwise. The budget meter and its label are drawn only when
+  `BalanceCardModel.budget` is given (hidden until slice D, Cobalt plan D6).
+- **Gradient and ring.** The gradient is the mockup's CSS `linear-gradient(135deg, start 0%, mid 55%, end 100%)`:
+  stops at 0, 0.55 and 1 on a true 45 degree line through the card centre, `(w + h) / sqrt 2` long (`cardGradientLine`),
+  not Compose's corner-to-corner default. Over it, behind the text and clipped by the card, a decorative ring: the
+  mockup's 200dp circle with a 28dp border added outside (256dp across, stroke radius 100 to 128), 68dp in from the
+  right edge and 88dp down, `onCard` at `RING_ALPHA` (0.08). It is drawn, not a node.
+- **Contrast (D4).** Every text is solid `onCard`; hierarchy is size and weight. The ring lightens what is under some
+  text, so `ColorContrastTest` pins `onCard` over the ringed mid and end stops, over the ringed gradient at the ring's
+  furthest reach toward the start (`RING_MIN_LINE_FRACTION`, 0.28) and the faded decimals over the ringed mid and
+  end stops at 3:1, in every palette and mode. The ring never reaches the start corner: ringed, Cobalt light's start
+  would be 4.2:1. The meter's fill is `onCard` over a track of `onCard` at `METER_TRACK_ALPHA` (0.22), held to 3:1.
+- **Spoken.** The hero says "Expense, ₹48,250.40"; "In" and "Out" are one merged node each (word, then figure); the
+  arrows, ghosts and meter bar have no semantics, so the meter's label is said once.
+- **Large text.** The hero shrinks as `MoneyText` does. The card is inset by the gutter and has 18dp padding, so on a
+  320dp window it holds 244dp: a figure of 100 crore fits one line at 200%, and `Paise.MAX_AMOUNT` wraps whole at the
+  smallest step (never cut).
+- **`QuickActionRow(actions: List<QuickAction>)`.** Renders exactly the actions given: `QuickAction(label, icon,
+  onClick, primary)`. Each is one `Role.Button` named by its label; a 52dp `PftShapes.quickAction` tile (`brand` with
+  `onBrand` for the primary one, `brandSoft` with `onBrandSoft` for the rest) over a `bodySmall` medium label in
+  `onSurface`. Budgets is not passed until slice D. The actions share equal columns; when the widest label no longer
+  fits its share (200% text, a fourth action) the row wraps onto further lines with fewer columns, so a label is never
+  broken mid-word.
+
 ### `EmptyState`
 
 `EmptyState(message, glyph?, actionLabel?, onAction?)`: centred glyph slot (DS3's `CategoryGlyph` or a
@@ -677,7 +711,7 @@ Permanent key (Material Symbols name when different). Chrome keys are semantic; 
 
 | Group | Keys |
 |---|---|
-| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle` |
+| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle`, `south_west` (In, the Income quick action), `north_east` (Out) |
 | Food and drink | `restaurant`, `local_cafe`, `fastfood`, `local_bar`, `bakery_dining`, `local_pizza`, `icecream` |
 | Shopping | `shopping_cart`, `shopping_bag`, `grocery`, `checkroom`, `redeem`, `diamond` |
 | Transport | `directions_car`, `directions_bus`, `train`, `local_taxi`, `two_wheeler`, `flight`, `local_gas_station` |
