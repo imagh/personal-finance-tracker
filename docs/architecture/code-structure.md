@@ -26,14 +26,14 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # allowed in the header's `actions`), HeaderGlow (DS6d: the glow's pure rules and
                                          # `Modifier.headerGlow`), BottomActionBar
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
-                                         # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
+                                         # GroupedSection, TransactionRow (+ TransactionRowModel) and DayGroup (K5), EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
                                          # FieldState/FieldError/FieldCheck + LedgerErrorMapping (A5d), NameField, EditFormScaffold (A5d);
                                          # EntityListScreen + EntityRow/RowGlyph/RowAction + UndoDeleteSnackbar (B2a: the one entity list screen),
                                          # CategoryIconGlyph (B4a: CategoryIcon to GlyphSource), EntityActionText (the fixed failure strings);
                                          # PftBottomSheet (the one ModalBottomSheet opt-in), AccountPicker (B2c: stateless account sheet),
                                          # CategoryPicker (B4b: stateless category sheet), TagPicker (B5b: stateless multi-select tag sheet), TileGrid + selectionRing (the grids' shared layout and ring),
                                          # launchSave + SaveOutcome (B4b: the entity forms' save shape);
-                                         # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
+                                         # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples, TransactionRowSamples,
                                          # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples, AccountPickerSamples, CategoryPickerSamples, TagPickerSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v4), its migration list, the audit_entry immutability triggers
@@ -162,6 +162,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `MoneyText` (`MoneySemantic`, `MoneyTone`, `MoneySize`) on `:core:money` `PaiseFormat` | B2, C4, C5, D4, F3, G2 | DS5 |
 | app UI (`ui/common`) | `StatusChip` | C4, C5, D4, E4 | DS5 |
 | app UI (`ui/common`) | `GroupedSection` | C4 accounts strip, C5 detail, D4 detail, AP1/H1 settings, H2 diagnostics | DS5 |
+| app UI (`ui/common`) | `TransactionRow` + `TransactionRowModel` (plain data; one node, one spoken description) and `DayGroup` (header with an injected `today`, optional `Net` total, one `GroupedSection` island) | C4a Transactions tab, C4d Home recent, C5b search results, D4 budget detail, F3 loan detail | K5 |
 | app UI (`ui/common`) | `EmptyState` | B2 `EntityListScreen` (all lists), C4 empty month, C5 no results | DS5 |
 | app UI (`ui/theme`) | `PftSymbol` (92 Material Symbols, permanent keys, `fromKey`) | `CategoryGlyph`; chrome icons everywhere (DS6e `HeaderIconButton`, A5 nav, B4 symbol grid) | DS3 |
 | app UI (`ui/theme`) | `CategoryPalette` (`PftTheme.palette`, 12 named hues, light and dark), `GlyphSize` | `CategoryGlyph`; B4 palette swatches | DS3 |
