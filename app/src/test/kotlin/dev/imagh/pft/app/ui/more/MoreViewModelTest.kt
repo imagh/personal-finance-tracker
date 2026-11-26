@@ -1,4 +1,4 @@
-package dev.imagh.pft.app.ui.home
+package dev.imagh.pft.app.ui.more
 
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -16,12 +16,13 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * [HomeViewModel] against a real Room database through the production wiring ([AppServices]): the
- * state carries the user's name and this phone's name from the stored identity.
+ * [MoreViewModel] against a real Room database through the production wiring ([AppServices]): the
+ * state carries the user's name and this phone's name from the stored identity, for the More header's
+ * attribution line.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class HomeViewModelTest {
+class MoreViewModelTest {
     private val database: PftDatabase = TestDatabase.create()
     private val services = AppServices(database, EpochMillis.clock())
     private val store = ViewModelStore()
@@ -32,8 +33,8 @@ class HomeViewModelTest {
         database.close()
     }
 
-    private fun viewModel(): HomeViewModel =
-        ViewModelProvider(store, HomeViewModel.factory(services))[HomeViewModel::class.java]
+    private fun viewModel(): MoreViewModel =
+        ViewModelProvider(store, MoreViewModel.factory(services))[MoreViewModel::class.java]
 
     @Test
     fun `it starts not loaded, with no names to show`() {

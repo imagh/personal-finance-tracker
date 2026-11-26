@@ -95,7 +95,7 @@ class AccountsRouteTest {
                 PftTheme(ThemePrefs(dynamicColor = false)) {
                     AccountsRoute(
                         services,
-                        AccountsNavigation(back = {}, add = { added += Unit }, edit = { edited += it }),
+                        AccountsNavigation(add = { added += Unit }, edit = { edited += it }),
                         notFound = notFound,
                         onNotFoundShown = {
                             notFoundShown++

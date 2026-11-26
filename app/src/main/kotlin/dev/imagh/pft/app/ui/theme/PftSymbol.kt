@@ -59,6 +59,7 @@ enum class PftSymbol(
     CHECK_CIRCLE("check_circle", R.drawable.sym_check_circle),
     SOUTH_WEST("south_west", R.drawable.sym_south_west),
     NORTH_EAST("north_east", R.drawable.sym_north_east),
+    MORE_HORIZ("more_horiz", R.drawable.sym_more_horiz),
 
     // Food and drink
     RESTAURANT("restaurant", R.drawable.sym_restaurant),

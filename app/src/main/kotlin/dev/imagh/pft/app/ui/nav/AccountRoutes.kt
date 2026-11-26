@@ -28,7 +28,6 @@ internal fun NavGraphBuilder.accountRoutes(
         AccountsRoute(
             services,
             AccountsNavigation(
-                back = { navController.popBackStack() },
                 add = { navController.navigate(Routes.accountEdit()) },
                 edit = { navController.navigate(Routes.accountEdit(it.value)) },
             ),

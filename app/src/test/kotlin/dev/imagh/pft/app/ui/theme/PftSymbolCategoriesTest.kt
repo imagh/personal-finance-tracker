@@ -50,6 +50,7 @@ class PftSymbolCategoriesTest {
             PftSymbol.CHECK_CIRCLE,
             PftSymbol.SOUTH_WEST,
             PftSymbol.NORTH_EAST,
+            PftSymbol.MORE_HORIZ,
         )
 
     @Test

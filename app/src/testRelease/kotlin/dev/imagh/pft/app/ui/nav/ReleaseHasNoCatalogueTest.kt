@@ -52,10 +52,10 @@ class ReleaseHasNoCatalogueTest {
         }
         awaitMain {
             compose.waitForIdle()
-            compose.onAllNodesWithText("Akash · Pixel").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText(HOME_PLACEHOLDER).fetchSemanticsNodes().isNotEmpty()
         }
 
-        compose.onNodeWithText("Akash · Pixel").assertIsDisplayed()
+        compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
         compose.onAllNodesWithContentDescription("Design catalogue").fetchSemanticsNodes().size shouldBe 0
     }
 

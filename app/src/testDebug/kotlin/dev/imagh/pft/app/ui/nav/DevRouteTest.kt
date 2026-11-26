@@ -66,17 +66,20 @@ class DevRouteTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText("Akash · Pixel")
+        awaitText(HOME_PLACEHOLDER)
 
         compose.onNodeWithContentDescription("Design catalogue").performClick()
         awaitText("Type scale: display, headline")
         // The catalogue's toggle chips are at the top of the page (the sheet below them scrolls).
         compose.onNodeWithText("Bundled serif").assertIsDisplayed()
+        // The catalogue is not a tab root, so the bar is not drawn over it.
+        compose.tabCount() shouldBe 0
 
         compose.runOnUiThread { checkNotNull(activity).onBackPressedDispatcher.onBackPressed() }
-        awaitText("Akash · Pixel")
+        awaitText(HOME_PLACEHOLDER)
 
-        compose.onNodeWithText("Akash · Pixel").assertIsDisplayed()
+        compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
+        compose.tabCount() shouldBe 3
         compose.onAllNodesWithText("Type scale: display, headline").fetchSemanticsNodes().size shouldBe 0
         checkNotNull(activity).isFinishing shouldBe false
     }

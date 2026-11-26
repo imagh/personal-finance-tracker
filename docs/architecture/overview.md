@@ -45,9 +45,12 @@ PftRoot                     LaunchViewModel(container).state : StateFlow<LaunchS
   Opening                   nothing drawn (window background = canvas, so no flash)
   KeyUnavailable(reason)    DataUnavailableScreen, Code: <reason>
   IdentityCorrupt           DataUnavailableScreen, Code: IDENTITY_CORRUPT
-  Ready(services, hasIdentity)   PftNavHost: start = HOME if hasIdentity else SETUP
-    SETUP                   SetupRoute -> on done: navigate HOME, popUpTo(SETUP) inclusive (Back on Home leaves the app)
-    HOME                    HomeRoute (placeholder; debug adds the dev/catalog route)
+  Ready(services, hasIdentity)   PftNavHost: start = MAIN if hasIdentity else SETUP
+    SETUP                   SetupRoute -> on done: navigate MAIN, popUpTo(SETUP) inclusive (Back on Home leaves the app)
+    MAIN                    nested graph; the floating PftTabBar shows on its three tab roots only
+      home_tab              HOME (HomeScreen, placeholder; debug adds the dev/catalog route)
+      accounts_tab          ACCOUNTS (the tab root), ACCOUNT_EDIT
+      more_tab              MORE (the tab root: attribution subtitle, Categories, Tags), CATEGORIES, CATEGORY_EDIT, TAGS, TAG_EDIT
 AppContainer.open()         once, on Dispatchers.IO, shared by every caller -> AppStart.Ready(AppServices) | KeyUnavailable
 ```
 
@@ -55,6 +58,25 @@ AppContainer.open()         once, on Dispatchers.IO, shared by every caller -> A
 production wiring of the core services over Room; the test kit `RoomTestKit` builds the same class). Nothing opens
 in a constructor, and the main thread never waits for the database. Details: [persistence-and-security.md](persistence-and-security.md)
 and `app/README.md` "`di` and startup".
+
+### Navigation model (Cobalt K7)
+
+One `NavHost` in `PftNavHost` over nested graphs: the root graph holds `SETUP` and `MAIN`; `MAIN` holds one
+graph per tab (`home_tab`, `accounts_tab`, `more_tab`), each starting on its root screen and holding its own forms.
+The tabs and their order are `TAB_ORDER` (`ui/nav/Tab.kt`); the M1a end state is Home, Transactions, Budgets,
+Accounts, More, so later slices insert into that list instead of moving anything.
+
+- **Switching.** A tap on the bar navigates to the tab's graph with `popUpTo(HOME) { saveState = true }`,
+  `launchSingleTop` and `restoreState`, so each tab keeps its own stack. A tap on the active tab pops it to
+  its root. `NavController.selectTab` is the one function that does both.
+- **Back.** Home is the base of every switch, so Back on Accounts or More goes to Home and Back on Home
+  leaves the app. Setup is popped off the stack when it finishes and is never behind Home.
+- **The bar.** Drawn by the host over the graph, only while the current destination is a tab root (so never
+  on Setup, forms, or the lists under More). The host measures it and passes its size to the screens through
+  `LocalTabBarClearance` (`ui/common`), which tab-root lists add as bottom space.
+- **Unchanged.** String routes (Navigation 2.8.9), no deep links, nav arguments are untrusted ids checked in
+  the ViewModels, and the "no longer exists" flags still cross a pop through the previous entry's
+  `savedStateHandle`. `DataUnavailableScreen` is outside the host (`PftRoot`).
 
 ### Call flow example: first-run Setup
 
