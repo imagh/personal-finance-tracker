@@ -61,4 +61,18 @@ class PftShapesTest {
         assertEquals(16.8f, glyph.radius(side = 56f), 0.001f)
         assertTrue("softer than a small chip", glyph.radius(side = 40f) > 10f)
     }
+
+    @Test
+    fun `the Cobalt tokens are card 22dp, island 18dp, quick action 17dp and a full-pill tab bar`() {
+        lateinit var shapes: PftShapes
+        compose.setContent { PftTheme(ThemePrefs(dynamicColor = false)) { shapes = PftTheme.shapes } }
+        compose.waitForIdle()
+
+        assertEquals(22f, shapes.card.radius())
+        assertEquals(18f, shapes.island.radius())
+        assertEquals(17f, shapes.quickAction.radius())
+        // Half the shorter side whatever the bar's size: a pill.
+        assertEquals(25f, shapes.tabBar.radius(side = 50f))
+        assertEquals(30f, shapes.tabBar.radius(side = 60f))
+    }
 }
