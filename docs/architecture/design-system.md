@@ -507,38 +507,52 @@ page in the debug catalogue and its goldens, so they cannot drift.
 
 ### `MoneyText`
 
-`MoneyText(amount: Paise, semantic: MoneySemantic, modifier, size: MoneySize = Row, animate = false)`
-is the only way an amount is drawn (plan §5.2).
+`MoneyText(amount: Paise, semantic: MoneySemantic, modifier, size: MoneySize = Row, animate = false,
+onColor = Color.Unspecified, fadeDecimals = false)` is the only way an amount is drawn (plan §5.2).
 
 - **Format.** `PaiseFormat.format` from `:core:money` returns a sign-free `₹1,23,456.78`. `MoneyText`
   prepends the sign (`moneySign`) and never reformats; there is no float anywhere in the path.
-  U+2212 (a true minus, not a hyphen) for an expense or a negative balance, `+` for income, nothing for
-  a transfer, a budget figure or a non-negative balance.
+  U+2212 (a true minus, not a hyphen) for an expense, a negative balance or a negative `Net`, `+` for
+  income or a positive `Net`, nothing for a transfer, a budget figure, a zero `Net` or a non-negative
+  balance.
 - **Negative amounts: the caller's contract.** Transaction amounts are positive magnitudes and the
   direction is the semantic, so a negative `Paise` is rejected with `IllegalArgumentException` for every
-  semantic except `Balance`. A wrong sign would misreport the money, so `MoneyText` fails closed instead
+  semantic except `Balance` and `Net` (the two signed ones). A wrong sign would misreport the money, so `MoneyText` fails closed instead
   of drawing it, and that throw happens during composition (it would crash the screen). So **callers must
-  pass magnitudes (non-negative `Paise`) for every semantic except `Balance`**, and the ViewModel or
+  pass magnitudes (non-negative `Paise`) for every semantic except `Balance` and `Net`**, and the ViewModel or
   mapper that builds the UI state owns that: it takes `abs` of a signed difference only where the
   semantic says the direction (for example a budget's remaining amount shown with `Budget(OVER)`), and
   validates at that boundary, with a test, rather than relying on the composable's `require`. C4
   (transaction rows and Home totals), C5 (detail) and D4 (budget figures) each have such a mapper.
-- **Tone** (`moneyTone(semantic, amount, inRow)` → `MoneyTone` → colour):
+- **Tone** (`moneyTone(semantic, amount)` → `MoneyTone` → colour; the size never changes it):
 
   | Semantic | Tone |
   |---|---|
   | `Income` | Positive (green), in totals and in rows |
-  | `Expense` | Negative (red) in totals (`Hero`, `Large`); Neutral in rows (`Row`), owner decision Q2 |
+  | `Expense` | Neutral at every size, in rows, totals and heroes (Cobalt plan D5; it was red in totals before) |
+  | `Net` | Neutral whether negative, zero or positive: a signed difference such as a day total or the banner's net |
   | `Transfer` | Neutral |
   | `Balance` | Neutral, except Negative when the amount is below zero (Q3) |
   | `Budget(UNDER / AT_THRESHOLD / OVER)` | Positive / Warning / Negative |
 
-  Neutral is `onSurface`; the others are `PftTheme.money` tokens, never the accent. `BudgetState` is
+  Red is kept for what is actually wrong: a negative balance and an over-budget figure. Neutral is
+  `onSurface` (or `onColor`, below); the others are `PftTheme.money` tokens, never the accent. `BudgetState` is
   the UI's own three-value enum until the budget module (D1) exists; D4 maps core's `BudgetProgress`
   onto it.
 - **Spoken.** The semantics description is "Expense, ₹250.00" (direction word first, from string
-  resources: Income, Transfer, Balance, Negative balance, Under budget, Budget near its limit, Over
-  budget), so colour is never the only cue.
+  resources: Income, Transfer, Net, Balance, Negative balance, Under budget, Budget near its limit,
+  Over budget), so colour is never the only cue. A negative `Net` says its sign aloud: "Net, minus
+  ₹250.00" (a positive or zero one reads "Net, ₹250.00"; the `+` is only drawn).
+- **`onColor`: money on the blue card** (Cobalt plan D4). `onColor` draws a neutral figure in a given
+  colour, for a fill the theme does not sweep (the balance card's `onCard` on the brand gradient). It is
+  allowed only with a `Neutral` tone and throws `IllegalArgumentException` otherwise, so no red, green
+  or amber is ever drawn on the blue. The tone is decided by the data, so a negative `Balance` (red)
+  with an `onColor` also throws: the card shows the month's spend, an expense, which is neutral.
+- **`fadeDecimals`: the hero's decimals** (hero only; ignored at other sizes). The decimals (the `.`
+  and the two paise digits) are drawn at `FADED_DECIMAL_ALPHA` (0.68) of the figure's colour, as a
+  colour span, while the hero is at a large-text step (24sp or more). Below that, after the hero has
+  shrunk to fit, they are solid, because the faded colour only clears 3:1 (large text), not 4.5:1.
+  With `animate` each rolling digit takes the same colour. Spoken text and shown text are unchanged.
 - **Sizes.** `Hero` is `amountHero`, `Large` is `amountLarge`, `Row` is `amountRow`.
 - **Hero shrink-to-fit.** The hero is one line at the largest of `heroSizeSteps(its own size)` (from the ladder
   `HeroSizeSteps`: 48, 40, 34, 28, 24, 20, 16, 12sp, the plan's four plus four more; a 34sp Bricolage hero uses the
@@ -693,7 +707,7 @@ ones are captured after a real swipe). The debug catalogue has a page for each, 
 Content goldens (DS5) come from `ContentScreenshotTest`, captured by the bounds of the `*Samples`
 composable on `surface` (393dp wide): `money-text-<light|dark>[-2x].png` (the 2x ones at font scale
 2.0), `status-chip-`, `grouped-section-` and `empty-state-<light|dark>.png`, 19 to 170 KB each. The
-Dashboard header sample uses a `MoneyText` hero, so its two expanded goldens show the money red.
+Dashboard header sample uses a `MoneyText` hero (an expense, neutral since Cobalt K3), so its goldens show the plain text colour, not red.
 
 Palette goldens (DS6b) come from `PaletteScreenshotTest`: `palettes-<light|dark>.png`, the five palettes' role swatches
 side by side (`PaletteSwatches`, each column drawn from its own palette's colours, 393dp wide). They

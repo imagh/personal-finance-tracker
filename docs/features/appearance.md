@@ -65,7 +65,7 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
   opens, or during a back swipe) uses the same background colour as the screen, so there is no
   flash of a different colour. The colour it shows before the app has drawn is the default
   palette's; every other palette is within a few shades of it.
-- **Money always looks the same.** Spending, income and warning colours (green, red and amber) are
+- **Money always looks the same.** Income, over-budget and warning colours (green, red and amber) are
   fixed. They do not change with the palette or with dynamic colour, so an amount never changes
   meaning because you changed the look.
 
@@ -94,6 +94,15 @@ champagne are close in colour to the warning amber, so a status such as **Unveri
 is always shown as a pill with a word on it, and the pill's colours are the same under every
 palette. The accent also stays well away from the green and red of money (at least 40 degrees
 of hue, checked by a test for every palette in light and dark).
+
+Money is coloured by what it means, not by how much of it there is. **Spending is never red**: an
+expense is drawn in the ordinary text colour in a list row, a total and the big figure on Home, and
+the minus sign and the word "Expense" say what it is. Income is green. Red is kept for the two things
+that are actually wrong: an account whose balance is below zero, and a budget that is over its limit;
+amber marks a budget close to its limit. A net figure (a day's total, the month's net) is also the
+plain text colour, with a `+` or a minus sign, since a loss is not an alarm. On the blue balance card
+the month's spend is white, and its pence fade a little only while the figure is large; once a long
+amount has shrunk to a small size they are solid so they stay easy to read.
 
 ## Behind the scenes
 
