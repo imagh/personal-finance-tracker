@@ -4,15 +4,26 @@ import dev.imagh.pft.money.Paise
 
 /**
  * What an amount means, so the UI can pick its sign, tone and spoken direction (plan §5.2).
- * Transaction amounts are positive magnitudes and the direction is the semantic; a [Balance] is the
- * only signed one.
+ * Transaction amounts are positive magnitudes and the direction is the semantic; a [Balance] and a
+ * [Net] are the only signed ones.
  */
 sealed interface MoneySemantic {
     /** Money in: a `+` sign, positive tone. */
     data object Income : MoneySemantic
 
-    /** Money out: a true minus sign, negative tone in totals, neutral in list rows (Q2). */
+    /**
+     * Money out: a true minus sign, and a neutral tone at every size, in rows, totals and heroes
+     * (Cobalt plan D5). The minus and the word "Expense" carry the meaning; red is kept for a
+     * negative [Balance] and an over-budget [Budget].
+     */
     data object Expense : MoneySemantic
+
+    /**
+     * A signed difference such as a day total or the banner's net: `+` when positive, a true minus
+     * when negative, no sign at zero, and always neutral (a loss is not an alarm). The amount may be
+     * negative.
+     */
+    data object Net : MoneySemantic
 
     /** Between the household's own accounts: no sign, neutral. */
     data object Transfer : MoneySemantic
@@ -54,7 +65,7 @@ enum class MoneyTone {
     /** Income and under-budget (the money green). */
     Positive,
 
-    /** Expense totals, over-budget and negative balances (the money red). */
+    /** Over-budget and negative balances (the money red). An expense is never this tone. */
     Negative,
 
     /** A budget at or above its alert threshold (the money amber). */
@@ -62,19 +73,18 @@ enum class MoneyTone {
 }
 
 /**
- * The tone for [amount] with the given [semantic]. [inRow] is true for a list-row amount, where an
- * expense stays neutral and red is kept for totals, over-budget and negative balances (owner
- * decision Q2). A positive or zero balance is neutral (Q3).
+ * The tone for [amount] with the given [semantic]. An expense, a net figure and a transfer are
+ * neutral; income and an under-budget figure are positive; a budget at its threshold is warning and
+ * an over-budget figure is negative (owner decision, Cobalt plan D5). A balance is negative only
+ * when its amount is, and a positive or zero balance is neutral (Q3).
  */
 fun moneyTone(
     semantic: MoneySemantic,
     amount: Paise,
-    inRow: Boolean,
 ): MoneyTone =
     when (semantic) {
         MoneySemantic.Income -> MoneyTone.Positive
-        MoneySemantic.Expense -> if (inRow) MoneyTone.Neutral else MoneyTone.Negative
-        MoneySemantic.Transfer -> MoneyTone.Neutral
+        MoneySemantic.Expense, MoneySemantic.Net, MoneySemantic.Transfer -> MoneyTone.Neutral
         MoneySemantic.Balance -> if (amount.value < 0) MoneyTone.Negative else MoneyTone.Neutral
         is MoneySemantic.Budget ->
             when (semantic.state) {

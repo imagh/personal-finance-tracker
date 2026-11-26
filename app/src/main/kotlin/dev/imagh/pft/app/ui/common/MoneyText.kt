@@ -36,25 +36,32 @@ import dev.imagh.pft.money.PaiseFormat
 private const val MINUS = "−"
 
 /**
- * The sign glyph for [semantic]: `+` for income, [MINUS] for an expense or a negative balance,
- * and nothing for a transfer, a budget figure or a non-negative balance. Transaction amounts are
- * positive magnitudes (the direction is the semantic), so a negative [amount] is only valid for a
- * [MoneySemantic.Balance]; anything else is a bug upstream and is rejected rather than shown with
- * a sign that would misreport the money.
+ * The sign glyph for [semantic]: `+` for income, [MINUS] for an expense, `+` or [MINUS] for a
+ * positive or negative [MoneySemantic.Net], [MINUS] for a negative balance, and nothing for a
+ * transfer, a budget figure, a zero net or a non-negative balance. Transaction amounts are positive
+ * magnitudes (the direction is the semantic), so a negative [amount] is only valid for a
+ * [MoneySemantic.Balance] or a [MoneySemantic.Net]; anything else is a bug upstream and is rejected
+ * rather than shown with a sign that would misreport the money.
  *
- * @throws IllegalArgumentException if [amount] is negative and [semantic] is not a balance.
+ * @throws IllegalArgumentException if [amount] is negative and [semantic] is neither a balance nor a net figure.
  */
 internal fun moneySign(
     semantic: MoneySemantic,
     amount: Paise,
 ): String {
-    require(amount.value >= 0 || semantic == MoneySemantic.Balance) {
-        "only a balance may be negative, not $semantic"
+    require(amount.value >= 0 || semantic == MoneySemantic.Balance || semantic == MoneySemantic.Net) {
+        "only a balance or a net figure may be negative, not $semantic"
     }
     return when (semantic) {
         MoneySemantic.Income -> "+"
         MoneySemantic.Expense -> MINUS
         MoneySemantic.Balance -> if (amount.value < 0) MINUS else ""
+        MoneySemantic.Net ->
+            when {
+                amount.value > 0 -> "+"
+                amount.value < 0 -> MINUS
+                else -> ""
+            }
         MoneySemantic.Transfer, is MoneySemantic.Budget -> ""
     }
 }
@@ -66,12 +73,15 @@ internal fun moneySign(
  *
  * Colour is never the only cue (WCAG 1.4.1): the tone comes from [moneyTone] mapped to a
  * `PftTheme.money` token (neutral is `onSurface`), every signed figure carries its sign, and the
- * semantics read the direction before the figure ("Expense, ₹250.00"). Do not draw it on
- * `surfaceVariant`: the money tokens do not clear 4.5:1 there.
+ * semantics read the direction before the figure ("Expense, ₹250.00"; a negative net figure reads
+ * "Net, minus ₹250.00"). An expense is neutral at every size; only a negative balance and an
+ * over-budget figure are red (Cobalt plan D5). Do not draw it on `surfaceVariant`: the money
+ * tokens do not clear 4.5:1 there.
  *
  * Named consumers: entity lists, Home, transaction detail, budget detail, loans and goals.
  *
- * @param amount the figure; a magnitude, except for a [MoneySemantic.Balance], which may be negative.
+ * @param amount the figure; a magnitude, except for a [MoneySemantic.Balance] or a
+ *   [MoneySemantic.Net], which may be negative.
  * @param semantic what the figure means, which decides the sign and tone.
  * @param size the amount style; [MoneySize.Row] is the default.
  * @param animate roll the digits to the new figure when [amount] or [semantic] changes (a hero on
@@ -79,7 +89,8 @@ internal fun moneySign(
  *   keeps its column; the roll uses `PftMotion.smooth` and jumps to the end state under reduced
  *   motion. Assistive technology still sees one string, and the text is correct as soon as the
  *   state changes, never after the animation. Off by default (list rows do not animate).
- * @throws IllegalArgumentException if [amount] is negative and [semantic] is not a balance.
+ * @throws IllegalArgumentException if [amount] is negative and [semantic] is neither a balance nor a
+ *   net figure.
  */
 @Composable
 fun MoneyText(
@@ -91,8 +102,8 @@ fun MoneyText(
 ) {
     val figure = PaiseFormat.format(amount)
     val text = moneySign(semantic, amount) + figure
-    val description = "${directionLabel(semantic, amount)}, $figure"
-    val color = toneColor(moneyTone(semantic, amount, inRow = size == MoneySize.Row))
+    val description = spokenAmount(semantic, amount, figure)
+    val color = toneColor(moneyTone(semantic, amount))
     // The description goes on the outer node, which merges its descendants. Plain text brings its own
     // text; rolling digits (one Text per character) are hidden from semantics and set the whole text.
     val described = modifier.semantics(mergeDescendants = true) { contentDescription = description }
@@ -219,6 +230,19 @@ private fun toneColor(tone: MoneyTone): Color =
         MoneyTone.Warning -> PftTheme.money.warning
     }
 
+/** What a screen reader says: the direction, then the figure; a negative net figure also says its sign. */
+@Composable
+private fun spokenAmount(
+    semantic: MoneySemantic,
+    amount: Paise,
+    figure: String,
+): String =
+    if (semantic == MoneySemantic.Net && amount.value < 0) {
+        stringResource(R.string.money_net_negative, figure)
+    } else {
+        "${directionLabel(semantic, amount)}, $figure"
+    }
+
 /** The spoken word that says what the figure is, said before it. */
 @Composable
 private fun directionLabel(
@@ -230,6 +254,7 @@ private fun directionLabel(
             MoneySemantic.Income -> R.string.money_income
             MoneySemantic.Expense -> R.string.money_expense
             MoneySemantic.Transfer -> R.string.money_transfer
+            MoneySemantic.Net -> R.string.money_net
             MoneySemantic.Balance ->
                 if (amount.value < 0) R.string.money_balance_negative else R.string.money_balance
             is MoneySemantic.Budget ->

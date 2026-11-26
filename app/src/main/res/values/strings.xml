@@ -16,6 +16,9 @@
     <string name="money_expense">Expense</string>
     <string name="money_income">Income</string>
     <string name="money_transfer">Transfer</string>
+    <string name="money_net">Net</string>
+    <!-- A negative net figure says its sign aloud; %1$s is the formatted figure, e.g. ₹250.00. -->
+    <string name="money_net_negative">Net, minus %1$s</string>
     <string name="money_balance">Balance</string>
     <string name="money_balance_negative">Negative balance</string>
     <string name="money_budget_under">Under budget</string>
