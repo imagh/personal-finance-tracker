@@ -4,10 +4,15 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import dev.imagh.pft.app.ui.common.MoneyTone
 import dev.imagh.pft.app.ui.common.chipColors
 import dev.imagh.pft.app.ui.common.groupedSectionColors
+import dev.imagh.pft.app.ui.home.METER_TRACK_ALPHA
+import dev.imagh.pft.app.ui.home.MID_STOP
+import dev.imagh.pft.app.ui.home.RING_ALPHA
+import dev.imagh.pft.app.ui.home.RING_MIN_LINE_FRACTION
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -280,7 +285,23 @@ class ColorContrastTest {
             assertAtLeast(textMin, "$where onCard on card $stopName", brand.onCard, stop)
             val faded = brand.onCard.copy(alpha = fadedCardAlpha).compositeOver(stop)
             assertAtLeast(nonTextMin, "$where faded onCard on card $stopName", faded, stop)
+            // The ring (K6): onCard at RING_ALPHA is drawn over the gradient under the text. It never reaches the start
+            // corner, which would fall to 4.2:1 in Cobalt light, so the stops it covers wholly are mid and end.
+            if (stopName != "start") {
+                val ringed = brand.onCard.copy(alpha = RING_ALPHA).compositeOver(stop)
+                assertAtLeast(textMin, "$where onCard on the ring over card $stopName", brand.onCard, ringed)
+                // The hero's faded decimals can sit on the ring too (the ring crosses the hero row from about 43% on).
+                val fadedOnRing = brand.onCard.copy(alpha = fadedCardAlpha).compositeOver(ringed)
+                assertAtLeast(nonTextMin, "$where faded onCard on the ring over card $stopName", fadedOnRing, ringed)
+            }
+            // The budget meter (K6, D4): the solid onCard fill against its track, a 3:1 graphic.
+            val track = brand.onCard.copy(alpha = METER_TRACK_ALPHA).compositeOver(stop)
+            assertAtLeast(nonTextMin, "$where meter fill vs its track on card $stopName", brand.onCard, track)
         }
+        // ...and where the ring reaches furthest toward the start, the gradient is a blend of start and mid.
+        val reach = lerp(brand.cardStart, brand.cardMid, RING_MIN_LINE_FRACTION / MID_STOP)
+        val ringedReach = brand.onCard.copy(alpha = RING_ALPHA).compositeOver(reach)
+        assertAtLeast(textMin, "$where onCard on the ring at its reach toward the start", brand.onCard, ringedReach)
         mapOf("nav" to brand.nav, "canvas" to canvas, "island" to island).forEach { (name, surface) ->
             assertAtLeast(nonTextMin, "$where brand on $name", brand.brand, surface)
         }

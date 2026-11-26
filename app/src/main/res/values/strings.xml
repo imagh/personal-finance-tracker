@@ -28,6 +28,10 @@
     <string name="transaction_needs_review">Needs review</string>
     <string name="day_today">Today</string>
     <string name="day_yesterday">Yesterday</string>
+    <!-- Home balance card (BalanceCard): the caption over the hero and the words naming the two figures. -->
+    <string name="balance_card_caption">Spent this month</string>
+    <string name="balance_card_in">In</string>
+    <string name="balance_card_out">Out</string>
     <!-- Form blocks (FieldError.message(), EditFormScaffold). The limit in field_too_long comes from core's validation. -->
     <string name="field_required">Required</string>
     <string name="field_too_long">At most %1$d characters</string>
