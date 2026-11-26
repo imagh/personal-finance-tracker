@@ -91,11 +91,17 @@ class MoneyTextTest {
         spec = Spec(amount, semantic, size, animate)
         started = true
         compose.setContent {
-            PftTheme(ThemePrefs(dynamicColor = false)) {
+            PftTheme(showPrefs) {
                 spec?.let { MoneyText(it.amount, it.semantic, Modifier.testTag(tag), it.size, it.animate) }
             }
         }
     }
+
+    /** The prefs `show` renders under: Cobalt by default, a test that pins the old hero font sets [serif]. */
+    private var showPrefs = ThemePrefs(dynamicColor = false)
+
+    /** The pre-Cobalt hero: Newsreader at 48sp. */
+    private val serif = ThemePrefs(dynamicColor = false, displayFont = DisplayFont.BUNDLED_SERIF)
 
     private fun node() = compose.onNodeWithTag(tag)
 
@@ -309,6 +315,7 @@ class MoneyTextTest {
 
     @Test
     fun `row and large use the sans amount styles and the hero the display font`() {
+        showPrefs = serif
         show(Paise(100), MoneySemantic.Transfer, MoneySize.Row)
         assertEquals(
             16f,
@@ -407,7 +414,7 @@ class MoneyTextTest {
 
     @Test
     fun `a short amount in a wide box keeps the full 48sp`() {
-        showHero(Paise(8_245_000), widthDp = 393)
+        showHero(Paise(8_245_000), widthDp = 393, prefs = serif)
         assertEquals(48f, heroSizeSp(), 0f)
         node().layout().assertShownInFull()
     }

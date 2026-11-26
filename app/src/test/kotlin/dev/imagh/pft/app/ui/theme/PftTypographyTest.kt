@@ -41,7 +41,11 @@ class PftTypographyTest {
         val type: PftTypography,
     )
 
-    private fun resolve(prefs: ThemePrefs = ThemePrefs(dynamicColor = false)): Resolved {
+    /** The look before Cobalt became the default (Figtree sans, Newsreader hero): what these tests pin. */
+    private val legacy =
+        ThemePrefs(dynamicColor = false, sansFont = SansFont.FIGTREE, displayFont = DisplayFont.BUNDLED_SERIF)
+
+    private fun resolve(prefs: ThemePrefs = legacy): Resolved {
         lateinit var resolved: Resolved
         compose.setContent { PftTheme(prefs) { resolved = Resolved(MaterialTheme.typography, PftTheme.type) } }
         compose.waitForIdle()
@@ -73,7 +77,7 @@ class PftTypographyTest {
     }
 
     @Test
-    fun `amountHero is the bundled Newsreader by default`() {
+    fun `amountHero is the bundled Newsreader under the pre-Cobalt prefs`() {
         assertTrue(
             resolve()
                 .type.amountHero.fontFamily
@@ -126,19 +130,19 @@ class PftTypographyTest {
 
     @Test
     fun `displayFont TEXT puts the hero in Figtree`() {
-        val type = resolve(ThemePrefs(displayFont = DisplayFont.TEXT, dynamicColor = false)).type
+        val type = resolve(legacy.copy(displayFont = DisplayFont.TEXT, dynamicColor = false)).type
         assertEquals(figtree, type.amountHero.fontFamily)
     }
 
     @Test
     fun `displayFont SYSTEM_SERIF puts the hero in the system serif`() {
-        val type = resolve(ThemePrefs(displayFont = DisplayFont.SYSTEM_SERIF, dynamicColor = false)).type
+        val type = resolve(legacy.copy(displayFont = DisplayFont.SYSTEM_SERIF, dynamicColor = false)).type
         assertEquals(FontFamily.Serif, type.amountHero.fontFamily)
     }
 
     @Test
-    fun `the default display font is the bundled serif`() {
-        assertEquals(DisplayFont.BUNDLED_SERIF, ThemePrefs.Default.displayFont)
+    fun `the default display font is the bundled grotesque`() {
+        assertEquals(DisplayFont.BUNDLED_GROTESQUE, ThemePrefs.Default.displayFont)
     }
 
     @Test
@@ -186,7 +190,7 @@ class PftTypographyTest {
     private fun pairing(
         pairing: TypePairing,
         displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
-    ) = resolve(ThemePrefs(dynamicColor = false, displayFont = displayFont, typePairing = pairing))
+    ) = resolve(legacy.copy(dynamicColor = false, displayFont = displayFont, typePairing = pairing))
 
     /** The M3 roles `EDITORIAL` sets in the display family (design plan §3.6); `titleSmall` is a tab label, so sans. */
     private val editorialM3Roles =
@@ -393,7 +397,7 @@ class PftTypographyTest {
         val jakarta = sansFamily(SansFont.PLUS_JAKARTA_SANS)
         val resolved =
             resolve(
-                ThemePrefs(
+                legacy.copy(
                     dynamicColor = false,
                     sansFont = SansFont.PLUS_JAKARTA_SANS,
                     typePairing = TypePairing.EDITORIAL,
@@ -425,7 +429,7 @@ class PftTypographyTest {
     @Test
     fun `SansFont SYSTEM puts every sans role in the platform default, the serif roles unchanged`() {
         val resolved =
-            resolve(ThemePrefs(dynamicColor = false, sansFont = SansFont.SYSTEM, typePairing = TypePairing.EDITORIAL))
+            resolve(legacy.copy(dynamicColor = false, sansFont = SansFont.SYSTEM, typePairing = TypePairing.EDITORIAL))
         resolved.m3.roles().forEach { (name, style) ->
             if (name in editorialM3Roles) {
                 assertTrue("$name stays Newsreader", style.fontFamily.isBundledNewsreader())
@@ -444,7 +448,7 @@ class PftTypographyTest {
     fun `displayFont TEXT with SYSTEM sans puts every role, the hero included, in the platform default`() {
         val resolved =
             resolve(
-                ThemePrefs(
+                legacy.copy(
                     dynamicColor = false,
                     sansFont = SansFont.SYSTEM,
                     displayFont = DisplayFont.TEXT,
@@ -497,7 +501,7 @@ class PftTypographyTest {
     fun `SansFont MANROPE puts every sans role in Manrope, and the hero stays Newsreader`() {
         val manrope = sansFamily(SansFont.MANROPE)
         val resolved =
-            resolve(ThemePrefs(dynamicColor = false, sansFont = SansFont.MANROPE, typePairing = TypePairing.EDITORIAL))
+            resolve(legacy.copy(dynamicColor = false, sansFont = SansFont.MANROPE, typePairing = TypePairing.EDITORIAL))
         resolved.m3.roles().forEach { (name, style) ->
             if (name in editorialM3Roles) {
                 assertTrue("$name stays Newsreader", style.fontFamily.isBundledNewsreader())
@@ -515,7 +519,7 @@ class PftTypographyTest {
     @Test
     fun `by default every Manrope role, titles and amountLarge included, is Manrope`() {
         val manrope = sansFamily(SansFont.MANROPE)
-        val resolved = resolve(ThemePrefs(dynamicColor = false, sansFont = SansFont.MANROPE))
+        val resolved = resolve(legacy.copy(dynamicColor = false, sansFont = SansFont.MANROPE))
         assertEquals(15, resolved.m3.roles().size)
         resolved.m3.roles().forEach { (name, style) -> assertEquals("$name family", manrope, style.fontFamily) }
         assertEquals(manrope, resolved.type.amountLarge.fontFamily)
@@ -530,7 +534,7 @@ class PftTypographyTest {
     private fun TextStyle.bricolageAxes(): Map<String, Float> = fontFamily.newsreaderAxes()
 
     private fun grotesque(pairing: TypePairing = TypePairing.HERO_ONLY) =
-        resolve(ThemePrefs(dynamicColor = false, displayFont = DisplayFont.BUNDLED_GROTESQUE, typePairing = pairing))
+        resolve(legacy.copy(dynamicColor = false, displayFont = DisplayFont.BUNDLED_GROTESQUE, typePairing = pairing))
 
     @Test
     fun `BUNDLED_GROTESQUE makes the hero Bricolage at weight 700, 34sp, opsz 34, wdth 100, tnum and lnum`() {
@@ -598,14 +602,14 @@ class PftTypographyTest {
     }
 
     @Test
-    fun `the defaults are unchanged by the new options, Graphite, Figtree and Newsreader`() {
-        assertEquals(ThemePalette.GRAPHITE, ThemePrefs.Default.lightPalette)
-        assertEquals(ThemePalette.GRAPHITE, ThemePrefs.Default.darkPalette)
-        assertEquals(SansFont.FIGTREE, ThemePrefs.Default.sansFont)
-        assertEquals(DisplayFont.BUNDLED_SERIF, ThemePrefs.Default.displayFont)
-        val hero = resolve().type.amountHero
-        assertEquals(48.sp, hero.fontSize)
-        assertEquals(FontWeight.Normal, hero.fontWeight)
-        assertTrue(hero.fontFamily.isBundledNewsreader())
+    fun `the defaults are Cobalt, Manrope and Bricolage, hero only`() {
+        assertEquals(ThemePalette.COBALT, ThemePrefs.Default.lightPalette)
+        assertEquals(ThemePalette.COBALT, ThemePrefs.Default.darkPalette)
+        assertEquals(SansFont.MANROPE, ThemePrefs.Default.sansFont)
+        assertEquals(DisplayFont.BUNDLED_GROTESQUE, ThemePrefs.Default.displayFont)
+        assertEquals(TypePairing.HERO_ONLY, ThemePrefs.Default.typePairing)
+        val type = resolve(ThemePrefs.Default.copy(dynamicColor = false)).type
+        assertEquals(sansFamily(SansFont.MANROPE), type.amountRow.fontFamily)
+        assertTrue(!type.amountHero.fontFamily.isBundledNewsreader())
     }
 }
