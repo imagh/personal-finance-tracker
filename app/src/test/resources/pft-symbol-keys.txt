@@ -54,6 +54,7 @@ medication
 menu_book
 movie
 music_note
+north_east
 overflow
 payments
 pets
@@ -69,6 +70,7 @@ settings
 shopping_bag
 shopping_cart
 sort
+south_west
 spa
 sports_esports
 star

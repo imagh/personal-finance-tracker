@@ -35,6 +35,8 @@ transfer swap_horiz
 tag label
 history history
 check_circle check_circle
+south_west south_west
+north_east north_east
 
 # --- Food and drink ---
 restaurant restaurant

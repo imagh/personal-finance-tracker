@@ -48,6 +48,8 @@ class PftSymbolCategoriesTest {
             PftSymbol.TAG,
             PftSymbol.HISTORY,
             PftSymbol.CHECK_CIRCLE,
+            PftSymbol.SOUTH_WEST,
+            PftSymbol.NORTH_EAST,
         )
 
     @Test
