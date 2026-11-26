@@ -118,7 +118,9 @@ amount has shrunk to a small size they are solid so they stay easy to read.
 - The text font is stored as `FIGTREE`, `PLUS_JAKARTA_SANS`, `MANROPE` or `SYSTEM` (permanent names; `MANROPE`
   was added in K2) and the figure font as `BUNDLED_SERIF`, `BUNDLED_GROTESQUE`, `SYSTEM_SERIF` or `TEXT`
   (`BUNDLED_GROTESQUE` added in K2), when the settings screen arrives; an imported font is added later without a migration. Figtree is one variable
-  font file (62,712 bytes, checked by hash) with the weights 400, 500 and 600 declared, because its own
+  font file (62,712 bytes, checked by hash) with the weights 400, 500 and 600 declared (each drawn one step
+  heavier, at 500, 600 and 700, because the bundled sans fonts read too light and narrow on a phone, K9; the
+  system sans, the serif and Bricolage Grotesque are not shifted), because its own
   default weight is lighter than any text style asks for; Plus Jakarta Sans is the same (176,288
   bytes, checked by hash, default weight 400 but the three weights are still declared); Manrope is the same
   (164,700 bytes, default weight 200, so its three weights matter most) and Bricolage Grotesque is one file

@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
@@ -93,9 +94,12 @@ data class TransactionRowModel(
  * (`CategoryGlyph(name = null)`): the meta already names the category. Nothing is colour-only: the
  * amount carries its sign and direction, and the review state and every tag are words.
  *
- * **Large text.** The title and meta wrap and never truncate. From a font scale of
- * [STACK_FONT_SCALE] the amount moves under the tile and the text and takes the row's whole width.
- * Tag chips wrap onto further lines.
+ * **Text fit.** Below a font scale of [STACK_FONT_SCALE] the meta line is one line, cut with an ellipsis
+ * if the amount leaves it too little room (a heavier sans made "Income · Everyday" wrap and grow the
+ * row, K9); nothing is lost to a screen reader, whose description always carries the whole meta. The
+ * title always wraps and never truncates. From [STACK_FONT_SCALE] the amount moves under the tile and
+ * the text and takes the row's whole width, and then the meta wraps whole too. Tag chips wrap onto
+ * further lines.
  *
  * @param model what to show.
  */
@@ -121,7 +125,7 @@ fun TransactionRow(
         Column(frame, verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
             Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
                 CategoryGlyph(model.glyph, name = null, colourKey = model.colourKey)
-                Column(Modifier.weight(1f)) { RowText(model) }
+                Column(Modifier.weight(1f)) { RowText(model, singleLineMeta = false) }
             }
             RowEnd(model, Alignment.Start)
         }
@@ -132,7 +136,7 @@ fun TransactionRow(
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
             CategoryGlyph(model.glyph, name = null, colourKey = model.colourKey)
-            Column(Modifier.weight(1f)) { RowText(model) }
+            Column(Modifier.weight(1f)) { RowText(model, singleLineMeta = true) }
             RowEnd(model, Alignment.End)
         }
     }
@@ -150,9 +154,12 @@ private fun spokenRow(model: TransactionRowModel): String {
     return (parts + listOfNotNull(review.takeIf { model.needsReview })).joinToString(SPOKEN_SEPARATOR)
 }
 
-/** The title, the meta line and the tag chips. */
+/** The title, the meta line (one line, ellipsized, when [singleLineMeta]) and the tag chips. */
 @Composable
-private fun RowText(model: TransactionRowModel) {
+private fun RowText(
+    model: TransactionRowModel,
+    singleLineMeta: Boolean,
+) {
     // Explicit colour: a Surface with a non-theme fill (the island) does not provide a content colour.
     Text(
         model.title,
@@ -163,6 +170,8 @@ private fun RowText(model: TransactionRowModel) {
         listOfNotNull(model.category, model.account).joinToString(META_SEPARATOR),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodySmall,
+        maxLines = if (singleLineMeta) 1 else Int.MAX_VALUE,
+        overflow = TextOverflow.Ellipsis,
     )
     if (model.tags.isNotEmpty()) TagChips(model.tags, Modifier.padding(top = PftTheme.spacing.xs))
 }

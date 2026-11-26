@@ -101,7 +101,7 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   Newsreader (K4 flips it).
 - **Manrope (K2).** `SansFont.MANROPE` is one family of three `Font(R.font.manrope, ...)` entries for 400, 500 and
   600 pinned on `wght` (its axis is 200-800 with default 200, so an unpinned axis would render everything too light),
-  built by the same `sansWeights` helper. Nothing in Cobalt needs 700. Its default digits are already tabular, so
+  built by the same `sansWeights` helper (each pinned one step heavier, see K9 below). Nothing in Cobalt asks for 700 as a role weight. Its default digits are already tabular, so
   `tnum` is a harmless no-op there, as for Newsreader.
 - **Verified from the font files (K2, `FontFileFacts` in `TabularFiguresTest`).** Both Manrope and Bricolage have a
   `tnum` GSUB feature (Bricolage also `lnum`) and their own `cmap` glyphs for the rupee sign U+20B9 and the true minus
@@ -116,7 +116,12 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   fonts; Figtree's `wght` axis defaults to 300 and Plus Jakarta Sans's (200-800) to 400, but the axis is set
   explicitly for both, so every weight a role uses must be declared; 400, 500 and 600 are all
   the weights any role in `pftMaterialTypography` and `pftType` uses (`PftTypographyTest` checks it), and a new
-  weight must be added to the family first. `PftTheme` passes the chosen family as the text family to both
+  weight must be added to the family first. **K9 (owner walk-through, 2026-11-26): the three bundled sans fonts
+  read too light and narrow, so each declared weight is pinned one step heavier on `wght`** (400 as 500, 500 as 600,
+  600 as 700) by `shiftedSansWght(weight, axisMax)`, capped at the font's heaviest `wght` (Figtree 900, Plus
+  Jakarta Sans and Manrope 800, read off the `fvar` tables); roles still ask for 400/500/600 and the width is
+  untouched, so the shift is one place. `SYSTEM`, Newsreader and Bricolage (hero 700 of 800) are not shifted.
+  `PftTheme` passes the chosen family as the text family to both
   type functions, so both pairings work on top of it: in `EDITORIAL` the serif roles stay Newsreader, and
   `displayFont = TEXT` means the chosen sans (Figtree by default). The digits of Figtree and Plus Jakarta Sans are
   proportional by default; only `tnum` makes them equal, so the three amount roles keep it, while body text digits
@@ -614,7 +619,7 @@ today, rows, total?)` puts a day header over one `GroupedSection` island of them
   amount's "Expense, ₹486.00", then the chip's words), so a screen reader says each once. Plain merging is not
   enough: `MoneyText` and `StatusChip` are merged nodes, and a merged child is not folded into its parent. The tile
   is decorative (`name = null`). With `onClick` it is a `Role.Button` and at least 56dp tall.
-- **Large text.** Title and meta wrap, never truncate. From a font scale of 1.5 the amount sits under the tile and
+- **Large text.** The title wraps, never truncates. Below a font scale of 1.5 the meta line is one line (ellipsis when the amount leaves it too little room; the spoken description carries the whole meta; K9). From a font scale of 1.5 the meta wraps whole too, and the amount sits under the tile and
   text at the full row width. A `Row`-size `MoneyText` does not shrink, so the largest amount (`Paise.MAX_AMOUNT`)
   fits one line at 100% but wraps at 200% on a 320dp window (never cut: the test asserts every character is laid out).
 - **Day label.** "Today" or "Yesterday" from the passed-in `today` (the caller owns the clock and zone), else the

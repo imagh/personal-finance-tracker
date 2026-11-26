@@ -267,6 +267,34 @@ class TransactionRowTest {
     }
 
     @Test
+    fun `below the stacking scale the meta stays on one line, and the full text is still spoken`() {
+        // The Salary row of the golden: an income amount wide enough to leave the meta too little room.
+        show(
+            model(
+                category = "Income",
+                account = "Everyday",
+                amount = Paise(12_000_000),
+                semantic = MoneySemantic.Income,
+            ),
+            widthDp = 300,
+        )
+        assertEquals(1, text("Income · Everyday").layout().lineCount)
+        // One line may cut the visible text, so the spoken description must still carry all of it.
+        assertTrue(spoken().joinToString(), "Income, Everyday" in spoken().joinToString())
+    }
+
+    @Test
+    fun `at 200 percent the meta wraps whole instead of being cut`() {
+        val account = "Joint household savings account"
+        show(model(category = "Dining out", account = account), fontScale = 2f, widthDp = 320)
+        val meta = "Dining out · $account"
+        val layout = text(meta).layout()
+        assertTrue("lines ${layout.lineCount}", layout.lineCount > 1)
+        assertEquals(meta.length, layout.getLineEnd(layout.lineCount - 1, visibleEnd = false))
+        assertFalse("the meta was ellipsized", (0 until layout.lineCount).any { layout.isLineEllipsized(it) })
+    }
+
+    @Test
     fun `at 200 percent a long title wraps whole`() {
         val title = "Annual maintenance contract for the air conditioner"
         show(model(title = title), fontScale = 2f, widthDp = 320)

@@ -354,21 +354,32 @@ class PftTypographyTest {
         variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }["wght"]
 
     @Test
-    fun `FIGTREE declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+    fun `FIGTREE declares weights 400, 500 and 600, each pinned one step heavier`() {
         val fonts = (sansFamily(SansFont.FIGTREE) as FontListFontFamily).fonts.map { it as ResourceFont }
         assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
         // Figtree's own wght default is 300, so an undeclared axis would render every role too light.
-        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        assertEquals(listOf(500f, 600f, 700f), fonts.map { it.wght() })
         fonts.forEach { assertEquals(R.font.figtree, it.resId) }
     }
 
     @Test
-    fun `PLUS_JAKARTA_SANS declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+    fun `PLUS_JAKARTA_SANS declares weights 400, 500 and 600, each pinned one step heavier`() {
         val fonts = (sansFamily(SansFont.PLUS_JAKARTA_SANS) as FontListFontFamily).fonts.map { it as ResourceFont }
         assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
         // The font's wght default is 400 but the axis is still set, so each weight really is its own cut.
-        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        assertEquals(listOf(500f, 600f, 700f), fonts.map { it.wght() })
         fonts.forEach { assertEquals(R.font.plus_jakarta_sans, it.resId) }
+    }
+
+    @Test
+    fun `a sans weight is pinned one step (100) heavier and never past the font's heaviest wght`() {
+        assertEquals(500, shiftedSansWght(400, axisMax = 800))
+        assertEquals(600, shiftedSansWght(500, axisMax = 800))
+        assertEquals(700, shiftedSansWght(600, axisMax = 800))
+        // A Bold role would shift to 800, the heaviest Manrope and Plus Jakarta Sans go; it never overshoots.
+        assertEquals(800, shiftedSansWght(700, axisMax = 800))
+        assertEquals(800, shiftedSansWght(800, axisMax = 800))
+        assertEquals(900, shiftedSansWght(800, axisMax = 900))
     }
 
     @Test
@@ -489,11 +500,11 @@ class PftTypographyTest {
     // --- Manrope and Bricolage Grotesque (Cobalt plan D2, K2) -------------------------------
 
     @Test
-    fun `MANROPE declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+    fun `MANROPE declares weights 400, 500 and 600, each pinned one step heavier`() {
         val fonts = (sansFamily(SansFont.MANROPE) as FontListFontFamily).fonts.map { it as ResourceFont }
         assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
         // Manrope's own wght default is 200, so an undeclared axis would render every role far too light.
-        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        assertEquals(listOf(500f, 600f, 700f), fonts.map { it.wght() })
         fonts.forEach { assertEquals(R.font.manrope, it.resId) }
     }
 
