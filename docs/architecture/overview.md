@@ -48,7 +48,7 @@ PftRoot                     LaunchViewModel(container).state : StateFlow<LaunchS
   Ready(services, hasIdentity)   PftNavHost: start = MAIN if hasIdentity else SETUP
     SETUP                   SetupRoute -> on done: navigate MAIN, popUpTo(SETUP) inclusive (Back on Home leaves the app)
     MAIN                    nested graph; the floating PftTabBar shows on its three tab roots only
-      home_tab              HOME (HomeScreen, placeholder; debug adds the dev/catalog route)
+      home_tab              HOME (HomeRoute: greeting header + placeholder; debug adds the dev/catalog route)
       accounts_tab          ACCOUNTS (the tab root), ACCOUNT_EDIT
       more_tab              MORE (the tab root: attribution subtitle, Categories, Tags), CATEGORIES, CATEGORY_EDIT, TAGS, TAG_EDIT
 AppContainer.open()         once, on Dispatchers.IO, shared by every caller -> AppStart.Ready(AppServices) | KeyUnavailable

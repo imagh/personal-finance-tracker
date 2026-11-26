@@ -20,8 +20,12 @@ Status: **Built** (plan A5, finished in A5f; default categories added in slice B
   Loan EMI, which cannot be archived or deleted).
 - **Tapping Continue twice saves once.** While it saves, Continue is greyed out.
 - **If saving fails unexpectedly** (for example the phone is out of storage), a red line under the fields says "Couldn't save. Try again." and TalkBack reads it out. Nothing was saved, both names stay exactly as you typed them, and Continue works again. The message goes away when you edit a name or tap Continue again. Trying again is safe: the profile and the starter categories are saved in one step, so it can never end up half-saved or doubled (no profile without categories, no categories without a profile).
-- **Then you land on Home.** Home is a placeholder for now: its header says "Home" and a line points you to
-  the **Accounts** tab to manage your accounts; transactions arrive in the next update. A floating bar at the
+- **Then you land on Home.** Home greets you: a round badge with your initials ("AG" for
+  "Akash Gupta"), "Good morning" (05:00 to 11:59), "Good afternoon" (12:00 to 16:59) or "Good evening"
+  (otherwise) by your phone's clock, and your name. Nothing of this shows until your profile has loaded, so
+  you never see a greeting without a name. Below it a line points you to the **Accounts** tab to manage your
+  accounts; transactions arrive in the next update. The badge is decoration: TalkBack reads the greeting and
+  your name once. A floating bar at the
   bottom of the screen has the tabs **Home**, **Accounts** and **More**.
 - **Who is using this phone is on the More tab.** Open **More**: under its title it says who is using this
   phone ("Akash · Pixel 8"). This is how you can see the mark that every later entry will carry. It used to
@@ -58,7 +62,7 @@ Status: **Built** (plan A5, finished in A5f; default categories added in slice B
 ## Where it lives
 
 `app/.../ui/setup/` (`SetupViewModel`, `SetupScreen`, `SetupRoute`), `app/.../ui/nav/` (`PftNavHost`,
-`Routes`, `PftTabBar`, `Tab`: Setup on a fresh install, the tabbed app otherwise), `app/.../ui/home/` (`HomeScreen`) and `app/.../ui/more/` (`MoreViewModel`, `MoreScreen`: the attribution line). Validation is core's `Validation.requireName`; saving is core's
+`Routes`, `PftTabBar`, `Tab`: Setup on a fresh install, the tabbed app otherwise), `app/.../ui/home/` (`HomeViewModel`, `HomeScreen`, `GreetingHeader`) and `app/.../ui/more/` (`MoreViewModel`, `MoreScreen`: the attribution line). Validation is core's `Validation.requireName`; saving is core's
 `FirstRunService.initialise` (which runs `IdentityService.initialise` and then `CategoryService.seedDefaults`
 in one transaction). See `app/README.md`. The test that proves the flow end to end is
 `SetupFlowTest`.
