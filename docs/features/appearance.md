@@ -16,7 +16,7 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
   **Ivory** (warm paper with an ink-navy accent by day and a soft periwinkle by night),
   **Aubergine** (deep plum, with a champagne accent at night) and **Cobalt** (a vivid cobalt blue
   on a cool white background by day, a periwinkle blue on a blue-tinted ink at night). Cobalt is
-  new; Graphite is still the one the app starts with.
+  the one the app starts with.
 - **Light and dark are chosen separately.** You can use Ivory in the daytime and Midnight at
   night. The palette used is the one for the mode you are in: with the app set to follow the phone,
   that is the phone's light or dark setting; if you force light or dark, it is that mode's palette.
@@ -60,11 +60,11 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
   the app. In it the big figure is bold and a little smaller (34sp rather than the serif's 48sp), and it
   shrinks to fit a long amount the same way, from 34sp down. Its digits are tabular and lining, and the
   rupee sign and the true minus come from the font itself. With **Editorial** the same font also sets
-  the titles. Neither new font is the default yet: the app still starts with Figtree and the serif.
+  the titles. Bricolage Grotesque is the default figure font (the Cobalt look); the serif stays a choice.
 - **The window matches the screen.** The bar behind the app (what shows briefly while the app
   opens, or during a back swipe) uses the same background colour as the screen, so there is no
   flash of a different colour. The colour it shows before the app has drawn is the default
-  palette's; every other palette is within a few shades of it.
+  palette's (Cobalt's); the app repaints it to the chosen palette as soon as it has drawn.
 - **Money always looks the same.** Income, over-budget and warning colours (green, red and amber) are
   fixed. They do not change with the palette or with dynamic colour, so an amount never changes
   meaning because you changed the look.
@@ -73,14 +73,14 @@ Technical design: [design-system.md](../architecture/design-system.md) and the p
 
 | Setting | Default |
 |---|---|
-| Light palette | Graphite |
-| Dark palette | Graphite |
+| Light palette | Cobalt |
+| Dark palette | Cobalt |
 | Dynamic colour | off |
 | Background | Tonal |
 | Header glow | off |
 | Type pairing | Hero only |
-| Text font | Figtree |
-| Figure font | Bundled serif (Newsreader) |
+| Text font | Manrope |
+| Figure font | Bricolage Grotesque |
 
 Once the settings are stored (AP1), a value the app does not recognise (for example one saved by a
 newer version) will be read as the default for that setting alone, so a choice can never leave the

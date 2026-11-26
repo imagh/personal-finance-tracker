@@ -31,20 +31,20 @@ Rules, enforced in review (detekt has no type resolution, so it cannot check the
 
 `PftTheme(prefs: ThemePrefs = ThemePrefs.Default) { ... }` in `ui/theme` is the only theme entry
 point. It resolves dark or light from `ThemePrefs.mode`, picks the colour scheme (dynamic Material
-You, opt-in, or the committed palette the user picked for the resolved mode, Graphite by default), applies `MaterialTheme(colorScheme, typography, shapes)` and
+You, opt-in, or the committed palette the user picked for the resolved mode, Cobalt by default; the default prefs are Cobalt in both modes, Manrope sans, Bricolage Grotesque display font, hero-only pairing, tonal surfaces, K4), applies `MaterialTheme(colorScheme, typography, shapes)` and
 provides the extended tokens through `staticCompositionLocalOf`. Read them through the `PftTheme`
 object:
 
 | Accessor | Type | Provided how |
 |---|---|---|
-| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the chosen palette's scheme (Graphite by default); dynamic when `ThemePrefs.dynamicColor` is on, which ignores the palette |
+| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the chosen palette's scheme (Cobalt by default); dynamic when `ThemePrefs.dynamicColor` is on, which ignores the palette |
 | `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family; under `EDITORIAL`, `display*`, `headline*`, `titleLarge` and `titleMedium` are in the display family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
 | `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge, top highlight and header glow tint (null while the glow is off) for the palette, mode, `BackgroundStyle` and `ThemePrefs.headerGlow` (DS6c, DS6d); see "Surfaces and window colour" and "One-hand layout" |
 | `PftTheme.brand` | `BrandColors` | the brand fill, the balance card gradient and the tab bar fill: hand-picked for Cobalt, derived from the scheme for every other palette and for dynamic colour (K1) |
 | `PftTheme.type` | `PftTypography` | the three amount styles |
-| `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge) |
+| `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge), `card` 22dp, `island` 18dp, `quickAction` 17dp, `tabBar` (full pill) |
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
 | `PftTheme.motion` | `PftMotion` | four springs, navigation transitions, press scale; a constant, the same in every theme |
 
@@ -140,6 +140,10 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
 |---|---|
 | extraSmall / small / medium / large / extraLarge | 6 / 10 / 16 / 24 / 32dp |
 | `PftTheme.shapes.glyph` | 30% of the badge side |
+| `PftTheme.shapes.card` | 22dp (the balance card) |
+| `PftTheme.shapes.island` | 18dp (`GroupedSection`, day groups) |
+| `PftTheme.shapes.quickAction` | 17dp (Home quick actions) |
+| `PftTheme.shapes.tabBar` | 50% (a full pill) |
 
 ### Spacing
 
@@ -297,7 +301,7 @@ persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
   and mode (money, `onSurface`, `onSurfaceVariant` at 4.5:1; `primary` at 3:1) and asserts the island is never
   `surfaceVariant`; the white-card rule itself stays a review rule.
 - **Window colour and the first frame.** Before Compose draws, the window paints `pft_window_background`
-  (`res/values` and `values-night`), which equals Graphite's `canvas`, the default (`WindowThemeTest` pins this).
+  (`res/values` and `values-night`), which equals Cobalt's `canvas`, the default (`#F5F7FB` light, `#0B0E17` dark) (`WindowThemeTest` pins this).
   The resources cannot know the user's palette, so every palette's `canvas` and flat `surface`, and the derived
   dynamic canvas, island and surface, stay within `WINDOW_FLASH_MAX_TONE_DELTA` (8 tones of CIE L*) of it in the
   same mode (`WindowFlashToneTest`, `ThemeResolutionTest`): a palette change can shift the first frame by a barely
