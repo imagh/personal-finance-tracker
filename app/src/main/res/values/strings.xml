@@ -24,6 +24,10 @@
     <string name="money_budget_under">Under budget</string>
     <string name="money_budget_near_limit">Budget near its limit</string>
     <string name="money_budget_over">Over budget</string>
+    <!-- Transaction rows and day groups (TransactionRow, DayGroup): the review chip and the day headers. -->
+    <string name="transaction_needs_review">Needs review</string>
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
     <!-- Form blocks (FieldError.message(), EditFormScaffold). The limit in field_too_long comes from core's validation. -->
     <string name="field_required">Required</string>
     <string name="field_too_long">At most %1$d characters</string>

@@ -265,9 +265,12 @@ private fun toneColor(tone: MoneyTone): Color =
         MoneyTone.Warning -> PftTheme.money.warning
     }
 
-/** What a screen reader says: the direction, then the figure; a negative net figure also says its sign. */
+/**
+ * What a screen reader says: the direction, then the figure; a negative net figure also says its sign.
+ * Internal so a row that speaks as one node (`TransactionRow`) can say the amount exactly as [MoneyText] does.
+ */
 @Composable
-private fun spokenAmount(
+internal fun spokenAmount(
     semantic: MoneySemantic,
     amount: Paise,
     figure: String,

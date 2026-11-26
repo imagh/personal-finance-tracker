@@ -166,6 +166,7 @@ val verifyReleaseShrink by tasks.registering {
     // A5d adds FormSamplesKt (the live form sample and its preview).
     // B2a adds EntityListSamplesKt (the entity list samples and their previews).
     // B5b adds TagsSamplesKt (the tags list sample and the fake tags) and TagPickerSamplesKt.
+    // K5 adds TransactionRowSamplesKt (the row and day-group samples and their previews).
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
@@ -199,6 +200,8 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$TagPickerSamples",
             "dev.imagh.pft.app.ui.tags.TagsSamples",
             "dev.imagh.pft.app.ui.tags.ComposableSingletons\$TagsSamples",
+            "dev.imagh.pft.app.ui.common.TransactionRowSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$TransactionRowSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

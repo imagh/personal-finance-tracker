@@ -594,6 +594,32 @@ so rows use `GroupedSectionDefaults.listItemColors()` (transparent). `Dp.Hairlin
 divider because it lays out at zero height, which cannot be measured and relies on an unclipped
 canvas stroke.
 
+### `TransactionRow` and `DayGroup` (K5)
+
+`TransactionRow(model: TransactionRowModel)` is the one way a transaction is drawn in a list; `DayGroup(day,
+today, rows, total?)` puts a day header over one `GroupedSection` island of them. Both are in `ui/common` with
+`TransactionRowSamples.kt` (preview, catalogue page "Transactions", goldens `transaction-row-*` and `day-group-*`).
+
+- **Plain data.** `TransactionRowModel` holds text, a `GlyphSource` and a `Paise` magnitude with a
+  `MoneySemantic` (expense, income or transfer only; anything else, or a negative amount, throws), so the block
+  knows no entity. The consumer's mapper resolves names.
+- **Look (D3, D5).** A 40dp `CategoryGlyph` tile (`PftShapes.glyph`), the title in `bodyLarge` medium `onSurface`
+  (set explicitly: an island `Surface` supplies no content colour), the meta "category · account" in `bodySmall`
+  `onSurfaceVariant`, the amount as `MoneyText` (an expense is neutral with a minus, an income green with a plus,
+  a transfer unsigned and neutral), an optional "Needs review" `StatusChip(Warning)` under the amount and optional
+  neutral `StatusChip` tag pills that wrap under the meta. Rows are separated by `GroupedSection`'s hairline dividers;
+  there is no card inside the island. The day header is `labelMedium` `onSurfaceVariant` with the net total
+  (`MoneyText(Net)`, neutral at either sign) at the end, only when given.
+- **One node.** The row sets `clearAndSetSemantics` with one description (title, category, account, tags, the
+  amount's "Expense, ₹486.00", then the chip's words), so a screen reader says each once. Plain merging is not
+  enough: `MoneyText` and `StatusChip` are merged nodes, and a merged child is not folded into its parent. The tile
+  is decorative (`name = null`). With `onClick` it is a `Role.Button` and at least 56dp tall.
+- **Large text.** Title and meta wrap, never truncate. From a font scale of 1.5 the amount sits under the tile and
+  text at the full row width. A `Row`-size `MoneyText` does not shrink, so the largest amount (`Paise.MAX_AMOUNT`)
+  fits one line at 100% but wraps at 200% on a 320dp window (never cut: the test asserts every character is laid out).
+- **Day label.** "Today" or "Yesterday" from the passed-in `today` (the caller owns the clock and zone), else the
+  device-locale `yMMMd` date. The header is a heading.
+
 ### `EmptyState`
 
 `EmptyState(message, glyph?, actionLabel?, onAction?)`: centred glyph slot (DS3's `CategoryGlyph` or a

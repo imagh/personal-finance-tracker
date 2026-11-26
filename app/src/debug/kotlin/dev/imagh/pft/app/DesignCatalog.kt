@@ -28,12 +28,14 @@ import dev.imagh.pft.app.ui.common.BottomActionBarSamples
 import dev.imagh.pft.app.ui.common.CategoryGlyphSamples
 import dev.imagh.pft.app.ui.common.CategoryGlyphSymbolSamples
 import dev.imagh.pft.app.ui.common.DashboardHeaderSample
+import dev.imagh.pft.app.ui.common.DayGroupSamples
 import dev.imagh.pft.app.ui.common.EditFormSample
 import dev.imagh.pft.app.ui.common.EmptyStateSamples
 import dev.imagh.pft.app.ui.common.GroupedSectionSamples
 import dev.imagh.pft.app.ui.common.MoneyTextSamples
 import dev.imagh.pft.app.ui.common.StandardHeaderSample
 import dev.imagh.pft.app.ui.common.StatusChipSamples
+import dev.imagh.pft.app.ui.common.TransactionRowSamples
 import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.PaletteSwatches
@@ -50,7 +52,7 @@ import dev.imagh.pft.app.ui.theme.displayName
  * The debug design catalogue: every design token on one scrollable sheet, plus the motion demo and
  * the one-hand layout components (both header styles, `BottomActionBar` and the form blocks
  * `EditFormScaffold` and `NameField`) and the content
- * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
+ * primitives (`MoneyText`, `StatusChip`, `GroupedSection`, `TransactionRow` and `DayGroup`, `EmptyState`), the category glyphs and symbol grid, with live toggles for
  * light/dark, the light palette, the dark palette, dynamic colour, the background style (tonal or flat), the header glow (off or on), the hero font, the type pairing (hero only or editorial), the sans font
  * (Figtree, Plus Jakarta Sans or the system font) and the font scale, so they can be checked on a device or the emulator (design plan §3.7, §11). It uses the same sample composables the previews and the
  * screenshot goldens use. Debug builds only: it is the `dev/catalog` route (`devRoutes()` in `DevEntry.kt`), opened from a Home header action; the release twin adds no route.
@@ -197,6 +199,7 @@ private enum class CatalogSection(
     MONEY("Money"),
     CHIPS("Chips"),
     SECTIONS("Sections"),
+    TRANSACTIONS("Transactions"),
     EMPTY("Empty"),
     GLYPHS("Glyphs"),
     ACCENT("Accent"),
@@ -220,6 +223,11 @@ private fun SectionContent(section: CatalogSection) {
                     CatalogSection.BOTTOM_BAR -> BottomActionBarSamples()
                     CatalogSection.MONEY -> Box(Modifier.padding(16.dp)) { MoneyTextSamples() }
                     CatalogSection.SECTIONS -> Box(Modifier.padding(vertical = 16.dp)) { GroupedSectionSamples() }
+                    CatalogSection.TRANSACTIONS ->
+                        Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                            TransactionRowSamples()
+                            DayGroupSamples()
+                        }
                     CatalogSection.EMPTY -> EmptyStateSamples()
                     CatalogSection.GLYPHS ->
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
