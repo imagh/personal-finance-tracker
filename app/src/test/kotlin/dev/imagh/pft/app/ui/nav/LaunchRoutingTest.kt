@@ -3,7 +3,6 @@ package dev.imagh.pft.app.ui.nav
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import dev.imagh.pft.app.data.DatabaseStartup
 import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.di.AppContainer
@@ -54,13 +53,13 @@ class LaunchRoutingTest {
         awaitMain {
             compose.waitForIdle()
             setupShown = setupShown || compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().isNotEmpty()
-            compose.onAllNodesWithText(HOME_PLACEHOLDER).fetchSemanticsNodes().isNotEmpty()
+            compose.homeLoaded()
         }
 
         compose.tabCount() shouldBe 3
         compose.selectedTabs() shouldBe listOf("Home")
         // The stored identity is the More tab's subtitle.
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitMain {
             compose.waitForIdle()
             compose.onAllNodesWithText("Existing · Old phone").fetchSemanticsNodes().isNotEmpty()

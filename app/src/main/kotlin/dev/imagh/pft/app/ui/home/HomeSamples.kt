@@ -54,6 +54,25 @@ internal fun QuickActionRowSamples() {
     }
 }
 
+/**
+ * `GreetingHeader` with fake names, twice: a two-word name in the morning and a long one in the evening
+ * (the name truncates; the initials stay). The single source for the preview, the debug catalogue and the
+ * goldens. Release builds drop it (R8; see `verifyReleaseShrink`).
+ */
+@Composable
+internal fun GreetingHeaderSamples() {
+    Column(verticalArrangement = Arrangement.spacedBy(PftTheme.spacing.xl)) {
+        GreetingHeader(Greeting.MORNING, "Akash Gupta")
+        GreetingHeader(Greeting.EVENING, "Priyadarshini Venkataraghavan Subramaniam")
+    }
+}
+
+@PreviewLightDark
+@Composable
+internal fun GreetingHeaderPreview() {
+    PftTheme(ThemePrefs(dynamicColor = false)) { Surface(color = PftTheme.surfaces.canvas) { GreetingHeaderSamples() } }
+}
+
 @PreviewLightDark
 @Composable
 internal fun BalanceCardPreview() {

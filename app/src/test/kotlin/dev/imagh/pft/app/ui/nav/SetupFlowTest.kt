@@ -93,11 +93,11 @@ class SetupFlowTest {
 
         typeName("Akash", "Pixel 8")
         tapContinue()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         // The attribution line is the More tab's subtitle now, and the tab bar is how More is reached.
         compose.tabCount() shouldBe 3
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Akash · Pixel 8")
         compose.onNodeWithText("Akash · Pixel 8").assertIsDisplayed()
         compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().size shouldBe 0
@@ -120,7 +120,7 @@ class SetupFlowTest {
         show()
         typeName("Akash", "Pixel 8")
         tapContinue()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         compose.runOnUiThread { checkNotNull(activity).onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
@@ -150,8 +150,8 @@ class SetupFlowTest {
 
         typeName("Typed", "Typed phone")
         tapContinue()
-        awaitText(HOME_PLACEHOLDER)
-        compose.tab("More").performClick()
+        compose.awaitHomeLoaded()
+        compose.openMore()
         awaitText("Existing · Old phone")
 
         compose.onAllNodesWithText("Typed", substring = true).fetchSemanticsNodes().size shouldBe 0

@@ -21,7 +21,8 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Golden screenshots of K6's Home components in light and dark, on a 393x851dp xxhdpi screen with
  * the committed default scheme (dynamic colour off, so the goldens are deterministic): `BalanceCard`
- * (without and with a budget meter) and `QuickActionRow` (three actions, and four). Each shows the
+ * (without and with a budget meter), `QuickActionRow` (three actions, and four) and K8's
+ * `GreetingHeader` (a short and a long name). Each shows the
  * same `*Samples` composable as the preview and the debug catalogue, captured by the bounds of the
  * sample, on the canvas. The components bring their own gutter. Fake data only.
  *
@@ -65,4 +66,12 @@ class HomeScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun quickActionsDark() = capture("quick-actions-dark") { QuickActionRowSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun homeHeaderLight() = capture("home-header-light") { GreetingHeaderSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun homeHeaderDark() = capture("home-header-dark") { GreetingHeaderSamples() }
 }
