@@ -66,7 +66,7 @@ class DevRouteTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         compose.onNodeWithContentDescription("Design catalogue").performClick()
         awaitText("Type scale: display, headline")
@@ -76,7 +76,7 @@ class DevRouteTest {
         compose.tabCount() shouldBe 0
 
         compose.runOnUiThread { checkNotNull(activity).onBackPressedDispatcher.onBackPressed() }
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
         compose.tabCount() shouldBe 3

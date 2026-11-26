@@ -14,6 +14,7 @@ import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
 import dev.imagh.pft.app.ui.nav.HOME_PLACEHOLDER
+import dev.imagh.pft.app.ui.nav.awaitHomeLoaded
 import dev.imagh.pft.app.ui.nav.tabCount
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
@@ -81,7 +82,7 @@ class PftRootTest {
         runBlocking { RoomTestKit(database).initialise() }
 
         show(AppContainer({ DatabaseStartup.Ready(database) }))
-        waitForText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
         compose.tabCount() shouldBe 3

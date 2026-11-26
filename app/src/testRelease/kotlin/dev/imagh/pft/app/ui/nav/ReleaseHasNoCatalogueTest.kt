@@ -2,7 +2,6 @@ package dev.imagh.pft.app.ui.nav
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import dev.imagh.pft.app.data.DatabaseStartup
 import dev.imagh.pft.app.data.PftDatabase
@@ -52,7 +51,7 @@ class ReleaseHasNoCatalogueTest {
         }
         awaitMain {
             compose.waitForIdle()
-            compose.onAllNodesWithText(HOME_PLACEHOLDER).fetchSemanticsNodes().isNotEmpty()
+            compose.homeLoaded()
         }
 
         compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()

@@ -66,7 +66,7 @@ class TabNavigationFlowTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText(ready)
+        if (ready == HOME_PLACEHOLDER) compose.awaitHomeLoaded() else awaitText(ready)
     }
 
     /** The navigation host alone, with a controller the test can see, on an already initialised database. */
@@ -83,7 +83,7 @@ class TabNavigationFlowTest {
                 )
             }
         }
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
     }
 
     private fun initialised() = runBlocking { kit.initialise() }
@@ -131,13 +131,13 @@ class TabNavigationFlowTest {
         compose.tabCount() shouldBe 3
         compose.selectedTabs() shouldBe listOf("Accounts")
 
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Categories")
         compose.tabCount() shouldBe 3
         compose.selectedTabs() shouldBe listOf("More")
 
         compose.tab("Home").performClick()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
         compose.selectedTabs() shouldBe listOf("Home")
     }
 
@@ -161,7 +161,7 @@ class TabNavigationFlowTest {
     fun `the bar is hidden on the lists under More, which keep their Back button`() {
         initialised()
         showApp(HOME_PLACEHOLDER)
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Tags")
 
         compose.onNodeWithText("Tags").performClick()
@@ -179,7 +179,7 @@ class TabNavigationFlowTest {
         compose.onNode(hasSetTextAction() and hasText("Your name")).performTextInput("Akash")
         compose.onNode(hasSetTextAction() and hasText("This phone's name")).performTextReplacement("Pixel 8")
         compose.onNodeWithText("Continue").performClick()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         compose.tabCount() shouldBe 3
         compose.selectedTabs() shouldBe listOf("Home")
@@ -191,11 +191,11 @@ class TabNavigationFlowTest {
     fun `Back on More goes to Home, and Back on Home finishes the activity`() {
         initialised()
         showApp(HOME_PLACEHOLDER)
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Categories")
 
         systemBack()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
         compose.selectedTabs() shouldBe listOf("Home")
         checkNotNull(activity).isFinishing shouldBe false
 
@@ -209,10 +209,10 @@ class TabNavigationFlowTest {
         showApp(HOME_PLACEHOLDER)
         compose.tab("Accounts").performClick()
         awaitText("No accounts yet")
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Categories")
         compose.tab("Home").performClick()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         systemBack()
 
@@ -225,11 +225,11 @@ class TabNavigationFlowTest {
         showApp(HOME_PLACEHOLDER)
         compose.tab("Accounts").performClick()
         awaitText("No accounts yet")
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Categories")
 
         systemBack()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
 
         compose.onAllNodesWithText("No accounts yet").fetchSemanticsNodes().size shouldBe 0
         checkNotNull(activity).isFinishing shouldBe false
@@ -248,6 +248,8 @@ class TabNavigationFlowTest {
         compose.onNode(hasSetTextAction() and hasText("Name")).performTextInput("Half typed")
 
         selectTab(Tab.MORE)
+
+        compose.awaitMoreLoaded()
         awaitText("Categories")
         compose.tabCount() shouldBe 3
         compose.onAllNodesWithText("New account").fetchSemanticsNodes().size shouldBe 0
@@ -266,6 +268,7 @@ class TabNavigationFlowTest {
         initialised()
         showHost()
         selectTab(Tab.MORE)
+        compose.awaitMoreLoaded()
         awaitText("Tags")
         compose.onNodeWithText("Tags").performClick()
         awaitText("No tags yet")

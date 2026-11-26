@@ -37,6 +37,7 @@ import dev.imagh.pft.app.ui.common.StandardHeaderSample
 import dev.imagh.pft.app.ui.common.StatusChipSamples
 import dev.imagh.pft.app.ui.common.TransactionRowSamples
 import dev.imagh.pft.app.ui.home.BalanceCardSamples
+import dev.imagh.pft.app.ui.home.GreetingHeaderSamples
 import dev.imagh.pft.app.ui.home.QuickActionRowSamples
 import dev.imagh.pft.app.ui.theme.BackgroundStyle
 import dev.imagh.pft.app.ui.theme.DisplayFont
@@ -233,6 +234,7 @@ private fun SectionContent(section: CatalogSection) {
                         }
                     CatalogSection.HOME ->
                         Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                            GreetingHeaderSamples()
                             BalanceCardSamples()
                             QuickActionRowSamples()
                         }

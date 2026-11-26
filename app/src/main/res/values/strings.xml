@@ -58,7 +58,9 @@
     <!-- Shown under the fields after an unexpected failure to save; fixed text, never exception text. -->
     <string name="setup_save_failed">Couldn\'t save. Try again.</string>
     <!-- Home placeholder (HomeScreen), until C4 brings the real Home. -->
-    <string name="home_title">Home</string>
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
     <string name="home_placeholder">Manage your accounts from the Accounts tab. Transactions arrive in the next update</string>
     <!-- Tab bar (PftTabBar): the spoken name of every tab, and the active tab's label. -->
     <string name="tab_home">Home</string>

@@ -26,7 +26,7 @@ import dev.imagh.pft.app.DevHeaderActions
 import dev.imagh.pft.app.devRoutes
 import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.app.ui.common.LocalTabBarClearance
-import dev.imagh.pft.app.ui.home.HomeScreen
+import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.more.MoreRoute
 import dev.imagh.pft.app.ui.setup.SetupRoute
 import dev.imagh.pft.app.ui.theme.PftMotion
@@ -139,7 +139,7 @@ private fun PftNavGraph(
         navigation(route = Routes.MAIN, startDestination = Tab.HOME.graph) {
             navigation(route = Tab.HOME.graph, startDestination = Tab.HOME.root) {
                 composable(Tab.HOME.root) {
-                    HomeScreen(actions = { DevHeaderActions(navController::navigate) })
+                    HomeRoute(services, actions = { DevHeaderActions(navController::navigate) })
                 }
                 devRoutes()
             }

@@ -73,7 +73,7 @@ class AccountsFlowTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
         return ids
     }
 
@@ -186,7 +186,7 @@ class AccountsFlowTest {
         compose.onAllNodesWithContentDescription("Back").fetchSemanticsNodes().size shouldBe 0
 
         systemBack()
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
         compose.onAllNodesWithText("No accounts yet").fetchSemanticsNodes().size shouldBe 0
         checkNotNull(activity).isFinishing shouldBe false
 

@@ -75,7 +75,7 @@ class CategoriesFlowTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
     }
 
     private fun awaitText(text: String) =
@@ -91,7 +91,7 @@ class CategoriesFlowTest {
         }
 
     private fun openCategories() {
-        compose.tab("More").performClick()
+        compose.openMore()
         awaitText("Categories")
         compose.onNodeWithText("Categories").performClick()
         awaitText("Food & dining")
@@ -516,7 +516,7 @@ class CategoriesFlowTest {
         compose.onNodeWithText("Categories").assertIsDisplayed()
 
         compose.runOnUiThread { checkNotNull(activity).onBackPressedDispatcher.onBackPressed() }
-        awaitText(HOME_PLACEHOLDER)
+        compose.awaitHomeLoaded()
         checkNotNull(activity).isFinishing shouldBe false
     }
 }
