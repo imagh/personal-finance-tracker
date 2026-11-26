@@ -19,7 +19,8 @@ import dev.imagh.pft.app.ui.startup.DataUnavailableScreen
  *   is no flash while the database opens.
  * - [LaunchState.KeyUnavailable] and [LaunchState.IdentityCorrupt]: the fail-closed
  *   [DataUnavailableScreen] with a fixed code. Nothing is created or overwritten.
- * - [LaunchState.Ready]: the app, the [PftNavHost]: Setup on a fresh install, Home otherwise.
+ * - [LaunchState.Ready]: the app, the [PftNavHost]: Setup on a fresh install, otherwise the tabbed app
+ *   (Home, Accounts, More).
  *
  * The caller provides the theme and the surface (`MainActivity`).
  */

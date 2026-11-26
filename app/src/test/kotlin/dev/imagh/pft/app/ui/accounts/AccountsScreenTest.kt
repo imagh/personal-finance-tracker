@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -57,10 +58,16 @@ class AccountsScreenTest {
                             edit = { edited += it },
                         ),
                     snackbars = snackbars,
-                    onBack = {},
                 )
             }
         }
+
+    @Test
+    fun `the accounts tab root has no Back button`() {
+        show(AccountsUiState(loaded = true))
+
+        compose.onAllNodesWithContentDescription("Back").assertCountEquals(0)
+    }
 
     @Test
     fun `before the first load the empty message does not show`() {

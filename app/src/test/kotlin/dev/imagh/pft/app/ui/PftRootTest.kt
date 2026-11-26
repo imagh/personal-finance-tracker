@@ -13,6 +13,8 @@ import dev.imagh.pft.app.security.DbKeyUnavailable.Reason
 import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
+import dev.imagh.pft.app.ui.nav.HOME_PLACEHOLDER
+import dev.imagh.pft.app.ui.nav.tabCount
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.ledger.settings.AppSetting
@@ -70,6 +72,8 @@ class PftRootTest {
 
         compose.onNodeWithText("Your data can't be opened").assertIsDisplayed()
         compose.onNode(hasText("who uses this phone", substring = true)).assertIsDisplayed()
+        // The fail-closed screen is outside the navigation host, so no tab bar is drawn over it.
+        compose.tabCount() shouldBe 0
     }
 
     @Test
@@ -77,9 +81,10 @@ class PftRootTest {
         runBlocking { RoomTestKit(database).initialise() }
 
         show(AppContainer({ DatabaseStartup.Ready(database) }))
-        waitForText("Akash · Pixel")
+        waitForText(HOME_PLACEHOLDER)
 
-        compose.onNodeWithText("Home").assertIsDisplayed()
+        compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
+        compose.tabCount() shouldBe 3
         compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().size shouldBe 0
         compose.onAllNodesWithText("Your data can't be opened").fetchSemanticsNodes().size shouldBe 0
     }

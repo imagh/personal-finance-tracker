@@ -3,12 +3,10 @@ package dev.imagh.pft.app.ui.home
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
@@ -19,68 +17,46 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The stateless Home placeholder, rendered from fake state: honest copy and the attribution subtitle. */
+/**
+ * The stateless Home placeholder, rendered from fake state: honest copy and a header with no attribution
+ * line (that is the More tab's subtitle now) and no More button (the tab bar is how More is reached).
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w393dp-h851dp-xxhdpi")
 class HomeScreenTest {
     private companion object {
-        const val PLACEHOLDER = "Open More to manage your accounts. Transactions arrive in the next update"
+        const val PLACEHOLDER = "Manage your accounts from the Accounts tab. Transactions arrive in the next update"
     }
 
     @get:Rule
     val compose = HostedComposeRule()
 
-    private var moreOpened = 0
-
-    private fun show(
-        state: HomeUiState,
-        actions: @Composable RowScope.() -> Unit = {},
-    ) = compose.setContent {
-        PftTheme(ThemePrefs(dynamicColor = false)) {
-            HomeScreen(state, onOpenMore = { moreOpened++ }, actions = actions)
+    private fun show(actions: @Composable RowScope.() -> Unit = {}) =
+        compose.setContent {
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                HomeScreen(actions = actions)
+            }
         }
-    }
 
     @Test
-    fun `a loaded identity shows the title, the name and phone subtitle and the placeholder`() {
-        show(HomeUiState(userName = "Akash", deviceLabel = "Pixel 8", loaded = true))
+    fun `it shows the title and the placeholder, and no attribution line`() {
+        show()
 
         compose.onAllNodesWithText("Home").fetchSemanticsNodes().isNotEmpty() shouldBe true
-        compose.onNodeWithText("Akash · Pixel 8").assertIsDisplayed()
         compose.onNodeWithText(PLACEHOLDER).assertIsDisplayed()
-    }
-
-    @Test
-    fun `before the identity is read there is no subtitle`() {
-        show(HomeUiState())
-
         compose.onAllNodesWithText("·", substring = true).fetchSemanticsNodes().size shouldBe 0
-        compose.onNodeWithText(PLACEHOLDER).assertIsDisplayed()
     }
 
     @Test
-    fun `the More header button is labelled for TalkBack, is a button and opens More`() {
-        show(HomeUiState(loaded = true, userName = "A", deviceLabel = "B"))
+    fun `there is no More button in the header, because More is a tab`() {
+        show()
 
-        compose
-            .onNodeWithContentDescription("More")
-            .assertIsDisplayed()
-            .assertHasClickAction()
-            .performClick()
-
-        moreOpened shouldBe 1
-    }
-
-    @Test
-    fun `the More button is there before the identity has loaded`() {
-        show(HomeUiState())
-
-        compose.onNodeWithContentDescription("More").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("More").fetchSemanticsNodes().size shouldBe 0
     }
 
     @Test
     fun `header actions given by the caller are drawn in the header`() {
-        show(HomeUiState(loaded = true, userName = "A", deviceLabel = "B")) { Text("extra action") }
+        show { Text("extra action") }
 
         compose.onNodeWithText("extra action").assertIsDisplayed()
     }

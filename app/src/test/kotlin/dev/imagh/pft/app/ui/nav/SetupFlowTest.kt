@@ -87,14 +87,18 @@ class SetupFlowTest {
             .use { if (it.moveToFirst()) it.getString(0) else null }
 
     @Test
-    fun `a fresh install shows Setup, and Continue saves the identity and lands on Home`() {
+    fun `a fresh install shows Setup, and Continue saves the identity and lands on Home with the tab bar`() {
         show()
         compose.onNodeWithText("Set up this phone").assertIsDisplayed()
 
         typeName("Akash", "Pixel 8")
         tapContinue()
-        awaitText("Akash · Pixel 8")
+        awaitText(HOME_PLACEHOLDER)
 
+        // The attribution line is the More tab's subtitle now, and the tab bar is how More is reached.
+        compose.tabCount() shouldBe 3
+        compose.tab("More").performClick()
+        awaitText("Akash · Pixel 8")
         compose.onNodeWithText("Akash · Pixel 8").assertIsDisplayed()
         compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().size shouldBe 0
         database.rowCount("user_profile") shouldBe 1
@@ -112,11 +116,11 @@ class SetupFlowTest {
     }
 
     @Test
-    fun `system back on Home finishes the activity, because Setup is not on the back stack`() {
+    fun `system back on Home finishes the activity, and Setup never comes back`() {
         show()
         typeName("Akash", "Pixel 8")
         tapContinue()
-        awaitText("Akash · Pixel 8")
+        awaitText(HOME_PLACEHOLDER)
 
         compose.runOnUiThread { checkNotNull(activity).onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
@@ -146,6 +150,8 @@ class SetupFlowTest {
 
         typeName("Typed", "Typed phone")
         tapContinue()
+        awaitText(HOME_PLACEHOLDER)
+        compose.tab("More").performClick()
         awaitText("Existing · Old phone")
 
         compose.onAllNodesWithText("Typed", substring = true).fetchSemanticsNodes().size shouldBe 0

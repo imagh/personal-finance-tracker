@@ -39,7 +39,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * The accounts list end to end (PRD L-4, INT-3): the real [AppContainer] over a real Room database,
- * rendered through [PftRoot] and the navigation host, from Home to More to Accounts. It asserts what
+ * rendered through [PftRoot] and the navigation host, from Home to the Accounts tab. It asserts what
  * is on screen and what is persisted, never that anything was called.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -73,7 +73,7 @@ class AccountsFlowTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText("Akash · Pixel")
+        awaitText(HOME_PLACEHOLDER)
         return ids
     }
 
@@ -90,9 +90,7 @@ class AccountsFlowTest {
         }
 
     private fun openAccounts() {
-        compose.onNodeWithContentDescription("More").performClick()
-        awaitText("Accounts")
-        compose.onNodeWithText("Accounts").performClick()
+        compose.tab("Accounts").performClick()
     }
 
     private fun chooseFromMenu(
@@ -111,7 +109,7 @@ class AccountsFlowTest {
     private val hdfc = AccountDraft("HDFC Savings", AccountType.BANK, Paise(1_000_000), "1234", "HDFC")
 
     @Test
-    fun `Home to More to Accounts shows the empty state with an Add account control`() {
+    fun `the Accounts tab shows the empty state with an Add account control`() {
         show()
 
         openAccounts()
@@ -181,18 +179,15 @@ class AccountsFlowTest {
     }
 
     @Test
-    fun `Back from Accounts returns to More, and from More to Home`() {
+    fun `Back from Accounts goes to Home, and Back on Home finishes the activity`() {
         show()
         openAccounts()
         awaitText("No accounts yet")
-
-        compose.onNodeWithContentDescription("Back").performClick()
-        awaitGone("No accounts yet")
-        compose.onNodeWithText("Accounts").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Back").fetchSemanticsNodes().size shouldBe 0
 
         systemBack()
-        awaitText("Akash · Pixel")
-        compose.onAllNodesWithText("Accounts").fetchSemanticsNodes().size shouldBe 0
+        awaitText(HOME_PLACEHOLDER)
+        compose.onAllNodesWithText("No accounts yet").fetchSemanticsNodes().size shouldBe 0
         checkNotNull(activity).isFinishing shouldBe false
 
         systemBack()
