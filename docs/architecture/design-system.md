@@ -711,7 +711,7 @@ Permanent key (Material Symbols name when different). Chrome keys are semantic; 
 
 | Group | Keys |
 |---|---|
-| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle`, `south_west` (In, the Income quick action), `north_east` (Out) |
+| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle`, `south_west` (In, the Income quick action), `north_east` (Out), `more_horiz` (the More tab) |
 | Food and drink | `restaurant`, `local_cafe`, `fastfood`, `local_bar`, `bakery_dining`, `local_pizza`, `icecream` |
 | Shopping | `shopping_cart`, `shopping_bag`, `grocery`, `checkroom`, `redeem`, `diamond` |
 | Transport | `directions_car`, `directions_bus`, `train`, `local_taxi`, `two_wheeler`, `flight`, `local_gas_station` |
