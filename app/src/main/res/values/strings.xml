@@ -61,6 +61,10 @@
     <string name="home_title">Home</string>
     <string name="home_subtitle">%1$s · %2$s</string>
     <string name="home_placeholder">Open More to manage your accounts. Transactions arrive in the next update</string>
+    <!-- Tab bar (PftTabBar): the spoken name of every tab, and the active tab's label. -->
+    <string name="tab_home">Home</string>
+    <string name="tab_accounts">Accounts</string>
+    <string name="tab_more">More</string>
     <!-- Spoken label of Home's header button that opens the More screen. -->
     <string name="home_more">More</string>
     <!-- More screen (MoreScreen): the entry point to the entity lists. -->
