@@ -31,7 +31,8 @@ class PftThemeModeTest {
         return surface
     }
 
-    private val graphiteOnly = ThemePrefs(dynamicColor = false)
+    private val graphiteOnly =
+        ThemePrefs(dynamicColor = false, lightPalette = ThemePalette.GRAPHITE, darkPalette = ThemePalette.GRAPHITE)
 
     @Test
     @Config(qualifiers = "+night")

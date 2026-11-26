@@ -28,6 +28,7 @@ import androidx.core.view.drawToBitmap
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.GraphitePalette
 import dev.imagh.pft.app.ui.theme.PftTheme
+import dev.imagh.pft.app.ui.theme.ThemePalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -58,8 +59,14 @@ class HeaderGlowScaffoldTest {
     private val barHeight = 64f
     private val expandedHeight = 851f * 0.38f
 
-    private val glowOn = ThemePrefs(dynamicColor = false, headerGlow = true)
-    private val glowOff = ThemePrefs(dynamicColor = false)
+    private val glowOn =
+        ThemePrefs(
+            dynamicColor = false,
+            headerGlow = true,
+            lightPalette = ThemePalette.GRAPHITE,
+            darkPalette = ThemePalette.GRAPHITE,
+        )
+    private val glowOff = glowOn.copy(headerGlow = false)
     private val canvas = GraphitePalette.light.canvas
 
     /** The wash at the glow's cap over the canvas: what the very top-centre pixel should be, within rounding. */

@@ -47,7 +47,7 @@ class PftThemeBrandTest {
 
     @Test
     fun `an existing palette provides its derived brand tokens`() {
-        val prefs = ThemePrefs(mode = ThemeMode.LIGHT)
+        val prefs = ThemePrefs(mode = ThemeMode.LIGHT, lightPalette = ThemePalette.GRAPHITE)
         val colors = ThemePalette.GRAPHITE.colors(dark = false)
         assertEquals(derivedBrand(colors.scheme, colors.island), brandUnder(prefs))
     }

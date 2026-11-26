@@ -255,4 +255,23 @@ class GroupedSectionTest {
             top.luminance() > bottom.luminance(),
         )
     }
+
+    @Test
+    fun `the island clips to the 18dp island radius, not the 24dp large shape`() {
+        val prefs = ThemePrefs(lightPalette = ThemePalette.IVORY, background = BackgroundStyle.FLAT)
+        showRows(2, prefs = prefs)
+        val bounds = section()
+        val fill = IvoryPalette.light.scheme.surfaceContainer
+        val dp = density
+        // The section's own bounds include the 20dp gutter the island is inset by.
+        val left = bounds.left + 20f * dp
+        // On the corner diagonal a point is inside a radius-r corner once it is past 0.293 r from
+        // each edge: 5.3dp for 18dp, 7.0dp for 24dp. 6dp is inside only the 18dp island.
+        assertSame(fill, pixelAt(left + 6f * dp, bounds.top + 6f * dp), "6dp in on the diagonal is filled")
+        // 3dp in is outside both radii, so it is clipped away.
+        assertTrue(
+            "3dp in on the diagonal must be outside the rounded corner",
+            distance(fill, pixelAt(left + 3f * dp, bounds.top + 3f * dp)) > 2f / 255f,
+        )
+    }
 }
