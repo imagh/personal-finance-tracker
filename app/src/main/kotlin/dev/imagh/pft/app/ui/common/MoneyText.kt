@@ -15,6 +15,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -22,8 +23,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.TextUnit
 import dev.imagh.pft.R
@@ -36,28 +39,41 @@ import dev.imagh.pft.money.PaiseFormat
 private const val MINUS = "−"
 
 /**
- * The sign glyph for [semantic]: `+` for income, [MINUS] for an expense or a negative balance,
- * and nothing for a transfer, a budget figure or a non-negative balance. Transaction amounts are
- * positive magnitudes (the direction is the semantic), so a negative [amount] is only valid for a
- * [MoneySemantic.Balance]; anything else is a bug upstream and is rejected rather than shown with
- * a sign that would misreport the money.
+ * The sign glyph for [semantic]: `+` for income, [MINUS] for an expense, `+` or [MINUS] for a
+ * positive or negative [MoneySemantic.Net], [MINUS] for a negative balance, and nothing for a
+ * transfer, a budget figure, a zero net or a non-negative balance. Transaction amounts are positive
+ * magnitudes (the direction is the semantic), so a negative [amount] is only valid for a
+ * [MoneySemantic.Balance] or a [MoneySemantic.Net]; anything else is a bug upstream and is rejected
+ * rather than shown with a sign that would misreport the money.
  *
- * @throws IllegalArgumentException if [amount] is negative and [semantic] is not a balance.
+ * @throws IllegalArgumentException if [amount] is negative and [semantic] is neither a balance nor a net figure.
  */
 internal fun moneySign(
     semantic: MoneySemantic,
     amount: Paise,
 ): String {
-    require(amount.value >= 0 || semantic == MoneySemantic.Balance) {
-        "only a balance may be negative, not $semantic"
+    require(amount.value >= 0 || semantic == MoneySemantic.Balance || semantic == MoneySemantic.Net) {
+        "only a balance or a net figure may be negative, not $semantic"
     }
     return when (semantic) {
         MoneySemantic.Income -> "+"
         MoneySemantic.Expense -> MINUS
         MoneySemantic.Balance -> if (amount.value < 0) MINUS else ""
+        MoneySemantic.Net ->
+            when {
+                amount.value > 0 -> "+"
+                amount.value < 0 -> MINUS
+                else -> ""
+            }
         MoneySemantic.Transfer, is MoneySemantic.Budget -> ""
     }
 }
+
+/** The alpha of the hero's decimals when they fade; `onCard` at this alpha is 3.06:1 on the card (Cobalt plan D4). */
+internal const val FADED_DECIMAL_ALPHA = 0.68f
+
+/** The smallest hero size, in sp, that counts as WCAG large text, below which the decimals stay solid. */
+internal const val LARGE_TEXT_SP = 24f
 
 /**
  * An amount of money, formatted, signed, toned and spoken (UI-5, plan §3.3, §5.2). The figure is
@@ -66,12 +82,15 @@ internal fun moneySign(
  *
  * Colour is never the only cue (WCAG 1.4.1): the tone comes from [moneyTone] mapped to a
  * `PftTheme.money` token (neutral is `onSurface`), every signed figure carries its sign, and the
- * semantics read the direction before the figure ("Expense, ₹250.00"). Do not draw it on
- * `surfaceVariant`: the money tokens do not clear 4.5:1 there.
+ * semantics read the direction before the figure ("Expense, ₹250.00"; a negative net figure reads
+ * "Net, minus ₹250.00"). An expense is neutral at every size; only a negative balance and an
+ * over-budget figure are red (Cobalt plan D5). Do not draw it on `surfaceVariant`: the money
+ * tokens do not clear 4.5:1 there.
  *
  * Named consumers: entity lists, Home, transaction detail, budget detail, loans and goals.
  *
- * @param amount the figure; a magnitude, except for a [MoneySemantic.Balance], which may be negative.
+ * @param amount the figure; a magnitude, except for a [MoneySemantic.Balance] or a
+ *   [MoneySemantic.Net], which may be negative.
  * @param semantic what the figure means, which decides the sign and tone.
  * @param size the amount style; [MoneySize.Row] is the default.
  * @param animate roll the digits to the new figure when [amount] or [semantic] changes (a hero on
@@ -79,7 +98,17 @@ internal fun moneySign(
  *   keeps its column; the roll uses `PftMotion.smooth` and jumps to the end state under reduced
  *   motion. Assistive technology still sees one string, and the text is correct as soon as the
  *   state changes, never after the animation. Off by default (list rows do not animate).
- * @throws IllegalArgumentException if [amount] is negative and [semantic] is not a balance.
+ * @param onColor the colour to draw a neutral figure in, for a fill the theme does not sweep (the
+ *   balance card's `onCard` on the brand gradient). Unspecified by default, which draws `onSurface`.
+ *   It is allowed only when the tone is [MoneyTone.Neutral], so no red, green or amber is ever drawn
+ *   on the blue; that includes a negative [MoneySemantic.Balance], whose tone is red.
+ * @param fadeDecimals draw the decimals (the `.` and the paise digits) at [FADED_DECIMAL_ALPHA] of
+ *   the figure's colour. It applies to [MoneySize.Hero] only (it is ignored at other sizes) and only
+ *   while the hero is at a large-text step of [LARGE_TEXT_SP] or more, because the faded colour does
+ *   not clear 4.5:1 for small text; below that step the decimals are solid. Colour only: the text
+ *   and the spoken description are unchanged.
+ * @throws IllegalArgumentException if [amount] is negative and [semantic] is neither a balance nor a
+ *   net figure, or if [onColor] is given with a tone other than neutral.
  */
 @Composable
 fun MoneyText(
@@ -88,19 +117,23 @@ fun MoneyText(
     modifier: Modifier = Modifier,
     size: MoneySize = MoneySize.Row,
     animate: Boolean = false,
+    onColor: Color = Color.Unspecified,
+    fadeDecimals: Boolean = false,
 ) {
     val figure = PaiseFormat.format(amount)
     val text = moneySign(semantic, amount) + figure
-    val description = "${directionLabel(semantic, amount)}, $figure"
-    val color = toneColor(moneyTone(semantic, amount, inRow = size == MoneySize.Row))
+    val description = spokenAmount(semantic, amount, figure)
+    val tone = moneyTone(semantic, amount)
+    require(!onColor.isSpecified || tone == MoneyTone.Neutral) { "onColor is only for a neutral tone, not $tone" }
+    val color = if (onColor.isSpecified) onColor else toneColor(tone)
     // The description goes on the outer node, which merges its descendants. Plain text brings its own
     // text; rolling digits (one Text per character) are hidden from semantics and set the whole text.
     val described = modifier.semantics(mergeDescendants = true) { contentDescription = description }
     if (size == MoneySize.Hero) {
-        HeroText(text, color, animate, described)
+        HeroText(text, color, animate, fadeDecimals, described)
     } else {
         val style = if (size == MoneySize.Large) PftTheme.type.amountLarge else PftTheme.type.amountRow
-        Figure(text, style.copy(color = color), animate, Int.MAX_VALUE, described)
+        Figure(AnnotatedString(text), style.copy(color = color), animate, Int.MAX_VALUE, described)
     }
 }
 
@@ -111,12 +144,14 @@ fun MoneyText(
  * the smallest step does not fit (an extreme amount at 200% font scale on a very narrow window) it wraps there
  * instead: a money figure is never cut off, because a truncated amount would misreport the money.
  * With `animate` that fallback is plain wrapping text too, since rolling digits cannot wrap.
+ * With [fadeDecimals] the decimals are faded at the chosen size only if it is a large-text step.
  */
 @Composable
 private fun HeroText(
     text: String,
     color: Color,
     animate: Boolean,
+    fadeDecimals: Boolean,
     modifier: Modifier,
 ) {
     val measurer = rememberTextMeasurer()
@@ -125,16 +160,24 @@ private fun HeroText(
     BoxWithConstraints(modifier) {
         val available = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
         val fit = remember(text, available, base, density) { fitHero(measurer, text, base, available) }
+        val fadeFrom = if (fadeDecimals && fit.style.fontSize.value >= LARGE_TEXT_SP) text.lastIndexOf('.') else -1
+        val shown =
+            buildAnnotatedString {
+                append(text)
+                if (fadeFrom >= 0) {
+                    addStyle(SpanStyle(color = color.copy(alpha = FADED_DECIMAL_ALPHA)), fadeFrom, text.length)
+                }
+            }
         // Rolling digits are one Text per character and cannot wrap, so a figure that does not fit
         // even at the smallest step is shown as plain wrapping text, without the roll.
-        Figure(text, fit.style.copy(color = color), animate && fit.fits, if (fit.fits) 1 else Int.MAX_VALUE, Modifier)
+        Figure(shown, fit.style.copy(color = color), animate && fit.fits, if (fit.fits) 1 else Int.MAX_VALUE, Modifier)
     }
 }
 
-/** The figure itself: plain text, or rolling digits. */
+/** The figure itself: plain text, or rolling digits. Colour spans in [text] (the faded decimals) survive both. */
 @Composable
 private fun Figure(
-    text: String,
+    text: AnnotatedString,
     style: TextStyle,
     animate: Boolean,
     maxLines: Int,
@@ -156,13 +199,13 @@ private fun Figure(
  */
 @Composable
 private fun RollingDigits(
-    text: String,
+    text: AnnotatedString,
     style: TextStyle,
     modifier: Modifier,
 ) {
     val motion = PftTheme.motion
-    Row(modifier.clearAndSetSemantics { this.text = AnnotatedString(text) }) {
-        text.forEachIndexed { index, character ->
+    Row(modifier.clearAndSetSemantics { this.text = AnnotatedString(text.text) }) {
+        text.text.forEachIndexed { index, character ->
             key(text.length - index) {
                 AnimatedContent(
                     targetState = character,
@@ -178,7 +221,10 @@ private fun RollingDigits(
                         )
                     },
                     label = "digit",
-                ) { shown -> Text(shown.toString(), style = style, maxLines = 1) }
+                ) { shown ->
+                    val span = text.spanStyles.lastOrNull { index >= it.start && index < it.end }?.item
+                    Text(shown.toString(), style = span?.let { style.merge(it) } ?: style, maxLines = 1)
+                }
             }
         }
     }
@@ -219,6 +265,19 @@ private fun toneColor(tone: MoneyTone): Color =
         MoneyTone.Warning -> PftTheme.money.warning
     }
 
+/** What a screen reader says: the direction, then the figure; a negative net figure also says its sign. */
+@Composable
+private fun spokenAmount(
+    semantic: MoneySemantic,
+    amount: Paise,
+    figure: String,
+): String =
+    if (semantic == MoneySemantic.Net && amount.value < 0) {
+        stringResource(R.string.money_net_negative, figure)
+    } else {
+        "${directionLabel(semantic, amount)}, $figure"
+    }
+
 /** The spoken word that says what the figure is, said before it. */
 @Composable
 private fun directionLabel(
@@ -230,6 +289,7 @@ private fun directionLabel(
             MoneySemantic.Income -> R.string.money_income
             MoneySemantic.Expense -> R.string.money_expense
             MoneySemantic.Transfer -> R.string.money_transfer
+            MoneySemantic.Net -> R.string.money_net
             MoneySemantic.Balance ->
                 if (amount.value < 0) R.string.money_balance_negative else R.string.money_balance
             is MoneySemantic.Budget ->

@@ -4,32 +4,43 @@ import dev.imagh.pft.money.Paise
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-/** The meaning-to-colour mapping for amounts (plan §3.3, §5.2; owner decisions Q2 and Q3). Pure JVM. */
+/**
+ * The meaning-to-colour mapping for amounts (plan §3.3, §5.2; Cobalt plan D5: an expense is neutral
+ * everywhere, a net figure is always neutral, red is for a negative balance and an over-budget figure).
+ * Pure JVM.
+ */
 class MoneyToneTest {
     private val someAmount = Paise(25_000)
 
     private fun tone(
         semantic: MoneySemantic,
         amount: Paise = someAmount,
-        inRow: Boolean = false,
-    ) = moneyTone(semantic, amount, inRow)
+    ) = moneyTone(semantic, amount)
 
     @Test
-    fun `income is positive in totals and in rows`() {
-        assertEquals(MoneyTone.Positive, tone(MoneySemantic.Income, inRow = false))
-        assertEquals(MoneyTone.Positive, tone(MoneySemantic.Income, inRow = true))
+    fun `income is positive whatever the amount`() {
+        assertEquals(MoneyTone.Positive, tone(MoneySemantic.Income))
+        assertEquals(MoneyTone.Positive, tone(MoneySemantic.Income, Paise.MAX_AMOUNT))
     }
 
     @Test
-    fun `expense is negative in totals but neutral in list rows (Q2)`() {
-        assertEquals(MoneyTone.Negative, tone(MoneySemantic.Expense, inRow = false))
-        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Expense, inRow = true))
+    fun `an expense is neutral whatever the amount, so a total or hero is never red`() {
+        listOf(Paise.ZERO, Paise(1), someAmount, Paise.MAX_AMOUNT).forEach { amount ->
+            assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Expense, amount), "$amount")
+        }
     }
 
     @Test
-    fun `a transfer is neutral everywhere`() {
-        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Transfer, inRow = false))
-        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Transfer, inRow = true))
+    fun `a net figure is neutral when negative, zero and positive`() {
+        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Net, Paise(-1)))
+        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Net, Paise(-5_000_000)))
+        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Net, Paise.ZERO))
+        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Net, Paise(1)))
+    }
+
+    @Test
+    fun `a transfer is neutral`() {
+        assertEquals(MoneyTone.Neutral, tone(MoneySemantic.Transfer))
     }
 
     @Test
@@ -40,11 +51,6 @@ class MoneyToneTest {
     }
 
     @Test
-    fun `a negative balance stays negative in a list row`() {
-        assertEquals(MoneyTone.Negative, tone(MoneySemantic.Balance, Paise(-5_000), inRow = true))
-    }
-
-    @Test
     fun `a budget is positive under, warning at its threshold and negative over`() {
         assertEquals(MoneyTone.Positive, tone(MoneySemantic.Budget(BudgetState.UNDER)))
         assertEquals(MoneyTone.Warning, tone(MoneySemantic.Budget(BudgetState.AT_THRESHOLD)))
@@ -52,10 +58,10 @@ class MoneyToneTest {
     }
 
     @Test
-    fun `the budget tone does not depend on the row placement or the amount`() {
+    fun `the budget tone does not depend on the amount`() {
         BudgetState.entries.forEach { state ->
             val semantic = MoneySemantic.Budget(state)
-            assertEquals(tone(semantic, Paise(1), inRow = false), tone(semantic, Paise(9_999_999), inRow = true))
+            assertEquals(tone(semantic, Paise(1)), tone(semantic, Paise(9_999_999)))
         }
     }
 }

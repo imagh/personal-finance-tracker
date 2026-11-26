@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -24,7 +23,6 @@ import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.ResourceFont
@@ -42,6 +40,7 @@ import dev.imagh.pft.app.ui.theme.heroSizeSteps
 import dev.imagh.pft.money.Paise
 import dev.imagh.pft.money.PaiseFormat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -157,7 +156,7 @@ class MoneyTextTest {
     }
 
     @Test
-    fun `only a balance may be negative`() {
+    fun `only a balance or a net figure may be negative`() {
         listOf(
             MoneySemantic.Income,
             MoneySemantic.Expense,
@@ -168,6 +167,29 @@ class MoneyTextTest {
             assertTrue("$semantic: $failure", failure is IllegalArgumentException)
         }
         assertEquals(minus, moneySign(MoneySemantic.Balance, Paise(-1)))
+        assertEquals(minus, moneySign(MoneySemantic.Net, Paise(-1)))
+    }
+
+    @Test
+    fun `a net figure is signed plus, minus or not at all at zero`() {
+        show(Paise(12_345_678), MoneySemantic.Net)
+        node().assertTextEquals("+₹1,23,456.78")
+        show(Paise(-12_345_678), MoneySemantic.Net)
+        node().assertTextEquals("$minus₹1,23,456.78")
+        show(Paise.ZERO, MoneySemantic.Net)
+        node().assertTextEquals("₹0.00")
+    }
+
+    @Test
+    fun `the minus of a negative net figure is the true minus sign U+2212`() {
+        show(Paise(-100), MoneySemantic.Net)
+        val text =
+            node()
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.Text]
+                .single()
+                .text
+        assertEquals('−', text.first())
     }
 
     // --- semantics (colour is never the only cue) -------------------------------------------
@@ -180,6 +202,16 @@ class MoneyTextTest {
         node().assertContentDescriptionEquals("Income, ₹250.00")
         show(Paise(25_000), MoneySemantic.Transfer)
         node().assertContentDescriptionEquals("Transfer, ₹250.00")
+    }
+
+    @Test
+    fun `the spoken description of a net figure says minus when it is negative and nothing extra otherwise`() {
+        show(Paise(-25_000), MoneySemantic.Net)
+        node().assertContentDescriptionEquals("Net, minus ₹250.00")
+        show(Paise(25_000), MoneySemantic.Net)
+        node().assertContentDescriptionEquals("Net, ₹250.00")
+        show(Paise.ZERO, MoneySemantic.Net)
+        node().assertContentDescriptionEquals("Net, ₹0.00")
     }
 
     @Test
@@ -203,19 +235,37 @@ class MoneyTextTest {
     // --- tone colour ------------------------------------------------------------------------
 
     @Test
-    fun `an expense total is drawn in the money red and an expense row is neutral (Q2)`() {
+    fun `an expense is neutral at every size, in a hero, a total and a row`() {
         var money = Color.Unspecified
         var neutral = Color.Unspecified
         compose.setContent {
             PftTheme(ThemePrefs(dynamicColor = false)) {
                 money = PftTheme.money.negative
                 neutral = MaterialTheme.colorScheme.onSurface
+                MoneyText(Paise(100), MoneySemantic.Expense, Modifier.testTag("hero"), size = MoneySize.Hero)
                 MoneyText(Paise(100), MoneySemantic.Expense, Modifier.testTag("total"), size = MoneySize.Large)
                 MoneyText(Paise(100), MoneySemantic.Expense, Modifier.testTag("row"), size = MoneySize.Row)
             }
         }
-        assertEquals(money, compose.onNodeWithTag("total").color())
-        assertEquals(neutral, compose.onNodeWithTag("row").color())
+        listOf("hero", "total", "row").forEach { tag ->
+            val drawn = compose.onNodeWithTag(tag).color()
+            assertEquals(tag, neutral, drawn)
+            assertNotEquals("$tag must not be the money red", money, drawn)
+        }
+    }
+
+    @Test
+    fun `a net figure is neutral whether it is negative or positive`() {
+        var neutral = Color.Unspecified
+        compose.setContent {
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                neutral = MaterialTheme.colorScheme.onSurface
+                MoneyText(Paise(-100), MoneySemantic.Net, Modifier.testTag("loss"), size = MoneySize.Large)
+                MoneyText(Paise(100), MoneySemantic.Net, Modifier.testTag("gain"), size = MoneySize.Large)
+            }
+        }
+        assertEquals(neutral, compose.onNodeWithTag("loss").color())
+        assertEquals(neutral, compose.onNodeWithTag("gain").color())
     }
 
     @Test
@@ -303,6 +353,7 @@ class MoneyTextTest {
     private val maxAmount = Paise.MAX_AMOUNT
 
     private var boxWidthDp by mutableIntStateOf(0)
+
     private var probeSize by mutableStateOf<TextUnit?>(null)
 
     /**
@@ -551,11 +602,3 @@ class MoneyTextTest {
         assertEquals("$minus₹1,00,00,00,00,000.00".length, textNodes().size)
     }
 }
-
-private fun SemanticsNode.layoutResult(): TextLayoutResult {
-    val results = mutableListOf<TextLayoutResult>()
-    config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
-    return results.single()
-}
-
-private fun SemanticsNode.shownText(): String = layoutResult().layoutInput.text.text
