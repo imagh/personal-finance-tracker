@@ -97,9 +97,10 @@ internal fun heroSizeSteps(heroSize: TextUnit): List<TextUnit> = HeroSizeSteps.f
  * Each bundled sans font is one variable font. Figtree's `wght` axis defaults to 300 and Manrope's
  * to 200, lighter than any role asks for, and Plus Jakarta Sans defaults to 400; either way the
  * axis is set explicitly: one [Font] per weight 400, 500 and 600 (regular text, medium labels and titles,
- * semibold header titles), each pinned to its own `wght`. These are every weight a role in
- * [pftMaterialTypography] or [pftType] uses; a weight not declared here would fall to the nearest
- * one. Declare a new weight in `sansWeights` before using it in a role.
+ * semibold header titles), each pinned one step heavier than its weight (`wght` 500, 600 and 700, see
+ * [shiftedSansWght]; K9). The system sans, the serif and Bricolage Grotesque are not shifted. These are
+ * every weight a role in [pftMaterialTypography] or [pftType] uses; a weight not declared here would
+ * fall to the nearest one. Declare a new weight in `sansWeights` before using it in a role.
  *
  * Reference each font only as `R.font.<name>`, below: release resource shrinking removes a font
  * that no reachable code names, and a name string or `getIdentifier` would not count.
@@ -112,20 +113,48 @@ internal fun sansFamily(choice: SansFont): FontFamily =
         SansFont.SYSTEM -> FontFamily.Default
     }
 
-private val FigtreeFamily: FontFamily = sansWeights(R.font.figtree)
+/** The heaviest `wght` each bundled sans font's axis reaches (read off its `fvar` table). */
+private const val FIGTREE_MAX_WGHT = 900
+private const val PLUS_JAKARTA_SANS_MAX_WGHT = 800
+private const val MANROPE_MAX_WGHT = 800
 
-private val PlusJakartaSansFamily: FontFamily = sansWeights(R.font.plus_jakarta_sans)
+private val FigtreeFamily: FontFamily = sansWeights(R.font.figtree, FIGTREE_MAX_WGHT)
 
-private val ManropeFamily: FontFamily = sansWeights(R.font.manrope)
+private val PlusJakartaSansFamily: FontFamily = sansWeights(R.font.plus_jakarta_sans, PLUS_JAKARTA_SANS_MAX_WGHT)
 
-/** A family over the variable font [resId] with a [Font] pinned to each of the weights 400, 500 and 600. */
-private fun sansWeights(resId: Int): FontFamily =
+private val ManropeFamily: FontFamily = sansWeights(R.font.manrope, MANROPE_MAX_WGHT)
+
+/** One step of the `wght` ladder (400, 500, 600, ...). */
+private const val WGHT_STEP = 100
+
+/**
+ * The `wght` a sans role of [weight] is drawn at: one step ([WGHT_STEP], 100) heavier than the weight it
+ * asks for (Normal as 500, Medium as 600, SemiBold as 700), never past the font's heaviest [axisMax].
+ * The bundled sans fonts read too light and narrow at their nominal weights on a phone (owner
+ * walk-through, 2026-11-26), so the whole sans scale is drawn one step heavier. Roles keep asking for
+ * their nominal weights (the M3 scale, the tests and the display fonts are unchanged); only the
+ * variation setting moves.
+ */
+internal fun shiftedSansWght(
+    weight: Int,
+    axisMax: Int,
+): Int = (weight + WGHT_STEP).coerceAtMost(axisMax)
+
+/**
+ * A family over the variable font [resId] with a [Font] for each of the weights 400, 500 and 600,
+ * each pinned to its [shiftedSansWght] (500, 600 and 700) on an axis that ends at [axisMax].
+ */
+private fun sansWeights(
+    resId: Int,
+    axisMax: Int,
+): FontFamily =
     FontFamily(
         listOf(400, 500, 600).map { w ->
+            val wght = FontWeight(shiftedSansWght(w, axisMax))
             Font(
                 resId,
                 weight = FontWeight(w),
-                variationSettings = FontVariation.Settings(FontWeight(w), FontStyle.Normal),
+                variationSettings = FontVariation.Settings(wght, FontStyle.Normal),
             )
         },
     )

@@ -136,7 +136,8 @@ private fun TabItem(
             Text(
                 label,
                 color = tint,
-                // SemiBold (600): the heaviest weight the bundled sans families declare. The global style stays.
+                // SemiBold (600): the heaviest weight the bundled sans families declare (drawn at wght 700).
+                // The global style stays.
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
