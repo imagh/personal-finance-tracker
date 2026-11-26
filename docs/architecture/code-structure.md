@@ -52,10 +52,10 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
     ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
     ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
-    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
-    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder, B2a: header More button), HomeRoute
+    ui/nav/                              # A5f: PftNavHost (K7: the tab bar's host and the nested tab graphs; start = MAIN or Setup, PftMotion transitions, popUpTo Setup), PftTabBar + Tab (K7: the floating bar; the `Tab` enum and `TAB_ORDER`), Routes (plain string consts; K7 adds MAIN and the *_TAB graphs; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
+    ui/home/                             # A5f: HomeScreen (stateless placeholder; K7: no More button, no attribution line, and HomeViewModel/HomeRoute removed until K8's greeting)
                                          # K6: BalanceCard (+ BalanceCardModel, BudgetMeter), QuickActionRow (+ QuickAction), HomeSamples (not yet on Home)
-    ui/more/                             # B2a: MoreScreen (stateless: the Accounts, Categories and (B5b) Tags rows)
+    ui/more/                             # B2a: MoreScreen (stateless; K7: the Categories and Tags rows, the attribution subtitle, no Back), MoreViewModel (+ MoreUiState), MoreRoute
     ui/accounts/                         # B2a: AccountsViewModel (+ AccountsUiState), AccountsScreen (+ AccountsActions), AccountsRoute (reload on resume, Undo),
                                          # AccountRowMapper (type badge, supporting line; the only account-specific drawing logic);
                                          # B2b: AccountEditViewModel (+ AccountEditUiState), AccountEditScreen (+ AccountEditActions), AccountEditRoute
@@ -148,8 +148,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app DI | `AppContainer.open()` (opens the database once, off the caller's thread; callers share the result) | `LaunchViewModel`; M1b's SMS receiver | A5b |
 | app UI (`ui/startup`) | `DataUnavailableScreen(cause)` + `DataUnavailableCause` | key unavailable (A4b), identity corrupt (A5b) | A5b |
 | app UI (`ui/setup`) | `SetupViewModel` + `SetupUiState`, `SetupScreen`, `SetupRoute` | `PftNavHost` (Setup destination) | A5e |
-| app UI (`ui/nav`) | `PftNavHost(services, hasIdentity)` + `Routes` (the one navigation host and its string routes; later slices add their routes here) | `PftRoot` (Ready); the debug catalogue joins through `devRoutes()` | A5f |
-| app UI (`ui/home`) | `HomeViewModel` + `HomeUiState`, `HomeScreen`, `HomeRoute` (placeholder until C4 replaces it) | `PftNavHost` (Home destination) | A5f |
+| app UI (`ui/nav`) | `PftNavHost(services, hasIdentity)` + `Routes` + `PftTabBar` + `Tab` (the one navigation host, its nested tab graphs, the floating tab bar and its string routes; later slices add their tabs to `TAB_ORDER` and their routes here) | `PftRoot` (Ready); the debug catalogue joins through `devRoutes()` | A5f |
+| app UI (`ui/home`) | `HomeScreen` (placeholder until C4 replaces it) | `PftNavHost` (Home destination) | A5f |
+| app UI (`ui/more`, `ui/common`) | `MoreViewModel` + `MoreUiState`, `MoreScreen`, `MoreRoute`; `LocalTabBarClearance` | `PftNavHost` (More tab; the host provides the clearance, `EntityListScreen` reads it) | K7 |
 | app tests | `awaitMain { condition }` (idles the Robolectric main looper until true) | tests of ViewModels that run on the main dispatcher | A5e |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
