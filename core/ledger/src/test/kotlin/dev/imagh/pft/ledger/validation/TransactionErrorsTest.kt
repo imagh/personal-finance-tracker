@@ -13,6 +13,8 @@ class TransactionErrorsTest :
             LedgerError.BreakdownMismatch().message shouldBe "The items do not add up to the amount"
             LedgerError.DuplicateLine().message shouldBe "An item appears more than once"
             LedgerError.IsTransfer().message shouldBe "Transfers are created and edited as transfers"
+            LedgerError.SameAccount().message shouldBe "A transfer needs two different accounts"
+            LedgerError.TransferCannotBeItemised().message shouldBe "A transfer has no categories or items"
         }
 
         test("TooManyLines carries the limit and names it") {

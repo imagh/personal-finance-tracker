@@ -119,6 +119,8 @@ class FieldStateTest {
                 LedgerError.TooManyLines(50),
                 LedgerError.DuplicateLine(),
                 LedgerError.IsTransfer(),
+                LedgerError.SameAccount(),
+                LedgerError.TransferCannotBeItemised(),
             )
 
         formLevel.forEach { assertNull(it.toFieldError(), it::class.simpleName) }

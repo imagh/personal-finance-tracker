@@ -42,5 +42,9 @@ fun LedgerError.toFieldError(): FieldError? =
         // transaction calls. No field to mark.
         is LedgerError.DuplicateLine,
         is LedgerError.IsTransfer,
+        // A transfer's own rules: the same account on both sides, or a category or items on a transfer.
+        // The transfer form (C4b) offers neither a category nor items, so these are form-level, not a field.
+        is LedgerError.SameAccount,
+        is LedgerError.TransferCannotBeItemised,
         -> null
     }
