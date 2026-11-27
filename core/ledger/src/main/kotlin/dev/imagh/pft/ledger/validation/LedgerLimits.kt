@@ -33,6 +33,14 @@ object LedgerLimits {
      */
     const val MAX_SEARCH_RESULTS = 500
 
+    /**
+     * Longest text a person may search for, in characters, in each of the text filters (slice C D6). Search
+     * keeps at most `SearchText.MAX_TOKENS` words of up to `SearchText.MAX_TOKEN_LENGTH` characters, so about
+     * this much is all a search can use; a longer box is a paste by mistake, or an attempt to make the sanitiser
+     * do needless work.
+     */
+    const val MAX_SEARCH_TEXT_LENGTH = 256
+
     /** Longest app-setting key, in characters. */
     const val MAX_SETTING_KEY_LENGTH = 64
 

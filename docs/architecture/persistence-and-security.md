@@ -200,6 +200,36 @@ The v1 file is built from the exported JSON instead of with Room's `MigrationTes
 helper needs `room-testing` on the instrumented runtime classpath, which means new dependency-lock
 entries and checksums for artifacts the test APK has never resolved.
 
+## Full-text search input
+
+Search text is the one place typed text reaches a SQL `MATCH`, so it is handled as hostile (slice C D6).
+
+- **Sanitise, then bind.** FTS4's query language has operators and column filters, and a malformed
+  expression throws. Typed text is therefore never passed through: core's `SearchText.toMatchTerms` keeps
+  letters, digits and combining marks, splits on everything else (quotes, stars, brackets, colons, NUL), keeps
+  at most 8 words of 32 characters, and returns each word as a quoted prefix phrase `"word*"`. Inside quotes
+  `OR`, `NEAR` and a typed `title:` are plain words. Each term is bound with `?` as its own `MATCH`, ANDed in
+  SQL, once per index it is matched against. No text is concatenated into SQL: the filter queries are
+  `@RawQuery` methods, and the text reaches them as a bound argument, while the SQL string holds only fixed
+  fragments and placeholders.
+- **Why `:` must go.** FTS4 lets an in-query `col:` override a column-restricted `MATCH` (probed:
+  `title MATCH 'description:rent'` matches a description). The sanitiser removing `:` is what makes
+  `titleText`'s restriction to the title hold; the column restriction alone would not.
+- **Scripts.** `unicode61` treats combining marks as separators, so the Devanagari marks are declared token
+  characters (`tokenchars=`) on both indexes and a Devanagari word is one token. Only Devanagari: other Indic
+  scripts need the same treatment and a drop, recreate and `rebuild` migration.
+- **The column is not input.** Which column a `MATCH` is limited to (`title MATCH ?`, `description MATCH ?`) is a
+  fixed fragment picked by an enum in `TransactionQuerySql`.
+- **Fail closed.** A text filter that is not null but has no word left (blank, punctuation only, or all
+  hostile characters) adds a condition that is never true: no matches, never "no filter". `null` is the only
+  way to say "no text filter".
+- **Bounded.** `TransactionFilter` refuses text over `LedgerLimits.MAX_SEARCH_TEXT_LENGTH` (256) with a
+  message that names no text.
+- **No text in logs or errors.** Search text, titles and notes appear in no log line and no exception
+  message.
+- **Engine.** The same queries run on the framework SQLite (Robolectric) and on SQLCipher
+  (`EncryptedFtsTest`). The bundled SQLite and the reachability of FTS CVEs are recorded in the PR.
+
 ## Audit triggers
 
 `audit_entry` is append-only: `BEFORE UPDATE`/`BEFORE DELETE` triggers abort with a fixed message
