@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
+import dev.imagh.pft.app.testing.AuditedTables
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
@@ -60,7 +61,7 @@ class PftDatabaseTest {
         val db = open(name = null)
         seedAuditRow(db)
 
-        triggerNames(db) shouldContainExactlyInAnyOrder AuditTriggers.TRIGGER_NAMES
+        triggerNames(db) shouldContainExactlyInAnyOrder (AuditTriggers.TRIGGER_NAMES + AuditedTables.ftsSyncTriggers)
         assertAuditRowIsImmutable(db)
     }
 
@@ -69,12 +70,13 @@ class PftDatabaseTest {
         val first = open(fileName)
         seedAuditRow(first)
         AuditTriggers.TRIGGER_NAMES.forEach { first.execSQL("DROP TRIGGER $it") }
-        triggerNames(first) shouldBe emptyList()
+        triggerNames(first) shouldContainExactlyInAnyOrder AuditedTables.ftsSyncTriggers
         opened.single().close()
 
         val reopened = open(fileName)
 
-        triggerNames(reopened) shouldContainExactlyInAnyOrder AuditTriggers.TRIGGER_NAMES
+        triggerNames(reopened) shouldContainExactlyInAnyOrder
+            (AuditTriggers.TRIGGER_NAMES + AuditedTables.ftsSyncTriggers)
         assertAuditRowIsImmutable(reopened)
     }
 

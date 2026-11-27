@@ -3,6 +3,7 @@ package dev.imagh.pft.app.data
 import android.database.sqlite.SQLiteConstraintException
 import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.imagh.pft.app.testing.MigrationTestSupport
+import dev.imagh.pft.app.testing.TestDatabase
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.Rule
@@ -48,6 +49,8 @@ class MigrationTest {
         columnsOf(db, "ledger_transaction").isNotEmpty() shouldBe true
         columnsOf(db, "transaction_line").isNotEmpty() shouldBe true
         columnsOf(db, "transaction_line_tag").isNotEmpty() shouldBe true
+        columnsOf(db, "transaction_fts").isNotEmpty() shouldBe true
+        columnsOf(db, "transaction_line_fts").isNotEmpty() shouldBe true
     }
 
     @Test
@@ -58,8 +61,9 @@ class MigrationTest {
     }
 
     @Test
-    fun `the migrations so far are 1 to 2, 2 to 3, 3 to 4 and 4 to 5`() {
-        Migrations.ALL.map { it.startVersion to it.endVersion } shouldBe listOf(1 to 2, 2 to 3, 3 to 4, 4 to 5)
+    fun `the migrations so far are 1 to 2, 2 to 3, 3 to 4, 4 to 5 and 5 to 6`() {
+        Migrations.ALL.map { it.startVersion to it.endVersion } shouldBe
+            listOf(1 to 2, 2 to 3, 3 to 4, 4 to 5, 5 to 6)
     }
 
     @Test
@@ -344,6 +348,147 @@ class MigrationTest {
         insertTag("l1", "t1")
         // The primary key is the pair: the same tag twice on one line is refused.
         shouldThrow<SQLiteConstraintException> { insertTag("l1", "t1") }
+    }
+
+    /** The transaction ids an index returns for [query], through the content table's rowid, as search does. */
+    private fun matches(
+        db: SupportSQLiteDatabase,
+        index: String,
+        query: String,
+    ): Set<String> {
+        val content = if (index == "transaction_fts") "ledger_transaction" else "transaction_line"
+        return db
+            .query(
+                "SELECT c.id FROM $content c WHERE c.rowid IN (SELECT rowid FROM $index WHERE $index MATCH ?)",
+                arrayOf(query),
+            ).use { cursor -> generateSequence { if (cursor.moveToNext()) cursor.getString(0) else null }.toSet() }
+    }
+
+    /**
+     * How many rows [index] holds for [query], read from the index **alone**. [matches] joins to the content table,
+     * so it cannot see an entry left behind by a deleted content row; this can.
+     */
+    private fun indexRows(
+        db: SupportSQLiteDatabase,
+        index: String,
+        query: String,
+    ): Int =
+        db.query("SELECT COUNT(*) FROM $index WHERE $index MATCH ?", arrayOf(query)).use {
+            it.moveToFirst()
+            it.getInt(0)
+        }
+
+    /** `name` to `sql` of the two full-text tables and Room's content-sync triggers, as SQLite stored them. */
+    private fun ftsSchema(db: SupportSQLiteDatabase): Map<String, String?> =
+        db
+            .query(
+                "SELECT name, sql FROM sqlite_master WHERE name IN ('transaction_fts', 'transaction_line_fts') " +
+                    "OR (type = 'trigger' AND name LIKE 'room_fts_content_sync_%')",
+            ).use { cursor ->
+                generateSequence {
+                    if (cursor.moveToNext()) {
+                        cursor.getString(
+                            0,
+                        ) to cursor.getString(1)
+                    } else {
+                        null
+                    }
+                }.toMap()
+            }
+
+    @Test
+    fun `migrate5To6 indexes the rows that existed at v5, keeping them and the audit triggers`() {
+        support.createAt(5, seed = ::seedV5)
+
+        val db = support.migrateTo(6, Migrations.MIGRATION_5_6)
+
+        db.version shouldBe 6
+        // Both texts and a line's note, written before the index existed, are found: the backfill ran.
+        matches(db, "transaction_fts", "\"swi*\"") shouldBe setOf("x1")
+        matches(db, "transaction_fts", "\"lunch*\"") shouldBe setOf("x1")
+        matches(db, "transaction_line_fts", "\"notebook*\"") shouldBe setOf("l1")
+        matches(db, "transaction_fts", "\"rent*\"") shouldBe setOf("x2")
+        // The old rows are untouched, and the migration added no row to the content tables.
+        db.query("SELECT COUNT(*) FROM ledger_transaction").use {
+            it.moveToFirst() shouldBe true
+            it.getInt(0) shouldBe 2
+        }
+        db.query("SELECT title FROM ledger_transaction WHERE id = 'x1'").use {
+            it.moveToFirst() shouldBe true
+            it.getString(0) shouldBe "Swiggy order"
+        }
+        support.auditRowCount(db) shouldBe 1
+    }
+
+    @Test
+    fun `migrate5To6 leaves the content sync triggers, so later writes are indexed`() {
+        support.createAt(5, seed = ::seedV5)
+        val db = support.migrateTo(6, Migrations.MIGRATION_5_6)
+
+        db.execSQL(
+            "INSERT INTO ledger_transaction (id, created_at, updated_at, created_by_user_id, " +
+                "created_on_device_id, type, direction, amount, occurred_at, account_id, title, state, source) " +
+                "VALUES ('x3', 1, 1, 'u1', 'd1', 'EXPENSE', 'OUT', 500, 1, 'a1', 'Zomato', 'VERIFIED', 'MANUAL')",
+        )
+        db.execSQL(
+            "INSERT INTO transaction_line (id, created_at, updated_at, created_by_user_id, created_on_device_id, " +
+                "transaction_id, position, amount, note) VALUES ('l3', 1, 1, 'u1', 'd1', 'x3', 1, 500, 'pencil')",
+        )
+        matches(db, "transaction_fts", "\"zomato*\"") shouldBe setOf("x3")
+        matches(db, "transaction_line_fts", "\"pencil*\"") shouldBe setOf("l3")
+
+        db.execSQL("UPDATE ledger_transaction SET title = 'Blinkit' WHERE id = 'x3'")
+        db.execSQL("UPDATE transaction_line SET note = 'eraser' WHERE id = 'l3'")
+        matches(db, "transaction_fts", "\"zomato*\"") shouldBe emptySet()
+        matches(db, "transaction_fts", "\"blinkit*\"") shouldBe setOf("x3")
+        matches(db, "transaction_line_fts", "\"pencil*\"") shouldBe emptySet()
+        matches(db, "transaction_line_fts", "\"eraser*\"") shouldBe setOf("l3")
+
+        db.execSQL("DELETE FROM transaction_line WHERE id = 'l3'")
+        db.execSQL("DELETE FROM ledger_transaction WHERE id = 'x3'")
+        // Read from the indexes themselves: a join to the (now empty) content tables would hide a stale entry.
+        indexRows(db, "transaction_fts", "\"blinkit*\"") shouldBe 0
+        indexRows(db, "transaction_line_fts", "\"eraser*\"") shouldBe 0
+    }
+
+    @Test
+    fun `migrate5To6 leaves the full-text tables and triggers exactly as a fresh v6 database has them`() {
+        support.createAt(5, seed = ::seedV5)
+        val migrated = ftsSchema(support.migrateTo(6, Migrations.MIGRATION_5_6))
+        val fresh = TestDatabase.create()
+
+        try {
+            val created = ftsSchema(fresh.openHelper.writableDatabase)
+
+            migrated.size shouldBe 10
+            migrated shouldBe created
+        } finally {
+            fresh.close()
+        }
+    }
+
+    private fun seedV5(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "INSERT INTO account (id, created_at, updated_at, created_by_user_id, created_on_device_id, name, " +
+                "type, currency, opening_balance) VALUES ('a1', 1, 1, 'u1', 'd1', 'Cash', 'CASH', 'INR', 0)",
+        )
+
+        fun transaction(
+            id: String,
+            title: String?,
+            description: String?,
+        ) = db.execSQL(
+            "INSERT INTO ledger_transaction (id, created_at, updated_at, created_by_user_id, " +
+                "created_on_device_id, type, direction, amount, occurred_at, account_id, title, description, " +
+                "state, source) VALUES (?, 1, 1, 'u1', 'd1', 'EXPENSE', 'OUT', 500, 1, 'a1', ?, ?, 'VERIFIED', 'MANUAL')",
+            arrayOf(id, title, description),
+        )
+        transaction("x1", "Swiggy order", "lunch at work")
+        transaction("x2", "Rent", null)
+        db.execSQL(
+            "INSERT INTO transaction_line (id, created_at, updated_at, created_by_user_id, created_on_device_id, " +
+                "transaction_id, position, amount, note) VALUES ('l1', 1, 1, 'u1', 'd1', 'x1', 1, 500, 'Notebook')",
+        )
     }
 
     private fun seedV4(db: SupportSQLiteDatabase) {

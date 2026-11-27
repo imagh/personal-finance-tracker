@@ -72,6 +72,9 @@ class EncryptedDatabaseTest {
             if (it.moveToFirst()) it.getString(0) else null
         }
 
+    /** Every trigger a fresh database has: the audit triggers and Room's full-text sync triggers, sorted. */
+    private fun allTriggers() = (AuditTriggers.TRIGGER_NAMES + FtsSyncTriggers.NAMES).sorted()
+
     private fun SupportSQLiteDatabase.triggerNames(): List<String> =
         query("SELECT name FROM sqlite_master WHERE type = 'trigger'").use { c ->
             generateSequence { if (c.moveToNext()) c.getString(0) else null }.toList()
@@ -204,7 +207,7 @@ class EncryptedDatabaseTest {
                 "source, at) VALUES ('a1', 'user_profile', 'u1', 'CREATE', '{}', 'u1', 'd1', 'MANUAL', 1000)",
         )
 
-        assertEquals(AuditTriggers.TRIGGER_NAMES.sorted(), db.triggerNames().sorted())
+        assertEquals(allTriggers(), db.triggerNames().sorted())
         assertThrows(SQLiteException::class.java) { db.execSQL("UPDATE audit_entry SET action = 'DELETE'") }
         assertThrows(SQLiteException::class.java) { db.execSQL("DELETE FROM audit_entry") }
     }
@@ -238,7 +241,7 @@ class EncryptedDatabaseTest {
 
         val names = open().openHelper.writableDatabase.triggerNames()
 
-        assertEquals(AuditTriggers.TRIGGER_NAMES.sorted(), names.sorted())
+        assertEquals(allTriggers(), names.sorted())
     }
 
     @Test

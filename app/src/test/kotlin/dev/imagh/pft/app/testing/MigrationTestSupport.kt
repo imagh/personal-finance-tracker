@@ -86,8 +86,10 @@ class MigrationTestSupport : TestRule {
         }
 
     /**
-     * Fails unless exactly the triggers in [AuditTriggers.TRIGGER_NAMES] exist, the seeded audit row is
-     * unchanged, and UPDATE and DELETE on it are refused.
+     * Fails unless every trigger in [AuditTriggers.TRIGGER_NAMES] exists, the seeded audit row is unchanged,
+     * and UPDATE and DELETE on it are refused. It checks that those triggers are **present**, not that they
+     * are the only ones: Room's own full-text content-sync triggers (slice C D6) are allowed to exist beside
+     * them.
      */
     private fun assertAuditTrailIntact(db: SupportSQLiteDatabase) {
         val present = triggerNames(db)

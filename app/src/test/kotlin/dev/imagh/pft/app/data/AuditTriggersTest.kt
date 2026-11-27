@@ -2,6 +2,7 @@ package dev.imagh.pft.app.data
 
 import android.database.sqlite.SQLiteConstraintException
 import androidx.sqlite.db.SupportSQLiteDatabase
+import dev.imagh.pft.app.testing.AuditedTables
 import dev.imagh.pft.app.testing.TestDatabase
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -67,7 +68,7 @@ class AuditTriggersTest {
 
     @Test
     fun `the triggers exist under their documented names`() {
-        triggerNames() shouldContainExactlyInAnyOrder AuditTriggers.TRIGGER_NAMES
+        triggerNames() shouldContainExactlyInAnyOrder (AuditTriggers.TRIGGER_NAMES + AuditedTables.ftsSyncTriggers)
     }
 
     private fun insertAuditRow(

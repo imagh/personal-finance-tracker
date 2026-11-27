@@ -146,7 +146,43 @@ object AuditedTables {
      * `android_metadata` and `sqlite_sequence` are SQLite's; `transaction_line_tag` is the join table of a
      * line's tags: it has no meta columns and no row of its own to audit, and its content is audited as the
      * line's `tag_ids` (see [AuditedTable.keysStoredIn]).
+     *
+     * The full-text indexes (slice C D6) are derived, unaudited tables: `transaction_fts` and
+     * `transaction_line_fts` hold only a searchable copy of text that `ledger_transaction` and
+     * `transaction_line` already store and audit, with no meta columns and no row of their own. FTS4 also
+     * creates a shadow table per index for its segments: `_segments` (the index blocks), `_segdir` (their
+     * directory), `_docsize` (document sizes) and `_stat` (statistics). They are listed one by one, with no
+     * name pattern, so a table named like one cannot slip through unaccounted.
      */
     val notEntityTables: Set<String> =
-        setOf("audit_entry", "room_master_table", "android_metadata", "sqlite_sequence", "transaction_line_tag")
+        setOf(
+            "audit_entry",
+            "room_master_table",
+            "android_metadata",
+            "sqlite_sequence",
+            "transaction_line_tag",
+            "transaction_fts",
+            "transaction_fts_segments",
+            "transaction_fts_segdir",
+            "transaction_fts_docsize",
+            "transaction_fts_stat",
+            "transaction_line_fts",
+            "transaction_line_fts_segments",
+            "transaction_line_fts_segdir",
+            "transaction_line_fts_docsize",
+            "transaction_line_fts_stat",
+        )
+
+    /**
+     * Room's eight full-text content-sync triggers (slice C D6): before update, before delete, after update and
+     * after insert, on each of the two content tables. They sit in `sqlite_master` beside the audit triggers, so a
+     * test that lists **every** trigger expects `AuditTriggers.TRIGGER_NAMES + ftsSyncTriggers`. The instrumented
+     * tests keep their own copy (`FtsSyncTriggers`): `androidTest` cannot see this source set.
+     */
+    val ftsSyncTriggers: Set<String> =
+        listOf("transaction_fts", "transaction_line_fts")
+            .flatMap { index ->
+                listOf("BEFORE_UPDATE", "BEFORE_DELETE", "AFTER_UPDATE", "AFTER_INSERT")
+                    .map { "room_fts_content_sync_${index}_$it" }
+            }.toSet()
 }

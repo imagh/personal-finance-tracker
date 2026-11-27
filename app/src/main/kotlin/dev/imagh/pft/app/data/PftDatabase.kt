@@ -20,8 +20,10 @@ import dev.imagh.pft.app.data.tag.TagDao
 import dev.imagh.pft.app.data.tag.TagEntity
 import dev.imagh.pft.app.data.transaction.LedgerTransactionEntity
 import dev.imagh.pft.app.data.transaction.TransactionDao
+import dev.imagh.pft.app.data.transaction.TransactionFtsEntity
 import dev.imagh.pft.app.data.transaction.TransactionLineDao
 import dev.imagh.pft.app.data.transaction.TransactionLineEntity
+import dev.imagh.pft.app.data.transaction.TransactionLineFtsEntity
 import dev.imagh.pft.app.data.transaction.TransactionLineTagEntity
 import dev.imagh.pft.app.data.transaction.TransactionQueryDao
 
@@ -29,7 +31,8 @@ import dev.imagh.pft.app.data.transaction.TransactionQueryDao
  * The app's Room database, `pft.db` (plan §4). Version 1 holds the identity, settings and audit
  * tables, version 2 adds `account` (slice B1), version 3 adds `category` (slice B3), version 4 adds `tag`
  * (slice B5) and version 5 adds `ledger_transaction`, `transaction_line` and `transaction_line_tag` (slice
- * C1c); each later slice adds its tables through its own migration and a migration test.
+ * C1c) and version 6 adds the full-text indexes `transaction_fts` and `transaction_line_fts` (slice C3b);
+ * each later slice adds its tables through its own migration and a migration test.
  *
  * Schemas are exported to `app/schemas/` and committed. **Build it only with [create]** (production
  * and tests alike), which is `internal` to the app module: the only production caller is
@@ -51,6 +54,8 @@ import dev.imagh.pft.app.data.transaction.TransactionQueryDao
         LedgerTransactionEntity::class,
         TransactionLineEntity::class,
         TransactionLineTagEntity::class,
+        TransactionFtsEntity::class,
+        TransactionLineFtsEntity::class,
     ],
     version = PftDatabase.VERSION,
     exportSchema = true,
@@ -58,7 +63,7 @@ import dev.imagh.pft.app.data.transaction.TransactionQueryDao
 abstract class PftDatabase : RoomDatabase() {
     companion object {
         /** The current schema version; bump it with a migration in [Migrations] and a migration test. */
-        const val VERSION = 5
+        const val VERSION = 6
 
         /** The database file name. */
         const val NAME = "pft.db"

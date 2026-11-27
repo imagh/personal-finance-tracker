@@ -11,6 +11,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *
  * Migrations are forward-only and use SQL only (no core code, which may change after the
  * migration shipped). A migration that rebuilds `audit_entry` must re-create the audit triggers.
+ *
+ * Room's full-text content-sync triggers are different: Room drops them before any migration runs
+ * (`onPreMigrate`) and recreates them afterwards (`onPostMigrate`), so in production it is `onPostMigrate`, not a
+ * migration, that gives a migrated database its sync triggers. A migration that **writes or rebuilds a content
+ * table** (`ledger_transaction`, `transaction_line`) must still end with the two `rebuild` statements
+ * (`TransactionFts.REBUILD`), because no trigger runs for rows it writes while the triggers are gone.
  */
 @Suppress("MagicNumber") // The version numbers of `Migration(from, to)` are the point of this file.
 object Migrations {
@@ -163,6 +169,93 @@ object Migrations {
             }
         }
 
+    /**
+     * The Devanagari combining marks the version 6 full-text tables treat as word characters (`tokenchars=`),
+     * copied from `6.json`. A frozen copy of `TransactionFts.DEVANAGARI_MARKS` as it was at version 6: a migration
+     * never changes after it ships, whatever the current tokenizer is.
+     */
+    private const val FTS_TOKENCHARS_V6: String =
+        "\u0900\u0901\u0902\u0903" +
+            "\u093A\u093B\u093C\u093E\u093F\u0940\u0941\u0942\u0943\u0944\u0945" +
+            "\u0946\u0947\u0948\u0949\u094A\u094B\u094C\u094D\u094E\u094F" +
+            "\u0951\u0952\u0953\u0954\u0955\u0956\u0957" +
+            "\u0962\u0963"
+
+    /**
+     * 5 to 6 (slice C3b): adds the full-text indexes `transaction_fts` (title, description) and
+     * `transaction_line_fts` (note). Both are external-content FTS4 tables with the `unicode61` tokenizer,
+     * and each comes with Room's four content-sync triggers (before and after update, before delete, after
+     * insert). The statements are Room's own, copied from the exported `schemas/.../6.json` with the table
+     * names filled in, so a migrated database and a fresh one are identical. In production Room
+     * drops the content-sync triggers before a migration and recreates them after it (`onPostMigrate`), so
+     * the copies here are not what protects a user's database: they keep a migrated database identical to a fresh
+     * one and serve `MigrationTestHelper`, which runs no callbacks. `MigrationTest` checks them by writing through
+     * them and by comparing them with a fresh database's.
+     *
+     * An external-content index starts empty, so the last two statements are `rebuild`,
+     * which fills each index from the rows that already exist (the same statements as
+     * `TransactionFts.REBUILD`, spelled out because a migration is frozen). No old row changes, and the new tables are
+     * derived, unaudited indexes (data-model.md).
+     */
+    val MIGRATION_5_6: Migration =
+        object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS `transaction_fts` USING FTS4(`title` TEXT, " +
+                        "`description` TEXT, tokenize=unicode61 `tokenchars=$FTS_TOKENCHARS_V6`, " +
+                        "content=`ledger_transaction`)",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_fts_BEFORE_UPDATE BEFORE " +
+                        "UPDATE ON `ledger_transaction` BEGIN DELETE FROM `transaction_fts` WHERE " +
+                        "`docid`=OLD.`rowid`; END",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_fts_BEFORE_DELETE BEFORE " +
+                        "DELETE ON `ledger_transaction` BEGIN DELETE FROM `transaction_fts` WHERE " +
+                        "`docid`=OLD.`rowid`; END",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_fts_AFTER_UPDATE AFTER " +
+                        "UPDATE ON `ledger_transaction` BEGIN INSERT INTO `transaction_fts`(`docid`, `title`, " +
+                        "`description`) VALUES (NEW.`rowid`, NEW.`title`, NEW.`description`); END",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_fts_AFTER_INSERT AFTER " +
+                        "INSERT ON `ledger_transaction` BEGIN INSERT INTO `transaction_fts`(`docid`, `title`, " +
+                        "`description`) VALUES (NEW.`rowid`, NEW.`title`, NEW.`description`); END",
+                )
+                db.execSQL(
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS `transaction_line_fts` USING FTS4(`note` TEXT, " +
+                        "tokenize=unicode61 `tokenchars=$FTS_TOKENCHARS_V6`, content=`transaction_line`)",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_line_fts_BEFORE_UPDATE " +
+                        "BEFORE UPDATE ON `transaction_line` BEGIN DELETE FROM `transaction_line_fts` WHERE " +
+                        "`docid`=OLD.`rowid`; END",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_line_fts_BEFORE_DELETE " +
+                        "BEFORE DELETE ON `transaction_line` BEGIN DELETE FROM `transaction_line_fts` WHERE " +
+                        "`docid`=OLD.`rowid`; END",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_line_fts_AFTER_UPDATE " +
+                        "AFTER UPDATE ON `transaction_line` BEGIN INSERT INTO `transaction_line_fts`(`docid`, " +
+                        "`note`) VALUES (NEW.`rowid`, NEW.`note`); END",
+                )
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_transaction_line_fts_AFTER_INSERT " +
+                        "AFTER INSERT ON `transaction_line` BEGIN INSERT INTO `transaction_line_fts`(`docid`, " +
+                        "`note`) VALUES (NEW.`rowid`, NEW.`note`); END",
+                )
+                // Fill both indexes from the rows that already exist. Spelled out, not shared with
+                // TransactionFts.REBUILD: a migration is a frozen snapshot of what ran at 5 to 6.
+                db.execSQL("INSERT INTO `transaction_fts`(`transaction_fts`) VALUES('rebuild')")
+                db.execSQL("INSERT INTO `transaction_line_fts`(`transaction_line_fts`) VALUES('rebuild')")
+            }
+        }
+
     /** All migrations for `Room.databaseBuilder(...).addMigrations(*Migrations.ALL.toTypedArray())`. */
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

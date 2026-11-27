@@ -159,7 +159,7 @@ class EncryptedMigrationTest {
             sqlite.query("SELECT name FROM sqlite_master WHERE type = 'trigger'").use { c ->
                 generateSequence { if (c.moveToNext()) c.getString(0) else null }.toList()
             }
-        assertEquals(AuditTriggers.TRIGGER_NAMES.sorted(), triggers.sorted())
+        assertEquals((AuditTriggers.TRIGGER_NAMES + FtsSyncTriggers.NAMES).sorted(), triggers.sorted())
         val at = Instant.ofEpochMilli(1_700_000_000_000)
         val account =
             Account(
