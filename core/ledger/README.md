@@ -53,6 +53,7 @@ entity step composes instead of re-implementing:
 | `CategoryService`, `Category`, `CategoryLists`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `lists(kind)` (for a list screen: `CategoryLists(active, archived)`, B4a), `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
 | `TagService`, `Tag`, `TagLists`, `TagRepository` | `tag` | tags (PRD L-3): `create(name)`, `edit(id, name)` (rename), `archive`/`unarchive`, `delete`/`restore`, `lists()` (active and archived, each sorted by name ignoring case, then by id), `pickable()` (the active list). `TagRepository` adds `allLive()` to `EntityRepository`. The service takes a `TransactionRunner` for the check-then-write name rule |
 | `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransferService`, `TransferDraft`, `Transfer`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-5, L-6, L-9, L-11), slices C1a, C1b and C2: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay; a transfer leg acts on **both legs**), `markVerified(id)` (refused on a transfer leg), `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines(writer, lines, categories, tags, ids)` is the line logic the transaction and transfer services share (create, reconcile, the reference checks and the sum re-check): its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised), `isCategoryInUse(id)` and `isTagInUse(id)` (a live line of a live transaction uses it); `TransactionRepository` adds `isAccountInUse(id)` (a live transaction is on it) and `legsOfGroup(groupId)` (every transaction of a transfer group, tombstones included, no order promised). `TransferService.create(TransferDraft): Transfer` and `edit(groupId, TransferDraft): Transfer` write a transfer (C2, see Behaviours); delete and restore of a transfer go through `TransactionService`. `AccountService`, `CategoryService` and `TagService` take these repositories to refuse a delete with `LedgerError.InUse(what)`. Create and edit take 1 to 50 lines (itemising, C1b) |
+| `TransactionQueries`, `TransactionFilter`, `LedgerEntry` (`Single`, `Transfer`), `LedgerEntries`, `Totals`, `MonthPage`, `SearchPage`, `TimeWindow`, `AccountBalances` (+ `AccountMovement`), `AuditQueries` | `query`, `audit` | the **read side** of transactions (slice C C3a, plan D5; no `Flow`, snapshots only). `TransactionQueries` is the persistence boundary (Room in `app`): `month(month, zone, filter = TransactionFilter()): MonthPage` (entries newest first plus `Totals(expense, income)`, never capped), `search(filter, zone): SearchPage` (at most `LedgerLimits.MAX_SEARCH_RESULTS = 500` entries, `truncated`), `accountBalances(): Map<AccountId, Paise>` and `accountBalance(id)` (`NotFound("account")` for a deleted or unknown account). `TransactionFilter` is a validated value (`LedgerError.InvalidRange` for `from` after `to`, `amountMin` above `amountMax`, or a date outside years 1 to 9999; `copy()` is checked too) with the pure helpers `categoryScope(allCategories)`, `matchesLine(line, scope)`, `hasLineFilter` and `window(zone, month?): TimeWindow`. `LedgerEntries.fold` and `Totals.of` are the pure steps `app` calls on the rows it read. `AuditQueries.forTransaction(id)` is the history of one transaction. See *Reads* in Behaviours |
 | `FirstRunService` | `setup` | `initialise(userName, deviceLabel)`: the identity (`IdentityService.initialise`) **and** `CategoryService.seedDefaults()` in one transaction. A plain coordinating class; `IdentityService` stays unaware of categories because the writer needs the identity service (a construction cycle otherwise) |
 
 ### Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
@@ -271,8 +272,56 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     in-use checks for both legs, so a deleted account on either side refuses the whole restore. A
     transfer leg with no group id is refused with `IsTransfer` (its other leg cannot be found; fail
     closed). `TransactionService.edit` and `markVerified` on a leg stay `IsTransfer`; verifying a transfer
-    is revisited with the M1b captures (a manual transfer is verified when made). Balances and totals (C3a)
-    must count a transfer as neither income nor expense.
+    is revisited with the M1b captures (a manual transfer is verified when made). Totals (never) and
+    balances (always) treat a transfer as the *Reads* entry below says.
+  - *Reads* (C3a; plan D5; decisions recorded by the owner on 2026-11-26). `TransactionQueries` reads
+    **live rows only**: a tombstoned transaction or line is excluded everywhere (entries, lines, totals,
+    balances, category and tag matching). The one exception is `AuditQueries.forTransaction`, which
+    includes the entries of removed lines.
+    1. *Filter semantics.* Values inside one dimension are **OR** (any of these accounts, any of these
+       tags); dimensions are **AND**. Account, amount (inclusive, on the transaction's own amount), state,
+       type and date are **transaction-level**. Category and tag are **line-level**: a transaction matches
+       when **one live line** satisfies the category filter *and* the tag filter together (the same line;
+       a category on one line and the tag on another does not match). A parent category stands for itself
+       and its children (`categoryScope`, one step, archived children included).
+    2. *Lines.* `LedgerEntry.Single.lines` holds **all live lines** of the transaction, by position then
+       id, not only the matching ones; only `Totals` use the matching lines.
+    3. *Order and the cap.* Newest `occurred_at` first, then the transfer group id (the id for any other
+       row), then the id, so the order is total and the two legs of a transfer, which share one
+       `occurred_at`, stay adjacent. The cap applies to **entries after folding** and never cuts a pair:
+       the query fetches `SearchPage.FETCH_ROWS = 2 * (MAX_SEARCH_RESULTS + 1)` rows, so the first
+       `MAX_SEARCH_RESULTS + 1` entries are whole (an entry is at most two rows), folds them, and returns the
+       first `MAX_SEARCH_RESULTS` (`SearchPage.capped`, pure core); the pair adjacency this relies on holds
+       because both legs share one `occurred_at` (`TransferService` writes them from one draft) and the order
+       then keeps the group together; `truncated` is true only
+       when more entries existed (exactly 500 is not truncated; a pair as the 500th entry is one entry
+       though two rows). A month has no cap.
+    4. *Balances.* Opening balance + sum of IN - sum of OUT over live **transaction amounts** (never
+       lines, so itemising changes nothing), for every live account (archived included). Transfer legs
+       count, since they move money between accounts. A credit card goes negative with spend. The rule is
+       the pure `AccountBalances.of(accounts, movements)` over `AccountMovement(accountId, direction, total)`
+       (so `app` only fetches the sums): a direction that is neither IN nor OUT is an
+       `IllegalStateException` (fail closed, column named, never the value), and a sum that does not fit a
+       `Long` is an `ArithmeticException` (exact arithmetic, no wrap).
+    5. *Totals* (`Totals.of`): without a category or tag filter, each transaction counts its whole amount
+       by type; with one, only its matching lines count (a Rs 2,000 transaction with Rs 1,200 of
+       Groceries adds Rs 1,200 under a Groceries filter, and appears once). **Transfers are never in
+       totals** (PRD L-5), even when an account filter shows one leg alone as a `Single`.
+    6. *The window* (`TransactionFilter.window`) is half open, `[start of the month in the zone, start of
+       the next month in the zone)` as epoch milliseconds, computed here in core; `from` is the start of
+       its day and `to` includes its whole day, intersected with the month. Core takes a `ZoneId` and
+       never reads the system zone: `AppServices.zone` (default `ZoneId.systemDefault()`) supplies it and
+       tests pin `Asia/Kolkata`. `AppServices.zone` is captured **once per process** (a device zone change
+       while the app runs is not seen); C4a decides whether the Home screen reads it per call. A month
+       with an extreme year (not one a stepper produces) throws `ArithmeticException` from `window`; it is
+       not clamped. A filter's own dates are bounded to years 1 to 9999.
+    7. *Folding* (`LedgerEntries.fold`): with no account filter the two legs sharing a transfer group (one
+       OUT, one IN) become one `Transfer(outgoing, incoming)` at the place of the first leg; with an
+       account filter every leg is a `Single` (the leg on that account), including when the filter
+       names both accounts. A lone leg, a leg with no group id or a damaged group (three legs, two in
+       one direction, or a row that carries a group id but is not of type `TRANSFER`) stays `Single`:
+       **nothing is dropped**.
+    8. *Errors.* An invalid filter is `LedgerError.InvalidRange`; there is no other filter error.
   - *Audit keys.* `ledger_transaction`: `type`, `direction`, `amount`, `occurred_at`, `account_id`,
     `title`, `description`, `state`, `source`, `bank_ref`, `source_message_id`, `account_fragment`,
     `transfer_group_id` (no `recurring_rule_id`: E3 adds it, Q8). `transaction_line`:
@@ -341,7 +390,7 @@ Per CLAUDE.md §3.5, chosen by how the value varies:
   (accounts, categories, tags, user and device names), `MAX_TITLE_LENGTH = 200`,
   `MAX_DESCRIPTION_LENGTH = 2000`, `MAX_AMOUNT = Paise.MAX_AMOUNT` (Rs 1e11),
   `MAX_LINES_PER_TRANSACTION = 50` (items are per purpose, not per product), `MAX_LINE_NOTE_LENGTH = 200`,
-  `MAX_BANK_REF_LENGTH = 64`,
+  `MAX_BANK_REF_LENGTH = 64`, `MAX_SEARCH_RESULTS = 500` (the search cap, entries after folding),
   `MAX_SETTING_KEY_LENGTH = 64`, `MAX_SETTING_VALUE_LENGTH = 256`. The hardcoded invariants
   (integer paise, audit on every write, soft delete, the transaction sum invariant) cannot be switched
   off.
@@ -352,7 +401,9 @@ Per CLAUDE.md §3.5, chosen by how the value varies:
   **Values are written, in clear text, into the audit trail** (old and new). Use `SettingsService`
   only for non-sensitive tuning values. A future sensitive setting (a PIN, a token, anything
   secret) must not go through it; give it its own store with its own handling.
-- Environment config: none.
+- Environment config: none in core. The time zone months are read in comes from the app's environment
+  (`AppServices.zone`, default `ZoneId.systemDefault()`, read once per process) and is passed to
+  `TransactionQueries` per call.
 
 ## Dependencies
 
