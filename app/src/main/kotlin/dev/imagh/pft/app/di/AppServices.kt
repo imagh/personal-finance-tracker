@@ -4,6 +4,7 @@ import dev.imagh.pft.app.data.PftDatabase
 import dev.imagh.pft.app.data.RoomTransactionRunner
 import dev.imagh.pft.app.data.account.RoomAccountRepository
 import dev.imagh.pft.app.data.audit.RoomAuditLog
+import dev.imagh.pft.app.data.audit.RoomAuditQueries
 import dev.imagh.pft.app.data.category.RoomCategoryRepository
 import dev.imagh.pft.app.data.identity.RoomIdentityRepository
 import dev.imagh.pft.app.data.settings.RoomAppSettingsRepository
@@ -142,4 +143,7 @@ class AppServices(
      */
     val transactionQueries =
         RoomTransactionQueries(database.transactionQueryDao(), accountRepository, categoryRepository, runner)
+
+    /** The audit history of one transaction and its lines, removed lines included. */
+    val auditQueries = RoomAuditQueries(database.auditDao())
 }

@@ -94,6 +94,9 @@ class RoomTestKit(
     /** The month list, search and balances. */
     val transactionQueries = services.transactionQueries
 
+    /** One transaction's audit history. */
+    val auditQueries = services.auditQueries
+
     /** The zone the tests read months in: [ZONE]. */
     val zone: ZoneId = services.zone
 
