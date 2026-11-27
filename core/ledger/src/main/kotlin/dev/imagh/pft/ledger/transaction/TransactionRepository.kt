@@ -6,8 +6,8 @@ import dev.imagh.pft.ledger.ids.TransactionId
 
 /**
  * Where transactions (the payment facts) are stored: the persistence boundary, implemented with
- * Room in `app`. It holds no business logic. Its other queries arrive with their first consumers
- * (the month and search reads in C3a).
+ * Room in `app`. It holds no business logic. The month, filter and search reads are not here: they are
+ * [dev.imagh.pft.ledger.query.TransactionQueries].
  */
 interface TransactionRepository : EntityRepository<LedgerTransaction, TransactionId> {
     /**

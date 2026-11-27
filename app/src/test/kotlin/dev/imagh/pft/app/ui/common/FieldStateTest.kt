@@ -121,6 +121,7 @@ class FieldStateTest {
                 LedgerError.IsTransfer(),
                 LedgerError.SameAccount(),
                 LedgerError.TransferCannotBeItemised(),
+                LedgerError.InvalidRange(),
             )
 
         formLevel.forEach { assertNull(it.toFieldError(), it::class.simpleName) }

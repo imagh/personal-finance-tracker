@@ -15,6 +15,7 @@ class TransactionErrorsTest :
             LedgerError.IsTransfer().message shouldBe "Transfers are created and edited as transfers"
             LedgerError.SameAccount().message shouldBe "A transfer needs two different accounts"
             LedgerError.TransferCannotBeItemised().message shouldBe "A transfer has no categories or items"
+            LedgerError.InvalidRange().message shouldBe "The range is not valid"
         }
 
         test("TooManyLines carries the limit and names it") {

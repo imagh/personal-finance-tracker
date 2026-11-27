@@ -76,6 +76,17 @@ internal object CategoryTree {
         return CategoryLists(active, archived)
     }
 
+    /**
+     * [ids] plus every category in [all] whose parent is one of [ids]: what a filter on a parent category
+     * means (the parent's own lines and its children's). Archived children are included, since their
+     * transactions are history; an id that is not in [all] stays in the result. Two levels only, so one
+     * step reaches every descendant.
+     */
+    fun withChildren(
+        all: List<Category>,
+        ids: Set<CategoryId>,
+    ): Set<CategoryId> = ids + all.filter { it.parentId in ids }.map { it.meta.id }
+
     /** True if [ids] names every one of [siblings] exactly once and nothing else. */
     fun isExactly(
         siblings: List<Category>,
