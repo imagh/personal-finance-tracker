@@ -10,6 +10,7 @@ import dev.imagh.pft.ledger.transaction.TransactionLine
 import dev.imagh.pft.ledger.transaction.TransactionType
 import dev.imagh.pft.ledger.transaction.TxnState
 import dev.imagh.pft.ledger.validation.LedgerError
+import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.money.Paise
 import java.time.LocalDate
 import java.time.YearMonth
@@ -24,6 +25,21 @@ import java.time.ZoneId
  * transaction matches when one live line satisfies the category filter *and* the tag filter together
  * ([matchesLine]); two lines each meeting one of them do not match.
  *
+ * **Text.** [text], [titleText] and [noteText] search what the person typed (slice C D6). Each one is
+ * read by `SearchText.toMatchTerms` into words, and **every word must match (AND), each anywhere in the
+ * filter's scope**: the words need not be next to each other, in the same column or in the same item. The
+ * text filters and every other dimension are AND too, and the totals follow them as they follow [createdBy]
+ * (a note match counts the whole transaction, as every transaction-level filter does). A text of `null` is no
+ * filter; a text that is **not** null but holds no word (blank, punctuation only) matches nothing, never
+ * everything: the queries fail closed, so the screen passes `null` for an empty box.
+ * - [text]: each word is in the title or the description, or in the note of some live line, so "swiggy
+ *   biryani" finds a transaction titled Swiggy whose item note says biryani.
+ * - [titleText]: each word is in the title.
+ * - [noteText]: each word is in the description, or in the note of some live line.
+ *
+ * A transfer's two legs have the same title and description and no notes, so both match together and the
+ * folded entry is never cut.
+ *
  * Validated when built (a `copy()` is checked too), so a filter that exists is a filter the queries can run.
  *
  * @param from the first day, inclusive, in the zone the query is given; null for no lower bound.
@@ -37,6 +53,11 @@ import java.time.ZoneId
  * @param types the transaction types (a transfer leg is [TransactionType.TRANSFER]).
  * @param createdBy who recorded the transaction (its `created_by_user_id`); empty means everyone. Like
  *   account and amount it applies to the transaction, and so to totals too.
+ * @param text words to find in the title, the description or an item's note, or null.
+ * @param titleText words to find in the title, or null.
+ * @param noteText words to find in the description or an item's note, or null.
+ * @throws LedgerError.NameTooLong if a text is over [LedgerLimits.MAX_SEARCH_TEXT_LENGTH] characters; the
+ *   message names no text.
  * @throws LedgerError.InvalidRange if `from` is after `to`, `amountMin` is above `amountMax`, or a date is
  *   outside years 1 to 9999 (so the window's epoch milliseconds cannot overflow).
  */
@@ -51,11 +72,19 @@ data class TransactionFilter(
     val states: Set<TxnState> = emptySet(),
     val types: Set<TransactionType> = emptySet(),
     val createdBy: Set<UserId> = emptySet(),
+    val text: String? = null,
+    val titleText: String? = null,
+    val noteText: String? = null,
 ) {
     init {
         if (from != null && to != null && from > to) throw LedgerError.InvalidRange()
         if (amountMin != null && amountMax != null && amountMin > amountMax) throw LedgerError.InvalidRange()
         if (listOfNotNull(from, to).any { it.year !in YEAR_RANGE }) throw LedgerError.InvalidRange()
+        // Length only: the text is neither trimmed nor read here. Blank text stays non-null on purpose, so the
+        // queries return nothing for it instead of treating it as "no filter" (SearchText.toMatchTerms).
+        if (listOfNotNull(text, titleText, noteText).any { it.length > LedgerLimits.MAX_SEARCH_TEXT_LENGTH }) {
+            throw LedgerError.NameTooLong(LedgerLimits.MAX_SEARCH_TEXT_LENGTH)
+        }
     }
 
     /** True if a category or a tag is set: the totals then count only the matching lines, not the whole transaction. */

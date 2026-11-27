@@ -9,6 +9,7 @@ import dev.imagh.pft.ledger.ids.DeviceId
 import dev.imagh.pft.ledger.ids.TagId
 import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.validation.LedgerError
+import dev.imagh.pft.ledger.validation.LedgerLimits
 import dev.imagh.pft.money.Paise
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -98,6 +99,53 @@ class TransactionFilterTest :
                 filter.window(zone) shouldBe TransactionFilter().window(zone)
                 filter.window(zone, YearMonth.of(2026, 11)) shouldBe
                     TransactionFilter().window(zone, YearMonth.of(2026, 11))
+            }
+        }
+
+        context("text") {
+            test("the three text filters default to none") {
+                val filter = TransactionFilter()
+
+                filter.text shouldBe null
+                filter.titleText shouldBe null
+                filter.noteText shouldBe null
+            }
+
+            test("text is a transaction-level filter: not a line filter, and it does not touch the window") {
+                val filter = TransactionFilter(text = "swiggy", titleText = "swi", noteText = "note")
+                val zone = ZoneId.of("Asia/Kolkata")
+
+                filter.hasLineFilter shouldBe false
+                filter.window(zone) shouldBe TransactionFilter().window(zone)
+            }
+
+            test("text of exactly the limit is accepted, one more is refused, in each of the three") {
+                val limit = LedgerLimits.MAX_SEARCH_TEXT_LENGTH
+                val fits = "a".repeat(limit)
+                val over = "a".repeat(limit + 1)
+
+                TransactionFilter(text = fits, titleText = fits, noteText = fits).text shouldBe fits
+                shouldThrow<LedgerError.NameTooLong> { TransactionFilter(text = over) }.max shouldBe limit
+                shouldThrow<LedgerError.NameTooLong> { TransactionFilter(titleText = over) }.max shouldBe limit
+                shouldThrow<LedgerError.NameTooLong> { TransactionFilter(noteText = over) }.max shouldBe limit
+            }
+
+            test("copy() is checked too") {
+                shouldThrow<LedgerError.NameTooLong> {
+                    TransactionFilter().copy(text = "a".repeat(LedgerLimits.MAX_SEARCH_TEXT_LENGTH + 1))
+                }
+            }
+
+            test("blank or punctuation-only text is kept as given, never read as no filter") {
+                TransactionFilter(text = "").text shouldBe ""
+                TransactionFilter(titleText = "  ").titleText shouldBe "  "
+                TransactionFilter(noteText = "*").noteText shouldBe "*"
+            }
+
+            test("the refusal names no text") {
+                val error = shouldThrow<LedgerError.NameTooLong> { TransactionFilter(text = "secret".repeat(100)) }
+
+                error.message!!.contains("secret") shouldBe false
             }
         }
 
