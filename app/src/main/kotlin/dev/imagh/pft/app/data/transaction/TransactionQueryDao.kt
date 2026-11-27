@@ -38,7 +38,23 @@ interface TransactionQueryDao {
             "WHERE deleted_at IS NULL GROUP BY account_id, direction",
     )
     suspend fun directionTotals(): List<DirectionTotal>
+
+    /**
+     * The earliest and latest `occurred_at` of the live transactions, both null when there are none (the
+     * `entryMonthSpan` input). One pass over the live rows, cheap at household scale; no index is added.
+     */
+    @Query(
+        "SELECT MIN(occurred_at) AS earliest, MAX(occurred_at) AS latest FROM ledger_transaction " +
+            "WHERE deleted_at IS NULL",
+    )
+    suspend fun occurredRange(): OccurredRange
 }
+
+/** The result of [TransactionQueryDao.occurredRange]: epoch milliseconds, both null when no live row exists. */
+data class OccurredRange(
+    @ColumnInfo(name = "earliest") val earliest: Long?,
+    @ColumnInfo(name = "latest") val latest: Long?,
+)
 
 /** One row of [TransactionQueryDao.directionTotals]: [total] paise moving [direction] (an enum name) on [accountId]. */
 data class DirectionTotal(

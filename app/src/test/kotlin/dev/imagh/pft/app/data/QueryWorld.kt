@@ -12,6 +12,7 @@ import dev.imagh.pft.ledger.entity.EntityMeta
 import dev.imagh.pft.ledger.identity.Identity
 import dev.imagh.pft.ledger.ids.TransactionId
 import dev.imagh.pft.ledger.ids.TransactionLineId
+import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.query.LedgerEntry
 import dev.imagh.pft.ledger.tag.Tag
 import dev.imagh.pft.ledger.transaction.Direction
@@ -91,7 +92,8 @@ internal class QueryWorld(
     /**
      * Stores one row with a **chosen id** straight through the repository (no lines, no audit): for tests
      * that need many rows, colliding times or ids in an order the services would not produce. A read does
-     * not need lines, so it comes back as a [LedgerEntry.Single] with none.
+     * not need lines, so it comes back as a [LedgerEntry.Single] with none. [created] and [updated] default to
+     * one fixed instant; [by] is the recording user's id (default: the household's first user).
      */
     suspend fun row(
         id: String,
@@ -101,17 +103,27 @@ internal class QueryWorld(
         direction: Direction = if (type == TransactionType.INCOME) Direction.IN else Direction.OUT,
         group: String? = null,
         amount: Long = rs(1),
+        title: String? = null,
+        created: Instant = DEFAULT_CREATED,
+        updated: Instant = created,
+        by: String? = null,
     ): LedgerTransaction {
-        val created = Instant.parse("2026-11-26T00:00:00Z")
         val row =
             LedgerTransaction(
-                meta = EntityMeta(TransactionId(id), created, created, me.user.id, me.device.id),
+                meta =
+                    EntityMeta(
+                        TransactionId(id),
+                        created,
+                        updated,
+                        by?.let(::UserId) ?: me.user.id,
+                        me.device.id,
+                    ),
                 type = type,
                 direction = direction,
                 amount = Paise(amount),
                 occurredAt = at,
                 accountId = account.meta.id,
-                title = null,
+                title = title,
                 description = null,
                 state = TxnState.VERIFIED,
                 source = TxnSource.MANUAL,
@@ -128,8 +140,11 @@ internal class QueryWorld(
     suspend fun rowWithLine(
         id: String,
         at: Instant,
+        amount: Long = rs(1),
+        title: String? = null,
+        tag: Tag? = null,
     ) {
-        val txn = row(id, at)
+        val txn = row(id, at, amount = amount, title = title)
         kit.transactionLineRepository.insert(
             TransactionLine(
                 meta =
@@ -145,7 +160,7 @@ internal class QueryWorld(
                 amount = txn.amount,
                 categoryId = null,
                 note = null,
-                tagIds = emptySet(),
+                tagIds = setOfNotNull(tag?.meta?.id),
             ),
         )
     }
@@ -171,6 +186,8 @@ internal class QueryWorld(
     )
 
     companion object {
+        private val DEFAULT_CREATED: Instant = Instant.parse("2026-11-26T00:00:00Z")
+
         /** Rupees as paise. */
         fun rs(rupees: Long) = rupees * 100
 

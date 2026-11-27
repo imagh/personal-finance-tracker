@@ -12,4 +12,9 @@ package dev.imagh.pft.ledger.query
 data class TimeWindow(
     val startMs: Long,
     val endMs: Long,
-)
+) {
+    companion object {
+        /** No bound on either side: every instant. */
+        val ALL = TimeWindow(Long.MIN_VALUE, Long.MAX_VALUE)
+    }
+}

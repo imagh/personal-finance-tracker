@@ -10,11 +10,14 @@ import dev.imagh.pft.ledger.query.AccountMovement
 import dev.imagh.pft.ledger.query.LedgerEntries
 import dev.imagh.pft.ledger.query.LedgerEntry
 import dev.imagh.pft.ledger.query.MonthPage
+import dev.imagh.pft.ledger.query.MonthSpan
+import dev.imagh.pft.ledger.query.RecentEntries
 import dev.imagh.pft.ledger.query.SearchPage
 import dev.imagh.pft.ledger.query.TimeWindow
 import dev.imagh.pft.ledger.query.Totals
 import dev.imagh.pft.ledger.query.TransactionFilter
 import dev.imagh.pft.ledger.query.TransactionQueries
+import dev.imagh.pft.ledger.query.TransactionSort
 import dev.imagh.pft.ledger.tx.TransactionRunner
 import dev.imagh.pft.ledger.validation.LedgerError
 import dev.imagh.pft.money.Paise
@@ -40,21 +43,39 @@ class RoomTransactionQueries(
         month: YearMonth,
         zone: ZoneId,
         filter: TransactionFilter,
+        sort: TransactionSort,
     ): MonthPage =
         runner.inTransaction {
             val scope = filter.categoryScope(categories.allLive())
-            val entries = read(filter.window(zone, month), filter, scope, TransactionQuerySql.NO_LIMIT)
+            val entries = read(filter.window(zone, month), filter, scope, sort, TransactionQuerySql.NO_LIMIT)
             MonthPage(entries, Totals.of(entries, filter, scope))
         }
 
     override suspend fun search(
         filter: TransactionFilter,
         zone: ZoneId,
+        sort: TransactionSort,
     ): SearchPage =
         runner.inTransaction {
             val scope = filter.categoryScope(categories.allLive())
-            val entries = read(filter.window(zone), filter, scope, SearchPage.FETCH_ROWS)
+            val entries = read(filter.window(zone), filter, scope, sort, SearchPage.FETCH_ROWS)
             SearchPage.capped(entries)
+        }
+
+    override suspend fun recent(limit: Int): List<LedgerEntry> {
+        val rows = RecentEntries.fetchRows(limit)
+        return runner.inTransaction {
+            val entries = read(TimeWindow.ALL, TransactionFilter(), emptySet(), TransactionSort.DEFAULT, rows)
+            RecentEntries.cut(entries, limit)
+        }
+    }
+
+    override suspend fun entryMonthSpan(zone: ZoneId): MonthSpan? =
+        runner.inTransaction {
+            val range = dao.occurredRange()
+            val first = range.earliest
+            val last = range.latest
+            if (first == null || last == null) null else MonthSpan.ofInstants(first, last, zone)
         }
 
     /**
@@ -81,16 +102,17 @@ class RoomTransactionQueries(
         window: TimeWindow,
         filter: TransactionFilter,
         scope: Set<CategoryId>,
+        sort: TransactionSort,
         limit: Int,
     ): List<LedgerEntry> {
         val match = TransactionQuerySql.match(window, filter, scope)
         val transactions =
-            dao.transactions(TransactionQuerySql.transactions(match, limit)).map(LedgerTransactionMapper::toModel)
+            dao.transactions(TransactionQuerySql.transactions(match, sort, limit)).map(LedgerTransactionMapper::toModel)
         val tagsOfLine =
-            dao.lineTags(TransactionQuerySql.lineTags(match, limit)).groupBy({ it.lineId }, { TagId(it.tagId) })
+            dao.lineTags(TransactionQuerySql.lineTags(match, sort, limit)).groupBy({ it.lineId }, { TagId(it.tagId) })
         val linesOf =
             dao
-                .lines(TransactionQuerySql.lines(match, limit))
+                .lines(TransactionQuerySql.lines(match, sort, limit))
                 .map { TransactionLineMapper.toModel(it, tagsOfLine[it.meta.id].orEmpty().toSet()) }
                 .groupBy { it.transactionId }
         return LedgerEntries.fold(transactions, linesOf, foldTransfers = filter.accountIds.isEmpty())

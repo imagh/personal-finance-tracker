@@ -15,6 +15,8 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
 
 private val at = Instant.parse("2026-11-01T00:00:00Z")
 
@@ -79,6 +81,23 @@ class TransactionFilterTest :
                 shouldThrow<LedgerError.InvalidRange> { TransactionFilter(to = LocalDate.of(10_000, 1, 1)) }
                 TransactionFilter(from = LocalDate.of(1, 1, 1), to = LocalDate.of(9999, 12, 31)).to shouldBe
                     LocalDate.of(9999, 12, 31)
+            }
+        }
+
+        context("createdBy") {
+            test("createdBy defaults to empty") {
+                TransactionFilter().createdBy shouldBe emptySet()
+            }
+
+            test("a person is a transaction-level filter: it is not a line filter and does not touch the window") {
+                val filter = TransactionFilter(createdBy = setOf(UserId("u1"), UserId("u2")))
+                val zone = ZoneId.of("Asia/Kolkata")
+
+                filter.createdBy shouldBe setOf(UserId("u1"), UserId("u2"))
+                filter.hasLineFilter shouldBe false
+                filter.window(zone) shouldBe TransactionFilter().window(zone)
+                filter.window(zone, YearMonth.of(2026, 11)) shouldBe
+                    TransactionFilter().window(zone, YearMonth.of(2026, 11))
             }
         }
 

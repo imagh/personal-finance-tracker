@@ -12,9 +12,9 @@ import java.time.ZoneId
  */
 interface TransactionQueries {
     /**
-     * The entries of [month] in [zone] that match [filter], newest first (ties in a fixed order, a
-     * transfer's two legs together), with the totals over them. A month is never capped. The filter's
-     * `from` and `to` narrow the month further.
+     * The entries of [month] in [zone] that match [filter], in [sort] order (default: newest payment first;
+     * ties in a fixed order, a transfer's two legs together), with the totals over them. A month is never
+     * capped. The filter's `from` and `to` narrow the month further.
      *
      * @throws ArithmeticException if [month] is so extreme that its start does not fit epoch milliseconds
      *   (`java.time.DateTimeException` at the very last month). A filter's own dates are bounded to years 1 to
@@ -25,18 +25,37 @@ interface TransactionQueries {
         month: YearMonth,
         zone: ZoneId,
         filter: TransactionFilter = TransactionFilter(),
+        sort: TransactionSort = TransactionSort.DEFAULT,
     ): MonthPage
 
     /**
-     * The entries that match [filter] in any month, newest first, at most
-     * [dev.imagh.pft.ledger.validation.LedgerLimits.MAX_SEARCH_RESULTS] of them: the cap counts entries after
-     * a transfer's legs are folded and never cuts a pair. [SearchPage.truncated] is true only when more matched.
-     * [zone] reads the filter's `from` and `to` dates.
+     * The entries that match [filter] in any month, in [sort] order (default: newest payment first), at most
+     * [dev.imagh.pft.ledger.validation.LedgerLimits.MAX_SEARCH_RESULTS] of them: the sort is applied **before**
+     * the cap, so the kept entries are the first ones in that order. The cap counts entries after a transfer's
+     * legs are folded and never cuts a pair. [SearchPage.truncated] is true only when more matched. [zone]
+     * reads the filter's `from` and `to` dates.
      */
     suspend fun search(
         filter: TransactionFilter,
         zone: ZoneId,
+        sort: TransactionSort = TransactionSort.DEFAULT,
     ): SearchPage
+
+    /**
+     * The newest [limit] live entries by payment date in any month (ties in the fixed order), transfers
+     * folded into one entry. [limit] counts entries after folding, so a pair is never cut.
+     *
+     * @throws dev.imagh.pft.ledger.validation.LedgerError.InvalidRange if [limit] is below 1 or above
+     *   [dev.imagh.pft.ledger.validation.LedgerLimits.MAX_SEARCH_RESULTS] (fail closed).
+     * @throws IllegalStateException if a stored row is not one this build understands (fail closed).
+     */
+    suspend fun recent(limit: Int): List<LedgerEntry>
+
+    /**
+     * The first and last month, read in [zone], that hold a live transaction; null when there are none.
+     * [MonthSpan.strip] widens it to include the current month.
+     */
+    suspend fun entryMonthSpan(zone: ZoneId): MonthSpan?
 
     /**
      * The balance of every live account (archived included): its opening balance plus the sum of its live
