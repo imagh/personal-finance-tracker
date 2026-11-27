@@ -9,6 +9,7 @@ import dev.imagh.pft.app.data.identity.RoomIdentityRepository
 import dev.imagh.pft.app.data.settings.RoomAppSettingsRepository
 import dev.imagh.pft.app.data.tag.RoomTagRepository
 import dev.imagh.pft.app.data.transaction.RoomTransactionLineRepository
+import dev.imagh.pft.app.data.transaction.RoomTransactionQueries
 import dev.imagh.pft.app.data.transaction.RoomTransactionRepository
 import dev.imagh.pft.ledger.account.AccountService
 import dev.imagh.pft.ledger.audit.AuditLog
@@ -24,6 +25,7 @@ import dev.imagh.pft.ledger.transaction.TransactionLines
 import dev.imagh.pft.ledger.transaction.TransactionService
 import dev.imagh.pft.ledger.transaction.TransferService
 import java.time.Clock
+import java.time.ZoneId
 
 /**
  * The production object graph: the core services wired over an **open** [PftDatabase]. It is what
@@ -40,11 +42,14 @@ import java.time.Clock
  *   the first write fail loudly.
  * @param auditLog where audit entries go; the Room audit trail of [database] by default. A test passes
  *   a wrapper that fails, to prove a failed audit write rolls the change back.
+ * @param zone the time zone months and dates are read in (slice C D5). Config from the environment, so the
+ *   device's zone by default; a test pins `Asia/Kolkata`. Core never reads the system zone itself.
  */
 class AppServices(
     val database: PftDatabase,
     clock: Clock,
     auditLog: AuditLog = RoomAuditLog(database.auditDao()),
+    val zone: ZoneId = ZoneId.systemDefault(),
 ) {
     /** Id generator on the clock. */
     val ids = Uuid7(clock)
@@ -130,4 +135,11 @@ class AppServices(
             accountRepository,
             ids,
         )
+
+    /**
+     * The month list, search and account balances over live rows (slice C D5): pass [zone] with each call.
+     * Reads only; transactions are written through [transactions] and [transfers].
+     */
+    val transactionQueries =
+        RoomTransactionQueries(database.transactionQueryDao(), accountRepository, categoryRepository, runner)
 }

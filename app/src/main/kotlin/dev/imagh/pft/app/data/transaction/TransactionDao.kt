@@ -6,7 +6,7 @@ import dev.imagh.pft.app.data.common.BaseDao
 
 /**
  * Reads for `ledger_transaction`; inserts and updates come from [BaseDao]. No logic: the service decides
- * what a transaction may be. The month, filter and search reads arrive with their first consumers (C3a).
+ * what a transaction may be. The month, filter and search reads are in [TransactionQueryDao].
  */
 @Dao
 interface TransactionDao : BaseDao<LedgerTransactionEntity> {

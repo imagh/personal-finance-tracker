@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Instant
+import java.time.ZoneId
 
 /**
  * [AppServices] is the production object graph: core services over a real Room database, on the
@@ -28,6 +29,13 @@ class AppServicesTest {
 
     @After
     fun closeDatabase() = database.close()
+
+    @Test
+    fun `the zone months are read in is the device's unless one is given`() {
+        services.zone shouldBe ZoneId.systemDefault()
+        AppServices(database, EpochMillis.clock(testClock), zone = ZoneId.of("Asia/Kolkata")).zone shouldBe
+            ZoneId.of("Asia/Kolkata")
+    }
 
     @Test
     fun `first-run setup works end to end and is read back as the same identity`() =

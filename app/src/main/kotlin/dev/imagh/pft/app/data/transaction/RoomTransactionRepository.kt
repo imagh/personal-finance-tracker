@@ -7,8 +7,8 @@ import dev.imagh.pft.ledger.transaction.LedgerTransaction
 import dev.imagh.pft.ledger.transaction.TransactionRepository
 
 /**
- * The Room implementation of core's [TransactionRepository]: the shared base plus the in-use query (the
- * month and search reads arrive in C3a) and the legs of a transfer group.
+ * The Room implementation of core's [TransactionRepository]: the shared base plus the in-use query and
+ * the legs of a transfer group. The month and search reads are [RoomTransactionQueries].
  */
 class RoomTransactionRepository(
     private val transactionDao: TransactionDao,
