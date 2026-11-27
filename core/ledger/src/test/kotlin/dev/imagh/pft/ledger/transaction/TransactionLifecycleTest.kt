@@ -69,14 +69,14 @@ class TransactionLifecycleTest :
                 f.storedTransactions().single() shouldBe deleted
             }
 
-            test("deleting a stored transfer leg is refused: transfers are deleted as transfers") {
+            test("deleting a transfer leg with no group id is refused: its other leg cannot be found") {
                 val f = TransactionFixture().start()
                 val leg = f.seed(type = TransactionType.TRANSFER)
 
                 f.shouldRefuse<LedgerError.IsTransfer> { f.service.delete(leg.transaction.meta.id) }
             }
 
-            test("restoring a deleted transfer leg is refused: transfers are restored as transfers") {
+            test("restoring a transfer leg with no group id is refused: its other leg cannot be found") {
                 val f = TransactionFixture().start()
                 val leg = f.seed(type = TransactionType.TRANSFER)
                 f.kit.writer.delete(f.kit.transactionRepository, leg.transaction.meta.id)
@@ -120,7 +120,7 @@ class TransactionLifecycleTest :
                 f.trail shouldHaveSize before
             }
 
-            test("an unverified transfer leg is refused: transfers are verified as transfers") {
+            test("an unverified transfer leg is refused: verifying a transfer waits for the M1b captures") {
                 val f = TransactionFixture().start()
                 val leg = f.seed(type = TransactionType.TRANSFER, state = TxnState.UNVERIFIED)
 

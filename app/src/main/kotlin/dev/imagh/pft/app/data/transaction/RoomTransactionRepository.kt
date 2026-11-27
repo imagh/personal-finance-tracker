@@ -8,7 +8,7 @@ import dev.imagh.pft.ledger.transaction.TransactionRepository
 
 /**
  * The Room implementation of core's [TransactionRepository]: the shared base plus the in-use query (the
- * month and search reads arrive in C3a).
+ * month and search reads arrive in C3a) and the legs of a transfer group.
  */
 class RoomTransactionRepository(
     private val transactionDao: TransactionDao,
@@ -19,4 +19,7 @@ class RoomTransactionRepository(
     ),
     TransactionRepository {
     override suspend fun isAccountInUse(id: AccountId): Boolean = transactionDao.isAccountUsed(id.value)
+
+    override suspend fun legsOfGroup(groupId: String): List<LedgerTransaction> =
+        transactionDao.byTransferGroup(groupId).map(LedgerTransactionMapper::toModel)
 }
