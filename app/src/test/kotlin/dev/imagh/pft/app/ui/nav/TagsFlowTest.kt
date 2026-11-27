@@ -70,7 +70,7 @@ class TagsFlowTest {
                 PftRoot(AppContainer({ DatabaseStartup.Ready(database) }))
             }
         }
-        awaitText("Akash · Pixel")
+        compose.awaitHomeLoaded()
         return ids
     }
 
@@ -87,7 +87,7 @@ class TagsFlowTest {
         }
 
     private fun openTags() {
-        compose.onNodeWithContentDescription("More").performClick()
+        compose.openMore()
         awaitText("Tags")
         compose.onNodeWithText("Tags").performClick()
     }
@@ -282,7 +282,7 @@ class TagsFlowTest {
         compose.onNodeWithText("Tags").assertIsDisplayed()
 
         systemBack()
-        awaitText("Akash · Pixel")
+        compose.awaitHomeLoaded()
         checkNotNull(activity).isFinishing shouldBe false
     }
 }

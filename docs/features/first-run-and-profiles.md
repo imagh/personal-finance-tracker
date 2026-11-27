@@ -1,6 +1,6 @@
 # First run and profiles
 
-Status: **Built** (plan A5, finished in A5f; default categories added in slice B3b). PRD: L-8 (who is using this device). Plan:
+Status: **Built** (plan A5, finished in A5f; default categories added in slice B3b; tab bar and the attribution line on More in Cobalt K7). PRD: L-8 (who is using this device). Plan:
 [2026-11-01-m1a-a5-first-run-setup.md](../plans/2026-11-01-m1a-a5-first-run-setup.md).
 
 ## What it does for you
@@ -20,13 +20,21 @@ Status: **Built** (plan A5, finished in A5f; default categories added in slice B
   Loan EMI, which cannot be archived or deleted).
 - **Tapping Continue twice saves once.** While it saves, Continue is greyed out.
 - **If saving fails unexpectedly** (for example the phone is out of storage), a red line under the fields says "Couldn't save. Try again." and TalkBack reads it out. Nothing was saved, both names stay exactly as you typed them, and Continue works again. The message goes away when you edit a name or tap Continue again. Trying again is safe: the profile and the starter categories are saved in one step, so it can never end up half-saved or doubled (no profile without categories, no categories without a profile).
-- **Then you land on Home.** Home is a placeholder for now: its header says "Home" and, underneath,
-  who is using this phone ("Akash · Pixel 8"), and it points you to **More** (the three-dots button in
-  the header) to manage your accounts; transactions arrive in the next update. This is how you can see
-  the mark that every later entry will carry.
+- **Then you land on Home.** Home greets you: a round badge with your initials ("AG" for
+  "Akash Gupta"), "Good morning" (05:00 to 11:59), "Good afternoon" (12:00 to 16:59) or "Good evening"
+  (otherwise) by your phone's clock, and your name. Nothing of this shows until your profile has loaded, so
+  you never see a greeting without a name. Below it a line points you to the **Accounts** tab to manage your
+  accounts; transactions arrive in the next update. The badge is decoration: TalkBack reads the greeting and
+  your name once. A floating bar at the
+  bottom of the screen has the tabs **Home**, **Accounts** and **More**.
+- **Who is using this phone is on the More tab.** Open **More**: under its title it says who is using this
+  phone ("Akash · Pixel 8"). This is how you can see the mark that every later entry will carry. It used to
+  be on Home; it moved when the tab bar arrived.
 - **Every later launch goes straight to Home.** You are never asked again. Pressing Back (or the
   back gesture) on Home leaves the app: Setup is not behind it, so it can never be reached by going
-  back.
+  back. Back on another tab's main screen (Accounts or More) goes to Home first.
+- **The tab bar is not shown on Setup**, nor on forms and on the Categories and Tags lists, so nothing can
+  take you away from a half-filled form by accident.
 - **There is no way back from Setup**, because nothing is behind it.
 - **Your names stay on the phone.** They are stored in the encrypted database, never sent anywhere
   and never written to the app's logs. The log notes only that setup was completed.
@@ -54,8 +62,7 @@ Status: **Built** (plan A5, finished in A5f; default categories added in slice B
 ## Where it lives
 
 `app/.../ui/setup/` (`SetupViewModel`, `SetupScreen`, `SetupRoute`), `app/.../ui/nav/` (`PftNavHost`,
-`Routes`: Setup on a fresh install, Home otherwise) and `app/.../ui/home/` (`HomeViewModel`,
-`HomeScreen`, `HomeRoute`). Validation is core's `Validation.requireName`; saving is core's
+`Routes`, `PftTabBar`, `Tab`: Setup on a fresh install, the tabbed app otherwise), `app/.../ui/home/` (`HomeViewModel`, `HomeScreen`, `GreetingHeader`) and `app/.../ui/more/` (`MoreViewModel`, `MoreScreen`: the attribution line). Validation is core's `Validation.requireName`; saving is core's
 `FirstRunService.initialise` (which runs `IdentityService.initialise` and then `CategoryService.seedDefaults`
 in one transaction). See `app/README.md`. The test that proves the flow end to end is
 `SetupFlowTest`.

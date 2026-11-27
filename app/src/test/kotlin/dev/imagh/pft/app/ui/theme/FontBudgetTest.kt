@@ -14,10 +14,10 @@ import java.lang.reflect.Modifier
 /**
  * The size budget for bundled fonts (UI-17, premium-look plan §3.7): all of `res/font` together
  * stay within [FONT_BUDGET_BYTES]. Every `R.font.*` resource is counted, so a font added later
- * is covered without editing the budget check (the count test below does pin the three fonts today:
- * Newsreader, Figtree and Plus Jakarta Sans, 690,664 B together). A font over the pre-commit hook's
- * 500 KB limit would also need its own path-scoped exception, backed by [BundledFontTest]'s exact
- * size and hash.
+ * is covered without editing the budget check (the count test below does pin the five fonts today:
+ * Newsreader, Figtree, Plus Jakarta Sans, Manrope and Bricolage Grotesque, 1,263,860 B together). A
+ * font over the pre-commit hook's 500 KB limit would also need its own path-scoped exception, backed
+ * by [BundledFontTest]'s exact size and hash (the largest today, Bricolage at 408,496 B, is under it).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -40,10 +40,13 @@ class FontBudgetTest {
     }
 
     @Test
-    fun `the budget counts all three bundled fonts`() {
+    fun `the budget counts all five bundled fonts`() {
         val sizes = fontSizes()
-        assertEquals(setOf("newsreader", "figtree", "plus_jakarta_sans"), sizes.keys)
-        assertEquals(3, sizes.size)
+        assertEquals(
+            setOf("newsreader", "figtree", "plus_jakarta_sans", "manrope", "bricolage_grotesque"),
+            sizes.keys,
+        )
+        assertEquals(5, sizes.size)
         assertTrue("every font file is non-empty", sizes.values.all { it > 0 })
     }
 

@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
@@ -20,8 +21,12 @@ import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dev.imagh.pft.app.ui.HostedComposeRule
 import dev.imagh.pft.app.ui.theme.PftSymbol
 import dev.imagh.pft.app.ui.theme.PftTheme
@@ -51,6 +56,11 @@ class EntityListScreenTest {
 
     private var density = 1f
 
+    private companion object {
+        val CLEARANCE = 120.dp
+        const val WINDOW_HEIGHT = 851f
+    }
+
     /** What the consumer saw: the labels of the actions invoked, and the Back and add taps. */
     private val invoked = mutableListOf<String>()
 
@@ -72,22 +82,26 @@ class EntityListScreenTest {
         add: RowAction? = RowAction("Add account") { invoked += "add" },
         loaded: Boolean = true,
         header: (@Composable () -> Unit)? = null,
+        onBack: (() -> Unit)? = { invoked += "back" },
+        tabBarClearance: Dp = 0.dp,
     ) {
         compose.setContent {
             density = LocalDensity.current.density
             val snackbars = remember { SnackbarHostState() }
             PftTheme(ThemePrefs(dynamicColor = false)) {
-                EntityListScreen(
-                    title = "Accounts",
-                    active = active,
-                    archived = archived,
-                    emptyMessage = "No accounts yet",
-                    snackbarHost = { SnackbarHost(snackbars) },
-                    onBack = { invoked += "back" },
-                    add = add,
-                    loaded = loaded,
-                    header = header,
-                )
+                CompositionLocalProvider(LocalTabBarClearance provides tabBarClearance) {
+                    EntityListScreen(
+                        title = "Accounts",
+                        active = active,
+                        archived = archived,
+                        emptyMessage = "No accounts yet",
+                        snackbarHost = { SnackbarHost(snackbars) },
+                        onBack = onBack,
+                        add = add,
+                        loaded = loaded,
+                        header = header,
+                    )
+                }
             }
         }
         compose.waitForIdle()
@@ -225,6 +239,53 @@ class EntityListScreenTest {
         compose.onNodeWithText("No accounts yet").assertIsDisplayed()
         compose.onAllNodesWithContentDescription("Add account").assertCountEquals(0)
         compose.onAllNodesWithText("Add account").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a tab-root list has no Back button, because it is given no onBack`() {
+        show(active = listOf(row("Everyday")), onBack = null)
+
+        compose.onAllNodesWithContentDescription("Back").assertCountEquals(0)
+        compose.onNodeWithText("Everyday").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the add button sits above the tab bar's clearance`() {
+        show(active = listOf(row("Everyday")), tabBarClearance = CLEARANCE)
+
+        val bottom = compose.onNodeWithContentDescription("Add account").bounds().bottom
+        val barTop = (WINDOW_HEIGHT - CLEARANCE.value) * density
+        assertTrue("the add button ends at $bottom, under the bar that starts at $barTop", bottom <= barTop)
+    }
+
+    @Test
+    fun `without a tab bar the add button sits lower, in the clearance's place`() {
+        show(active = listOf(row("Everyday")))
+
+        val bottom = compose.onNodeWithContentDescription("Add account").bounds().bottom
+        val barTop = (WINDOW_HEIGHT - CLEARANCE.value) * density
+        assertTrue("the add button ends at $bottom, expected below $barTop", bottom > barTop)
+    }
+
+    @Test
+    fun `with an add button the last row of a long list scrolls clear of the tab bar's clearance`() {
+        assertLastRowClearsBar(RowAction("Add account") {})
+    }
+
+    @Test
+    fun `without an add button the last row of a long list still scrolls clear of the clearance`() {
+        assertLastRowClearsBar(add = null)
+    }
+
+    private fun assertLastRowClearsBar(add: RowAction?) {
+        show(active = (1..30).map { row("Account $it") }, add = add, tabBarClearance = CLEARANCE)
+        // Items: the one section, then the space below it; scrolling to the space brings the list to its end.
+        compose.onNodeWithTag(HeaderTags.LIST).performScrollToIndex(1)
+        compose.waitForIdle()
+
+        val bottom = compose.onNodeWithText("Account 30").bounds().bottom
+        val barTop = (WINDOW_HEIGHT - CLEARANCE.value) * density
+        assertTrue("the last row ends at $bottom, under the bar that starts at $barTop", bottom <= barTop)
     }
 
     @Test

@@ -16,8 +16,9 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
   schemas/                               # exported Room schemas, one JSON per version (committed; served to migration tests as debug assets)
   src/main/kotlin/dev/imagh/pft/app/     # production code
     ui/theme/                            # PftTheme, ThemePrefs, ThemePalette (+ colors(dark)), GraphitePalette (+ PaletteColors), MidnightPalette,
-                                         # IvoryPalette, AuberginePalette (DS6b: one generated, pinned object per palette), PaletteSamples
-                                         # (the four-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces,
+                                         # IvoryPalette, AuberginePalette, CobaltPalette (DS6b, Cobalt K1: one generated, pinned object per
+                                         # palette), BrandColors (the brand tokens and `derivedBrand`), PaletteSamples
+                                         # (the five-palette swatch page), PftSurfaces (BackgroundStyle, the tonal/flat surfaces,
                                          # the glow tint and LocalPftSurfaces, DS6c, DS6d), WindowBackground (SyncWindowBackground), MoneyColors, PftTypography (the type roles, DS6g `newsreader(weight, size)`, DS6h `sansFamily(SansFont)`), PftShapes,
                                          # PftSpacing, PftMotion (design-system tokens); PftSymbol (icon registry, permanent keys),
                                          # CategoryPalette (+ CategoryColors), GlyphSize (DS3); TokenSheet* (token sheet: preview, catalogue, goldens)
@@ -25,14 +26,14 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # allowed in the header's `actions`), HeaderGlow (DS6d: the glow's pure rules and
                                          # `Modifier.headerGlow`), BottomActionBar
                                          # (+ BottomBarAction), MoneyText (+ MoneySize, MoneySemantic/MoneyTone), StatusChip (+ ChipColors),
-                                         # GroupedSection, EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
+                                         # GroupedSection, TransactionRow (+ TransactionRowModel) and DayGroup (K5), EmptyState, CategoryGlyph + GlyphSource (the badge and the icon_key parser);
                                          # FieldState/FieldError/FieldCheck + LedgerErrorMapping (A5d), NameField, EditFormScaffold (A5d);
                                          # EntityListScreen + EntityRow/RowGlyph/RowAction + UndoDeleteSnackbar (B2a: the one entity list screen),
                                          # CategoryIconGlyph (B4a: CategoryIcon to GlyphSource), EntityActionText (the fixed failure strings);
                                          # PftBottomSheet (the one ModalBottomSheet opt-in), AccountPicker (B2c: stateless account sheet),
                                          # CategoryPicker (B4b: stateless category sheet), TagPicker (B5b: stateless multi-select tag sheet), TileGrid + selectionRing (the grids' shared layout and ring),
                                          # launchSave + SaveOutcome (B4b: the entity forms' save shape);
-                                         # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples,
+                                         # *Samples.kt (HeaderSamples, MoneyTextSamples, StatusChipSamples, GroupedSectionSamples, TransactionRowSamples,
                                          # EmptyStateSamples, CategoryGlyphSamples, FormSamples, EntityListSamples, AccountPickerSamples, CategoryPickerSamples, TagPickerSamples: previews, catalogue and goldens share them, R8 drops them)
     data/                                # Room persistence (package dev.imagh.pft.app.data)
       PftDatabase, Migrations, AuditTriggers   # the database (v4), its migration list, the audit_entry immutability triggers
@@ -51,9 +52,10 @@ app/                    # thin Android layer (Compose, Room/SQLCipher impls, Key
                                          # AppServices (the production object graph over an open PftDatabase; RoomTestKit builds the same class)
     ui/                                  # LaunchViewModel (+ LaunchState), PftRoot (the root composable)
     ui/setup/                            # A5e: SetupViewModel (+ SetupUiState), SetupScreen (stateless), SetupRoute (the only ViewModel touch point)
-    ui/nav/                              # A5f: PftNavHost (start = Home or Setup, PftMotion transitions, popUpTo Setup), Routes (plain string consts; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
-    ui/home/                             # A5f: HomeViewModel (+ HomeUiState), HomeScreen (stateless placeholder, B2a: header More button), HomeRoute
-    ui/more/                             # B2a: MoreScreen (stateless: the Accounts, Categories and (B5b) Tags rows)
+    ui/nav/                              # A5f: PftNavHost (K7: the tab bar's host and the nested tab graphs; start = MAIN or Setup, PftMotion transitions, popUpTo Setup), PftTabBar + Tab (K7: the floating bar; the `Tab` enum and `TAB_ORDER`), Routes (plain string consts; K7 adds MAIN and the *_TAB graphs; B2a adds MORE and ACCOUNTS, B2b adds ACCOUNT_EDIT with an optional id, B4a CATEGORIES, B4b CATEGORY_EDIT with optional id, parent and kind), AccountRoutes + CategoryRoutes (B2b, B4b: the `NavGraphBuilder` extensions that hold each list/form pair)
+    ui/home/                             # A5f/K8: HomeScreen (stateless: GreetingHeader + placeholder line), HomeRoute, HomeViewModel, Greeting, Initials, GreetingHeader
+                                         # K6: BalanceCard (+ BalanceCardModel, BudgetMeter), QuickActionRow (+ QuickAction), HomeSamples (not yet on Home)
+    ui/more/                             # B2a: MoreScreen (stateless; K7: the Categories and Tags rows, the attribution subtitle, no Back), MoreViewModel (+ MoreUiState), MoreRoute
     ui/accounts/                         # B2a: AccountsViewModel (+ AccountsUiState), AccountsScreen (+ AccountsActions), AccountsRoute (reload on resume, Undo),
                                          # AccountRowMapper (type badge, supporting line; the only account-specific drawing logic);
                                          # B2b: AccountEditViewModel (+ AccountEditUiState), AccountEditScreen (+ AccountEditActions), AccountEditRoute
@@ -125,7 +127,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | build | `pft.lint` convention plugin (ktlint + detekt) | `pft.kotlin-core`, `:app`, root project (lints `build-logic` and build scripts) | A1 |
 | app UI (`ui/theme`) | `PftTheme`, `ThemePrefs`/`ThemeMode`, `MoneyColors` (colour tokens, CompositionLocals) | every screen | DS1 |
 | app UI (`ui/theme`) | `GraphitePalette` / `PaletteColors` (the default scheme; replaces the deleted `BrandColors`) | `resolveColorScheme` | DS6a |
-| app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette` (the other three curated palettes; the names are persisted by AP1) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, the debug catalogue toggles | DS6b |
+| app UI (`ui/theme`) | `ThemePalette` + `colors(dark)`, `MidnightPalette`, `IvoryPalette`, `AuberginePalette`, `CobaltPalette` (the other curated palettes; the names are persisted by AP1), `BrandColors` + `derivedBrand` (brand tokens, `PftTheme.brand`) | `resolveColorScheme`, `ThemePrefs.lightPalette` / `darkPalette`, `PftTheme.brand`, the debug catalogue toggles | DS6b, Cobalt K1 |
 | app UI (`ui/theme`) | `PftSurfaces` / `BackgroundStyle` / `pftSurfaces` / `LocalPftSurfaces` (tonal or flat canvas, island, edge, highlight; `PaletteColors.canvas` and `island`; `dynamicPaletteColors`) | `CollapsingHeaderScaffold`, `BottomActionBar`, `GroupedSection`, `MainActivity`, the debug catalogue toggle | DS6c |
 | app UI (`ui/theme`) | `WindowBackground` (`SyncWindowBackground(window)`, with `pft_window_background` in `res/values{,-night}`) | `MainActivity` | DS6c |
 | app UI (`ui/theme`) | `PftTypography` (+ M3 type scale), `PftShapes`, `PftSpacing`, `DisplayFont`, `TypePairing` | every screen | DS2 |
@@ -146,8 +148,9 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app DI | `AppContainer.open()` (opens the database once, off the caller's thread; callers share the result) | `LaunchViewModel`; M1b's SMS receiver | A5b |
 | app UI (`ui/startup`) | `DataUnavailableScreen(cause)` + `DataUnavailableCause` | key unavailable (A4b), identity corrupt (A5b) | A5b |
 | app UI (`ui/setup`) | `SetupViewModel` + `SetupUiState`, `SetupScreen`, `SetupRoute` | `PftNavHost` (Setup destination) | A5e |
-| app UI (`ui/nav`) | `PftNavHost(services, hasIdentity)` + `Routes` (the one navigation host and its string routes; later slices add their routes here) | `PftRoot` (Ready); the debug catalogue joins through `devRoutes()` | A5f |
-| app UI (`ui/home`) | `HomeViewModel` + `HomeUiState`, `HomeScreen`, `HomeRoute` (placeholder until C4 replaces it) | `PftNavHost` (Home destination) | A5f |
+| app UI (`ui/nav`) | `PftNavHost(services, hasIdentity)` + `Routes` + `PftTabBar` + `Tab` (the one navigation host, its nested tab graphs, the floating tab bar and its string routes; later slices add their tabs to `TAB_ORDER` and their routes here) | `PftRoot` (Ready); the debug catalogue joins through `devRoutes()` | A5f |
+| app UI (`ui/home`) | `HomeScreen`, `HomeRoute`, `GreetingHeader` (greeting header; the body is a placeholder until C4d) | `PftNavHost` (Home destination) | A5f |
+| app UI (`ui/more`, `ui/common`) | `MoreViewModel` + `MoreUiState`, `MoreScreen`, `MoreRoute`; `LocalTabBarClearance` | `PftNavHost` (More tab; the host provides the clearance, `EntityListScreen` reads it) | K7 |
 | app tests | `awaitMain { condition }` (idles the Robolectric main looper until true) | tests of ViewModels that run on the main dispatcher | A5e |
 | app tests | `TestDatabase` (in-memory `PftDatabase`), `RoomTestKit` (core services over Room), `runSuspending` | all app integration tests | A4a |
 | app tests | `MigrationTestSupport` (schema replay + "audit triggers survive" check after every migration) | every `migrateNToN+1` test and the chain test | A4a |
@@ -161,6 +164,7 @@ One shared piece per layer, extracted only when the plan names at least two cons
 | app UI (`ui/common`) | `MoneyText` (`MoneySemantic`, `MoneyTone`, `MoneySize`) on `:core:money` `PaiseFormat` | B2, C4, C5, D4, F3, G2 | DS5 |
 | app UI (`ui/common`) | `StatusChip` | C4, C5, D4, E4 | DS5 |
 | app UI (`ui/common`) | `GroupedSection` | C4 accounts strip, C5 detail, D4 detail, AP1/H1 settings, H2 diagnostics | DS5 |
+| app UI (`ui/common`) | `TransactionRow` + `TransactionRowModel` (plain data; one node, one spoken description) and `DayGroup` (header with an injected `today`, optional `Net` total, one `GroupedSection` island) | C4a Transactions tab, C4d Home recent, C5b search results, D4 budget detail, F3 loan detail | K5 |
 | app UI (`ui/common`) | `EmptyState` | B2 `EntityListScreen` (all lists), C4 empty month, C5 no results | DS5 |
 | app UI (`ui/theme`) | `PftSymbol` (92 Material Symbols, permanent keys, `fromKey`) | `CategoryGlyph`; chrome icons everywhere (DS6e `HeaderIconButton`, A5 nav, B4 symbol grid) | DS3 |
 | app UI (`ui/theme`) | `CategoryPalette` (`PftTheme.palette`, 12 named hues, light and dark), `GlyphSize` | `CategoryGlyph`; B4 palette swatches | DS3 |

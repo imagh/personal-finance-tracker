@@ -25,7 +25,7 @@ import dev.imagh.pft.ledger.account.AccountType
 import dev.imagh.pft.ledger.ids.AccountId
 
 /**
- * The accounts list drawn from [state] alone: the shared `EntityListScreen` over account rows
+ * The accounts tab's root, drawn from [state] alone: the shared `EntityListScreen` over account rows
  * ([AccountRowMapper]). Active accounts offer Archive and Delete; archived ones offer Unarchive and
  * Delete. The add button (and the empty state's "Add account") opens the create form, and tapping a
  * row, active or archived, opens that account's edit form.
@@ -35,14 +35,12 @@ import dev.imagh.pft.ledger.ids.AccountId
  * @param actions what each row action does.
  * @param snackbars the state behind the host this screen renders; the route shows the Undo and
  *   failure messages on it.
- * @param onBack called when Back is tapped.
  */
 @Composable
 fun AccountsScreen(
     state: AccountsUiState,
     actions: AccountsActions,
     snackbars: SnackbarHostState,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val typeLabels = AccountType.entries.associateWith { stringResource(typeLabelRes(it)) }
@@ -64,7 +62,7 @@ fun AccountsScreen(
         archived = state.archived.map { it.row(unarchive to actions.unarchive, delete to actions.delete) },
         emptyMessage = stringResource(R.string.accounts_empty),
         snackbarHost = { SnackbarHost(snackbars) },
-        onBack = onBack,
+        onBack = null,
         modifier = modifier,
         add = RowAction(addLabel, actions.add),
         loaded = state.loaded,
@@ -84,7 +82,7 @@ fun AccountsScreen(
  *   [notFound] and this shows "That account no longer exists", then calls [onNotFoundShown].
  *
  * @param services the open object graph the accounts service is taken from.
- * @param navigation where Back, the add button and a row tap go.
+ * @param navigation where the add button and a row tap go.
  * @param notFound true while a "no longer exists" message is waiting to be shown.
  * @param onNotFoundShown the message was shown; the caller clears [notFound].
  */
@@ -140,7 +138,7 @@ fun AccountsRoute(
                 edit = { latestNavigation.edit(it) },
             )
         }
-    AccountsScreen(state, actions, snackbars, onBack = { latestNavigation.back() }, modifier = modifier)
+    AccountsScreen(state, actions, snackbars, modifier)
 }
 
 @StringRes

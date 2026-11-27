@@ -1,6 +1,7 @@
 package dev.imagh.pft.app.ui.common
 
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.text.TextLayoutResult
@@ -40,5 +41,15 @@ internal fun TextLayoutResult.assertShownInFull(context: String = "") {
         isShownInFull(),
     )
 }
+
+/** The node's single `TextLayoutResult`, read through semantics. */
+internal fun SemanticsNode.layoutResult(): TextLayoutResult {
+    val results = mutableListOf<TextLayoutResult>()
+    config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+    return results.single()
+}
+
+/** The text this node's layout shows. */
+internal fun SemanticsNode.shownText(): String = layoutResult().layoutInput.text.text
 
 private const val HALF_PIXEL = 0.5f

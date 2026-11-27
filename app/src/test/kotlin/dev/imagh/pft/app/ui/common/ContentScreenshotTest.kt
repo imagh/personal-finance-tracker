@@ -23,8 +23,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Golden screenshots of the DS5 content primitives (`MoneyText`, `StatusChip`, `GroupedSection`,
- * `EmptyState`) in light and dark, and `MoneyText` also at font scale 2.0, on a 393x851dp xxhdpi
- * screen with the committed Graphite scheme (dynamic colour off, so the goldens are deterministic).
+ * `EmptyState`) and K5's `TransactionRow` and `DayGroup` in light and dark, and `MoneyText` also at font scale 2.0,
+ * on a 393x851dp xxhdpi screen with the committed default scheme (dynamic colour off, so the goldens are
+ * deterministic).
  * Each shows the same `*Samples` composable as the preview and the debug catalogue, captured by
  * the bounds of the sample, on `surface`. Fake data only.
  *
@@ -88,6 +89,22 @@ class ContentScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun groupedSectionDark() = capture("grouped-section-dark") { GroupedSectionSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun transactionRowLight() = capture("transaction-row-light") { TransactionRowSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun transactionRowDark() = capture("transaction-row-dark") { TransactionRowSamples() }
+
+    @Test
+    @Config(qualifiers = "+notnight")
+    fun dayGroupLight() = capture("day-group-light") { DayGroupSamples() }
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun dayGroupDark() = capture("day-group-dark") { DayGroupSamples() }
 
     @Test
     @Config(qualifiers = "+notnight")

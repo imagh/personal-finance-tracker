@@ -293,16 +293,16 @@ class CollapsingHeaderScaffoldTest {
             .layoutInput.style.fontSize.value
     }
 
-    private fun FontFamily?.isNewsreader() =
+    private fun FontFamily?.isBricolage() =
         (this as? FontListFontFamily)?.fonts.orEmpty().let { fonts ->
-            fonts.isNotEmpty() && fonts.all { it is ResourceFont && it.resId == R.font.newsreader }
+            fonts.isNotEmpty() && fonts.all { it is ResourceFont && it.resId == R.font.bricolage_grotesque }
         }
 
     @Test
     fun `on a Dashboard header the hero uses the display family and the title uses the text family`() {
         show(style = HeaderStyle.Dashboard, hero = sampleHero)
-        assertTrue(tag("hero-text").textStyleFamily().isNewsreader())
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_LARGE).textStyleFamily())
+        assertTrue(tag("hero-text").textStyleFamily().isBricolage())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.TITLE_LARGE).textStyleFamily())
     }
 
     @Test
@@ -325,10 +325,10 @@ class CollapsingHeaderScaffoldTest {
             subtitle = "October - 3 days left",
             prefs = ThemePrefs(dynamicColor = false, typePairing = TypePairing.HERO_ONLY),
         )
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_LARGE).textStyleFamily())
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.SUBTITLE).textStyleFamily())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.TITLE_LARGE).textStyleFamily())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.SUBTITLE).textStyleFamily())
         swipeListUp()
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_BAR).textStyleFamily())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.TITLE_BAR).textStyleFamily())
         assertEquals(22f, tag(HeaderTags.TITLE_BAR).fontSizeSp(), 0f)
     }
 
@@ -336,7 +336,7 @@ class CollapsingHeaderScaffoldTest {
     fun `the collapsed bar title is sans on a Dashboard header too`() {
         show(style = HeaderStyle.Dashboard, hero = sampleHero)
         swipeListUp()
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_BAR).textStyleFamily())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.TITLE_BAR).textStyleFamily())
     }
 
     // --- header layout rule (Q10) ---------------------------------------------------------

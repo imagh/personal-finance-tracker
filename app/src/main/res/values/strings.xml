@@ -16,11 +16,22 @@
     <string name="money_expense">Expense</string>
     <string name="money_income">Income</string>
     <string name="money_transfer">Transfer</string>
+    <string name="money_net">Net</string>
+    <!-- A negative net figure says its sign aloud; %1$s is the formatted figure, e.g. ₹250.00. -->
+    <string name="money_net_negative">Net, minus %1$s</string>
     <string name="money_balance">Balance</string>
     <string name="money_balance_negative">Negative balance</string>
     <string name="money_budget_under">Under budget</string>
     <string name="money_budget_near_limit">Budget near its limit</string>
     <string name="money_budget_over">Over budget</string>
+    <!-- Transaction rows and day groups (TransactionRow, DayGroup): the review chip and the day headers. -->
+    <string name="transaction_needs_review">Needs review</string>
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
+    <!-- Home balance card (BalanceCard): the caption over the hero and the words naming the two figures. -->
+    <string name="balance_card_caption">Spent this month</string>
+    <string name="balance_card_in">In</string>
+    <string name="balance_card_out">Out</string>
     <!-- Form blocks (FieldError.message(), EditFormScaffold). The limit in field_too_long comes from core's validation. -->
     <string name="field_required">Required</string>
     <string name="field_too_long">At most %1$d characters</string>
@@ -46,15 +57,18 @@
     <string name="setup_continue">Continue</string>
     <!-- Shown under the fields after an unexpected failure to save; fixed text, never exception text. -->
     <string name="setup_save_failed">Couldn\'t save. Try again.</string>
-    <!-- Home placeholder (HomeScreen): who is using this phone, until C4 brings the real Home. -->
-    <string name="home_title">Home</string>
-    <string name="home_subtitle">%1$s · %2$s</string>
-    <string name="home_placeholder">Open More to manage your accounts. Transactions arrive in the next update</string>
-    <!-- Spoken label of Home's header button that opens the More screen. -->
-    <string name="home_more">More</string>
-    <!-- More screen (MoreScreen): the entry point to the entity lists. -->
+    <!-- Home placeholder (HomeScreen), until C4 brings the real Home. -->
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="home_placeholder">Manage your accounts from the Accounts tab. Transactions arrive in the next update</string>
+    <!-- Tab bar (PftTabBar): the spoken name of every tab, and the active tab's label. -->
+    <string name="tab_home">Home</string>
+    <string name="tab_accounts">Accounts</string>
+    <string name="tab_more">More</string>
+    <!-- More tab (MoreScreen): the entry point to the lists that are not tabs; the subtitle says who is using this phone. -->
     <string name="more_title">More</string>
-    <string name="more_accounts">Accounts</string>
+    <string name="more_subtitle">%1$s · %2$s</string>
     <string name="more_categories">Categories</string>
     <string name="more_tags">Tags</string>
     <!-- Accounts list (AccountsScreen): row actions, the fixed messages and the type names. -->

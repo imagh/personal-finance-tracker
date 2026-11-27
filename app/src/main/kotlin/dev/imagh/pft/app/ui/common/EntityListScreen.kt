@@ -58,12 +58,16 @@ private val ROW_ICON_SIZE = 24.dp
  *   a button when there is one.
  * - **Add.** [add] is both the floating action button (a labelled `+`) and the empty state's button.
  *   Null hides both, for a list whose add form does not exist yet.
+ * - **Tab bar.** Under the floating tab bar, `LocalTabBarClearance` lifts the add button (and so the
+ *   snackbar, which the scaffold keeps above it) and adds the same space below the last row, so the bar
+ *   covers neither. It is zero wherever the bar is not drawn.
  *
  * @param title the screen name.
  * @param active the rows to offer, in display order.
  * @param archived the archived rows, in display order.
  * @param emptyMessage what the empty state says ("No accounts yet").
- * @param onBack called when the header's Back is tapped.
+ * @param onBack called when the header's Back is tapped, or null for no Back button: a tab-root list (the
+ *   accounts tab) is reached from the tab bar, so it has nothing to go back to.
  * @param add the add action (its label is the spoken label of the `+` and the empty state's button
  *   text), or null for none.
  * @param snackbarHost where snackbars show; pass a `SnackbarHost` over the state the consumer's
@@ -80,7 +84,7 @@ fun EntityListScreen(
     active: List<EntityRow>,
     archived: List<EntityRow>,
     emptyMessage: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     add: RowAction? = null,
     snackbarHost: @Composable () -> Unit = {},
@@ -89,14 +93,15 @@ fun EntityListScreen(
 ) {
     val spacing = PftTheme.spacing
     val backLabel = stringResource(R.string.form_back)
+    val barClearance = LocalTabBarClearance.current
     var archivedExpanded by rememberSaveable { mutableStateOf(false) }
     CollapsingHeaderScaffold(
         title = title,
         modifier = modifier,
-        actions = { HeaderIconButton(PftSymbol.BACK, backLabel, onBack) },
+        actions = { if (onBack != null) HeaderIconButton(PftSymbol.BACK, backLabel, onBack) },
         floatingActionButton = {
             if (add != null) {
-                FloatingActionButton(onClick = add.onClick) {
+                FloatingActionButton(onClick = add.onClick, modifier = Modifier.padding(bottom = barClearance)) {
                     Icon(painterResource(PftSymbol.ADD.res), contentDescription = add.label)
                 }
             }
@@ -119,8 +124,9 @@ fun EntityListScreen(
                 item(key = ARCHIVED_KEY) { EntitySection(archived) }
             }
         }
-        // Room below the last row, so the floating button never covers it.
-        if (add != null) item(key = FAB_CLEARANCE_KEY) { Spacer(Modifier.height(spacing.huge + spacing.huge)) }
+        // Room below the last row, so neither the floating button nor the tab bar covers it.
+        val roomBelow = (if (add != null) spacing.huge + spacing.huge else 0.dp) + barClearance
+        if (roomBelow > 0.dp) item(key = FAB_CLEARANCE_KEY) { Spacer(Modifier.height(roomBelow)) }
     }
 }
 

@@ -14,12 +14,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * Picks the colours for the resolved theme: the M3 scheme plus the canvas, island and wash.
+ * Picks the colours for the resolved theme: the M3 scheme plus the canvas, island, wash and brand tokens.
  *
  * With [ThemePrefs.dynamicColor] on (opt-in), the scheme comes from the system's Material You
- * palette, the palette fields are ignored, and the canvas, island and wash are derived from that scheme
- * by [dynamicPaletteColors]. That needs API 31 and the app's minSdk is 33, so there is no version
- * fallback. With it off, the colours are the committed palette the user picked for this mode:
+ * palette, the palette fields are ignored, and the canvas, island, wash and brand tokens are derived from
+ * that scheme by [dynamicPaletteColors]. That needs API 31 and the app's minSdk is 33, so there is no
+ * version fallback. With it off, the colours are the committed palette the user picked for this mode:
  * [ThemePrefs.darkPalette] in dark, [ThemePrefs.lightPalette] in light.
  *
  * @param dark the already-resolved dark/light decision (see [ThemeMode]).
@@ -46,7 +46,7 @@ fun resolveColorScheme(
 ): ColorScheme = resolvePaletteColors(prefs, dark, context).scheme
 
 /**
- * The canvas, island and wash for a dynamic [scheme], which has no such roles. The canvas and
+ * The canvas, island, wash and brand tokens for a dynamic [scheme], which has no such roles. The canvas and
  * island are surface container steps, chosen so the island still lifts off the canvas (plan §3.1);
  * the wash is the scheme's own primary container, a tint of the user's wallpaper colour:
  *
@@ -55,6 +55,8 @@ fun resolveColorScheme(
  * | canvas | `surfaceContainerHigh` (tone 92) | `surfaceContainerLowest` (tone 4) |
  * | island | `surfaceContainerLow` (tone 96) | `surfaceContainerLow` (tone 10) |
  * | wash | `primaryContainer` (tone 90) | `primaryContainer` (tone 30) |
+ *
+ * The brand tokens are [derivedBrand] of the scheme and the island above (no hand-picked values).
  *
  * Pure, so the tests can pin it. Light `surfaceContainerLowest` (white) is never used.
  */
@@ -72,8 +74,8 @@ internal fun dynamicPaletteColors(
 /**
  * Wraps the app's UI: resolves dark or light from [prefs], picks the colour scheme with
  * [resolveColorScheme], applies it through [MaterialTheme] and provides the extended tokens
- * (read them through the [PftTheme] object). This is the only theme entry point; M3 components
- * are styled from it, never wrapped to restyle them.
+ * (read them through the [PftTheme] object: `surfaces`, `brand`, `money`, ...). This is the only theme
+ * entry point; M3 components are styled from it, never wrapped to restyle them.
  *
  * The type scale is the sans text family ([ThemePrefs.sansFont], the bundled Figtree by default)
  * except the roles [ThemePrefs.typePairing] sets in the
@@ -109,6 +111,7 @@ fun PftTheme(
         LocalCategoryPalette provides categoryPalette(dark),
         LocalPftTypography provides pftType,
         LocalPftSurfaces provides pftSurfaces(palette, prefs.background, dark, prefs.headerGlow),
+        LocalPftBrand provides palette.brand,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -145,6 +148,12 @@ object PftTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalPftSurfaces.current
+
+    /** The brand fill, the balance card gradient and the tab bar fill for the current palette and mode. */
+    val brand: BrandColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalPftBrand.current
 
     /** The amount text styles ([PftTypography]); every other text role is `MaterialTheme.typography`. */
     val type: PftTypography
