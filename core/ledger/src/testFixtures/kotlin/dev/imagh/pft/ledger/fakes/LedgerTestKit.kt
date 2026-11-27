@@ -13,6 +13,7 @@ import dev.imagh.pft.ledger.setup.FirstRunService
 import dev.imagh.pft.ledger.tag.TagService
 import dev.imagh.pft.ledger.transaction.TransactionLines
 import dev.imagh.pft.ledger.transaction.TransactionService
+import dev.imagh.pft.ledger.transaction.TransferService
 
 /**
  * The core object graph wired over in-memory fakes, so a service test starts with one line
@@ -73,13 +74,28 @@ class LedgerTestKit {
     /** Tags: create, rename, archive, delete, restore, the lists and the picker list. */
     val tags = TagService(store, writer, tagRepository, transactionLineRepository, ids)
 
+    /** The line rules both transaction services share (one instance, as in `AppServices`). */
+    private val transactionLines =
+        TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository, ids)
+
     /** Transactions: create, edit, delete, restore, mark verified and read, with their lines. */
     val transactions =
         TransactionService(
             store,
             writer,
             transactionRepository,
-            TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository, ids),
+            transactionLines,
+            accountRepository,
+            ids,
+        )
+
+    /** Transfers between two accounts: create and edit, the two legs written together. */
+    val transfers =
+        TransferService(
+            store,
+            writer,
+            transactionRepository,
+            transactionLines,
             accountRepository,
             ids,
         )

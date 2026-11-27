@@ -52,7 +52,7 @@ entity step composes instead of re-implementing:
 | `AccountService`, `Account`, `AccountType`, `AccountDraft`, `AccountLists`, `AccountRules`, `AccountRepository` | `account` | accounts (PRD L-4): `create(draft)`, `edit(id, draft)`, `archive`/`unarchive`, `delete`/`restore`, `active()`, `all()`, `lists()` (active and archived, each sorted by name ignoring case, then by creation order); `AccountRules.requireMaskedIdentifier(text)` is public so a form can check the last four with core's rule. `AccountRepository` adds `allLive()` to `EntityRepository` |
 | `CategoryService`, `Category`, `CategoryLists`, `CategoryKind`, `CategoryDraft`, `CategoryColour`, `CategoryIcon`, `SystemCategory`, `DefaultCategories`, `DefaultCategory`, `CategoryRepository` | `category` | categories (PRD L-2): `create(parentId, kind, draft)`, `edit(id, draft)` (name, colour, icon only), `reorder(parentId, kind, orderedIds)`, `archive`/`unarchive`, `delete`/`restore`, `pickable(kind)`, `lists(kind)` (for a list screen: `CategoryLists(active, archived)`, B4a), `seedDefaults()`. `CategoryColour` is the 12 permanent palette keys (`fromStored`: unknown becomes slate); `CategoryIcon` is `Symbol(key)` / `Emoji(text)` with `toStored()`, `parse(stored)` and `isValid`, the one home of the `icon_key` grammar (the app's `GlyphSource` delegates to it). `CategoryRepository` adds `allLive()` and `bySystemKey(key)` to `EntityRepository`. `CategoryTree` (sorting, sibling checks, picker order) is internal: plain functions over `allLive()`, unit-tested without a repository |
 | `TagService`, `Tag`, `TagLists`, `TagRepository` | `tag` | tags (PRD L-3): `create(name)`, `edit(id, name)` (rename), `archive`/`unarchive`, `delete`/`restore`, `lists()` (active and archived, each sorted by name ignoring case, then by id), `pickable()` (the active list). `TagRepository` adds `allLive()` to `EntityRepository`. The service takes a `TransactionRunner` for the check-then-write name rule |
-| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-6, L-9, L-11), slices C1a and C1b: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay), `markVerified(id)`, `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines(writer, lines, categories, tags, ids)` is the line logic the transaction and (from C2) transfer services share (create, reconcile, the reference checks and the sum re-check): its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised), `isCategoryInUse(id)` and `isTagInUse(id)` (a live line of a live transaction uses it); `TransactionRepository` adds `isAccountInUse(id)` (a live transaction is on it). `AccountService`, `CategoryService` and `TagService` take these repositories to refuse a delete with `LedgerError.InUse(what)`. Create and edit take 1 to 50 lines (itemising, C1b) |
+| `TransactionService`, `LedgerTransaction`, `TransactionLine`, `TransactionType`, `Direction`, `TxnState`, `TxnSource`, `TransactionDraft`, `LineDraft`, `Breakdown`, `TransactionWithLines`, `TransactionLines`, `TransferService`, `TransferDraft`, `Transfer`, `TransactionRepository`, `TransactionLineRepository` | `transaction` | transactions (PRD L-1, L-5, L-6, L-9, L-11), slices C1a, C1b and C2: `create(draft)`, `edit(id, draft)`, `delete`/`restore` (the transaction only; its lines stay; a transfer leg acts on **both legs**), `markVerified(id)` (refused on a transfer leg), `get(id): TransactionWithLines?` (live only, lines by position, then id). A transaction holds the payment facts and **one or more lines** hold the classification (category, tags, note). `Breakdown.of(total, drafts)` is the pure check of a split (count, amounts, notes, distinct ids, exact sum). `TransactionLines(writer, lines, categories, tags, ids)` is the line logic the transaction and transfer services share (create, reconcile, the reference checks and the sum re-check): its constructor is public so `app` can wire it, its operations are `internal`. `TransactionLineRepository` adds `liveLinesOf(txnId)` (no order promised), `isCategoryInUse(id)` and `isTagInUse(id)` (a live line of a live transaction uses it); `TransactionRepository` adds `isAccountInUse(id)` (a live transaction is on it) and `legsOfGroup(groupId)` (every transaction of a transfer group, tombstones included, no order promised). `TransferService.create(TransferDraft): Transfer` and `edit(groupId, TransferDraft): Transfer` write a transfer (C2, see Behaviours); delete and restore of a transfer go through `TransactionService`. `AccountService`, `CategoryService` and `TagService` take these repositories to refuse a delete with `LedgerError.InUse(what)`. Create and edit take 1 to 50 lines (itemising, C1b) |
 | `FirstRunService` | `setup` | `initialise(userName, deviceLabel)`: the identity (`IdentityService.initialise`) **and** `CategoryService.seedDefaults()` in one transaction. A plain coordinating class; `IdentityService` stays unaware of categories because the writer needs the identity service (a construction cycle otherwise) |
 
 ### Test fixtures (`java-test-fixtures`, shared by `budget`, `recurring`, ...)
@@ -69,8 +69,8 @@ Consume with `testImplementation(testFixtures(project(":core:ledger")))`. Packag
 | `InMemoryAccountRepository` | `AccountRepository` over `InMemoryEntityRepository` (adds `allLive()`, which returns rows newest first on purpose, so no test depends on an order the contract does not promise); `all()` returns every row, tombstones included, in insertion order |
 | `InMemoryCategoryRepository` | `CategoryRepository` over `InMemoryEntityRepository` (adds `allLive()`, newest first on purpose, and `bySystemKey`) |
 | `InMemoryTagRepository` | `TagRepository` over `InMemoryEntityRepository` (adds `allLive()`, newest first on purpose) |
-| `InMemoryTransactionRepository`, `InMemoryTransactionLineRepository` | the transaction stores over `InMemoryEntityRepository`; `liveLinesOf` returns newest first on purpose; the line store joins to the transaction store for the in-use queries, as the SQL does |
-| `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `accountRepository`, `accounts` (an `AccountService`), `categoryRepository`, `categories` (a `CategoryService`), `tagRepository`, `tags` (a `TagService`), `transactionRepository`, `transactionLineRepository`, `transactions` (a `TransactionService`), `firstRun` (a `FirstRunService`), `initialise()` (identity only, no defaults); `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
+| `InMemoryTransactionRepository`, `InMemoryTransactionLineRepository` | the transaction stores over `InMemoryEntityRepository`; `liveLinesOf` and `legsOfGroup` return newest first on purpose; the line store joins to the transaction store for the in-use queries, as the SQL does |
+| `LedgerTestKit` | the whole graph wired over the fakes: `store`, `clock`, `ids`, `identity`, `settings`, `writer`, `accountRepository`, `accounts` (an `AccountService`), `categoryRepository`, `categories` (a `CategoryService`), `tagRepository`, `tags` (a `TagService`), `transactionRepository`, `transactionLineRepository`, `transactions` (a `TransactionService`), `transfers` (a `TransferService`), `firstRun` (a `FirstRunService`), `initialise()` (identity only, no defaults); `writerWith(log)` / `identityServiceWith(log)` inject a failing audit log |
 | `TestClock` | a hand-moved `java.time.Clock` |
 | `AuditFieldsCheck`, `shouldHaveCompleteAuditFields()` | Asserts an entity's `auditFields()` is complete (see above); `InMemoryEntityRepository` runs it on every write, with no opt-out |
 | `shouldHaveAudited` / `shouldNotHaveAudited` | Kotest matchers over an audit trail: `kit.store.auditLog.entries.shouldHaveAudited("account", id, AuditAction.CREATE, userId = ...)` |
@@ -204,8 +204,8 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
 - **Transactions** (`TransactionService`, slice C D2/D3, IT §3.1 to §3.3).
   - *The sum invariant* (hardcoded, CLAUDE.md §3.8): every live transaction has at least one live
     line, and its live lines' amounts add up **exactly** to its amount. `ledger_transaction` holds no
-    category and no tags; they live on `transaction_line`. `TransactionService` is the only writer of
-    both, and every create and edit passes `Breakdown.of` before anything is written: 1 to 50 lines
+    category and no tags; they live on `transaction_line`. `TransactionService` and `TransferService` are the only writers of
+    both (through `TransactionLines`), and every create and edit passes `Breakdown.of` before anything is written: 1 to 50 lines
     (`TooManyLines(50)`), each amount positive and within the limit, notes trimmed and at most 200
     characters (`NameTooLong(200)`), no line id twice (`DuplicateLine`), and the exact sum with
     `Paise.plus` (`BreakdownMismatch`, also for an empty list). The transaction's own amount is
@@ -213,8 +213,8 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
   - *Manual entries* are `MANUAL` and `VERIFIED` (L-6); `direction` follows the type (expense OUT,
     income IN). Title, description and bank reference are optional: trimmed, blank stored as null,
     at most 200, 2000 and 64 characters. A `TRANSFER` draft, or an edit of a stored transfer leg, is
-    refused with `IsTransfer`, and so are `delete`, `restore` and `markVerified` on a transfer leg, so
-    one leg never changes without the other (transfers get their own service in C2).
+    refused with `IsTransfer` (a transfer is created and edited with `TransferService`), and so is
+    `markVerified` on a leg. `delete` and `restore` of a leg act on both legs (see *Transfers* below).
   - *References are checked only where they change* (IT §3.3 rule 3): the account and a line's
     category must be live when set or changed, an added tag must be live; what a transaction keeps
     may have been archived since, so editing an old transaction's title never fails. The category's
@@ -244,7 +244,7 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     reconciliation or a store that misbehaves; since the sum must match exactly, tests inject a store that
     drops an insert and one that stores an extra line.
   - *Edit* audits only the changed fields of each row and keeps the state, source and message facts;
-    a no-op edit writes nothing. *Delete and restore* act on the transaction only: its lines stay,
+    a no-op edit writes nothing. *Delete and restore* act on the transaction row only: its lines stay,
     hidden with it, so restore brings back exactly the lines it had. Because the in-use check counts
     live transactions only, a deleted one may point at something deleted since, so `restore` first
     checks that its account, and the category and tags of its **live** lines, are not deleted
@@ -252,6 +252,27 @@ writer.create(accounts, AccountId(ids.next())) { Account(it, name) }
     sub-category restored under a deleted parent). `get` reads the transaction and
     its lines in one `runner.inTransaction`. `markVerified` audits
     `state: UNVERIFIED -> VERIFIED`; on a verified one it is a no-op.
+  - *Transfers* (C2; IT §3.3 rule 2, PRD L-5). `TransferService` writes money moved between two of the
+    user's accounts as **two linked transactions**: an OUT leg on the source and an IN leg on the target,
+    both `type = TRANSFER`, sharing a `transfer_group_id` (a `Uuid7`), with the same amount, time, title
+    and description, `MANUAL` and `VERIFIED`. A card bill payment is a transfer from a bank account to a
+    credit card. Each leg has **exactly one line**, uncategorised, carrying the whole amount and the
+    transfer's tags (the same on both); a category, or other than one line, is
+    `TransferCannotBeItemised` (the rule is in `TransactionLines`, so it holds on create and reconcile).
+    The same account on both sides is `SameAccount`; the amount, texts, accounts and tags are checked as
+    for any transaction. *Create* gives four CREATE entries (two transactions, two lines). *Edit*
+    (`edit(groupId, draft)`) updates both legs and both lines (same line ids, same group, same
+    directions), keeps the line-sum invariant on each, audits only what changed, and refuses a deleted
+    transfer with `Deleted` as an edit of a deleted transaction does; a group that is not exactly one OUT
+    and one IN leg, or a leg without exactly one live line, fails closed with `IllegalStateException`.
+    **Every write of a pair is one transaction**: both legs, both lines and every audit entry, or nothing.
+    `TransactionService.delete` and `restore` find the other leg by `transfer_group_id` and act on both in
+    one `runner.inTransaction` (a DELETE or RESTORE entry for each leg; lines stay); a restore runs the
+    in-use checks for both legs, so a deleted account on either side refuses the whole restore. A
+    transfer leg with no group id is refused with `IsTransfer` (its other leg cannot be found; fail
+    closed). `TransactionService.edit` and `markVerified` on a leg stay `IsTransfer`; verifying a transfer
+    is revisited with the M1b captures (a manual transfer is verified when made). Balances and totals (C3a)
+    must count a transfer as neither income nor expense.
   - *Audit keys.* `ledger_transaction`: `type`, `direction`, `amount`, `occurred_at`, `account_id`,
     `title`, `description`, `state`, `source`, `bank_ref`, `source_message_id`, `account_fragment`,
     `transfer_group_id` (no `recurring_rule_id`: E3 adds it, Q8). `transaction_line`:

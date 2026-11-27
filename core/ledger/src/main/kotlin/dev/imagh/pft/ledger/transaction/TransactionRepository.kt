@@ -16,4 +16,10 @@ interface TransactionRepository : EntityRepository<LedgerTransaction, Transactio
      * existence check on the account itself.
      */
     suspend fun isAccountInUse(id: AccountId): Boolean
+
+    /**
+     * Every transaction whose `transfer_group_id` is [groupId], **tombstones included**, in no
+     * particular order (the service sorts): the legs of one transfer, normally two.
+     */
+    suspend fun legsOfGroup(groupId: String): List<LedgerTransaction>
 }

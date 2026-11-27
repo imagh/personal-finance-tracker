@@ -12,10 +12,11 @@ import java.time.Instant
  * account. Its classification (category, tags, note) lives on its [TransactionLine]s, never here.
  *
  * **The sum invariant** (hardcoded, CLAUDE.md §3.8): a live transaction has at least one live line,
- * and its live lines' amounts add up exactly to [amount]. [TransactionService] is the only writer of
- * both, and checks it before anything is written ([Breakdown]).
+ * and its live lines' amounts add up exactly to [amount]. [TransactionService] and
+ * [TransferService] are the only writers of both, and both write lines through [TransactionLines], which
+ * checks the sum before anything is committed ([Breakdown], then a re-read).
  *
- * Built only by [TransactionService], which validates and trims the values.
+ * Built only by [TransactionService] and [TransferService], which validate and trim the values.
  *
  * @param type expense, income or a transfer leg.
  * @param direction [Direction.OUT] for an expense, [Direction.IN] for an income; a transfer leg stores
@@ -32,7 +33,7 @@ import java.time.Instant
  *   logged.
  * @param sourceMessageId the id of the SMS or email it was parsed from, or null (M1b).
  * @param accountFragment the account digits the message named, or null (M1b). Sensitive: never logged.
- * @param transferGroupId the id both legs of a transfer share, or null (slice C2).
+ * @param transferGroupId the id both legs of a transfer share, or null for an expense or income.
  */
 data class LedgerTransaction(
     override val meta: EntityMeta<TransactionId>,

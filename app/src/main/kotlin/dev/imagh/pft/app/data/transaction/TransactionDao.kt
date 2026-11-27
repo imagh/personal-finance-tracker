@@ -16,4 +16,11 @@ interface TransactionDao : BaseDao<LedgerTransactionEntity> {
     /** True if a transaction on [accountId] is not tombstoned (the in-use check; indexed by `account_id`). */
     @Query("SELECT EXISTS(SELECT 1 FROM ledger_transaction WHERE account_id = :accountId AND deleted_at IS NULL)")
     suspend fun isAccountUsed(accountId: String): Boolean
+
+    /**
+     * Every transaction of one transfer group, tombstones included (the legs; indexed by `transfer_group_id`).
+     * Bound parameter only; the order is unspecified.
+     */
+    @Query("SELECT * FROM ledger_transaction WHERE transfer_group_id = :groupId")
+    suspend fun byTransferGroup(groupId: String): List<LedgerTransactionEntity>
 }

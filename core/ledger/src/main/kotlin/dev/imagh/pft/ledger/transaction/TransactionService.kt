@@ -11,8 +11,10 @@ import dev.imagh.pft.ledger.validation.Validation
 
 /**
  * Expenses and incomes (PRD L-1, L-5, L-6, L-9, L-11): create, edit, delete, restore, mark verified
- * and read, each transaction with its lines (items). The only writer of transactions and lines, so
- * the sum invariant (the live lines add up exactly to the amount, CLAUDE.md §3.8) cannot be skipped.
+ * and read, each transaction with its lines (items). Together with [TransferService]
+ * the only writer of transactions and lines, both through [TransactionLines], so the sum invariant (the live
+ * lines add up exactly to the amount, CLAUDE.md §3.8) cannot be skipped. Delete and restore also act on both
+ * legs of a transfer.
  * A concrete service: it states the rules and leaves the transaction, attribution and audit trail to
  * [AuditedWriter]; the line rules live in [TransactionLines].
  *
@@ -31,12 +33,13 @@ import dev.imagh.pft.ledger.validation.Validation
  * - a manual entry is [TxnSource.MANUAL] and [TxnState.VERIFIED] (L-6); the direction follows the type;
  * - an edit keeps the state, source and message facts, refuses a transfer leg ([LedgerError.IsTransfer]),
  *   and audits only the fields that changed (an edit that changes nothing writes nothing);
- * - delete and restore act on the transaction only: its lines stay as they are, so a restore brings
+ * - delete and restore act on the transaction row only: its lines stay as they are, so a restore brings
  *   back exactly the lines it had (IT §3.3 rule 7). A restore is refused ([LedgerError.Deleted]) when its
  *   account, or the category or tag of a live line, was deleted since: deleting a transaction frees them
  *   to be deleted, as a sub-category is not restored under a deleted parent. Archived ones are fine.
- * - a transfer leg is refused by every call here ([LedgerError.IsTransfer]): one leg must never be
- *   edited, deleted, restored or verified without the other. The transfer service (C2) acts on both.
+ * - a transfer leg is never acted on alone: delete and restore act on **both legs** in one transaction (a
+ *   restore is refused when either leg's account was deleted), while edit and verify are refused with
+ *   [LedgerError.IsTransfer]. A transfer is created and edited by [TransferService].
  *
  * Nothing here logs or puts user text in an error (CLAUDE.md §3.7).
  *
@@ -133,42 +136,55 @@ class TransactionService(
 
     /**
      * Deletes transaction [id] as a tombstone (audited DELETE); its lines are left as they are and
-     * hidden with it. Already deleted is a no-op.
+     * hidden with it. Already deleted is a no-op. A transfer leg deletes **both legs** in one transaction
+     * (audited DELETE of each): half a transfer must never be left behind.
      *
-     * @throws LedgerError.IsTransfer for a transfer leg: deleting one leg would leave half a transfer.
+     * @return the transaction [id] as now stored (for a transfer, the leg asked for).
+     * @throws LedgerError.IsTransfer for a transfer leg with no group id (its other leg cannot be found).
      * @throws LedgerError.NotFound for an unknown transaction.
+     * @throws IllegalStateException for a transfer whose group is not exactly one OUT and one IN leg.
      */
-    suspend fun delete(id: TransactionId): LedgerTransaction = notTransfer(id) { writer.delete(transactions, id) }
+    suspend fun delete(id: TransactionId): LedgerTransaction =
+        runner.inTransaction {
+            legsWith(id).map { writer.delete(transactions, it.meta.id) }.first { it.meta.id == id }
+        }
 
     /**
      * Brings deleted transaction [id] back (audited RESTORE), with the lines it had. Not deleted is a
      * no-op. Deleting a transaction frees its account, categories and tags to be deleted, so the
-     * restore first checks that none of them was deleted since; archived ones are fine (D4, Q4).
+     * restore first checks that none of them was deleted since; archived ones are fine (D4, Q4). A
+     * transfer leg restores **both legs** in one transaction, and the checks cover both: a deleted
+     * account on either leg refuses the whole restore.
      *
-     * @throws LedgerError.IsTransfer for a transfer leg.
+     * @return the transaction [id] as now stored (for a transfer, the leg asked for).
+     * @throws LedgerError.IsTransfer for a transfer leg with no group id.
      * @throws LedgerError.NotFound for an unknown transaction.
      * @throws LedgerError.Deleted (`account`, `category` or `tag`) if its account, or a category or tag of
      *   one of its live lines, was deleted since; nothing is written.
      */
     suspend fun restore(id: TransactionId): LedgerTransaction =
-        notTransfer(id) {
-            val txn = transactions.get(id)
-            if (txn != null && txn.meta.isDeleted) {
-                Validation.requireNotDeleted(accounts.get(txn.accountId), ACCOUNT)
-                lines.requireReferencesNotDeleted(id)
+        runner.inTransaction {
+            val legs = legsWith(id)
+            legs.filter { it.meta.isDeleted }.forEach {
+                Validation.requireNotDeleted(accounts.get(it.accountId), ACCOUNT)
+                lines.requireReferencesNotDeleted(it.meta.id)
             }
-            writer.restore(transactions, id)
+            legs.map { writer.restore(transactions, it.meta.id) }.first { it.meta.id == id }
         }
 
     /**
      * Marks transaction [id] as confirmed by the user (L-6): an audited UPDATE of `state`. Already
-     * verified is a no-op.
+     * verified is a no-op. A transfer leg is refused: a manual transfer is verified when it is made, and a
+     * captured one is revisited with the M1b captures.
      *
      * @throws LedgerError.IsTransfer for a transfer leg.
      * @throws LedgerError.NotFound / [LedgerError.Deleted] for an unknown or deleted transaction.
      */
     suspend fun markVerified(id: TransactionId): LedgerTransaction =
-        notTransfer(id) { writer.update(transactions, id) { it.copy(state = TxnState.VERIFIED) } }
+        runner.inTransaction {
+            if (transactions.get(id)?.type == TransactionType.TRANSFER) throw LedgerError.IsTransfer()
+            writer.update(transactions, id) { it.copy(state = TxnState.VERIFIED) }
+        }
 
     /**
      * Transaction [id] with its live lines (by position, then id), or null if it is unknown or
@@ -180,18 +196,19 @@ class TransactionService(
         }
 
     /**
-     * Runs [write] on transaction [id] unless it is a transfer leg, in one transaction with the check.
-     * Transfer legs are refused with [LedgerError.IsTransfer], so these calls never act on one leg alone.
+     * Transaction [id] and, if it is a transfer leg, the other leg of its group (both in the one list, in
+     * no meaningful order): what delete and restore act on together. Tombstones are included.
+     *
+     * @throws IllegalStateException if the group is not exactly one OUT and one IN transfer leg (fails closed:
+     *   nothing is deleted or restored on a malformed group).
      */
-    private suspend fun notTransfer(
-        id: TransactionId,
-        write: suspend () -> LedgerTransaction,
-    ): LedgerTransaction =
-        runner.inTransaction {
-            // C2: TransferService deletes, restores and verifies both legs of a transfer together.
-            if (transactions.get(id)?.type == TransactionType.TRANSFER) throw LedgerError.IsTransfer()
-            write()
-        }
+    private suspend fun legsWith(id: TransactionId): List<LedgerTransaction> {
+        val txn = transactions.get(id) ?: throw LedgerError.NotFound(transactions.entityType)
+        if (txn.type != TransactionType.TRANSFER) return listOf(txn)
+        val group = txn.transferGroupId ?: throw LedgerError.IsTransfer()
+        val (out, into) = transactions.legsOfGroup(group).asTransferLegs()
+        return listOf(out, into)
+    }
 
     private companion object {
         /** The kind of record, for errors. */

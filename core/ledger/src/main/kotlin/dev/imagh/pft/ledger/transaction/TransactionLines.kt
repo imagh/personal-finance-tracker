@@ -15,7 +15,7 @@ import dev.imagh.pft.ledger.validation.Validation
 import dev.imagh.pft.money.Paise
 
 /**
- * The line (item) rules that [TransactionService] and, from C2, the transfer service share (slice C
+ * The line (item) rules that [TransactionService] and [TransferService] share (slice C
  * D3): writing a transaction's lines and checking what they point at. A concrete class with no
  * interface. Only the services call it: its constructor is public so that `app` can wire it, and
  * every operation is `internal` to `:core:ledger`.
@@ -35,6 +35,8 @@ import dev.imagh.pft.money.Paise
  *   transaction's title never fails.
  * - **The kind always matches**: every line's category must be of the transaction's kind (an expense
  *   category on an expense), whether or not it changed, so a type change cannot leave a mismatch.
+ * - **A transfer leg has exactly one line and no category** ([LedgerError.TransferCannotBeItemised]), on
+ *   create and on reconcile.
  * - **The sum is re-checked** before either returns (rule 5): the live lines are read back and, if
  *   they do not add up to the transaction's amount, the call fails closed with
  *   [IllegalStateException], which rolls back the caller's whole transaction. [Breakdown] already
@@ -63,6 +65,7 @@ class TransactionLines(
      * @throws LedgerError.NotFound a draft names a line id: a new transaction has no lines yet.
      * @throws LedgerError.NotFound / [LedgerError.Deleted] / [LedgerError.Archived] for a category or tag.
      * @throws LedgerError.KindMismatch if a category is not of the transaction's kind.
+     * @throws LedgerError.TransferCannotBeItemised for a transfer leg given a category or other than one line.
      * @throws IllegalStateException if the stored lines do not add up to the amount.
      */
     internal suspend fun create(
@@ -82,6 +85,7 @@ class TransactionLines(
      * @throws LedgerError.NotFound / [LedgerError.Deleted] / [LedgerError.Archived] for a new or
      *   changed category, or an added tag.
      * @throws LedgerError.KindMismatch if a category is not of the transaction's kind.
+     * @throws LedgerError.TransferCannotBeItemised for a transfer leg given a category or other than one line.
      * @throws IllegalStateException if the stored lines do not add up to the amount.
      */
     internal suspend fun reconcile(
@@ -116,6 +120,7 @@ class TransactionLines(
         existing: List<TransactionLine>,
         newId: (position: Int) -> String,
     ): List<TransactionLine> {
+        if (transaction.type == TransactionType.TRANSFER) requireTransferShape(drafts)
         val old = existing.associateBy { it.meta.id }
         val written =
             drafts.mapIndexed { index, draft ->
@@ -151,6 +156,15 @@ class TransactionLines(
         existing.filter { it.meta.id !in kept }.forEach { writer.delete(lines, it.meta.id) }
         requireBalanced(transaction)
         return written
+    }
+
+    /**
+     * A transfer leg has exactly one line and no category: a transfer is not spending (IT §3.3 rule 2).
+     * Checked before anything is written, so an empty list or a category is this error and not a failed
+     * sum or a kind mismatch.
+     */
+    private fun requireTransferShape(drafts: List<LineDraft>) {
+        if (drafts.size != 1 || drafts.first().categoryId != null) throw LedgerError.TransferCannotBeItemised()
     }
 
     /**

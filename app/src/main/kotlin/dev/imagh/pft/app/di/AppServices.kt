@@ -22,6 +22,7 @@ import dev.imagh.pft.ledger.setup.FirstRunService
 import dev.imagh.pft.ledger.tag.TagService
 import dev.imagh.pft.ledger.transaction.TransactionLines
 import dev.imagh.pft.ledger.transaction.TransactionService
+import dev.imagh.pft.ledger.transaction.TransferService
 import java.time.Clock
 
 /**
@@ -96,17 +97,36 @@ class AppServices(
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = FirstRunService(runner, identity, categories)
 
+    /** The line rules both transaction services share (slice C D3): one instance, so the sum check is in one place. */
+    private val transactionLines =
+        TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository, ids)
+
     /**
      * Transactions: create, edit, delete, restore, mark verified and read, each with its lines (items).
-     * The only writer of transactions and lines that the app's other layers call, and it enforces the sum
-     * invariant; the repositories above are wiring, not for the UI.
+     * With [transfers], the only writer of transactions and lines that the app's other layers call; both write
+     * lines through one shared [TransactionLines], which enforces the sum invariant. The repositories above
+     * are wiring, not for the UI. Delete and restore of a transfer act on both legs.
      */
     val transactions =
         TransactionService(
             runner,
             writer,
             transactionRepository,
-            TransactionLines(writer, transactionLineRepository, categoryRepository, tagRepository, ids),
+            transactionLines,
+            accountRepository,
+            ids,
+        )
+
+    /**
+     * Transfers between two accounts: create and edit, the two legs written together in one Room transaction.
+     * Delete and restore of a transfer go through [transactions], which acts on both legs.
+     */
+    val transfers =
+        TransferService(
+            runner,
+            writer,
+            transactionRepository,
+            transactionLines,
             accountRepository,
             ids,
         )

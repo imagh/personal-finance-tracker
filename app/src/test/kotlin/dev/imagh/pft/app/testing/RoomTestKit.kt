@@ -84,6 +84,9 @@ class RoomTestKit(
     /** Transactions: create, edit, delete, restore, mark verified and read, each with its lines. */
     val transactions = services.transactions
 
+    /** Transfers between two accounts: create and edit, the two legs written together. */
+    val transfers = services.transfers
+
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = services.firstRun
 

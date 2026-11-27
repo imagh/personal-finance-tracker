@@ -38,6 +38,8 @@ internal class TransactionFixture(
     private val ids = if (seed == null) kit.ids else Uuid7(kit.clock, Random(seed))
     val service =
         if (seed == null) kit.transactions else serviceOver(kit.transactionLineRepository)
+    val transfers =
+        if (seed == null) kit.transfers else transfersOver(kit.transactionRepository, kit.transactionLineRepository)
     val trail get() = kit.store.auditLog.entries
 
     lateinit var me: Identity
@@ -47,18 +49,52 @@ internal class TransactionFixture(
     lateinit var travel: Tag
 
     /**
-     * A [TransactionService] over the kit's fakes but with [lineRepository] as the line store: how a
-     * test injects a failing store. It uses this fixture's id source, so its ids follow the seed.
+     * A [TransactionService] over the kit's fakes but with [lineRepository] (and [transactionRepository]) as the
+     * stores: how a test injects a failing store. It uses this fixture's id source, so its ids follow the seed.
      */
-    fun serviceOver(lineRepository: TransactionLineRepository) =
-        TransactionService(
-            kit.store,
-            kit.writer,
-            kit.transactionRepository,
-            TransactionLines(kit.writer, lineRepository, kit.categoryRepository, kit.tagRepository, ids),
-            kit.accountRepository,
-            ids,
-        )
+    fun serviceOver(
+        lineRepository: TransactionLineRepository,
+        transactionRepository: TransactionRepository = kit.transactionRepository,
+    ) = TransactionService(
+        kit.store,
+        kit.writer,
+        transactionRepository,
+        TransactionLines(kit.writer, lineRepository, kit.categoryRepository, kit.tagRepository, ids),
+        kit.accountRepository,
+        ids,
+    )
+
+    /**
+     * A [TransferService] over the kit's fakes but with [transactionRepository] and [lineRepository] as the
+     * stores: how a test injects a store that fails on the second leg.
+     */
+    fun transfersOver(
+        transactionRepository: TransactionRepository,
+        lineRepository: TransactionLineRepository,
+    ) = TransferService(
+        kit.store,
+        kit.writer,
+        transactionRepository,
+        TransactionLines(kit.writer, lineRepository, kit.categoryRepository, kit.tagRepository, ids),
+        kit.accountRepository,
+        ids,
+    )
+
+    /** A live account of [type], for the other side of a transfer. */
+    suspend fun newAccount(
+        name: String,
+        type: AccountType = AccountType.BANK,
+    ): Account = kit.accounts.create(AccountDraft(name, type, Paise(0)))
+
+    /** A transfer draft of [amount] paise from [from] to [to] (both ids), at [OCCURRED]. */
+    fun transferDraft(
+        from: AccountId,
+        to: AccountId,
+        amount: Long = 50_000,
+        title: String? = "Move",
+        description: String? = null,
+        tagIds: Set<TagId> = emptySet(),
+    ) = TransferDraft(from, to, Paise(amount), OCCURRED, title, description, tagIds)
 
     /** Sets up the identity and the references the drafts use. */
     suspend fun start(): TransactionFixture {

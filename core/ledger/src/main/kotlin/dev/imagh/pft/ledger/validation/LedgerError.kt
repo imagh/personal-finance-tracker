@@ -124,9 +124,20 @@ sealed class LedgerError(
     class DuplicateLine : LedgerError("An item appears more than once")
 
     /**
-     * A transfer was sent to the plain transaction calls: a transfer leg cannot be created or edited
-     * there, and a transaction cannot change between transfer and expense or income (delete and
-     * re-create it instead). Transfers have their own calls (slice C2).
+     * A transfer was sent where only an expense or income is allowed. Thrown by `TransactionService`
+     * when: a draft is a transfer (create or edit); an edit targets a stored transfer leg, or would
+     * change a transaction between transfer and expense or income (delete and re-create it instead);
+     * `markVerified` targets a transfer leg; or `delete` / `restore` targets a transfer row with no group
+     * id, whose other leg cannot be found. A transfer is created and edited with `TransferService`.
      */
     class IsTransfer : LedgerError("Transfers are created and edited as transfers")
+
+    /** A transfer was asked to move money from an account to the same account. */
+    class SameAccount : LedgerError("A transfer needs two different accounts")
+
+    /**
+     * A transfer leg was given a category, or more or fewer than one line. A transfer is not spending,
+     * so it has no category and no items (IT §3.3 rule 2).
+     */
+    class TransferCannotBeItemised : LedgerError("A transfer has no categories or items")
 }
