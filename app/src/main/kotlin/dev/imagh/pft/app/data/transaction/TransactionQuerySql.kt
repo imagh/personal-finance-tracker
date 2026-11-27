@@ -4,6 +4,7 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.EntityId
+import dev.imagh.pft.ledger.query.SearchText
 import dev.imagh.pft.ledger.query.TimeWindow
 import dev.imagh.pft.ledger.query.TransactionFilter
 import dev.imagh.pft.ledger.query.TransactionSort
@@ -14,13 +15,14 @@ import dev.imagh.pft.ledger.query.TransactionSort
  * **Every value is a bound argument.** The SQL is assembled from fixed fragments and `?` placeholders. Its
  * text varies only in how many placeholders an `IN (...)` list has (from a set's size, not its content) and
  * in which compile-time `ORDER BY` fragment [orderBy] picks for the [TransactionSort] enum. No caller value
- * (an id, an amount, a date, a sort) is ever in the string.
+ * (an id, an amount, a date, a sort, typed search text) is ever in the string.
  *
  * One [Match] is the filter: live transactions in the window that pass the transaction-level filters
- * (account, amount, state, type, creator), and, with a category or tag filter, that have **one live line** meeting
- * both. The three queries share it, so the transactions, their lines and their tags are always the same
- * set: the lines and tags are read by joining to the same matching sub-query (same predicate, same
- * order, same `LIMIT`), not by an `IN (:ids)` list of transaction ids, so no variable-count limit applies.
+ * (account, amount, state, type, creator), that match each text filter, and, with a category or tag filter, that
+ * have **one live line** meeting both. The three queries share it, so the transactions, their lines and their
+ * tags are always the same set: the lines and tags are read by joining to the same matching sub-query (same
+ * predicate, same order, same `LIMIT`), not by an `IN (:ids)` list of transaction ids, so no variable-count
+ * limit applies.
  *
  * Order: the [TransactionSort] key and direction ([orderBy]; the default is `occurred_at` newest first), then
  * the transfer group id (or the id) so a transfer's two legs are adjacent, then the id, which makes the order
@@ -91,7 +93,69 @@ internal object TransactionQuerySql {
             }
             sql.append(')')
         }
+        filter.text?.let { addText(sql, args, it, TextScope.EVERYTHING) }
+        filter.titleText?.let { addText(sql, args, it, TextScope.TITLE) }
+        filter.noteText?.let { addText(sql, args, it, TextScope.NOTES) }
         return Match(sql.toString(), args)
+    }
+
+    /**
+     * Where one text filter looks. Each scope is a fixed SQL fragment: the column a `MATCH` is restricted to
+     * is chosen here, never from what was typed (CLAUDE.md Rule C).
+     */
+    private enum class TextScope(
+        /** The `MATCH` over the transaction index, or null when this scope does not read it. */
+        val onTransaction: String?,
+        /** True when a live line's note may also match. */
+        val onLines: Boolean,
+    ) {
+        /** Title and description together, or a line's note. */
+        EVERYTHING("transaction_fts MATCH ?", true),
+
+        /** The title only. */
+        TITLE("title MATCH ?", false),
+
+        /** The description, or a line's note. */
+        NOTES("description MATCH ?", true),
+    }
+
+    /**
+     * ANDs one text filter onto [sql], **one group per word**: every word must match somewhere in the scope, not
+     * necessarily next to the others or in the same column or item. A group is the word's `MATCH` on the
+     * transaction index, OR (where the scope reads lines) on the note of any one live line. The typed [raw] goes
+     * through `SearchText.toMatchTerms` and each term is bound as a parameter, once per index it is matched
+     * against. The FTS index joins to its content row on `rowid`, and the live-row checks stay on the content
+     * tables: the base predicate already requires a live transaction, and a line counts only while its own
+     * `deleted_at` is null.
+     *
+     * **Fail closed:** text with no word in it (blank, punctuation only) adds `0`, a condition that is never
+     * true, so the filter matches nothing. It must never be read as "no text filter" (null means that).
+     */
+    private fun addText(
+        sql: StringBuilder,
+        args: MutableList<Any>,
+        raw: String,
+        scope: TextScope,
+    ) {
+        val terms = SearchText.toMatchTerms(raw)
+        if (terms.isEmpty()) {
+            sql.append(" AND 0")
+            return
+        }
+        for (term in terms) {
+            val parts = mutableListOf<String>()
+            scope.onTransaction?.let {
+                parts += "t.rowid IN (SELECT rowid FROM transaction_fts WHERE $it)"
+                args.add(term)
+            }
+            if (scope.onLines) {
+                parts +=
+                    "EXISTS (SELECT 1 FROM transaction_line n WHERE n.transaction_id = t.id AND n.deleted_at IS NULL " +
+                    "AND n.rowid IN (SELECT rowid FROM transaction_line_fts WHERE transaction_line_fts MATCH ?))"
+                args.add(term)
+            }
+            sql.append(" AND (").append(parts.joinToString(" OR ")).append(')')
+        }
     }
 
     /** The matching transactions, in display order, at most [limit] rows ([NO_LIMIT] for all). */
