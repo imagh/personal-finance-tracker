@@ -155,6 +155,14 @@ them.
 | `transaction_line` | shared columns, `transaction_id` (FK -> `ledger_transaction.id`), `position` (from 1, display order only), `amount` (positive paise), `category_id` NULL (FK -> `category.id`), `note` NULL | One item of a transaction (PRD L-11): its own category, tags and note. `archived_at` is never set for a line. Indexes on `transaction_id` and `category_id` |
 | `transaction_line_tag` | `line_id` (FK -> `transaction_line.id`), `tag_id` (FK -> `tag.id`); primary key `(line_id, tag_id)` | Which tags a line carries. **A join table, not an entity** (see `keysStoredIn` above): audited as the line's `tag_ids`, rows replaced when the tag set changes. Index on `tag_id` (the in-use check of C1d) |
 
+- **No index added for the C3c reads (sort, person filter, `recent`, month span).** The existing
+  `ledger_transaction` indexes still serve them at household scale (a few thousand rows). The month and
+  the search window use `occurred_at`, as before; `recent(n)` reads the newest rows from the same index
+  (`ORDER BY occurred_at DESC LIMIT`); `entryMonthSpan` is `MIN`/`MAX(occurred_at)` over the live rows, one pass (the `deleted_at` condition keeps SQLite from answering it from the index ends).
+  A sort by `created_at`, `updated_at`, `amount` or `title`, and the `created_by_user_id` filter, scan the
+  month or search window and sort it in memory, which is cheap at that size; a transfer's group `MIN`/`MAX`
+  for `CREATED` and `UPDATED` is one lookup on the `transfer_group_id` index per row. Revisit with an index
+  only if a measurement shows a read too slow (YAGNI); a new index would be a migration.
 - **No `CHECK` and no `ON DELETE` action, as for `category`.** Room cannot declare a `CHECK` on an
   `@Entity`, so `amount > 0` and `position > 0` would exist only in migrated databases; the plans' `CHECK`
   wording is the rule, not the schema. Core validates before writing and the mappers **fail closed** on an
