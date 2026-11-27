@@ -9,6 +9,7 @@ import dev.imagh.pft.ledger.audit.AuditLog
 import dev.imagh.pft.ledger.fakes.TestClock
 import dev.imagh.pft.ledger.identity.Identity
 import java.time.Clock
+import java.time.ZoneId
 
 /**
  * The core object graph wired over a real [PftDatabase], the Room twin of core's `LedgerTestKit`
@@ -31,7 +32,7 @@ class RoomTestKit(
     val clock = TestClock()
 
     /** The production wiring, over the clock as given or wrapped by [wrapClock] (for example `EpochMillis.clock`). */
-    private val services = AppServices(database, wrapClock(clock), auditLog)
+    private val services = AppServices(database, wrapClock(clock), auditLog, zone = ZONE)
 
     /** Id generator on the services' clock. */
     val ids = services.ids
@@ -90,6 +91,15 @@ class RoomTestKit(
     /** First-run setup: the identity and the default categories in one transaction. */
     val firstRun = services.firstRun
 
+    /** The month list, search and balances. */
+    val transactionQueries = services.transactionQueries
+
+    /** One transaction's audit history. */
+    val auditQueries = services.auditQueries
+
+    /** The zone the tests read months in: [ZONE]. */
+    val zone: ZoneId = services.zone
+
     /** Performs first-run setup as `Akash` on `Pixel` and returns that identity. */
     suspend fun initialise(): Identity = identity.initialise("Akash", "Pixel")
 
@@ -98,4 +108,9 @@ class RoomTestKit(
         entityType: String,
         entityId: String,
     ): List<AuditEntry> = database.auditDao().forEntity(entityType, entityId).map(AuditEntryMapper::toModel)
+
+    companion object {
+        /** Tests pin the owner's zone, so a boundary like 23:30 IST on the 31st is the same everywhere. */
+        val ZONE: ZoneId = ZoneId.of("Asia/Kolkata")
+    }
 }

@@ -140,4 +140,10 @@ sealed class LedgerError(
      * so it has no category and no items (IT §3.3 rule 2).
      */
     class TransferCannotBeItemised : LedgerError("A transfer has no categories or items")
+
+    /**
+     * A transaction filter's range runs backwards or is out of bounds: a `from` date after its `to`, an
+     * `amountMin` above its `amountMax`, or a date outside years 1 to 9999. The message names no value.
+     */
+    class InvalidRange : LedgerError("The range is not valid")
 }

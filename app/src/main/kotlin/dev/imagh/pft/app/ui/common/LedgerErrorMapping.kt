@@ -46,5 +46,7 @@ fun LedgerError.toFieldError(): FieldError? =
         // The transfer form (C4b) offers neither a category nor items, so these are form-level, not a field.
         is LedgerError.SameAccount,
         is LedgerError.TransferCannotBeItemised,
+        // A filter's range runs backwards: the filter sheet (C5b) stops it before it applies, so no field here.
+        is LedgerError.InvalidRange,
         -> null
     }

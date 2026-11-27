@@ -23,6 +23,7 @@ import dev.imagh.pft.app.data.transaction.TransactionDao
 import dev.imagh.pft.app.data.transaction.TransactionLineDao
 import dev.imagh.pft.app.data.transaction.TransactionLineEntity
 import dev.imagh.pft.app.data.transaction.TransactionLineTagEntity
+import dev.imagh.pft.app.data.transaction.TransactionQueryDao
 
 /**
  * The app's Room database, `pft.db` (plan §4). Version 1 holds the identity, settings and audit
@@ -120,4 +121,7 @@ abstract class PftDatabase : RoomDatabase() {
 
     /** Transaction lines and their tag rows (schema v5). */
     abstract fun transactionLineDao(): TransactionLineDao
+
+    /** The filter, month, search and balance reads over the transaction tables (no schema of its own). */
+    abstract fun transactionQueryDao(): TransactionQueryDao
 }

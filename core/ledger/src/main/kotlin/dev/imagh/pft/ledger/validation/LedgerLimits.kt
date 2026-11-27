@@ -27,6 +27,12 @@ object LedgerLimits {
     /** Longest bank reference (UTR, UPI or cheque number) on a transaction, in characters (slice C D2). */
     const val MAX_BANK_REF_LENGTH = 64
 
+    /**
+     * Most entries one search returns (slice C D5). The cap applies to entries after a transfer's two legs
+     * are folded into one, and never splits a pair.
+     */
+    const val MAX_SEARCH_RESULTS = 500
+
     /** Longest app-setting key, in characters. */
     const val MAX_SETTING_KEY_LENGTH = 64
 

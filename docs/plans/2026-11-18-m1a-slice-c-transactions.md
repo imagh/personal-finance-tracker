@@ -472,7 +472,8 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
 - **Green:**
   - `ledger/query/{TransactionFilter, TransactionQueries, MonthPage, SearchPage, LedgerEntry, Totals}`;
   - `ledger/audit/AuditQueries`;
-  - fakes;
+  - ~~fakes~~ **deferred to C4a** (decided in C3a: nothing in C3a consumes them, and a fake of the filter logic would be an unverified duplicate; C4a's ViewModel tests are the first consumer);
+  - (added in C3a review) `ledger/query/{AccountBalances, TimeWindow}` and `SearchPage.capped` / `SearchPage.FETCH_ROWS`: the balance and cap rules are pure core functions, and `RoomTransactionQueries` only fetches;
   - `app/.../data/transaction/TransactionQueryDao` plus `RoomTransactionQueries`, and `RoomAuditQueries` on `AuditDao`;
   - `AppServices(zone = ZoneId.systemDefault())`.
 - **Refactor:** README (reads); `code-structure.md` (`ledger/query/`).
@@ -532,7 +533,9 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
   - `ui/home/{HomeScreen, HomeViewModel}` rebuilt on `Dashboard`;
   - `EntityRow.trailing`;
   - the `swap_horiz` symbol through `tools/material-symbols`;
-  - the "C4 NavigationBar" KDoc lines reworded (§2.1).
+  - the "C4 NavigationBar" KDoc lines reworded (§2.1);
+  - fakes for `TransactionQueries` and `AuditQueries` (deferred from C3a), reusing the core `AccountBalances`, `SearchPage.capped` and `LedgerEntries.fold` functions;
+  - **the zone decision:** `AppServices.zone` is read **once per process** (`ZoneId.systemDefault()` at construction). C4a decides whether `HomeViewModel` should read the system zone per call instead (a device zone change while the app runs); core takes a `ZoneId` per call, so either works. Note too that `month` with an extreme year throws `ArithmeticException` (not clamped); the stepper never produces one.
 - **Refactor:** `app/README.md` (`ui/home`, `TransactionRow`); `code-structure.md`. Measure the release APK.
 - **Tier:** T2. A new shared component and the money display contract.
 
