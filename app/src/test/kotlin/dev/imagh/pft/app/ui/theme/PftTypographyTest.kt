@@ -41,7 +41,11 @@ class PftTypographyTest {
         val type: PftTypography,
     )
 
-    private fun resolve(prefs: ThemePrefs = ThemePrefs(dynamicColor = false)): Resolved {
+    /** The look before Cobalt became the default (Figtree sans, Newsreader hero): what these tests pin. */
+    private val legacy =
+        ThemePrefs(dynamicColor = false, sansFont = SansFont.FIGTREE, displayFont = DisplayFont.BUNDLED_SERIF)
+
+    private fun resolve(prefs: ThemePrefs = legacy): Resolved {
         lateinit var resolved: Resolved
         compose.setContent { PftTheme(prefs) { resolved = Resolved(MaterialTheme.typography, PftTheme.type) } }
         compose.waitForIdle()
@@ -73,7 +77,7 @@ class PftTypographyTest {
     }
 
     @Test
-    fun `amountHero is the bundled Newsreader by default`() {
+    fun `amountHero is the bundled Newsreader under the pre-Cobalt prefs`() {
         assertTrue(
             resolve()
                 .type.amountHero.fontFamily
@@ -126,19 +130,19 @@ class PftTypographyTest {
 
     @Test
     fun `displayFont TEXT puts the hero in Figtree`() {
-        val type = resolve(ThemePrefs(displayFont = DisplayFont.TEXT, dynamicColor = false)).type
+        val type = resolve(legacy.copy(displayFont = DisplayFont.TEXT, dynamicColor = false)).type
         assertEquals(figtree, type.amountHero.fontFamily)
     }
 
     @Test
     fun `displayFont SYSTEM_SERIF puts the hero in the system serif`() {
-        val type = resolve(ThemePrefs(displayFont = DisplayFont.SYSTEM_SERIF, dynamicColor = false)).type
+        val type = resolve(legacy.copy(displayFont = DisplayFont.SYSTEM_SERIF, dynamicColor = false)).type
         assertEquals(FontFamily.Serif, type.amountHero.fontFamily)
     }
 
     @Test
-    fun `the default display font is the bundled serif`() {
-        assertEquals(DisplayFont.BUNDLED_SERIF, ThemePrefs.Default.displayFont)
+    fun `the default display font is the bundled grotesque`() {
+        assertEquals(DisplayFont.BUNDLED_GROTESQUE, ThemePrefs.Default.displayFont)
     }
 
     @Test
@@ -186,7 +190,7 @@ class PftTypographyTest {
     private fun pairing(
         pairing: TypePairing,
         displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
-    ) = resolve(ThemePrefs(dynamicColor = false, displayFont = displayFont, typePairing = pairing))
+    ) = resolve(legacy.copy(dynamicColor = false, displayFont = displayFont, typePairing = pairing))
 
     /** The M3 roles `EDITORIAL` sets in the display family (design plan §3.6); `titleSmall` is a tab label, so sans. */
     private val editorialM3Roles =
@@ -350,21 +354,32 @@ class PftTypographyTest {
         variationSettings.settings.associate { it.axisName to it.toVariationValue(Density(1f)) }["wght"]
 
     @Test
-    fun `FIGTREE declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+    fun `FIGTREE declares weights 400, 500 and 600, each pinned one step heavier`() {
         val fonts = (sansFamily(SansFont.FIGTREE) as FontListFontFamily).fonts.map { it as ResourceFont }
         assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
         // Figtree's own wght default is 300, so an undeclared axis would render every role too light.
-        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        assertEquals(listOf(500f, 600f, 700f), fonts.map { it.wght() })
         fonts.forEach { assertEquals(R.font.figtree, it.resId) }
     }
 
     @Test
-    fun `PLUS_JAKARTA_SANS declares one font per weight 400, 500 and 600, each pinned to its own wght axis`() {
+    fun `PLUS_JAKARTA_SANS declares weights 400, 500 and 600, each pinned one step heavier`() {
         val fonts = (sansFamily(SansFont.PLUS_JAKARTA_SANS) as FontListFontFamily).fonts.map { it as ResourceFont }
         assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
         // The font's wght default is 400 but the axis is still set, so each weight really is its own cut.
-        assertEquals(listOf(400f, 500f, 600f), fonts.map { it.wght() })
+        assertEquals(listOf(500f, 600f, 700f), fonts.map { it.wght() })
         fonts.forEach { assertEquals(R.font.plus_jakarta_sans, it.resId) }
+    }
+
+    @Test
+    fun `a sans weight is pinned one step (100) heavier and never past the font's heaviest wght`() {
+        assertEquals(500, shiftedSansWght(400, axisMax = 800))
+        assertEquals(600, shiftedSansWght(500, axisMax = 800))
+        assertEquals(700, shiftedSansWght(600, axisMax = 800))
+        // A Bold role would shift to 800, the heaviest Manrope and Plus Jakarta Sans go; it never overshoots.
+        assertEquals(800, shiftedSansWght(700, axisMax = 800))
+        assertEquals(800, shiftedSansWght(800, axisMax = 800))
+        assertEquals(900, shiftedSansWght(800, axisMax = 900))
     }
 
     @Test
@@ -375,6 +390,7 @@ class PftTypographyTest {
             when (choice) {
                 SansFont.FIGTREE -> assertEquals(setOf(R.font.figtree), family.resIds())
                 SansFont.PLUS_JAKARTA_SANS -> assertEquals(setOf(R.font.plus_jakarta_sans), family.resIds())
+                SansFont.MANROPE -> assertEquals(setOf(R.font.manrope), family.resIds())
                 SansFont.SYSTEM -> assertEquals(FontFamily.Default, family)
             }
         }
@@ -392,7 +408,7 @@ class PftTypographyTest {
         val jakarta = sansFamily(SansFont.PLUS_JAKARTA_SANS)
         val resolved =
             resolve(
-                ThemePrefs(
+                legacy.copy(
                     dynamicColor = false,
                     sansFont = SansFont.PLUS_JAKARTA_SANS,
                     typePairing = TypePairing.EDITORIAL,
@@ -424,7 +440,7 @@ class PftTypographyTest {
     @Test
     fun `SansFont SYSTEM puts every sans role in the platform default, the serif roles unchanged`() {
         val resolved =
-            resolve(ThemePrefs(dynamicColor = false, sansFont = SansFont.SYSTEM, typePairing = TypePairing.EDITORIAL))
+            resolve(legacy.copy(dynamicColor = false, sansFont = SansFont.SYSTEM, typePairing = TypePairing.EDITORIAL))
         resolved.m3.roles().forEach { (name, style) ->
             if (name in editorialM3Roles) {
                 assertTrue("$name stays Newsreader", style.fontFamily.isBundledNewsreader())
@@ -443,7 +459,7 @@ class PftTypographyTest {
     fun `displayFont TEXT with SYSTEM sans puts every role, the hero included, in the platform default`() {
         val resolved =
             resolve(
-                ThemePrefs(
+                legacy.copy(
                     dynamicColor = false,
                     sansFont = SansFont.SYSTEM,
                     displayFont = DisplayFont.TEXT,
@@ -458,7 +474,7 @@ class PftTypographyTest {
 
     @Test
     fun `every weight a role asks of the sans is one each bundled sans declares`() {
-        listOf(SansFont.FIGTREE, SansFont.PLUS_JAKARTA_SANS).forEach { choice ->
+        listOf(SansFont.FIGTREE, SansFont.PLUS_JAKARTA_SANS, SansFont.MANROPE).forEach { choice ->
             val sans = sansFamily(choice)
             val declared = (sans as FontListFontFamily).fonts.map { it.weight }.toSet()
             TypePairing.entries.forEach { pairing ->
@@ -479,5 +495,132 @@ class PftTypographyTest {
         assertEquals(resolve().type.amountHero.fontSize, HeroSizeSteps.first())
         assertEquals(sizes.sortedDescending(), sizes)
         assertEquals(sizes.distinct(), sizes)
+    }
+
+    // --- Manrope and Bricolage Grotesque (Cobalt plan D2, K2) -------------------------------
+
+    @Test
+    fun `MANROPE declares weights 400, 500 and 600, each pinned one step heavier`() {
+        val fonts = (sansFamily(SansFont.MANROPE) as FontListFontFamily).fonts.map { it as ResourceFont }
+        assertEquals(listOf(400, 500, 600), fonts.map { it.weight.weight })
+        // Manrope's own wght default is 200, so an undeclared axis would render every role far too light.
+        assertEquals(listOf(500f, 600f, 700f), fonts.map { it.wght() })
+        fonts.forEach { assertEquals(R.font.manrope, it.resId) }
+    }
+
+    @Test
+    fun `SansFont MANROPE puts every sans role in Manrope, and the hero stays Newsreader`() {
+        val manrope = sansFamily(SansFont.MANROPE)
+        val resolved =
+            resolve(legacy.copy(dynamicColor = false, sansFont = SansFont.MANROPE, typePairing = TypePairing.EDITORIAL))
+        resolved.m3.roles().forEach { (name, style) ->
+            if (name in editorialM3Roles) {
+                assertTrue("$name stays Newsreader", style.fontFamily.isBundledNewsreader())
+            } else {
+                assertEquals("$name family", manrope, style.fontFamily)
+            }
+        }
+        assertEquals(manrope, resolved.type.amountRow.fontFamily)
+        assertTrue(
+            resolved.type.amountHero.fontFamily
+                .isBundledNewsreader(),
+        )
+    }
+
+    @Test
+    fun `by default every Manrope role, titles and amountLarge included, is Manrope`() {
+        val manrope = sansFamily(SansFont.MANROPE)
+        val resolved = resolve(legacy.copy(dynamicColor = false, sansFont = SansFont.MANROPE))
+        assertEquals(15, resolved.m3.roles().size)
+        resolved.m3.roles().forEach { (name, style) -> assertEquals("$name family", manrope, style.fontFamily) }
+        assertEquals(manrope, resolved.type.amountLarge.fontFamily)
+        assertEquals(manrope, resolved.type.amountRow.fontFamily)
+    }
+
+    private fun FontFamily?.isBundledBricolage(): Boolean {
+        val fonts = (this as? FontListFontFamily)?.fonts.orEmpty()
+        return fonts.isNotEmpty() && fonts.all { it is ResourceFont && it.resId == R.font.bricolage_grotesque }
+    }
+
+    private fun TextStyle.bricolageAxes(): Map<String, Float> = fontFamily.newsreaderAxes()
+
+    private fun grotesque(pairing: TypePairing = TypePairing.HERO_ONLY) =
+        resolve(legacy.copy(dynamicColor = false, displayFont = DisplayFont.BUNDLED_GROTESQUE, typePairing = pairing))
+
+    @Test
+    fun `BUNDLED_GROTESQUE makes the hero Bricolage at weight 700, 34sp, opsz 34, wdth 100, tnum and lnum`() {
+        val hero = grotesque().type.amountHero
+        assertTrue(hero.fontFamily.isBundledBricolage())
+        val axes = hero.bricolageAxes()
+        assertEquals(700f, axes["wght"])
+        assertEquals(34f, axes["opsz"])
+        assertEquals(100f, axes["wdth"])
+        assertEquals(FontWeight.Bold, hero.fontWeight)
+        assertEquals(34.sp, hero.fontSize)
+        assertEquals(42.5.sp, hero.lineHeight)
+        assertEquals("tnum, lnum", hero.fontFeatureSettings)
+    }
+
+    @Test
+    fun `BUNDLED_GROTESQUE sets only the hero in Bricolage under HERO_ONLY`() {
+        val resolved = grotesque()
+        assertEquals(figtree, resolved.type.amountLarge.fontFamily)
+        assertEquals(figtree, resolved.type.amountRow.fontFamily)
+        resolved.m3.roles().forEach { (name, style) -> assertEquals("$name family", figtree, style.fontFamily) }
+    }
+
+    @Test
+    fun `bricolage pins weight, cuts opsz for the size clamped to 12 to 96, and keeps width 100`() {
+        val axes = bricolage(FontWeight.Medium, 16.sp).newsreaderAxes()
+        assertEquals(500f, axes["wght"])
+        assertEquals(16f, axes["opsz"])
+        assertEquals(100f, axes["wdth"])
+        assertTrue(bricolage(FontWeight.Medium, 16.sp).isBundledBricolage())
+        assertEquals(12f, bricolage(FontWeight.Normal, 3.sp).newsreaderAxes()["opsz"])
+        assertEquals(96f, bricolage(FontWeight.Normal, 140.sp).newsreaderAxes()["opsz"])
+        assertEquals(57f, bricolage(FontWeight.Normal, 57.sp).newsreaderAxes()["opsz"])
+    }
+
+    @Test
+    fun `EDITORIAL with BUNDLED_GROTESQUE sets the display roles in Bricolage, each at its own size`() {
+        val resolved = grotesque(TypePairing.EDITORIAL)
+        val bricolageRoles: Map<String, TextStyle> =
+            resolved.m3.roles().filterKeys { it in editorialM3Roles } +
+                mapOf("amountHero" to resolved.type.amountHero, "amountLarge" to resolved.type.amountLarge)
+        assertEquals(10, bricolageRoles.size)
+        bricolageRoles.forEach { (name, style) ->
+            assertTrue("$name is Bricolage", style.fontFamily.isBundledBricolage())
+            assertEquals("$name opsz", style.fontSize.value.coerceIn(12f, 96f), style.bricolageAxes()["opsz"])
+            assertEquals("$name wght", style.fontWeight?.weight?.toFloat(), style.bricolageAxes()["wght"])
+        }
+        assertEquals(16f, resolved.m3.titleMedium.bricolageAxes()["opsz"])
+        assertEquals(500f, resolved.m3.titleMedium.bricolageAxes()["wght"])
+        assertEquals(figtree, resolved.type.amountRow.fontFamily)
+        assertEquals(figtree, resolved.m3.bodyLarge.fontFamily)
+    }
+
+    @Test
+    fun `the hero shrink steps are the steps at or below the hero's own size`() {
+        assertEquals(HeroSizeSteps, heroSizeSteps(48.sp))
+        assertEquals(listOf(34f, 28f, 24f, 20f, 16f, 12f), heroSizeSteps(34.sp).map { it.value })
+        // A size that is not itself a step starts at the next step below it.
+        assertEquals(listOf(28f, 24f, 20f, 16f, 12f), heroSizeSteps(30.sp).map { it.value })
+        // Every display font's hero is its own first step.
+        DisplayFont.entries.forEach { font ->
+            val hero = built(TypePairing.HERO_ONLY, font).type.amountHero.fontSize
+            assertEquals("$font", hero, heroSizeSteps(hero).first())
+        }
+    }
+
+    @Test
+    fun `the defaults are Cobalt, Manrope and Bricolage, hero only`() {
+        assertEquals(ThemePalette.COBALT, ThemePrefs.Default.lightPalette)
+        assertEquals(ThemePalette.COBALT, ThemePrefs.Default.darkPalette)
+        assertEquals(SansFont.MANROPE, ThemePrefs.Default.sansFont)
+        assertEquals(DisplayFont.BUNDLED_GROTESQUE, ThemePrefs.Default.displayFont)
+        assertEquals(TypePairing.HERO_ONLY, ThemePrefs.Default.typePairing)
+        val type = resolve(ThemePrefs.Default.copy(dynamicColor = false)).type
+        assertEquals(sansFamily(SansFont.MANROPE), type.amountRow.fontFamily)
+        assertTrue(!type.amountHero.fontFamily.isBundledNewsreader())
     }
 }

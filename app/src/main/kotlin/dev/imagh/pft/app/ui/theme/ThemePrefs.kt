@@ -18,10 +18,17 @@ enum class ThemeMode {
  * What the display family is (UI-2, UI-3). [TypePairing] chooses which roles use it: by default
  * only `PftTheme.type.amountHero`, every other text role being the system sans. A custom font file
  * joins this enum with the import feature (AP2).
+ *
+ * The enum names are persisted by the appearance settings (AP1), so they are permanent: only ever
+ * add. [BUNDLED_GROTESQUE] was added with the Cobalt fonts (K2). Whatever stores these names must read
+ * an unknown one as the default.
  */
 enum class DisplayFont {
-    /** The bundled Newsreader serif (the default). */
+    /** The bundled Newsreader serif. */
     BUNDLED_SERIF,
+
+    /** The bundled Bricolage Grotesque (display grotesque, OFL-1.1; the default). */
+    BUNDLED_GROTESQUE,
 
     /** The platform's serif family. */
     SYSTEM_SERIF,
@@ -60,11 +67,14 @@ enum class TypePairing {
  * because an unknown stored value reads as the default.
  */
 enum class SansFont {
-    /** The bundled Figtree variable font (OFL-1.1, the default). */
+    /** The bundled Figtree variable font (OFL-1.1). */
     FIGTREE,
 
     /** The bundled Plus Jakarta Sans variable font (OFL-1.1). */
     PLUS_JAKARTA_SANS,
+
+    /** The bundled Manrope variable font (OFL-1.1; the default). */
+    MANROPE,
 
     /**
      * The platform's default family (Roboto on stock Android, the vendor font elsewhere).
@@ -91,26 +101,27 @@ enum class SansFont {
  * @property displayFont the display family: the font of the hero number and, under
  *   [TypePairing.EDITORIAL], of the other serif roles; see [DisplayFont].
  * @property typePairing which roles use the display family; see [TypePairing]. [TypePairing.HERO_ONLY]
- *   by default, the look before the pairing existed.
- * @property sansFont the sans text family: the bundled Figtree by default, the bundled Plus Jakarta
- *   Sans, or the system font; see [SansFont].
+ *   by default.
+ * @property sansFont the sans text family: the bundled Manrope by default, the bundled Figtree or
+ *   Plus Jakarta Sans, or the system font; see [SansFont].
  */
 @Immutable
 data class ThemePrefs(
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
-    val lightPalette: ThemePalette = ThemePalette.GRAPHITE,
-    val darkPalette: ThemePalette = ThemePalette.GRAPHITE,
+    val lightPalette: ThemePalette = ThemePalette.COBALT,
+    val darkPalette: ThemePalette = ThemePalette.COBALT,
     val background: BackgroundStyle = BackgroundStyle.TONAL,
     val headerGlow: Boolean = false,
-    val displayFont: DisplayFont = DisplayFont.BUNDLED_SERIF,
+    val displayFont: DisplayFont = DisplayFont.BUNDLED_GROTESQUE,
     val typePairing: TypePairing = TypePairing.HERO_ONLY,
-    val sansFont: SansFont = SansFont.FIGTREE,
+    val sansFont: SansFont = SansFont.MANROPE,
 ) {
     companion object {
         /**
-         * System light/dark, dynamic colour off, Graphite in both modes, tonal surfaces, no glow,
-         * hero-only type, Figtree sans.
+         * System light/dark, dynamic colour off, Cobalt in both modes, tonal surfaces, no glow,
+         * hero-only type with Bricolage Grotesque as the display font, Manrope sans (the Cobalt
+         * look, 2026-11-25 plan D7).
          */
         val Default = ThemePrefs()
     }

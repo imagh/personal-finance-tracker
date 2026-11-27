@@ -120,7 +120,7 @@ class InUseNoticeRouteTest {
         show {
             AccountsRoute(
                 services,
-                AccountsNavigation(back = {}, add = {}, edit = {}),
+                AccountsNavigation(add = {}, edit = {}),
                 notFound = false,
                 onNotFoundShown = {},
             )

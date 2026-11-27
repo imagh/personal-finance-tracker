@@ -52,7 +52,7 @@ data class AccountsUiState(
  * - **Read on demand (D2).** The lists are read from [AccountService.lists] on construction, after
  *   every action and whenever the screen asks ([reload], when it resumes), so nothing observes the
  *   database. A read that throws (for example a corrupt row, which core refuses) is not caught: it
- *   fails loudly like `HomeViewModel` rather than showing a made-up list.
+ *   fails loudly like `LaunchViewModel` rather than showing a made-up list.
  * - **One at a time.** Actions and reads run one after another (a [Mutex]), so a read that started
  *   before an action never overwrites the list with older data.
  * - **Failures (A5 save shape).** Deleting an account that transactions use ([LedgerError.InUse]) is an

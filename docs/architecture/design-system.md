@@ -31,19 +31,20 @@ Rules, enforced in review (detekt has no type resolution, so it cannot check the
 
 `PftTheme(prefs: ThemePrefs = ThemePrefs.Default) { ... }` in `ui/theme` is the only theme entry
 point. It resolves dark or light from `ThemePrefs.mode`, picks the colour scheme (dynamic Material
-You, opt-in, or the committed palette the user picked for the resolved mode, Graphite by default), applies `MaterialTheme(colorScheme, typography, shapes)` and
+You, opt-in, or the committed palette the user picked for the resolved mode, Cobalt by default; the default prefs are Cobalt in both modes, Manrope sans, Bricolage Grotesque display font, hero-only pairing, tonal surfaces, K4), applies `MaterialTheme(colorScheme, typography, shapes)` and
 provides the extended tokens through `staticCompositionLocalOf`. Read them through the `PftTheme`
 object:
 
 | Accessor | Type | Provided how |
 |---|---|---|
-| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the chosen palette's scheme (Graphite by default); dynamic when `ThemePrefs.dynamicColor` is on, which ignores the palette |
+| `MaterialTheme.colorScheme` | M3 `ColorScheme` | the chosen palette's scheme (Cobalt by default); dynamic when `ThemePrefs.dynamicColor` is on, which ignores the palette |
 | `MaterialTheme.typography` | M3 `Typography` | every role in the sans text family; under `EDITORIAL`, `display*`, `headline*`, `titleLarge` and `titleMedium` are in the display family |
 | `MaterialTheme.shapes` | M3 `Shapes` | 6/10/16/24/32dp |
 | `PftTheme.money` | `MoneyColors` | fixed green/red/amber, never derived from the accent |
 | `PftTheme.surfaces` | `PftSurfaces` | the screen canvas, card island, island edge, top highlight and header glow tint (null while the glow is off) for the palette, mode, `BackgroundStyle` and `ThemePrefs.headerGlow` (DS6c, DS6d); see "Surfaces and window colour" and "One-hand layout" |
+| `PftTheme.brand` | `BrandColors` | the brand fill, the balance card gradient and the tab bar fill: hand-picked for Cobalt, derived from the scheme for every other palette and for dynamic colour (K1) |
 | `PftTheme.type` | `PftTypography` | the three amount styles |
-| `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge) |
+| `PftTheme.shapes` | `PftShapes` | `glyph` (the category badge), `card` 22dp, `island` 18dp, `quickAction` 17dp, `tabBar` (full pill) |
 | `PftTheme.spacing` | `PftSpacing` | the 4dp-grid scale |
 | `PftTheme.motion` | `PftMotion` | four springs, navigation transitions, press scale; a constant, the same in every theme |
 
@@ -56,15 +57,16 @@ choices will live in the database (CLAUDE.md §3.5).
 ### Typography (UI-2, UI-3, UI-15, owner decision Q10)
 
 Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the display family is:
-`BUNDLED_SERIF` (Newsreader, the default), `SYSTEM_SERIF` or `TEXT` ("same as text").
+`BUNDLED_SERIF` (Newsreader, the default), `BUNDLED_GROTESQUE` (Bricolage Grotesque, K2), `SYSTEM_SERIF` or
+`TEXT` ("same as text").
 `ThemePrefs.typePairing` chooses **which roles** use it. The text family ("text" in the table) is
-`ThemePrefs.sansFont`: the bundled **Figtree** by default, the bundled **Plus Jakarta Sans**, or `SYSTEM`
-(`FontFamily.Default`); see
+`ThemePrefs.sansFont`: the bundled **Figtree** by default, the bundled **Plus Jakarta Sans**, the bundled
+**Manrope** (K2), or `SYSTEM` (`FontFamily.Default`); see
 "The sans font" below.
 
 | Role | `HERO_ONLY` (default) | `EDITORIAL` | Size / line (sp) | Weight | Features |
 |---|---|---|---|---|---|
-| `PftTheme.type.amountHero` | display | display | 48/60, +0.01em | 400 | `tnum`, `lnum` |
+| `PftTheme.type.amountHero` | display | display | 48/60, +0.01em (34/42.5 for `BUNDLED_GROTESQUE`) | 400 (700 for `BUNDLED_GROTESQUE`) | `tnum`, `lnum` |
 | `PftTheme.type.amountLarge` | text | display | 32/40 | 500 | `tnum`, `lnum` |
 | `PftTheme.type.amountRow` | text | text | 16/24 | 500 | `tnum` |
 | `display*` | text | display | M3 (57, 45, 36) | M3 | |
@@ -86,6 +88,25 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   of the chosen pairing. The variation settings apply to the bundled Newsreader only; the system serif
   and the text family get none. The hero keeps the 48sp cut at every shrink step.
 - **The hero weight is 400** (owner decision after the DS6f device check); the mockup's 350 was not adopted.
+- **Bricolage Grotesque (K2, Cobalt plan D2).** `DisplayFont.BUNDLED_GROTESQUE` makes the hero **Bricolage at
+  weight 700, 34sp**, line height 1.25x (42.5sp), the same +0.01em, `tnum, lnum`; the size and weight come from one
+  private `heroSpec(display)` that every other display font answers with the regular 48sp. The font is one variable
+  file with axes `opsz` 12-96 (default 96), `wdth` 75-100 (default 100) and `wght` 200-800 (default 800), so
+  `bricolage(weight, size)` pins all three: `wght` to the weight, `opsz` to the size (clamped to 12-96, so the hero
+  is `opsz` 34 and keeps that cut at every shrink step, as Newsreader keeps its 48) and `wdth` to 100. Under
+  `EDITORIAL` the same function cuts each serif role for its own size and weight. **`HeroSizeSteps` stays the full
+  ladder (48 down to 12sp); `heroSizeSteps(heroSize)` is the steps at or below the hero's own size**, which
+  `MoneyText` uses, so the 48sp hero keeps its eight steps and the 34sp hero shrinks 34, 28, 24, 20, 16, 12sp and
+  never grows to a larger step. Nothing is the default yet: `ThemePrefs.Default` is still Graphite, Figtree and
+  Newsreader (K4 flips it).
+- **Manrope (K2).** `SansFont.MANROPE` is one family of three `Font(R.font.manrope, ...)` entries for 400, 500 and
+  600 pinned on `wght` (its axis is 200-800 with default 200, so an unpinned axis would render everything too light),
+  built by the same `sansWeights` helper (each pinned one step heavier, see K9 below). Nothing in Cobalt asks for 700 as a role weight. Its default digits are already tabular, so
+  `tnum` is a harmless no-op there, as for Newsreader.
+- **Verified from the font files (K2, `FontFileFacts` in `TabularFiguresTest`).** Both Manrope and Bricolage have a
+  `tnum` GSUB feature (Bricolage also `lnum`) and their own `cmap` glyphs for the rupee sign U+20B9 and the true minus
+  U+2212. `Paint.hasGlyph` cannot prove that: under Robolectric native graphics it also consults the system fallback
+  fonts and answered true for a CJK ideograph, so the tests read the `cmap` and `GSUB` tables of the bundled bytes.
 - `tnum` stays on all three amount roles in every pairing.
 - **The sans font (UI-2, UI-16, DS6h, DS6i).** `SansFont` is `{ FIGTREE, PLUS_JAKARTA_SANS, SYSTEM }` (names
   persisted by AP1; AP2 adds `CUSTOM`, without a migration). `sansFamily(SansFont)` maps `SYSTEM` to
@@ -95,13 +116,20 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
   fonts; Figtree's `wght` axis defaults to 300 and Plus Jakarta Sans's (200-800) to 400, but the axis is set
   explicitly for both, so every weight a role uses must be declared; 400, 500 and 600 are all
   the weights any role in `pftMaterialTypography` and `pftType` uses (`PftTypographyTest` checks it), and a new
-  weight must be added to the family first. `PftTheme` passes the chosen family as the text family to both
+  weight must be added to the family first. **K9 (owner walk-through, 2026-11-26): the three bundled sans fonts
+  read too light and narrow, so each declared weight is pinned one step heavier on `wght`** (400 as 500, 500 as 600,
+  600 as 700) by `shiftedSansWght(weight, axisMax)`, capped at the font's heaviest `wght` (Figtree 900, Plus
+  Jakarta Sans and Manrope 800, read off the `fvar` tables); roles still ask for 400/500/600 and the width is
+  untouched, so the shift is one place. `SYSTEM`, Newsreader and Bricolage (hero 700 of 800) are not shifted.
+  `PftTheme` passes the chosen family as the text family to both
   type functions, so both pairings work on top of it: in `EDITORIAL` the serif roles stay Newsreader, and
   `displayFont = TEXT` means the chosen sans (Figtree by default). The digits of Figtree and Plus Jakarta Sans are
   proportional by default; only `tnum` makes them equal, so the three amount roles keep it, while body text digits
   stay proportional by design (neither has `lnum`, so that half of `"tnum, lnum"` is a no-op).
   `TabularFiguresTest` measures `₹11,111.11` against `₹00,000.00` under each amount style in Figtree, Plus
-  Jakarta Sans and Newsreader (equal within 0.5px), with a no-`tnum` control that differs for each sans. Fonts are referenced only as `R.font.<name>` from main code, because release resource shrinking
+  Jakarta Sans, Manrope, Newsreader and the Bricolage hero (equal within 0.5px), with a no-`tnum` control that
+  differs for Figtree, Plus Jakarta Sans and the Bricolage hero, and a `pnum` control for Manrope (its default digits
+  are already tabular, so dropping `tnum` cannot make it differ). Fonts are referenced only as `R.font.<name>` from main code, because release resource shrinking
   removes an unreferenced font; `FontBudgetTest` holds all of `res/font` to 3 MiB.
 - `TypePairing` is `{ HERO_ONLY, EDITORIAL }`; its names are persisted by AP1. An all-serif value can be
   added later without a migration, because an unknown stored value reads as the default.
@@ -117,6 +145,10 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
 |---|---|
 | extraSmall / small / medium / large / extraLarge | 6 / 10 / 16 / 24 / 32dp |
 | `PftTheme.shapes.glyph` | 30% of the badge side |
+| `PftTheme.shapes.card` | 22dp (the balance card) |
+| `PftTheme.shapes.island` | 18dp (`GroupedSection`, day groups) |
+| `PftTheme.shapes.quickAction` | 17dp (Home quick actions) |
+| `PftTheme.shapes.tabBar` | 50% (a full pill) |
 
 ### Spacing
 
@@ -125,7 +157,7 @@ Two settings shape the type. `ThemePrefs.displayFont` chooses **what** the displ
 
 ### Colour
 
-There are four curated palettes (`ThemePalette`, DS6b), each an `object` in `ui/theme` with a light and a dark
+There are five curated palettes (`ThemePalette`, DS6b; Cobalt added by the Cobalt plan, K1), each an `object` in `ui/theme` with a light and a dark
 `PaletteColors`, generated offline and pinned to the owner-approved mockup values (each file's KDoc lists the
 provenance and every override). **The user picks the light palette and the dark palette independently**
 (`ThemePrefs.lightPalette`, `ThemePrefs.darkPalette`, both `GRAPHITE` by default); `PftTheme` uses
@@ -139,10 +171,81 @@ never rename or remove one, and never depend on the order of the entries.
 | Midnight | `MIDNIGHT` | `#7D5F26` | `#D4B572` | navy with a brass (light) or champagne (dark) accent | 44.7 / 73.0, 56.1 / 69.3 |
 | Ivory | `IVORY` | `#2E3A59` | `#AEB9DA` | warm paper with an ink-navy (light) or periwinkle (dark) accent | 113.6 / 128.7, 110.4 / 124.2 |
 | Aubergine | `AUBERGINE` | `#5B2A66` | `#D9BE8A` | deep plum with a champagne accent in dark | 74.8 / 167.5, 55.4 / 70.0 |
+| Cobalt | `COBALT` | `#2251FF` | `#9DB1FF` | cobalt blue on a cool white canvas (white islands); periwinkle on a blue-tinted ink in dark | 97.5 / 144.8, 104.2 / 130.3 |
+
+Graphite stays the default until the Cobalt plan's K4 flips it (`docs/plans/2026-11-25-m1a-cobalt-redesign.md`).
+
+#### Cobalt and the brand tokens (Cobalt plan 2026-11-25, K1)
+
+`CobaltPalette` is generated with Graphite's procedure (a CAM16 / HCT run outside the repository, from the mockup
+hues) and pinned to the owner-approved mockup (`.cobalt-light`, `.cobalt-dark` in
+`docs/plans/2026-11-25-home-redesign-mockup.html`); its KDoc lists the provenance and every override:
+
+| Mockup token | Role | Light | Dark |
+|---|---|---|---|
+| `canvas` | `canvas` | `#F5F7FB` | `#0B0E17` |
+| `island` | `island` | `#FFFFFF` | `#151A27` |
+| `on` | `onSurface`, `onBackground` | `#0E1B3D` | `#E8EBF4` |
+| `onvar` | `onSurfaceVariant` | `#687187` | `#8E97AD` |
+| `line` | `outlineVariant` | `#E9ECF3` | `#222838` |
+| `primary` / `icon` | `primary` | `#2251FF` | `#9DB1FF` |
+| `primary-soft` | `primaryContainer`; `wash` in dark | `#E7EDFF` | `#1D2647` |
+
+The mockup values that failed WCAG are adjusted, each to the nearest value that passes (owner accepted):
+
+- **Light `onSurfaceVariant` `#687187`** (mockup `#7A8399`, 3.6:1 on the canvas).
+- **Dark tab bar `nav` `#151A27`** (mockup `#181D2B` gives the active pill 2.95:1; the island tone gives 3.05:1).
+- **Dark `primary` `#9DB1FF`**, the mockup's `--icon`: the mockup's `#2251FF` fails as text on dark. The filled brand
+  stays `#2251FF` in `BrandColors.brand`.
+- **Faded card text** is `onCard` at 68% alpha (and solid below 24sp), not the mockup's 55%.
+
+Two more adjustments were forced by the pins, because `ColorContrastTest` holds `onSurfaceVariant` to 4.5:1 on every
+surface role and on the header glow at its strongest, and the pinned light `#687187` and dark `#8E97AD` only reach that on
+a narrow band of surfaces:
+
+- **The M3 surface ladder is compressed** for the roles the mockup does not pin: light `surfaceDim` and
+  `surfaceContainerHighest` tone 97, `surfaceContainerHigh` 97.5, `surfaceContainer` and `surface` 98,
+  `surfaceContainerLow` 99; dark `surfaceContainerHighest` tone 18 and `surfaceBright` 19 (M3 says 22 and 24). Screens
+  read `canvas` and `island` (pinned), so only M3's own filled components (text fields, menus, sheets) show the narrower
+  ladder.
+- **Light `wash` is white**, not `primary-soft` (`#687187` over `primary-soft` at the glow's 72% is 4.28:1). The header
+  glow is opt-in and off by default.
+
+**Brand tokens.** M3 has no role for a filled brand, the balance card's gradient or the floating tab bar, so
+`PaletteColors.brand` is a `BrandColors` (`brand`, `onBrand`, `brandSoft`, `onBrandSoft`, `cardStart`, `cardMid`,
+`cardEnd`, `onCard`, `cardGhost`, `cardGhost2`, `nav`), read as `PftTheme.brand` (a `staticCompositionLocalOf`, like
+`PftTheme.surfaces`). Cobalt pins the mockup values:
+
+| Token | Light | Dark |
+|---|---|---|
+| `brand`, `onBrand` | `#2251FF`, `#FFFFFF` | `#2251FF`, `#FFFFFF` |
+| `brandSoft`, `onBrandSoft` | `#E7EDFF`, `#2251FF` | `#1D2647`, `#9DB1FF` |
+| `cardStart` to `cardMid` to `cardEnd` | `#3463FF`, `#2251FF`, `#1B44E0` | `#2D5BFF`, `#2251FF`, `#1A3FCC` |
+| `onCard` | `#FFFFFF` | `#FFFFFF` |
+| `cardGhost`, `cardGhost2` | `#C7D4FF`, `#E2E9FF` | `#22306A`, `#182148` |
+| `nav` | `#FFFFFF` | `#151A27` |
+
+The other four palettes and dynamic colour **derive** theirs (`derivedBrand(scheme, island)`, no hand-picked values):
+`brand` and the three card stops are `primary` (a flat card), `onBrand` and `onCard` are `onPrimary`, `brandSoft` and
+`cardGhost` are `primaryContainer`, `onBrandSoft` is `onPrimaryContainer`, `cardGhost2` is `outlineVariant`, `nav` is the
+island. `PaletteColors.brand` defaults to `derivedBrand`, so only Cobalt passes its own. `ColorContrastTest` checks the
+pairs for every palette and mode, and for dynamic colour across five tones either side of the M3 mapping: `onBrand` on
+`brand` and `onCard` on each card stop at 4.5:1; faded `onCard` (68%) on each card stop, `brand` on the nav, canvas and
+island, and `onBrandSoft` on `brandSoft` at 3:1; `onSurfaceVariant` on the nav at 4.5:1. If a derived pair fails, fix
+`derivedBrand`; never exempt a palette.
+
+**Blue never for text.** App-drawn text (titles, body, amounts, captions) is never `primary` or `brand`. M3 draws
+`primary` as text in a few controls (`TextButton` labels, a focused field's label); that is accepted as a control-label
+exception (`#2251FF` light, `#9DB1FF` dark, both above 4.5:1). Money tokens are unchanged by Cobalt: they are global
+(`MoneyColors`) and pass on every Cobalt surface.
+
+**White islands.** Cobalt light is the one palette whose island is white (owner-approved, D10); `GroupedSectionColorsTest`
+says so ("never white, except Cobalt light") with Graphite light as the positive control. Light
+`surfaceContainerLowest` is still white and still never a card, sheet or dialog fill.
 
 To pick: choose the light palette for daytime use and the dark palette for night, independently (for example Ivory by
 day and Midnight by night). Add a palette by adding one `<Name>Palette.kt` (the Graphite procedure), one `ThemePalette`
-entry, its pins in `ThemePaletteTest`, and re-running the loops in `ColorContrastTest`, `AccentHueTest` and
+entry (its brand tokens are derived unless it passes its own), its pins in `ThemePaletteTest`, and re-running the loops in `ColorContrastTest`, `AccentHueTest` and
 `ChipColorsTest`, which cover every entry automatically.
 
 **Accent safety.** The accent is for interactive chrome only (FAB, selected navigation item, buttons, switches, focus),
@@ -187,7 +290,8 @@ persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
 `PftSurfaces.glow` (DS6d) is the palette's `wash` while `ThemePrefs.headerGlow` is on, else `null`, in either style (the glow itself is described under "One-hand layout").
 
 - The canvas and island of each palette are the owner-approved mockup values (`canvas`, `island`), pinned in the
-  palette files; the island is lighter than the canvas in every palette and both modes, and never white.
+  palette files; the island is lighter than the canvas in every palette and both modes, and never white except in
+  Cobalt light (owner-approved, Cobalt plan D10).
   `FLAT` reproduces the pre-DS6c look exactly.
 - **Dynamic colour** has no such roles, so they are derived (`dynamicPaletteColors`): canvas is
   `surfaceContainerHigh` (light, tone 92) or `surfaceContainerLowest` (dark, tone 4); island is
@@ -202,7 +306,7 @@ persisted names, permanent like the palettes: `TONAL` (the default) and `FLAT`.
   and mode (money, `onSurface`, `onSurfaceVariant` at 4.5:1; `primary` at 3:1) and asserts the island is never
   `surfaceVariant`; the white-card rule itself stays a review rule.
 - **Window colour and the first frame.** Before Compose draws, the window paints `pft_window_background`
-  (`res/values` and `values-night`), which equals Graphite's `canvas`, the default (`WindowThemeTest` pins this).
+  (`res/values` and `values-night`), which equals Cobalt's `canvas`, the default (`#F5F7FB` light, `#0B0E17` dark) (`WindowThemeTest` pins this).
   The resources cannot know the user's palette, so every palette's `canvas` and flat `surface`, and the derived
   dynamic canvas, island and surface, stay within `WINDOW_FLASH_MAX_TONE_DELTA` (8 tones of CIE L*) of it in the
   same mode (`WindowFlashToneTest`, `ThemeResolutionTest`): a palette change can shift the first frame by a barely
@@ -412,41 +516,56 @@ page in the debug catalogue and its goldens, so they cannot drift.
 
 ### `MoneyText`
 
-`MoneyText(amount: Paise, semantic: MoneySemantic, modifier, size: MoneySize = Row, animate = false)`
-is the only way an amount is drawn (plan §5.2).
+`MoneyText(amount: Paise, semantic: MoneySemantic, modifier, size: MoneySize = Row, animate = false,
+onColor = Color.Unspecified, fadeDecimals = false)` is the only way an amount is drawn (plan §5.2).
 
 - **Format.** `PaiseFormat.format` from `:core:money` returns a sign-free `₹1,23,456.78`. `MoneyText`
   prepends the sign (`moneySign`) and never reformats; there is no float anywhere in the path.
-  U+2212 (a true minus, not a hyphen) for an expense or a negative balance, `+` for income, nothing for
-  a transfer, a budget figure or a non-negative balance.
+  U+2212 (a true minus, not a hyphen) for an expense, a negative balance or a negative `Net`, `+` for
+  income or a positive `Net`, nothing for a transfer, a budget figure, a zero `Net` or a non-negative
+  balance.
 - **Negative amounts: the caller's contract.** Transaction amounts are positive magnitudes and the
   direction is the semantic, so a negative `Paise` is rejected with `IllegalArgumentException` for every
-  semantic except `Balance`. A wrong sign would misreport the money, so `MoneyText` fails closed instead
+  semantic except `Balance` and `Net` (the two signed ones). A wrong sign would misreport the money, so `MoneyText` fails closed instead
   of drawing it, and that throw happens during composition (it would crash the screen). So **callers must
-  pass magnitudes (non-negative `Paise`) for every semantic except `Balance`**, and the ViewModel or
+  pass magnitudes (non-negative `Paise`) for every semantic except `Balance` and `Net`**, and the ViewModel or
   mapper that builds the UI state owns that: it takes `abs` of a signed difference only where the
   semantic says the direction (for example a budget's remaining amount shown with `Budget(OVER)`), and
   validates at that boundary, with a test, rather than relying on the composable's `require`. C4
   (transaction rows and Home totals), C5 (detail) and D4 (budget figures) each have such a mapper.
-- **Tone** (`moneyTone(semantic, amount, inRow)` → `MoneyTone` → colour):
+- **Tone** (`moneyTone(semantic, amount)` → `MoneyTone` → colour; the size never changes it):
 
   | Semantic | Tone |
   |---|---|
   | `Income` | Positive (green), in totals and in rows |
-  | `Expense` | Negative (red) in totals (`Hero`, `Large`); Neutral in rows (`Row`), owner decision Q2 |
+  | `Expense` | Neutral at every size, in rows, totals and heroes (Cobalt plan D5; it was red in totals before) |
+  | `Net` | Neutral whether negative, zero or positive: a signed difference such as a day total or the banner's net |
   | `Transfer` | Neutral |
   | `Balance` | Neutral, except Negative when the amount is below zero (Q3) |
   | `Budget(UNDER / AT_THRESHOLD / OVER)` | Positive / Warning / Negative |
 
-  Neutral is `onSurface`; the others are `PftTheme.money` tokens, never the accent. `BudgetState` is
+  Red is kept for what is actually wrong: a negative balance and an over-budget figure. Neutral is
+  `onSurface` (or `onColor`, below); the others are `PftTheme.money` tokens, never the accent. `BudgetState` is
   the UI's own three-value enum until the budget module (D1) exists; D4 maps core's `BudgetProgress`
   onto it.
 - **Spoken.** The semantics description is "Expense, ₹250.00" (direction word first, from string
-  resources: Income, Transfer, Balance, Negative balance, Under budget, Budget near its limit, Over
-  budget), so colour is never the only cue.
+  resources: Income, Transfer, Net, Balance, Negative balance, Under budget, Budget near its limit,
+  Over budget), so colour is never the only cue. A negative `Net` says its sign aloud: "Net, minus
+  ₹250.00" (a positive or zero one reads "Net, ₹250.00"; the `+` is only drawn).
+- **`onColor`: money on the blue card** (Cobalt plan D4). `onColor` draws a neutral figure in a given
+  colour, for a fill the theme does not sweep (the balance card's `onCard` on the brand gradient). It is
+  allowed only with a `Neutral` tone and throws `IllegalArgumentException` otherwise, so no red, green
+  or amber is ever drawn on the blue. The tone is decided by the data, so a negative `Balance` (red)
+  with an `onColor` also throws: the card shows the month's spend, an expense, which is neutral.
+- **`fadeDecimals`: the hero's decimals** (hero only; ignored at other sizes). The decimals (the `.`
+  and the two paise digits) are drawn at `FADED_DECIMAL_ALPHA` (0.68) of the figure's colour, as a
+  colour span, while the hero is at a large-text step (24sp or more). Below that, after the hero has
+  shrunk to fit, they are solid, because the faded colour only clears 3:1 (large text), not 4.5:1.
+  With `animate` each rolling digit takes the same colour. Spoken text and shown text are unchanged.
 - **Sizes.** `Hero` is `amountHero`, `Large` is `amountLarge`, `Row` is `amountRow`.
-- **Hero shrink-to-fit.** The hero is one line at the largest of `HeroSizeSteps` (48, 40, 34, 28, 24,
-  20, 16, 12sp; the plan's four plus four more) whose width fits the width it is given, measured with
+- **Hero shrink-to-fit.** The hero is one line at the largest of `heroSizeSteps(its own size)` (from the ladder
+  `HeroSizeSteps`: 48, 40, 34, 28, 24, 20, 16, 12sp, the plan's four plus four more; a 34sp Bricolage hero uses the
+  six at or below 34sp) whose width fits the width it is given, measured with
   a `TextMeasurer` (so it tracks font scale and density) inside `BoxWithConstraints`. The line height
   scales with the size and the optical size stays at the 48sp display cut. The steps go below the plan's
   28sp because the plan's example amount (Rs 1e10) is shorter than the real limit `Paise.MAX_AMOUNT`
@@ -471,7 +590,7 @@ Neutral. `labelMedium`, `extraLarge` shape, one merged semantics node. Not inter
 ### `GroupedSection`
 
 `GroupedSection { row(onClick?) { ... } }`: the replacement for cards. Inset by the 20dp gutter,
-`large` shape, filled with `PftTheme.surfaces.island` (never `surfaceVariant`, never white; with TONAL a
+`large` shape, filled with `PftTheme.surfaces.island` (never `surfaceVariant`, never white except in Cobalt light; with TONAL a
 one-pixel edge, lit along the top in dark mode; see "Surfaces and window colour"), one
 physical-pixel `outlineVariant` divider between rows, inset 16dp from the start (N rows give N-1
 dividers). A row with `onClick` is clickable (`Role.Button`) and at least 56dp tall. A rows lambda rather than a
@@ -479,6 +598,66 @@ composable slot lets the section own the dividers. M3 `ListItem` paints its own 
 so rows use `GroupedSectionDefaults.listItemColors()` (transparent). `Dp.Hairline` is not used for the
 divider because it lays out at zero height, which cannot be measured and relies on an unclipped
 canvas stroke.
+
+### `TransactionRow` and `DayGroup` (K5)
+
+`TransactionRow(model: TransactionRowModel)` is the one way a transaction is drawn in a list; `DayGroup(day,
+today, rows, total?)` puts a day header over one `GroupedSection` island of them. Both are in `ui/common` with
+`TransactionRowSamples.kt` (preview, catalogue page "Transactions", goldens `transaction-row-*` and `day-group-*`).
+
+- **Plain data.** `TransactionRowModel` holds text, a `GlyphSource` and a `Paise` magnitude with a
+  `MoneySemantic` (expense, income or transfer only; anything else, or a negative amount, throws), so the block
+  knows no entity. The consumer's mapper resolves names.
+- **Look (D3, D5).** A 40dp `CategoryGlyph` tile (`PftShapes.glyph`), the title in `bodyLarge` medium `onSurface`
+  (set explicitly: an island `Surface` supplies no content colour), the meta "category · account" in `bodySmall`
+  `onSurfaceVariant`, the amount as `MoneyText` (an expense is neutral with a minus, an income green with a plus,
+  a transfer unsigned and neutral), an optional "Needs review" `StatusChip(Warning)` under the amount and optional
+  neutral `StatusChip` tag pills that wrap under the meta. Rows are separated by `GroupedSection`'s hairline dividers;
+  there is no card inside the island. The day header is `labelMedium` `onSurfaceVariant` with the net total
+  (`MoneyText(Net)`, neutral at either sign) at the end, only when given.
+- **One node.** The row sets `clearAndSetSemantics` with one description (title, category, account, tags, the
+  amount's "Expense, ₹486.00", then the chip's words), so a screen reader says each once. Plain merging is not
+  enough: `MoneyText` and `StatusChip` are merged nodes, and a merged child is not folded into its parent. The tile
+  is decorative (`name = null`). With `onClick` it is a `Role.Button` and at least 56dp tall.
+- **Large text.** The title wraps, never truncates. Below a font scale of 1.5 the meta line is one line (ellipsis when the amount leaves it too little room; the spoken description carries the whole meta; K9). From a font scale of 1.5 the meta wraps whole too, and the amount sits under the tile and
+  text at the full row width. A `Row`-size `MoneyText` does not shrink, so the largest amount (`Paise.MAX_AMOUNT`)
+  fits one line at 100% but wraps at 200% on a 320dp window (never cut: the test asserts every character is laid out).
+- **Day label.** "Today" or "Yesterday" from the passed-in `today` (the caller owns the clock and zone), else the
+  device-locale `yMMMd` date. The header is a heading.
+
+### `BalanceCard` and `QuickActionRow` (K6)
+
+Home's two dashboard blocks, in `ui/home` with `HomeSamples.kt` (preview, catalogue page "Home", goldens
+`balance-card-*` and `quick-actions-*`). Plain data in, no entity or ViewModel; nothing renders them on Home until
+slice C (C4d) wires the month's totals.
+
+- **`BalanceCard(model: BalanceCardModel)`.** The month's spend as a `MoneyText(Expense, Hero, onColor = onCard,
+  fadeDecimals = true)` on the `cardStart`, `cardMid`, `cardEnd` gradient, `PftShapes.card`, with two decorative slabs
+  (`cardGhost2`, `cardGhost`) peeking above it. Over the hero: the caller's title and the caption "Spent this month".
+  Under it: "In" and "Out" (unsigned `PaiseFormat` figures in `amountRow`: `MoneyText` cannot draw income on the blue),
+  side by side when both fit and stacked otherwise. The budget meter and its label are drawn only when
+  `BalanceCardModel.budget` is given (hidden until slice D, Cobalt plan D6).
+- **Gradient and ring.** The gradient is the mockup's CSS `linear-gradient(135deg, start 0%, mid 55%, end 100%)`:
+  stops at 0, 0.55 and 1 on a true 45 degree line through the card centre, `(w + h) / sqrt 2` long (`cardGradientLine`),
+  not Compose's corner-to-corner default. Over it, behind the text and clipped by the card, a decorative ring: the
+  mockup's 200dp circle with a 28dp border added outside (256dp across, stroke radius 100 to 128), 68dp in from the
+  right edge and 88dp down, `onCard` at `RING_ALPHA` (0.08). It is drawn, not a node.
+- **Contrast (D4).** Every text is solid `onCard`; hierarchy is size and weight. The ring lightens what is under some
+  text, so `ColorContrastTest` pins `onCard` over the ringed mid and end stops, over the ringed gradient at the ring's
+  furthest reach toward the start (`RING_MIN_LINE_FRACTION`, 0.28) and the faded decimals over the ringed mid and
+  end stops at 3:1, in every palette and mode. The ring never reaches the start corner: ringed, Cobalt light's start
+  would be 4.2:1. The meter's fill is `onCard` over a track of `onCard` at `METER_TRACK_ALPHA` (0.22), held to 3:1.
+- **Spoken.** The hero says "Expense, ₹48,250.40"; "In" and "Out" are one merged node each (word, then figure); the
+  arrows, ghosts and meter bar have no semantics, so the meter's label is said once.
+- **Large text.** The hero shrinks as `MoneyText` does. The card is inset by the gutter and has 18dp padding, so on a
+  320dp window it holds 244dp: a figure of 100 crore fits one line at 200%, and `Paise.MAX_AMOUNT` wraps whole at the
+  smallest step (never cut).
+- **`QuickActionRow(actions: List<QuickAction>)`.** Renders exactly the actions given: `QuickAction(label, icon,
+  onClick, primary)`. Each is one `Role.Button` named by its label; a 52dp `PftShapes.quickAction` tile (`brand` with
+  `onBrand` for the primary one, `brandSoft` with `onBrandSoft` for the rest) over a `bodySmall` medium label in
+  `onSurface`. Budgets is not passed until slice D. The actions share equal columns; when the widest label no longer
+  fits its share (200% text, a fourth action) the row wraps onto further lines with fewer columns, so a label is never
+  broken mid-word.
 
 ### `EmptyState`
 
@@ -537,7 +716,7 @@ Permanent key (Material Symbols name when different). Chrome keys are semantic; 
 
 | Group | Keys |
 |---|---|
-| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle` |
+| Chrome | `back` (arrow_back), `forward` (arrow_forward), `add`, `close`, `check`, `search`, `filter` (filter_list), `overflow` (more_vert), `chevron_left`, `chevron_right`, `expand_more`, `expand_less`, `edit`, `delete`, `undo`, `lock`, `settings`, `calendar` (calendar_month), `info`, `warning`, `error`, `visibility`, `visibility_off`, `download`, `upload`, `tune`, `sort`, `transfer` (swap_horiz), `tag` (label), `history`, `check_circle`, `south_west` (In, the Income quick action), `north_east` (Out), `more_horiz` (the More tab) |
 | Food and drink | `restaurant`, `local_cafe`, `fastfood`, `local_bar`, `bakery_dining`, `local_pizza`, `icecream` |
 | Shopping | `shopping_cart`, `shopping_bag`, `grocery`, `checkroom`, `redeem`, `diamond` |
 | Transport | `directions_car`, `directions_bus`, `train`, `local_taxi`, `two_wheeler`, `flight`, `local_gas_station` |
@@ -597,10 +776,10 @@ ones are captured after a real swipe). The debug catalogue has a page for each, 
 Content goldens (DS5) come from `ContentScreenshotTest`, captured by the bounds of the `*Samples`
 composable on `surface` (393dp wide): `money-text-<light|dark>[-2x].png` (the 2x ones at font scale
 2.0), `status-chip-`, `grouped-section-` and `empty-state-<light|dark>.png`, 19 to 170 KB each. The
-Dashboard header sample uses a `MoneyText` hero, so its two expanded goldens show the money red.
+Dashboard header sample uses a `MoneyText` hero (an expense, neutral since Cobalt K3), so its goldens show the plain text colour, not red.
 
-Palette goldens (DS6b) come from `PaletteScreenshotTest`: `palettes-<light|dark>.png`, the four palettes' role swatches
-side by side (`PaletteSwatches`, each column drawn from its own palette's colours, 393dp wide, about 130 KB each). They
+Palette goldens (DS6b) come from `PaletteScreenshotTest`: `palettes-<light|dark>.png`, the five palettes' role swatches
+side by side (`PaletteSwatches`, each column drawn from its own palette's colours, 393dp wide). They
 render byte-identically on the debug and release unit-test variants.
 
 Glyph goldens (DS3) come from `CategoryGlyphScreenshotTest`: every `PftSymbol` on a teal, an amber and a violet badge
@@ -653,15 +832,21 @@ Screenshot rules:
 | Figtree licence text `OFL.txt` | same directory, same commit | | | 4,388 B upstream | upstream `140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268` | `app/src/main/assets/licenses/figtree-OFL.txt` (4,383 B, shipped sha256 `4504180d840bfb94a6445f6145574256aac1c7da5e6d4be55da5b9e710772490`: identical to upstream apart from trailing whitespace trimmed by the repo's pre-commit hooks; the file already ended with a newline) |
 | Plus Jakarta Sans variable font `PlusJakartaSans[wght].ttf` (the Plus Jakarta Sans Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/plusjakartasans (google/fonts `ofl/plusjakartasans`; upstream project https://github.com/tokotype/PlusJakartaSans) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (2026-10-30, the single DS6f pin); `wght` 200-800, default 400 | SIL OFL 1.1, **Reserved Font Name: none** | 176,288 B | `89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8` | `app/src/main/res/font/plus_jakarta_sans.ttf`, unmodified; weights 400, 500 and 600 are declared in `sansFamily()` |
 | Plus Jakarta Sans licence text `OFL.txt` | same directory, same commit | | | 4,402 B upstream | upstream `995c7199cab65954f545996326755daee7b63cc6b42b06c13da1f9502ab08a99` | `app/src/main/assets/licenses/plus-jakarta-sans-OFL.txt` (4,401 B, shipped sha256 `f9a8e776b4b048227f2f046b8716083eb04b1539d9ad1d4b87e81c1df28f86e3`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the file already ended with a newline) |
+| Manrope variable font `Manrope[wght].ttf` (the Manrope Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/manrope (google/fonts `ofl/manrope`; upstream project https://github.com/googlefonts/manrope) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (the single DS6f pin, reused in K2); name table Version 4.505; `wght` 200-800, default 200 | SIL OFL 1.1, **Reserved Font Name: none** | 164,700 B | `3ae11c49db0455a3cc33e37d380f20fdb8c7f8b41dc07625c177e3d87a9d6ae6` | `app/src/main/res/font/manrope.ttf`, unmodified; weights 400, 500 and 600 are declared in `sansFamily()` |
+| Manrope licence text `OFL.txt` | same directory, same commit | | | 4,387 B upstream | upstream `58172e0c0fac2cda8a37b348164bb55e44b0e69051e557e92b1d3f6910141f7b` | `app/src/main/assets/licenses/manrope-OFL.txt` (4,386 B, shipped sha256 `d6a309fcfb963d329a93baf9df66fa5f3c23a4be2b5f67edf24d6cafecde12ac`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the copyright line is "Copyright 2018 The Manrope Project Authors") |
+| Bricolage Grotesque variable font `BricolageGrotesque[opsz,wdth,wght].ttf` (the Bricolage Grotesque Project Authors) | https://github.com/google/fonts/tree/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/bricolagegrotesque (google/fonts `ofl/bricolagegrotesque`; upstream project https://github.com/ateliertriay/bricolage) | google/fonts commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec` (K2); name table Version 1.001; `opsz` 12-96 (default 96), `wdth` 75-100 (default 100), `wght` 200-800 (default 800) | SIL OFL 1.1, **Reserved Font Name: none** (checked in the upstream `OFL.txt`; `BundledFontTest` asserts it) | 408,496 B (under the 500 KB pre-commit large-file limit, so no hook exception) | `413e7357809ddd12fd80a96a8a396de0e401638d4acd3cb3e37532f0472ac682` | `app/src/main/res/font/bricolage_grotesque.ttf`, unmodified; used by `bricolage(weight, size)` |
+| Bricolage Grotesque licence text `OFL.txt` | same directory, same commit | | | 4,403 B upstream | upstream `4b5a7d8f37f5602621c8a8d7358a6a2e71317e6c231c661e15aef0275d3e07ba` | `app/src/main/assets/licenses/bricolage-grotesque-OFL.txt` (4,402 B, shipped sha256 `46ba5f18ee20ea529f21d96c0ef8637a8314c1a5cfb2aa84018bc8157cbeff41`: identical to upstream apart from one line's trailing space trimmed by the repo's pre-commit hooks; the copyright line is "Copyright 2022 The Bricolage Grotesque Project Authors") |
 | Material Symbols Rounded (92 icons, SVG path data only) | https://github.com/google/material-design-icons (`symbols/web/<name>/materialsymbolsrounded/<name>_24px.svg`) | commit `10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7` (2026-10-23) | Apache-2.0 | 73 KB of drawables | per-icon SVG hashes in `tools/material-symbols/svg-sha256.txt`; upstream `LICENSE` 11,357 B, `58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd` | `app/src/main/res/drawable/sym_<key>.xml` (path data unchanged, wrapped in a group that shifts the SVG's -960 origin); licence in `app/src/main/assets/licenses/material-symbols-APACHE-2.0.txt` (attribution header, then the upstream text with trailing whitespace trimmed) |
 
 `BundledSymbolsLicenceTest` checks that the Apache-2.0 text and the attribution (source and pinned commit) ship.
 `BundledFontTest` pins each font's size and SHA-256 and checks that the OFL text and the copyright line
 ("Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)",
 "Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)", and the Plus Jakarta Sans
-Project Authors line "2020 The Plus Jakarta Sans Project Authors") ship.
+Project Authors line "2020 The Plus Jakarta Sans Project Authors", "Copyright 2018 The Manrope Project Authors
+(https://github.com/googlefonts/manrope)" and "Copyright 2022 The Bricolage Grotesque Project Authors
+(https://github.com/ateliertriay/bricolage)") ship, and that neither Manrope nor Bricolage declares a Reserved Font Name.
 OFL section 2 requires the licence to accompany every copy; AP1 adds an in-app licences viewer.
-No Reserved Font Name is declared, so subsetting is allowed later if APK size matters; it is not
+No bundled font declares a Reserved Font Name, so subsetting is allowed later if APK size matters; it is not
 done, so provenance stays checkable by hash. To update the font, download from google/fonts into a
 scratch directory, verify, and change the commit, size and hash here and in `BundledFontTest`
 together.

@@ -15,10 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * [HomeViewModel] against a real Room database through the production wiring ([AppServices]): the
- * state carries the user's name and this phone's name from the stored identity.
- */
+/** [HomeViewModel] against a real Room database through the production wiring: the stored user's name. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class HomeViewModelTest {
@@ -36,24 +33,22 @@ class HomeViewModelTest {
         ViewModelProvider(store, HomeViewModel.factory(services))[HomeViewModel::class.java]
 
     @Test
-    fun `it starts not loaded, with no names to show`() {
+    fun `it starts not loaded, with no name`() {
         runBlocking { services.identity.initialise("Akash", "Pixel 8") }
 
         val before = viewModel().state.value
 
         before.loaded shouldBe false
         before.userName shouldBe ""
-        before.deviceLabel shouldBe ""
     }
 
     @Test
-    fun `the state carries the stored user name and phone name`() {
+    fun `the state carries the stored, trimmed user name once loaded`() {
         runBlocking { services.identity.initialise("  Akash ", "Pixel 8") }
         val vm = viewModel()
 
         awaitMain { vm.state.value.loaded }
 
         vm.state.value.userName shouldBe "Akash"
-        vm.state.value.deviceLabel shouldBe "Pixel 8"
     }
 }

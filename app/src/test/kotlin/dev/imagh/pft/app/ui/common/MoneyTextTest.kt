@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -24,21 +23,24 @@ import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.ResourceFont
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.imagh.pft.R
 import dev.imagh.pft.app.ui.HostedComposeRule
+import dev.imagh.pft.app.ui.theme.DisplayFont
 import dev.imagh.pft.app.ui.theme.HeroSizeSteps
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
+import dev.imagh.pft.app.ui.theme.heroSizeSteps
 import dev.imagh.pft.money.Paise
 import dev.imagh.pft.money.PaiseFormat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -89,11 +91,17 @@ class MoneyTextTest {
         spec = Spec(amount, semantic, size, animate)
         started = true
         compose.setContent {
-            PftTheme(ThemePrefs(dynamicColor = false)) {
+            PftTheme(showPrefs) {
                 spec?.let { MoneyText(it.amount, it.semantic, Modifier.testTag(tag), it.size, it.animate) }
             }
         }
     }
+
+    /** The prefs `show` renders under: Cobalt by default, a test that pins the old hero font sets [serif]. */
+    private var showPrefs = ThemePrefs(dynamicColor = false)
+
+    /** The pre-Cobalt hero: Newsreader at 48sp. */
+    private val serif = ThemePrefs(dynamicColor = false, displayFont = DisplayFont.BUNDLED_SERIF)
 
     private fun node() = compose.onNodeWithTag(tag)
 
@@ -154,7 +162,7 @@ class MoneyTextTest {
     }
 
     @Test
-    fun `only a balance may be negative`() {
+    fun `only a balance or a net figure may be negative`() {
         listOf(
             MoneySemantic.Income,
             MoneySemantic.Expense,
@@ -165,6 +173,29 @@ class MoneyTextTest {
             assertTrue("$semantic: $failure", failure is IllegalArgumentException)
         }
         assertEquals(minus, moneySign(MoneySemantic.Balance, Paise(-1)))
+        assertEquals(minus, moneySign(MoneySemantic.Net, Paise(-1)))
+    }
+
+    @Test
+    fun `a net figure is signed plus, minus or not at all at zero`() {
+        show(Paise(12_345_678), MoneySemantic.Net)
+        node().assertTextEquals("+₹1,23,456.78")
+        show(Paise(-12_345_678), MoneySemantic.Net)
+        node().assertTextEquals("$minus₹1,23,456.78")
+        show(Paise.ZERO, MoneySemantic.Net)
+        node().assertTextEquals("₹0.00")
+    }
+
+    @Test
+    fun `the minus of a negative net figure is the true minus sign U+2212`() {
+        show(Paise(-100), MoneySemantic.Net)
+        val text =
+            node()
+                .fetchSemanticsNode()
+                .config[SemanticsProperties.Text]
+                .single()
+                .text
+        assertEquals('−', text.first())
     }
 
     // --- semantics (colour is never the only cue) -------------------------------------------
@@ -177,6 +208,16 @@ class MoneyTextTest {
         node().assertContentDescriptionEquals("Income, ₹250.00")
         show(Paise(25_000), MoneySemantic.Transfer)
         node().assertContentDescriptionEquals("Transfer, ₹250.00")
+    }
+
+    @Test
+    fun `the spoken description of a net figure says minus when it is negative and nothing extra otherwise`() {
+        show(Paise(-25_000), MoneySemantic.Net)
+        node().assertContentDescriptionEquals("Net, minus ₹250.00")
+        show(Paise(25_000), MoneySemantic.Net)
+        node().assertContentDescriptionEquals("Net, ₹250.00")
+        show(Paise.ZERO, MoneySemantic.Net)
+        node().assertContentDescriptionEquals("Net, ₹0.00")
     }
 
     @Test
@@ -200,19 +241,37 @@ class MoneyTextTest {
     // --- tone colour ------------------------------------------------------------------------
 
     @Test
-    fun `an expense total is drawn in the money red and an expense row is neutral (Q2)`() {
+    fun `an expense is neutral at every size, in a hero, a total and a row`() {
         var money = Color.Unspecified
         var neutral = Color.Unspecified
         compose.setContent {
             PftTheme(ThemePrefs(dynamicColor = false)) {
                 money = PftTheme.money.negative
                 neutral = MaterialTheme.colorScheme.onSurface
+                MoneyText(Paise(100), MoneySemantic.Expense, Modifier.testTag("hero"), size = MoneySize.Hero)
                 MoneyText(Paise(100), MoneySemantic.Expense, Modifier.testTag("total"), size = MoneySize.Large)
                 MoneyText(Paise(100), MoneySemantic.Expense, Modifier.testTag("row"), size = MoneySize.Row)
             }
         }
-        assertEquals(money, compose.onNodeWithTag("total").color())
-        assertEquals(neutral, compose.onNodeWithTag("row").color())
+        listOf("hero", "total", "row").forEach { tag ->
+            val drawn = compose.onNodeWithTag(tag).color()
+            assertEquals(tag, neutral, drawn)
+            assertNotEquals("$tag must not be the money red", money, drawn)
+        }
+    }
+
+    @Test
+    fun `a net figure is neutral whether it is negative or positive`() {
+        var neutral = Color.Unspecified
+        compose.setContent {
+            PftTheme(ThemePrefs(dynamicColor = false)) {
+                neutral = MaterialTheme.colorScheme.onSurface
+                MoneyText(Paise(-100), MoneySemantic.Net, Modifier.testTag("loss"), size = MoneySize.Large)
+                MoneyText(Paise(100), MoneySemantic.Net, Modifier.testTag("gain"), size = MoneySize.Large)
+            }
+        }
+        assertEquals(neutral, compose.onNodeWithTag("loss").color())
+        assertEquals(neutral, compose.onNodeWithTag("gain").color())
     }
 
     @Test
@@ -256,6 +315,7 @@ class MoneyTextTest {
 
     @Test
     fun `row and large use the sans amount styles and the hero the display font`() {
+        showPrefs = serif
         show(Paise(100), MoneySemantic.Transfer, MoneySize.Row)
         assertEquals(
             16f,
@@ -300,6 +360,7 @@ class MoneyTextTest {
     private val maxAmount = Paise.MAX_AMOUNT
 
     private var boxWidthDp by mutableIntStateOf(0)
+
     private var probeSize by mutableStateOf<TextUnit?>(null)
 
     /**
@@ -312,11 +373,12 @@ class MoneyTextTest {
         widthDp: Int,
         fontScale: Float = 1f,
         animate: Boolean = false,
+        prefs: ThemePrefs = ThemePrefs(dynamicColor = false),
     ) {
         boxWidthDp = widthDp
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-                PftTheme(ThemePrefs(dynamicColor = false)) {
+                PftTheme(prefs) {
                     Column {
                         Box(Modifier.width(boxWidthDp.dp)) {
                             MoneyText(amount, MoneySemantic.Expense, Modifier.testTag(tag), MoneySize.Hero, animate)
@@ -352,20 +414,58 @@ class MoneyTextTest {
 
     @Test
     fun `a short amount in a wide box keeps the full 48sp`() {
-        showHero(Paise(8_245_000), widthDp = 393)
+        showHero(Paise(8_245_000), widthDp = 393, prefs = serif)
         assertEquals(48f, heroSizeSp(), 0f)
         node().layout().assertShownInFull()
     }
 
+    @Test
+    fun `a Bricolage Grotesque hero starts at its own 34sp, never at 48sp`() {
+        showHero(Paise(8_245_000), widthDp = 393, prefs = grotesque)
+        assertEquals(34f, heroSizeSp(), 0f)
+        node().layout().assertShownInFull()
+    }
+
+    @Test
+    fun `a Bricolage Grotesque hero shrinks through the steps at or below 34sp, each the largest that fits`() {
+        val steps = heroSizeSteps(34.sp)
+        val stepSizes = steps.map { it.value }
+        showHero(maxAmount, widthDp = 420, prefs = grotesque)
+        val sizes =
+            listOf(420, 353, 300, 280).map { width ->
+                boxWidthDp = width
+                compose.waitForIdle()
+                node().layout().assertShownInFull("at $width")
+                assertTrue("size ${heroSizeSp()} at $width is not a step at or below 34sp", heroSizeSp() in stepSizes)
+                assertNextLargerStepWouldOverflow(width, steps)
+                heroSizeSp()
+            }
+        assertEquals(sizes.sortedDescending(), sizes)
+        assertTrue("the widest and narrowest should differ: $sizes", sizes.first() > sizes.last())
+        assertTrue("it never exceeds its own 34sp: $sizes", sizes.all { it <= 34f })
+    }
+
+    @Test
+    fun `a Bricolage Grotesque hero wraps only at its own smallest step, 12sp`() {
+        showHero(maxAmount, widthDp = 150, fontScale = 2f, prefs = grotesque)
+        assertEquals(12f, heroSizeSp(), 0f)
+        assertTrue(node().layout().lineCount > 1)
+    }
+
+    private val grotesque = ThemePrefs(dynamicColor = false, displayFont = DisplayFont.BUNDLED_GROTESQUE)
+
     /** The step just above the one the hero chose, rendered as plain text in the same box, must overflow. */
-    private fun assertNextLargerStepWouldOverflow(width: Int) {
-        val chosen = HeroSizeSteps.indexOfFirst { it.value == heroSizeSp() }
+    private fun assertNextLargerStepWouldOverflow(
+        width: Int,
+        steps: List<TextUnit> = HeroSizeSteps,
+    ) {
+        val chosen = steps.indexOfFirst { it.value == heroSizeSp() }
         assertTrue("size ${heroSizeSp()} at $width is not a step", chosen >= 0)
         if (chosen == 0) return
-        probeSize = HeroSizeSteps[chosen - 1]
+        probeSize = steps[chosen - 1]
         compose.waitForIdle()
         assertTrue(
-            "${HeroSizeSteps[chosen - 1]} would have fitted at $width, but the hero chose ${heroSizeSp()}",
+            "${steps[chosen - 1]} would have fitted at $width, but the hero chose ${heroSizeSp()}",
             !compose.onNodeWithTag("probe").layout().isShownInFull(),
         )
         probeSize = null
@@ -509,11 +609,3 @@ class MoneyTextTest {
         assertEquals("$minus₹1,00,00,00,00,000.00".length, textNodes().size)
     }
 }
-
-private fun SemanticsNode.layoutResult(): TextLayoutResult {
-    val results = mutableListOf<TextLayoutResult>()
-    config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
-    return results.single()
-}
-
-private fun SemanticsNode.shownText(): String = layoutResult().layoutInput.text.text

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home redesign mockup (Cobalt) vs today</title>
+<!-- Fonts are fetched by the browser for this mockup only; the app bundles its own and never fetches. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400&family=Manrope:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px; background: #DDDFE3; font-family: Figtree, system-ui, sans-serif; color: #14161A; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .lede { margin: 0 0 28px; color: #50545C; max-width: 900px; line-height: 1.45; font-size: 14px; }
+  .row { display: flex; gap: 36px; flex-wrap: wrap; align-items: flex-start; }
+  .label { font-weight: 600; font-size: 14px; margin: 0 0 10px 6px; color: #2A2D33; }
+  .label small { display: block; font-weight: 400; color: #6A6E76; font-size: 12px; }
+
+  /* ---------- phone frame ---------- */
+  .phone { width: 360px; height: 780px; border-radius: 44px; padding: 10px; background: #F7F8FA; box-shadow: 0 0 0 1px #0000000F, 0 20px 50px #00000026; }
+  .phone.dark-frame { background: #1B1E24; }
+  .screen { position: relative; height: 100%; border-radius: 36px; overflow: hidden; background: var(--canvas); color: var(--on); }
+  .status { display: flex; justify-content: space-between; align-items: center; padding: 14px 26px 0; font-size: 13px; font-weight: 600; }
+  .status .pill { width: 90px; height: 24px; border-radius: 14px; background: #000; }
+  .status .icons { display: flex; gap: 5px; }
+  .status .icons i { width: 14px; height: 9px; border-radius: 2px; background: var(--on); opacity: .85; display: block; }
+  .scroll { position: absolute; inset: 44px 0 0 0; overflow: hidden; padding: 0 18px; }
+  svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- shared row parts ---------- */
+  .tile { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .t-food { background: var(--t-food-bg); color: var(--t-food); }
+  .t-groc { background: var(--t-groc-bg); color: var(--t-groc); }
+  .t-inc  { background: var(--t-inc-bg);  color: var(--t-inc); }
+  .t-tran { background: var(--t-tran-bg); color: var(--t-tran); }
+  .t-bill { background: var(--t-bill-bg); color: var(--t-bill); }
+  .t-rent { background: var(--t-rent-bg); color: var(--t-rent); }
+  .txn { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+  .txn + .txn { border-top: 1px solid var(--line); }
+  .txn .who { flex: 1; min-width: 0; }
+  .txn .name { font-size: 15px; font-weight: 500; }
+  .txn .meta { font-size: 12px; color: var(--onvar); margin-top: 2px; }
+  .txn .amt { text-align: right; font-size: 15px; font-weight: 600; }
+  .amt.pos { color: var(--positive); }
+  .chip { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+
+  /* ---------- palettes ---------- */
+  .graphite-light {
+    --canvas: #E6E7EA; --island: #EFF0F2; --on: #14161A; --onvar: #50545C; --line: #D1D4D9; --primary: #3B4350;
+    --negative: #A8231C; --positive: #1E6B3A; --warn: #8A5A00; --warn-bg: #F6E7C8;
+    --t-food-bg: #FBE0CF; --t-food: #8A3B0B; --t-groc-bg: #CDEFD6; --t-groc: #1D5E33; --t-inc-bg: #D3E4FB; --t-inc: #1F4C86;
+    --t-tran-bg: #EBDDFB; --t-tran: #5A2F96; --t-bill-bg: #F6E9B8; --t-bill: #6B5200; --t-rent-bg: #D7E9EC; --t-rent: #1E5961;
+  }
+  .cobalt-light {
+    --canvas: #F5F7FB; --island: #FFFFFF; --on: #0E1B3D; --onvar: #7A8399; --line: #E9ECF3; --primary: #2251FF;
+    --primary-soft: #E7EDFF; --card: linear-gradient(135deg, #3463FF 0%, #2251FF 55%, #1B44E0 100%); --card-ghost: #C7D4FF; --card-ghost2: #E2E9FF;
+    --positive: #13803F; --warn: #9A5B00; --warn-bg: #FFF1D6; --nav: #FFFFFF; --nav-shadow: 0 8px 24px #1A2A6B1F;
+    --t-food-bg: #FFE7DA; --t-food: #C2531A; --t-groc-bg: #DDF5E4; --t-groc: #1F7A41; --t-inc-bg: #E7EDFF; --t-inc: #2251FF;
+    --t-tran-bg: #F0E6FF; --t-tran: #7140C9; --t-bill-bg: #FFF3CC; --t-bill: #8A6500; --t-rent-bg: #DDF1F4; --t-rent: #1E7480;
+  }
+  .cobalt-dark {
+    --canvas: #0B0E17; --island: #151A27; --on: #E8EBF4; --onvar: #8E97AD; --line: #222838; --primary: #2251FF; --icon: #9DB1FF;
+    --primary-soft: #1D2647; --card: linear-gradient(135deg, #2D5BFF 0%, #2251FF 55%, #1A3FCC 100%); --card-ghost: #22306A; --card-ghost2: #182148;
+    --positive: #5CD68C; --warn: #F5C46B; --warn-bg: #3A2C10; --nav: #181D2B; --nav-shadow: 0 8px 24px #00000066;
+    --t-food-bg: #3A2418; --t-food: #FFB088; --t-groc-bg: #15301F; --t-groc: #7FDC9C; --t-inc-bg: #1D2647; --t-inc: #A9BAFF;
+    --t-tran-bg: #2A1F42; --t-tran: #C7A8FF; --t-bill-bg: #352B0E; --t-bill: #F2CF6B; --t-rent-bg: #13303A; --t-rent: #7FD3DE;
+  }
+
+  /* ---------- TODAY (Graphite, current layout) ---------- */
+  .today .topbar { display: flex; justify-content: flex-end; padding-top: 8px; color: var(--onvar); }
+  .today .month { text-align: center; font-size: 20px; font-weight: 500; margin-top: 4px; }
+  .today .hero { font-family: Newsreader, Georgia, serif; font-size: 46px; color: var(--negative); margin: 54px 0 0 2px; letter-spacing: -0.5px; }
+  .today .sub { display: flex; justify-content: space-between; align-items: center; color: var(--onvar); font-size: 14px; margin: 6px 4px 22px; }
+  .today .sub .arrows { display: flex; gap: 28px; color: var(--onvar); }
+  .today .card { background: var(--island); border-radius: 22px; padding: 2px 14px; }
+  .today .amt { color: var(--on); font-weight: 500; }
+
+  /* ---------- NEW (Cobalt) ---------- */
+  .new { font-family: Manrope, system-ui, sans-serif; }
+  .new .txn .amt, .new .day span:last-child { font-family: Manrope, system-ui, sans-serif; }
+  .new .head { display: flex; align-items: center; gap: 10px; padding: 10px 0 14px; }
+  .new .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--primary-soft); color: var(--on); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  .new .greet { flex: 1; }
+  .new .greet small { display: block; font-size: 11px; color: var(--onvar); }
+  .new .greet b { font-size: 15px; font-weight: 600; }
+  .new .iconbtn { width: 38px; height: 38px; border-radius: 12px; background: var(--island); border: 1px solid var(--line); display: grid; place-items: center; color: var(--on); position: relative; }
+  .new .iconbtn .dot { position: absolute; top: 8px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: #F04438; border: 1.5px solid var(--island); }
+
+  .new .stack { position: relative; margin-top: 18px; }
+  .new .ghost { position: absolute; left: 14px; right: 14px; top: -8px; height: 30px; border-radius: 20px; background: var(--card-ghost); }
+  .new .ghost2 { position: absolute; left: 30px; right: 30px; top: -15px; height: 30px; border-radius: 20px; background: var(--card-ghost2); }
+  .new .balance { position: relative; background: var(--card); color: #fff; border-radius: 22px; padding: 16px 18px 14px; overflow: hidden; }
+  .new .balance::after { content: ""; position: absolute; right: -60px; top: -40px; width: 200px; height: 200px; border-radius: 50%; border: 28px solid #FFFFFF14; }
+  .new .balance .top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+  .new .balance .top .tag { font-size: 10px; background: #FFFFFF2E; padding: 3px 8px; border-radius: 999px; }
+  .new .balance .cap { font-size: 11px; opacity: .78; margin-top: 12px; }
+  .new .balance .big { font-family: 'Bricolage Grotesque', Manrope, sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+  .new .balance .big .dec { opacity: .55; }
+  .new .balance .big svg { width: 16px; height: 16px; opacity: .75; }
+  .new .meter { height: 5px; border-radius: 3px; background: #FFFFFF38; margin: 12px 0 6px; }
+  .new .meter i { display: block; height: 100%; width: 64%; border-radius: 3px; background: #fff; }
+  .new .meterlbl { font-size: 10px; opacity: .8; }
+  .new .inout { display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; opacity: .92; }
+  .new .inout span { display: flex; align-items: center; gap: 4px; }
+  .new .inout svg { width: 12px; height: 12px; }
+
+  .new .actions { display: flex; justify-content: space-between; margin: 22px 4px 10px; }
+  .new .act { width: 68px; text-align: center; font-size: 11px; font-weight: 500; }
+  .new .act .b { width: 52px; height: 52px; margin: 0 auto 8px; border-radius: 17px; display: grid; place-items: center; background: var(--primary-soft); color: var(--icon, var(--primary)); }
+  .new .act.main .b { background: var(--primary); color: #fff; box-shadow: 0 6px 16px #2F54EB55; }
+
+  .new .sec { display: flex; justify-content: space-between; align-items: baseline; margin: 20px 2px 4px; }
+  .new .sec b { font-size: 16px; font-weight: 600; }
+  .new .sec a { font-size: 12px; color: var(--onvar); font-weight: 500; }
+  .new .day { font-size: 11px; color: var(--onvar); margin: 8px 2px 0; display: flex; justify-content: space-between; }
+  .new .list { background: var(--island); border-radius: 18px; padding: 0 14px; margin-top: 6px; }
+
+  .new .nav { position: absolute; left: 18px; right: 18px; bottom: 16px; height: 62px; border-radius: 31px; background: var(--nav); box-shadow: var(--nav-shadow); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; color: var(--onvar); }
+  .new .nav .on { background: var(--primary); color: #fff; border-radius: 24px; padding: 11px 16px; display: flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; }
+  .new .fade { position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(to bottom, transparent, var(--canvas) 55%); }
+
+  .notes { margin-top: 32px; background: #fff; border-radius: 16px; padding: 18px 22px; max-width: 1180px; font-size: 13.5px; line-height: 1.5; }
+  .notes h2 { font-size: 16px; margin: 0 0 8px; }
+  .notes ul { margin: 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+
+<svg style="display:none">
+  <symbol id="i-food" viewBox="0 0 24 24"><path d="M4 3v8a3 3 0 0 0 6 0V3M7 3v18M17 3c-2 2-3 5-3 8h4V3zM18 11v10"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L22 8H6"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17h14M3 13l2-6a2 2 0 0 1 2-1.5h10A2 2 0 0 1 19 7l2 6v5h-3M3 13v5h3M3 13h18"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M17 7 7 17M7 8v9h9"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14l-4-4M20 16H6l4 4"/></symbol>
+  <symbol id="i-pie" viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6"/><path d="M17 13.5h.01"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.3 20a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 14.6H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.7 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+</svg>
+
+<h1>Home screen: today vs the proposed "Cobalt" redesign</h1>
+<p class="lede">Fake data only. Left is our current home rebuilt here with real-looking transactions in place of the "Sample row" placeholders, so the comparison is fair. The other two are the proposed layout, following the reference you shared, in light and dark. Quick actions are ours (Expense, Income, Transfer, Budgets), not the banking ones.</p>
+
+<div class="row" id="phones"></div>
+
+<div class="notes">
+  <h2>What changes, and what to decide</h2>
+  <ul>
+    <li><b>Balance card:</b> month spend on a blue card with income/spend and the budget meter. Money sits on a tinted fill, which reverses premium-look decision O2.</li>
+    <li><b>Quick actions:</b> a new round-button row; the primary action (Expense) is filled.</li>
+    <li><b>Transactions:</b> grouped by day in a white card, with category tiles and a review pill for an uncertain auto-logged entry (M1b).</li>
+    <li><b>Floating tab bar:</b> Home · Transactions · Accounts · Insights. A new navigation model; the biggest change.</li>
+    <li><b>Expense amounts</b> are in the default text colour, not red; only income is green. Today the hero is red.</li>
+    <li><b>Type:</b> Manrope for the interface and Bricolage Grotesque for balances, with faded decimals; the Newsreader serif hero is dropped in this layout.</li>
+    <li><b>Colour:</b> brand blue #2251FF for fills and icons only, never text; text #0E1B3D, secondary #7A8399.</li>
+  </ul>
+</div>
+
+<template id="today">
+  <div>
+    <p class="label">Today<small>Graphite, light (current layout)</small></p>
+    <div class="phone"><div class="screen graphite-light today">
+      <div class="status"><span>9:41</span><span class="pill"></span><span class="icons"><i></i><i></i></span></div>
+      <div class="scroll">
+        <div class="topbar"><svg><use href="#i-filter"/></svg></div>
+        <div class="month">November 2026</div>
+        <div class="hero tnum">−₹48,250.40</div>
+        <div class="sub"><span>spent this month</span><span class="arrows"><svg><use href="#i-left"/></svg><svg><use href="#i-right"/></svg></span></div>
+        <div class="card">ROWS</div>
+      </div>
+    </div></div>
+  </div>
+</template>
+
+<template id="new">
+  <div>
+    <p class="label">LABEL</p>
+    <div class="phone FRAME"><div class="screen THEME new">
+      <div class="status"><span>9:41</span><span class="pill"></span><span class="icons"><i></i><i></i></span></div>
+      <div class="scroll">
+        <div class="head">
+          <div class="avatar">AG</div>
+          <div class="greet"><small>Good morning</small><b>Akash</b></div>
+          <div class="iconbtn"><svg><use href="#i-bell"/></svg><span class="dot"></span></div>
+          <div class="iconbtn"><svg><use href="#i-gear"/></svg></div>
+        </div>
+        <div class="stack">
+          <div class="ghost2"></div>
+          <div class="ghost"></div>
+          <div class="balance">
+            <div class="top"><span>Household · November</span><span class="tag">2 people</span></div>
+            <div class="cap">Spent this month</div>
+            <div class="big tnum">₹48,250<span class="dec">.40</span> <svg><use href="#i-eye"/></svg></div>
+            <div class="meter"><i></i></div>
+            <div class="meterlbl tnum">64% of ₹75,000 budget · 5 days left</div>
+            <div class="inout tnum"><span><svg><use href="#i-in"/></svg>In ₹1,20,000.00</span><span>Out ₹48,250.40<svg><use href="#i-out"/></svg></span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <div class="act main"><div class="b"><svg><use href="#i-plus"/></svg></div>Expense</div>
+          <div class="act"><div class="b"><svg><use href="#i-in"/></svg></div>Income</div>
+          <div class="act"><div class="b"><svg><use href="#i-swap"/></svg></div>Transfer</div>
+          <div class="act"><div class="b"><svg><use href="#i-pie"/></svg></div>Budgets</div>
+        </div>
+        <div class="sec"><b>Recent transactions</b><a>See all</a></div>
+        <div class="day"><span>Today</span><span class="tnum">−₹2,800.50</span></div>
+        <div class="list">ROWS_TODAY</div>
+        <div class="day"><span>Yesterday</span><span class="tnum">+₹1,19,688.00</span></div>
+        <div class="list">ROWS_YDAY</div>
+      </div>
+      <div class="fade"></div>
+      <div class="nav">
+        <span class="on"><svg><use href="#i-home"/></svg>Home</span>
+        <svg><use href="#i-list"/></svg>
+        <svg><use href="#i-wallet"/></svg>
+        <svg><use href="#i-chart"/></svg>
+      </div>
+    </div></div>
+  </div>
+</template>
+
+<script>
+  // Fake data, shared by all three phones so they compare like for like.
+  const txns = [
+    { name: "Swiggy", meta: "Dining out · HDFC card", amt: "−₹486.00", tile: "food", icon: "food", day: "today" },
+    { name: "BigBasket", meta: "Groceries · UPI", amt: "−₹2,314.50", tile: "groc", icon: "cart", day: "today" },
+    { name: "Salary", meta: "Income · Everyday", amt: "+₹1,20,000.00", tile: "inc", icon: "brief", day: "yday", pos: true },
+    { name: "Uber", meta: "Transport · UPI", amt: "−₹312.00", tile: "tran", icon: "car", day: "yday" },
+    { name: "BESCOM", meta: "Electricity · from SMS", amt: "−₹1,842.00", tile: "bill", icon: "bolt", day: "older", review: true },
+    { name: "Rent", meta: "Housing · Everyday", amt: "−₹28,000.00", tile: "rent", icon: "home", day: "older" },
+  ];
+  const row = t => `
+    <div class="txn">
+      <div class="tile t-${t.tile}"><svg><use href="#i-${t.icon}"/></svg></div>
+      <div class="who"><div class="name">${t.name}</div><div class="meta">${t.meta}</div></div>
+      <div class="amt tnum ${t.pos ? "pos" : ""}">${t.amt}${t.review ? '<br><span class="chip">Needs review</span>' : ""}</div>
+    </div>`;
+  const rows = f => txns.filter(f).map(row).join("");
+  const phones = document.getElementById("phones");
+
+  phones.insertAdjacentHTML("beforeend",
+    document.getElementById("today").innerHTML.replace("ROWS", rows(() => true)));
+
+  for (const [label, theme, frame] of [
+    ["Proposed<small>Cobalt, light</small>", "cobalt-light", ""],
+    ["Proposed<small>Cobalt, dark</small>", "cobalt-dark", "dark-frame"],
+  ]) {
+    phones.insertAdjacentHTML("beforeend", document.getElementById("new").innerHTML
+      .replace("LABEL", label).replace("THEME", theme).replace("FRAME", frame)
+      .replace("ROWS_TODAY", rows(t => t.day === "today"))
+      .replace("ROWS_YDAY", rows(t => t.day === "yday")));
+  }
+</script>
+</body>
+</html>

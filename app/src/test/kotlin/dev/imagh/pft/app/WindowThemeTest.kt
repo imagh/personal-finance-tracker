@@ -7,7 +7,7 @@ import android.os.Looper
 import android.view.WindowManager
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
-import dev.imagh.pft.app.ui.theme.GraphitePalette
+import dev.imagh.pft.app.ui.theme.CobaltPalette
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import dev.imagh.pft.app.ui.theme.pftSurfaces
 import org.junit.Assert.assertEquals
@@ -21,7 +21,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The window theme (`values` / `values-night`) matches the default (Graphite) canvas, so a dark launch never
+ * The window theme (`values` / `values-night`) matches the default (Cobalt) canvas, so a dark launch never
  * flashes a light window before Compose draws, and the activity is edge-to-edge (UI-4, SEC-2).
  *
  * Under Robolectric the only observable trace of `enableEdgeToEdge()` is the bar icon appearance
@@ -48,7 +48,7 @@ class WindowThemeTest {
     @Config(qualifiers = "+night")
     fun `dark system paints the dark canvas behind the first frame`() {
         assertEquals(
-            GraphitePalette.dark.canvas
+            CobaltPalette.dark.canvas
                 .toArgb(),
             launch().windowBackgroundColor(),
         )
@@ -58,7 +58,7 @@ class WindowThemeTest {
     @Config(qualifiers = "+notnight")
     fun `light system paints the light canvas behind the first frame`() {
         assertEquals(
-            GraphitePalette.light.canvas
+            CobaltPalette.light.canvas
                 .toArgb(),
             launch().windowBackgroundColor(),
         )
@@ -104,8 +104,8 @@ class WindowThemeTest {
         shadowOf(Looper.getMainLooper()).idle()
         val background = activity.window.decorView.background
         assertTrue("window background is $background", background is ColorDrawable)
-        // The default prefs: Graphite, in whichever background style is the default.
-        val canvas = pftSurfaces(GraphitePalette.light, ThemePrefs.Default.background, dark = false).canvas
+        // The default prefs: Cobalt, in whichever background style is the default.
+        val canvas = pftSurfaces(CobaltPalette.light, ThemePrefs.Default.background, dark = false).canvas
         assertEquals(canvas.toArgb(), (background as ColorDrawable).color)
     }
 }

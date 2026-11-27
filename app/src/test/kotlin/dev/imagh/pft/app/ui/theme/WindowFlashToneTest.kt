@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
 /**
- * The first frame (UI-18, plan §3.3): the window paints Graphite's canvas from resources before
+ * The first frame (UI-18, plan §3.3): the window paints Cobalt's canvas from resources before
  * Compose draws, whatever palette the user picked. A palette whose canvas or flat surface is far
  * from that colour would flash at launch, so each stays within [WINDOW_FLASH_MAX_TONE_DELTA]
- * tones of it in the same mode. (`WindowThemeTest` pins the resources to Graphite's canvas.)
+ * tones of it in the same mode. (`WindowThemeTest` pins the resources to Cobalt's canvas.)
  */
 class WindowFlashToneTest {
-    private fun windowColour(dark: Boolean) = ThemePalette.GRAPHITE.colors(dark).canvas
+    private fun windowColour(dark: Boolean) = ThemePalette.COBALT.colors(dark).canvas
 
     @Test
     fun `every palette's canvas and surface is within the flash bound of the window colour`() {

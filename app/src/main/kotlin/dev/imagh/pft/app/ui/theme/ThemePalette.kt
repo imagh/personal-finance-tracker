@@ -10,7 +10,7 @@ package dev.imagh.pft.app.ui.theme
  * the order of the entries (the UI lists them from [entries], so a new one can go anywhere).
  */
 enum class ThemePalette {
-    /** Graphite and platinum: the default. */
+    /** Graphite and platinum: the default until the Cobalt look becomes the default (Cobalt plan, K4). */
     GRAPHITE,
 
     /** Midnight navy with a brass accent (champagne in dark). */
@@ -21,6 +21,9 @@ enum class ThemePalette {
 
     /** Deep aubergine with a plum accent (champagne in dark). */
     AUBERGINE,
+
+    /** Cobalt blue on a cool white canvas (a blue-tinted ink in dark); the Cobalt look of the 2026-11-25 plan. */
+    COBALT,
 }
 
 /**
@@ -33,6 +36,7 @@ internal fun ThemePalette.colors(dark: Boolean): PaletteColors =
         ThemePalette.MIDNIGHT -> if (dark) MidnightPalette.dark else MidnightPalette.light
         ThemePalette.IVORY -> if (dark) IvoryPalette.dark else IvoryPalette.light
         ThemePalette.AUBERGINE -> if (dark) AuberginePalette.dark else AuberginePalette.light
+        ThemePalette.COBALT -> if (dark) CobaltPalette.dark else CobaltPalette.light
     }
 
 /**

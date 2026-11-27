@@ -34,7 +34,8 @@ internal object GroupedSectionTags {
  *
  * @property fill the island background: `PftTheme.surfaces.island`. Never `surfaceVariant`, because
  *   rows hold money text and the money tokens do not clear 4.5:1 there (`ColorContrastTest` sweeps
- *   this colour for every palette, mode and style), and never white.
+ *   this colour for every palette, mode and style), and never white, except Cobalt light where the
+ *   owner approved a white island (2026-11-25, Cobalt plan D10).
  * @property borderTop the colour of the 1 physical pixel edge at the island's top; `null` when no
  *   edge is drawn (FLAT). In dark TONAL it is the hairline lit by the top highlight.
  * @property borderBottom the edge colour at the island's bottom: the hairline. The edge is a vertical
@@ -93,7 +94,7 @@ class GroupedSectionScope internal constructor() {
 /**
  * An inset, rounded "island" of rows separated by hairline dividers: the app's replacement for
  * shadowed cards (UI-4, plan §3.1). It is inset from the screen edges by the 20dp gutter, filled
- * with `PftTheme.surfaces.island` and clipped to the large shape. With TONAL surfaces it also has a
+ * with `PftTheme.surfaces.island` and clipped to `PftShapes.island` (18dp). With TONAL surfaces it also has a
  * one-pixel edge (`islandEdge`), lit along the top in dark mode (`islandHighlight`) by drawing the
  * edge as a vertical gradient; with FLAT surfaces there is no edge ([groupedSectionColors]). Dividers are
  * drawn between rows only (N rows, N-1 dividers), inset from the start edge so they do not touch
@@ -119,7 +120,7 @@ fun GroupedSection(
     val onePixel = Dp(1f / LocalDensity.current.density)
     Surface(
         modifier.fillMaxWidth().padding(horizontal = spacing.gutter),
-        shape = MaterialTheme.shapes.large,
+        shape = PftTheme.shapes.island,
         color = colors.fill,
         border =
             colors.borderTop?.let { top ->

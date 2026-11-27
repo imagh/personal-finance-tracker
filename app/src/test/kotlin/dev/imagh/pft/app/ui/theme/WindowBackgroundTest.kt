@@ -57,7 +57,8 @@ class WindowBackgroundTest {
 
     @Test
     fun `changing the palette repaints the window`() {
-        var prefs by mutableStateOf(ThemePrefs(background = BackgroundStyle.TONAL))
+        var prefs by
+            mutableStateOf(ThemePrefs(lightPalette = ThemePalette.GRAPHITE, background = BackgroundStyle.TONAL))
         lateinit var window: Window
         compose.setContent {
             window = LocalContext.current.activity().window
