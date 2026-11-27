@@ -70,7 +70,12 @@ android {
             // Robolectric needs the merged manifest and resources.
             isIncludeAndroidResources = true
             // Jupiter for plain JVM tests; Robolectric's JUnit 4 tests run on the Vintage engine.
-            all { it.useJUnitPlatform() }
+            all {
+                it.useJUnitPlatform()
+                // A fresh JVM every 20 classes: Robolectric state (looper threads) accumulating in one
+                // JVM wedges Compose tests with AppNotIdleException (docs/learnings/DIGEST.md).
+                it.forkEvery = 20
+            }
         }
     }
 }
