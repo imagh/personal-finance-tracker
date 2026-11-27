@@ -194,6 +194,53 @@ them.
   against that schema, and checks the columns, that the new tables are empty, the indexes and keys, the
   surviving rows and the audit triggers. Nothing is seeded.
 
+## Version 6 (C3b)
+
+| Table | Columns | Notes |
+|---|---|---|
+| `transaction_fts` | `title`, `description` (FTS4, `tokenize=unicode61`, `content=ledger_transaction`) | The full-text index over a transaction's two free texts. **Derived and unaudited**: no meta columns, a searchable copy of text `ledger_transaction` already stores and audits |
+| `transaction_line_fts` | `note` (FTS4, `unicode61`, `content=transaction_line`) | The same for a line's note |
+
+- **External content, kept in step by Room's triggers.** Each index stores only its own terms; the text stays
+  in the content table. Room installs four triggers per index on the content table (before update and before
+  delete remove the old entry, after update and after insert add the new one), so an edited title or note
+  re-indexes and no repository writes the index. A tombstone is an `UPDATE` of `deleted_at`, so a deleted
+  row **stays in the index**: search filters tombstones on the content tables (`t.deleted_at IS NULL`,
+  `n.deleted_at IS NULL`), never in the index. (Room 2.7.1 accepts `contentEntity` on an entity whose key is
+  a TEXT `id`; the D6 fallback was not needed.)
+- **The join is on `rowid`, and `rowid` can move (the rebuild rule).** An index row's `docid` is the content
+  row's implicit `rowid`. Our ids are TEXT, so `rowid` is not an alias of the key, and SQLite's documentation
+  says `VACUUM` (and so `VACUUM INTO`, and an export built from either) may renumber it. **Anything that runs
+  `VACUUM`, `VACUUM INTO` or an export must afterwards run `TransactionFts.REBUILD`**, the two statements
+  `INSERT INTO <fts>(<fts>) VALUES('rebuild')`, or search points at the wrong rows (D-2 and D-3 own that
+  call). On the SQLite versions tested (3.44.3 framework, SQLCipher's bundled one) `VACUUM` kept the rowids,
+  so the rule is defensive; `RoomFtsIntegrationTest` and `EncryptedFtsTest` pin that a rebuild restores every
+  match, including after a deliberately emptied index.
+- **Migrations and the sync triggers.** Room drops the content-sync triggers before a migration runs
+  (`onPreMigrate`) and recreates them only afterwards (`onPostMigrate`). So **a migration that writes or
+  rebuilds either content table ends with the two `rebuild` statements** (no trigger indexes its rows), and in
+  production it is `onPostMigrate`, not the migration, that gives a migrated database its triggers. The
+  triggers copied into `MIGRATION_5_6` keep a migrated database identical to a fresh one and serve
+  `MigrationTestHelper`, which runs no callbacks.
+- **Tokenizer.** Both tables are `unicode61` with `tokenchars=` set to the Devanagari combining marks
+  (`TransactionFts.DEVANAGARI_MARKS`; `unicode61` treats marks as separators, which would split "किराना" into
+  single consonants). Only Devanagari: other Indic scripts need the same, and changing a tokenizer is a drop,
+  recreate and `rebuild` migration.
+- **Shadow tables.** FTS4 adds `<fts>_segments`, `_segdir`, `_docsize` and `_stat` per index (no `_content`:
+  the content is external). `AuditedTables.notEntityTables` lists the two indexes and the eight shadow tables
+  one by one, with the reason; there is no name pattern, so a stray table cannot hide behind one.
+- **Input rule.** Only `SearchText.toMatchTerms` output is ever matched, always as a bound parameter, and the
+  column a `MATCH` is limited to is a fixed SQL fragment. See `persistence-and-security.md` (*Full-text
+  search input*). The query syntax is `"word*"` per word (a quoted phrase with the star **inside** the quotes;
+  `"word"*` is an exact word on FTS4) and a column-restricted `title MATCH ?`; the column-qualified phrase
+  `title:"word*"` is not accepted by FTS4, so it is not used.
+- **Migration `5 -> 6`** is the two `CREATE VIRTUAL TABLE` statements and the eight triggers copied from the
+  exported `schemas/.../6.json` (the tables with their `tokenchars`), then the two `rebuild` statements that
+  index the rows written at v5. Room's schema validation does not look at triggers, so
+  `MigrationTest.migrate5To6` checks them by writing, updating and deleting through them (reading the index
+  alone after a delete), compares the stored `sql` of the tables and triggers with a fresh v6 database's, and
+  checks the backfill.
+
 ## Version table
 
 | Version | Slice | Adds |
@@ -203,10 +250,10 @@ them.
 | 3 | B3b | `category` (built) |
 | 4 | B5a | `tag` (built) |
 | 5 | C1c | `ledger_transaction`, `transaction_line`, `transaction_line_tag` (built) |
-| 6 | C3 | `transaction_fts`, `transaction_line_fts` |
+| 6 | C3b | `transaction_fts`, `transaction_line_fts` (built) |
 | 7 | D3 | `budget`, `budget_scope`, `budget_revision` |
 | 8 | E3 | `recurring_rule`, `recurring_occurrence` |
 | 9 | F2 | `loan`; `ledger_transaction.loan_id`, `neutralised_by_loan_id` |
 | 10 | G1 | `goal`; `ledger_transaction.goal_id` |
 
-`tag` has its own migration (v4, slice B5a; plan 2026-11-10 D3), so every later slice is one version higher than the M1a plan first numbered it (C1 is v5 … G1 is v10); the M1a plan and the itemised-transactions plan were renumbered to match in the B-final PR. Only the rows up to `transaction_line_tag` (v5) are built; the rest are planned (M1a plan §4). Versions 5 and 6 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount. Those plans still write `CHECK (amount > 0)` and `CHECK (position > 0)` for the new tables: per the rule above, C1 enforces them in core and the mappers instead (version 5 above).
+`tag` has its own migration (v4, slice B5a; plan 2026-11-10 D3), so every later slice is one version higher than the M1a plan first numbered it (C1 is v5 … G1 is v10); the M1a plan and the itemised-transactions plan were renumbered to match in the B-final PR. Only the rows up to the full-text indexes (v6) are built; the rest are planned (M1a plan §4). Versions 5 and 6 follow the itemised-transactions amendment (`docs/plans/2026-11-10-itemised-transactions.md` §4): category and tags live on transaction lines, whose amounts always sum to the transaction amount. Those plans still write `CHECK (amount > 0)` and `CHECK (position > 0)` for the new tables: per the rule above, C1 enforces them in core and the mappers instead (version 5 above).
