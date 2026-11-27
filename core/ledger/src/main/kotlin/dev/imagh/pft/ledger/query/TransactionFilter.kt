@@ -5,6 +5,7 @@ import dev.imagh.pft.ledger.category.CategoryTree
 import dev.imagh.pft.ledger.ids.AccountId
 import dev.imagh.pft.ledger.ids.CategoryId
 import dev.imagh.pft.ledger.ids.TagId
+import dev.imagh.pft.ledger.ids.UserId
 import dev.imagh.pft.ledger.transaction.TransactionLine
 import dev.imagh.pft.ledger.transaction.TransactionType
 import dev.imagh.pft.ledger.transaction.TxnState
@@ -34,6 +35,8 @@ import java.time.ZoneId
  * @param amountMax the largest transaction amount, inclusive.
  * @param states the verification states a transaction may be in.
  * @param types the transaction types (a transfer leg is [TransactionType.TRANSFER]).
+ * @param createdBy who recorded the transaction (its `created_by_user_id`); empty means everyone. Like
+ *   account and amount it applies to the transaction, and so to totals too.
  * @throws LedgerError.InvalidRange if `from` is after `to`, `amountMin` is above `amountMax`, or a date is
  *   outside years 1 to 9999 (so the window's epoch milliseconds cannot overflow).
  */
@@ -47,6 +50,7 @@ data class TransactionFilter(
     val amountMax: Paise? = null,
     val states: Set<TxnState> = emptySet(),
     val types: Set<TransactionType> = emptySet(),
+    val createdBy: Set<UserId> = emptySet(),
 ) {
     init {
         if (from != null && to != null && from > to) throw LedgerError.InvalidRange()
@@ -87,7 +91,7 @@ data class TransactionFilter(
     ): TimeWindow {
         val starts = listOfNotNull(month?.atDay(1), from).map { it.startMs(zone) }
         val ends = listOfNotNull(month?.plusMonths(1)?.atDay(1), to?.plusDays(1)).map { it.startMs(zone) }
-        return TimeWindow(starts.maxOrNull() ?: Long.MIN_VALUE, ends.minOrNull() ?: Long.MAX_VALUE)
+        return TimeWindow(starts.maxOrNull() ?: TimeWindow.ALL.startMs, ends.minOrNull() ?: TimeWindow.ALL.endMs)
     }
 
     private fun LocalDate.startMs(zone: ZoneId): Long = atStartOfDay(zone).toInstant().toEpochMilli()
