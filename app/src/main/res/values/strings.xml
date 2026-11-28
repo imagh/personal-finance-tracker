@@ -45,6 +45,10 @@
     <string name="field_invalid_last_four">Enter exactly 4 digits</string>
     <string name="field_invalid_amount">Enter a valid amount</string>
     <string name="field_duplicate">Already in use</string>
+    <string name="field_same_account">Choose a different account</string>
+    <!-- Date field (DateField): the dialog's two buttons. -->
+    <string name="date_picker_ok">OK</string>
+    <string name="date_picker_cancel">Cancel</string>
     <!-- Default primary action of EditFormScaffold, and the spoken label of the Back button of EditFormScaffold and EntityListScreen. -->
     <string name="form_save">Save</string>
     <string name="form_save_failed">Couldn\'t save. Try again.</string>

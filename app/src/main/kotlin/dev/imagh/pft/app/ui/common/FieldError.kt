@@ -27,6 +27,9 @@ sealed interface FieldError {
     /** An amount field's text is not an amount: a sign, letters, a third decimal, bad grouping, or over the limit. */
     data object InvalidAmount : FieldError
 
+    /** A transfer's two accounts are the same one. */
+    data object SameAccount : FieldError
+
     /** Another record of the same kind already has this name (ignoring case); see `LedgerError.DuplicateName`. */
     data object Duplicate : FieldError
 }
@@ -40,4 +43,5 @@ internal fun FieldError.message(): String =
         FieldError.InvalidLastFour -> stringResource(R.string.field_invalid_last_four)
         FieldError.InvalidAmount -> stringResource(R.string.field_invalid_amount)
         FieldError.Duplicate -> stringResource(R.string.field_duplicate)
+        FieldError.SameAccount -> stringResource(R.string.field_same_account)
     }
