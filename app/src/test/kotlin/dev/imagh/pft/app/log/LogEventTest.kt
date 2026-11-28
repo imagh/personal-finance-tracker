@@ -55,6 +55,11 @@ class LogEventTest {
     }
 
     @Test
+    fun `a transaction save failure renders only the kind code`() {
+        assertEquals("entity_save_failed kind=TRANSACTION", LogEvent.EntitySaveFailed(EntityKind.TRANSACTION).line())
+    }
+
+    @Test
     fun `entity events render a tag by its kind code only`() {
         assertEquals("entity_save_failed kind=TAG", LogEvent.EntitySaveFailed(EntityKind.TAG).line())
         assertEquals(

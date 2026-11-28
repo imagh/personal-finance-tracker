@@ -26,6 +26,7 @@ class LogEventShapeTest {
             LogEvent.EntitySaveFailed(EntityKind.ACCOUNT),
             LogEvent.EntityActionFailed(EntityKind.CATEGORY, EntityAction.REORDER),
             LogEvent.EntitySaveFailed(EntityKind.TAG),
+            LogEvent.EntitySaveFailed(EntityKind.TRANSACTION),
         )
 
     /** Exhaustive with no `else`: a new [LogEvent] subclass without a sample is a compile error. */

@@ -98,6 +98,9 @@ enum class EntityKind {
 
     /** A tag. */
     TAG,
+
+    /** A transaction: an expense, an income or a transfer (slice C). */
+    TRANSACTION,
 }
 
 /**
