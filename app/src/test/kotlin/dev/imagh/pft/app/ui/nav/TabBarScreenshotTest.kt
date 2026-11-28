@@ -17,8 +17,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Golden screenshots of K7's floating tab bar in light and dark, on a 393x851dp xxhdpi screen with the
- * committed default scheme (dynamic colour off, so the goldens are deterministic): the bar three times,
- * with Home, Accounts and More selected in turn ([TabBarSamples]), on the canvas. Fake data only.
+ * committed default scheme (dynamic colour off, so the goldens are deterministic): the bar four times,
+ * with Home, Transactions, Accounts and More selected in turn ([TabBarSamples]), on the canvas. Fake data only.
  *
  * Record with `./gradlew :app:recordRoborazziDebug --tests '*TabBarScreenshotTest'`; verify runs as part
  * of `check`.

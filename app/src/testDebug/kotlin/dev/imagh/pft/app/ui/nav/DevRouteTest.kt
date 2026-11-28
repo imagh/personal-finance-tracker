@@ -79,7 +79,7 @@ class DevRouteTest {
         compose.awaitHomeLoaded()
 
         compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.onAllNodesWithText("Type scale: display, headline").fetchSemanticsNodes().size shouldBe 0
         checkNotNull(activity).isFinishing shouldBe false
     }

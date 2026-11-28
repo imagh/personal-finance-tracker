@@ -37,7 +37,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * The tab bar and the nested graphs end to end (Cobalt plan D8, acceptance 5): real in-memory Room,
- * through [PftRoot] and [PftNavHost]. The bar shows on the three tab roots and nowhere else; Back on a
+ * through [PftRoot] and [PftNavHost]. The bar shows on the four tab roots and nowhere else; Back on a
  * tab root goes to Home and Back on Home leaves the app; each tab keeps its own stack across tab
  * switches. The bar is hidden on every screen where a tab switch could strand a stack, so the cases that
  * need a switch from inside a stack (form restore, pop to root) drive [selectTab] on the host's own
@@ -119,21 +119,26 @@ class TabNavigationFlowTest {
     // --- The bar: where it shows
 
     @Test
-    fun `the bar shows on Home, Accounts and More, each time with that tab selected`() {
+    fun `the bar shows on Home, Transactions, Accounts and More, each time with that tab selected`() {
         initialised()
         showApp(HOME_PLACEHOLDER)
 
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.selectedTabs() shouldBe listOf("Home")
+
+        compose.tab("Transactions").performClick()
+        awaitText("No transactions this month")
+        compose.tabCount() shouldBe 4
+        compose.selectedTabs() shouldBe listOf("Transactions")
 
         compose.tab("Accounts").performClick()
         awaitText("No accounts yet")
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.selectedTabs() shouldBe listOf("Accounts")
 
         compose.openMore()
         awaitText("Categories")
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.selectedTabs() shouldBe listOf("More")
 
         compose.tab("Home").performClick()
@@ -154,7 +159,7 @@ class TabNavigationFlowTest {
 
         systemBack()
         awaitText("No accounts yet")
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
     }
 
     @Test
@@ -181,7 +186,7 @@ class TabNavigationFlowTest {
         compose.onNodeWithText("Continue").performClick()
         compose.awaitHomeLoaded()
 
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.selectedTabs() shouldBe listOf("Home")
     }
 
@@ -251,7 +256,7 @@ class TabNavigationFlowTest {
 
         compose.awaitMoreLoaded()
         awaitText("Categories")
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.onAllNodesWithText("New account").fetchSemanticsNodes().size shouldBe 0
 
         selectTab(Tab.ACCOUNTS)
@@ -294,7 +299,7 @@ class TabNavigationFlowTest {
 
         awaitGone("New account")
         currentRoute() shouldBe Routes.ACCOUNTS
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.selectedTabs() shouldBe listOf("Accounts")
     }
 
