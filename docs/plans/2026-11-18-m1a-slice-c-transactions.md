@@ -614,6 +614,13 @@ Builds on CR's `TransactionRow`, `DayGroup`, `PftTabBar` and money rules (after 
   - strings.
 - **Refactor:** `docs/features/transactions.md`, created (add, edit, transfer, what is fixed); `app/README.md`.
 - **Tier:** T2. Untrusted input on a form, and a new shared block.
+- **As built (C4b, 2026-11-28).** Deviations from the text above:
+  - `TransferService.get(groupId)` is new in core (read-only), so the form can open a transfer from either leg (D12 keeps `legsOfGroup` out of the UI).
+  - The route has `id` and `type` only; `split` arrives with C4c.
+  - The form titles are "New entry", "Edit entry" and "Edit transfer" ("New transaction" truncated at 393dp).
+  - An itemised transaction (more than one item) opens as "no longer exists" until C4c.
+  - A picked category cannot be cleared except by switching type (`CategoryPicker` has no "none").
+  - The Transactions tab reads once at start: `TransactionsViewModel.onResume()` skips the first resume (it fixed a `UncaughtExceptionsBeforeTest` flake).
 
 ### Step C4d — Home dashboard and account balances (new 2026-11-25). Uses D5, D7; CR D6, D9, K6, K8
 Lands after C4b so the quick actions open a real form; before C4c (independent of it).

@@ -356,7 +356,7 @@ class TransactionsTabFlowTest {
     }
 
     @Test
-    fun `no row is tappable yet and the tab has no add button, the form arrives in the next change`() {
+    fun `a row is a button and the tab has an add button`() {
         seed()
         showHost()
         openTransactions()
@@ -365,7 +365,7 @@ class TransactionsTabFlowTest {
         compose
             .onAllNodes(hasContentDescription("Big Basket", substring = true) and hasClickAction())
             .fetchSemanticsNodes()
-            .size shouldBe 0
-        compose.onAllNodesWithContentDescription("Add transaction").fetchSemanticsNodes().size shouldBe 0
+            .size shouldBe 1
+        compose.onAllNodesWithContentDescription("Add transaction").fetchSemanticsNodes().size shouldBe 1
     }
 }

@@ -94,6 +94,29 @@ class TransferService(
         }
     }
 
+    /**
+     * The live transfer [groupId] with both legs and their lines, or null if it is unknown or deleted: what an
+     * edit form opens a stored transfer from. Both legs and their lines are read in one transaction, so they
+     * come from the same state. Reads only: nothing is written or logged.
+     *
+     * @throws IllegalStateException if the group's live legs are not exactly one OUT and one IN transfer leg,
+     *   or a leg does not have exactly one live line (fails closed: half a transfer is never shown for editing).
+     */
+    suspend fun get(groupId: String): Transfer? =
+        runner.inTransaction {
+            val live = transactions.legsOfGroup(groupId).filterNot { it.meta.isDeleted }
+            if (live.isEmpty()) return@inTransaction null
+            val (out, into) = live.asTransferLegs()
+            Transfer(groupId, withLine(out), withLine(into))
+        }
+
+    /** [leg] with its one live line. */
+    private suspend fun withLine(leg: LedgerTransaction): TransactionWithLines {
+        val live = lines.liveLinesOf(leg.meta.id)
+        check(live.size == 1) { "A transfer leg must have exactly one item" }
+        return TransactionWithLines(leg, live)
+    }
+
     /** Writes one leg on [accountId] and its single uncategorised line, which carries the whole amount. */
     private suspend fun createLeg(
         groupId: String,

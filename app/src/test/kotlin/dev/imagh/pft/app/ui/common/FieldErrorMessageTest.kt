@@ -64,4 +64,10 @@ class FieldErrorMessageTest {
         show(FieldError.Duplicate)
         compose.onNodeWithText("Already in use").assertIsDisplayed()
     }
+
+    @Test
+    fun `SameAccount asks for a different account`() {
+        show(FieldError.SameAccount)
+        compose.onNodeWithText("Choose a different account").assertIsDisplayed()
+    }
 }
