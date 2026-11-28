@@ -2,6 +2,7 @@ package dev.imagh.pft.app.ui.nav
 
 import android.net.Uri
 import dev.imagh.pft.ledger.category.CategoryKind
+import dev.imagh.pft.ledger.transaction.TransactionType
 
 /**
  * The navigation routes, as plain strings (plan decision D3): Navigation 2.8's type-safe routes need
@@ -71,6 +72,30 @@ object Routes {
      */
     const val CATEGORY_EDIT = "$CATEGORY_EDIT_BASE?$ARG_ID={$ARG_ID}&$ARG_PARENT={$ARG_PARENT}&$ARG_KIND={$ARG_KIND}"
 
+    /** The argument name of a new transaction's preset type (an enum name) in the transaction form's route. */
+    const val ARG_TYPE = "type"
+
+    /**
+     * The transaction form: create when no `id` is given (with an optional preset `type`: `EXPENSE`, `INCOME`
+     * or `TRANSFER`), edit when `id` is a transaction's id. Build it with [transactionEdit]. A direct child of
+     * [MAIN], so any tab can push it (slice C D7).
+     */
+    const val TRANSACTION_EDIT = "$TRANSACTION_EDIT_BASE?$ARG_ID={$ARG_ID}&$ARG_TYPE={$ARG_TYPE}"
+
+    /**
+     * The route that opens the transaction form, with only the arguments given, each encoded: for transaction
+     * [id] (for a transfer, either leg's id), or for a new one preset to [type] (Expense when omitted). The
+     * preset is ignored when [id] is given.
+     */
+    fun transactionEdit(
+        id: String? = null,
+        type: TransactionType? = null,
+    ): String {
+        val arguments = listOfNotNull(id?.let { ARG_ID to it }, type?.let { ARG_TYPE to it.name })
+        if (arguments.isEmpty()) return TRANSACTION_EDIT_BASE
+        return arguments.joinToString("&", "$TRANSACTION_EDIT_BASE?") { (name, value) -> "$name=${Uri.encode(value)}" }
+    }
+
     /**
      * The route that opens the category form, with only the arguments given, each encoded: for category
      * [id], or for a new category of [kind] (Expense when omitted) under [parent].
@@ -100,6 +125,9 @@ private const val ACCOUNT_EDIT_BASE = "accounts/edit"
 
 /** The category form's path without its arguments; the one place it is written. */
 private const val CATEGORY_EDIT_BASE = "categories/edit"
+
+/** The transaction form's path without its arguments; the one place it is written. */
+private const val TRANSACTION_EDIT_BASE = "transactions/edit"
 
 /** The tag form's path without its argument; the one place it is written. */
 private const val TAG_EDIT_BASE = "tags/edit"

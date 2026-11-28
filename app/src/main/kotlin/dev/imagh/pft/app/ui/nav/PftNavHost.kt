@@ -30,7 +30,6 @@ import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.more.MoreRoute
 import dev.imagh.pft.app.ui.setup.SetupRoute
 import dev.imagh.pft.app.ui.theme.PftMotion
-import dev.imagh.pft.app.ui.transactions.TransactionsRoute
 import java.time.Clock
 
 /**
@@ -41,8 +40,8 @@ import java.time.Clock
  * graphs: `home_tab` (Home, and the debug catalogue), `transactions_tab` (the month list), `accounts_tab`
  * (the accounts list and its form) and `more_tab` (More, the categories and tags lists and their forms).
  * Each tab graph starts on its root screen. The tabs and their order are [TAB_ORDER]; slice D inserts
- * Budgets there, and later slices add the screens several tabs reach (transaction edit, search) as direct
- * children of `MAIN`.
+ * Budgets there. The screens several tabs reach are direct children of `MAIN`: the transaction form
+ * (C4b, see [transactionEditRoute]) now, search later.
  *
  * **Tabs.** Tapping a tab switches to its graph with its own back stack saved and restored
  * ([selectTab]), so each tab keeps where the user was (the Transactions tab its selected month). Tapping
@@ -73,6 +72,11 @@ import java.time.Clock
  * - **Tags to the tag form** is a push with an optional `id` argument (none: create), like accounts (see
  *   [tagRoutes]). The form pops on save; an unknown, deleted or malformed id pops it too, with the list
  *   saying "That tag no longer exists".
+ *
+ * - **Transactions to the transaction form** is a push (see [transactionsTabRoot], [transactionEditRoute]): the
+ *   "+" opens a new one, a row tap opens that entry for editing, with optional `id` and `type` arguments. The
+ *   form hides the bar (it is not a tab root) and pops on save; an unknown, deleted, itemised or malformed id
+ *   pops it too, with the tab saying "That transaction no longer exists".
  *
  * Debug builds add the design catalogue as a route in the Home tab, reached from a Home header action
  * (`devRoutes()`, `DevHeaderActions`); release adds nothing. There are no deep links: nothing
@@ -153,7 +157,7 @@ private fun PftNavGraph(
                 devRoutes()
             }
             navigation(route = Tab.TRANSACTIONS.graph, startDestination = Tab.TRANSACTIONS.root) {
-                composable(Tab.TRANSACTIONS.root) { TransactionsRoute(services, clock) }
+                transactionsTabRoot(navController, services, clock)
             }
             navigation(route = Tab.ACCOUNTS.graph, startDestination = Tab.ACCOUNTS.root) {
                 accountRoutes(navController, services)
@@ -169,6 +173,7 @@ private fun PftNavGraph(
                 categoryRoutes(navController, services)
                 tagRoutes(navController, services)
             }
+            transactionEditRoute(navController, services, clock)
         }
     }
 }

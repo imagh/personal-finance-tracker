@@ -9,7 +9,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.imagh.pft.app.di.AppServices
 import dev.imagh.pft.ledger.account.AccountService
-import dev.imagh.pft.ledger.category.CategoryKind
 import dev.imagh.pft.ledger.category.CategoryService
 import dev.imagh.pft.ledger.query.LedgerEntry
 import dev.imagh.pft.ledger.query.MonthSpan
@@ -196,16 +195,7 @@ internal class TransactionsViewModel(
     }
 
     /** The names of every account, category and tag a row can point at: archived ones too, deleted ones never. */
-    private suspend fun lookups(): NameLookups {
-        val accountLists = accounts.lists()
-        val tagLists = tags.lists()
-        val categoryLists = CategoryKind.entries.map { categories.lists(it) }
-        return NameLookups(
-            accounts = (accountLists.active + accountLists.archived).associate { it.meta.id to it.name },
-            categories = categoryLists.flatMap { it.active + it.archived }.associateBy { it.meta.id },
-            tags = (tagLists.active + tagLists.archived).associate { it.meta.id to it.name },
-        )
-    }
+    private suspend fun lookups(): NameLookups = NameLookups.read(accounts, categories, tags)
 
     /**
      * [entries] (already in core's display order, newest first) grouped by the day they happened on in [zone]; days
