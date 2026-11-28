@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test
 /** The defaults of [ThemePrefs]: what the app looks like before the user chooses anything. */
 class ThemePrefsTest {
     @Test
-    fun `both palettes default to Graphite`() {
-        assertEquals(ThemePalette.GRAPHITE, ThemePrefs().lightPalette)
-        assertEquals(ThemePalette.GRAPHITE, ThemePrefs().darkPalette)
-        assertEquals(ThemePalette.GRAPHITE, ThemePrefs.Default.lightPalette)
-        assertEquals(ThemePalette.GRAPHITE, ThemePrefs.Default.darkPalette)
+    fun `both palettes default to Cobalt`() {
+        assertEquals(ThemePalette.COBALT, ThemePrefs().lightPalette)
+        assertEquals(ThemePalette.COBALT, ThemePrefs().darkPalette)
+        assertEquals(ThemePalette.COBALT, ThemePrefs.Default.lightPalette)
+        assertEquals(ThemePalette.COBALT, ThemePrefs.Default.darkPalette)
     }
 
     @Test
@@ -27,7 +27,7 @@ class ThemePrefsTest {
     }
 
     @Test
-    fun `the type pairing defaults to hero only, today's look`() {
+    fun `the type pairing defaults to hero only`() {
         assertEquals(TypePairing.HERO_ONLY, ThemePrefs().typePairing)
         assertEquals(TypePairing.HERO_ONLY, ThemePrefs.Default.typePairing)
     }
@@ -39,15 +39,31 @@ class ThemePrefsTest {
     }
 
     @Test
-    fun `the sans font defaults to the bundled Figtree`() {
-        assertEquals(SansFont.FIGTREE, ThemePrefs().sansFont)
-        assertEquals(SansFont.FIGTREE, ThemePrefs.Default.sansFont)
+    fun `the sans font defaults to the bundled Manrope`() {
+        assertEquals(SansFont.MANROPE, ThemePrefs().sansFont)
+        assertEquals(SansFont.MANROPE, ThemePrefs.Default.sansFont)
     }
 
     @Test
     fun `the persisted sans font names are permanent`() {
         // AP1 stores these names; AP2 adds CUSTOM, only ever added.
-        assertEquals(listOf("FIGTREE", "PLUS_JAKARTA_SANS", "SYSTEM"), SansFont.entries.map { it.name })
+        // Additive only: MANROPE joined with the Cobalt fonts (K2); the existing names did not change.
+        assertEquals(
+            setOf("FIGTREE", "PLUS_JAKARTA_SANS", "SYSTEM", "MANROPE"),
+            SansFont.entries.map { it.name }.toSet(),
+        )
+        assertEquals(4, SansFont.entries.size)
+    }
+
+    @Test
+    fun `the persisted display font names are permanent and the default is the bundled grotesque`() {
+        // Additive only: BUNDLED_GROTESQUE joined with the Cobalt fonts (K2); K4 made the grotesque the default.
+        assertEquals(
+            setOf("BUNDLED_SERIF", "SYSTEM_SERIF", "TEXT", "BUNDLED_GROTESQUE"),
+            DisplayFont.entries.map { it.name }.toSet(),
+        )
+        assertEquals(4, DisplayFont.entries.size)
+        assertEquals(DisplayFont.BUNDLED_GROTESQUE, ThemePrefs.Default.displayFont)
     }
 
     @Test

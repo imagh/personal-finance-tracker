@@ -70,7 +70,12 @@ android {
             // Robolectric needs the merged manifest and resources.
             isIncludeAndroidResources = true
             // Jupiter for plain JVM tests; Robolectric's JUnit 4 tests run on the Vintage engine.
-            all { it.useJUnitPlatform() }
+            all {
+                it.useJUnitPlatform()
+                // A fresh JVM every 20 classes: Robolectric state (looper threads) accumulating in one
+                // JVM wedges Compose tests with AppNotIdleException (docs/learnings/DIGEST.md).
+                it.forkEvery = 20
+            }
         }
     }
 }
@@ -166,6 +171,8 @@ val verifyReleaseShrink by tasks.registering {
     // A5d adds FormSamplesKt (the live form sample and its preview).
     // B2a adds EntityListSamplesKt (the entity list samples and their previews).
     // B5b adds TagsSamplesKt (the tags list sample and the fake tags) and TagPickerSamplesKt.
+    // K5 adds TransactionRowSamplesKt (the row and day-group samples and their previews).
+    // K6 adds HomeSamplesKt (the balance card and quick action samples and their previews).
     // Each prefix must match a class before shrinking, or the entry is stale and proves nothing.
     val mustBeRemoved =
         listOf(
@@ -199,6 +206,10 @@ val verifyReleaseShrink by tasks.registering {
             "dev.imagh.pft.app.ui.common.ComposableSingletons\$TagPickerSamples",
             "dev.imagh.pft.app.ui.tags.TagsSamples",
             "dev.imagh.pft.app.ui.tags.ComposableSingletons\$TagsSamples",
+            "dev.imagh.pft.app.ui.common.TransactionRowSamples",
+            "dev.imagh.pft.app.ui.common.ComposableSingletons\$TransactionRowSamples",
+            "dev.imagh.pft.app.ui.home.HomeSamples",
+            "dev.imagh.pft.app.ui.home.ComposableSingletons\$HomeSamples",
         )
     doLast {
         val classesDir = preShrinkClasses.get().asFile

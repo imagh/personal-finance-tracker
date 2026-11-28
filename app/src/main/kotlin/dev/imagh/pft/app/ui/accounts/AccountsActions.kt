@@ -20,14 +20,13 @@ class AccountsActions(
 )
 
 /**
- * Where the accounts list can go; the route wires these to the navigation host.
+ * Where the accounts list can go; the route wires these to the navigation host. There is no "back": the
+ * list is the Accounts tab's root, reached from the tab bar.
  *
- * @property back leaves the list.
  * @property add opens the create form.
  * @property edit opens an account's edit form.
  */
 class AccountsNavigation(
-    val back: () -> Unit,
     val add: () -> Unit,
     val edit: (AccountId) -> Unit,
 )

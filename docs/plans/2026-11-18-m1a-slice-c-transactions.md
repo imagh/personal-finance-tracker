@@ -4,7 +4,7 @@
 |-------------|-------|
 | Date        | 2026-11-18 |
 | Author      | architect |
-| Status      | Approved (2026-11-18; every §12 default accepted) |
+| Status      | Approved (2026-11-18; every §12 default accepted). Amended 2026-11-25 (Cobalt, tab bar, Transactions tab): amendment approved 2026-11-25 |
 | Related ACs | PRD L-1 (amended), L-3, L-5, L-6, L-7, L-8, L-9, L-11, X-1 (manual bank ref), INT-1..INT-6, SEC-5. Prepares B-1..B-3 (budgets read item portions in slice D) |
 | Plan owner  | akashg (repo owner) |
 
@@ -20,6 +20,35 @@ Both were written before slice B was built. This plan reviews them against the c
 - **Where they conflict, this plan wins.** §2.2 lists every change and why.
 
 Abbreviations: **M1a** = the M1a plan, **IT** = the itemised plan, **B** = [`2026-11-10-m1a-slice-b-ledger-setup.md`](2026-11-10-m1a-slice-b-ledger-setup.md).
+
+## Amendment 2026-11-25 — Cobalt, a tab bar and a Transactions tab
+
+**Why.** The owner approved the Cobalt redesign and asked for a tab bar now, with a Cashew-style Transactions tab (owner answers of 2026-11-25). The design lives in [`2026-11-25-m1a-cobalt-redesign.md`](2026-11-25-m1a-cobalt-redesign.md) (**CR**); this amendment schedules the slice C parts on top of it. Where they conflict, this amendment wins over the original text below; edited places are marked "(amended 2026-11-25)".
+
+**What changes.**
+1. **Q2 reversed.** The tab bar ships in CR K7 (Home · Accounts · More on `main`); C4a inserts **Transactions** at position 2. Budgets joins at position 3 in slice D (CR D8).
+2. **Home becomes a dashboard (new C4d).** Greeting header (CR K8), `BalanceCard` with this month's spend and In/Out, quick actions Expense/Income/Transfer (Budgets hidden until D4), and "Recent transactions" (latest 5, day headers without totals) with "See all" → Transactions tab. The month list moves off Home.
+3. **Transactions tab (C4a, rewritten).** `Standard` header "Transactions"; a horizontal **month strip** (selected month underlined, the year under each January and under the first month shown); a **totals banner** (expense ▼, income ▲, = net, for the month under the current filter); the list in `DayGroup`s with day totals (`MoneySemantic.Net`); `TransactionRow` with category tile, title, tag/account mini-chips, amount; FAB "+" (C4b). Swipe on the list still steps months.
+4. **Search, filters and sort split into three PRs** (C5b search, C5c filters, C5d sort). The header actions appear with the PR that builds them: Search (C5b), overflow with Filters (C5c) and Sort (C5d). The list settings sheet (totals banner mode, pinned account filters) is **deferred** to roadmap R-7: it is not trivial (a persisted setting with audit) and nothing in M1a needs it.
+5. **Core gaps in `TransactionFilter`/`TransactionQueries`** (new C3c, and C3b):
+
+   | Cashew feature | Gap today (D5) | Where |
+   |---|---|---|
+   | Sort by date, date created, date updated, amount, title, asc/desc | no sort parameter (newest first only) | **C3c**: `TransactionSort(key: OCCURRED, CREATED, UPDATED, AMOUNT, TITLE; descending)` on `month` and `search`; ties broken by id; SQL `ORDER BY` from a fixed `CASE` on a bound key, never concatenated |
+   | Person chips (who recorded it) | no field | **C3c**: `createdBy: Set<UserId>` over `created_by_user_id` (meta, already stored). UI shows the section only with ≥ 2 known users (R-1/M1c) |
+   | Title contains / notes contains | one `text` over title, description and notes | **C3b**: `titleText` (FTS column `title`) and `noteText` (description + item notes), each through `SearchText.toMatchQuery` with a core-built column prefix; word-prefix semantics like search |
+   | Home "Recent" | no read | **C3c**: `recent(limit: Int): List<LedgerEntry>` (live, newest by `occurredAt`, transfers folded) |
+   | Month strip range | no read | **C3c**: `entryMonthSpan(zone): MonthSpan?` (first and last month with a live entry); the strip spans `min(first, now)..max(last, now)` |
+   | Category tiles, amount range, Income/Expense, account chips | covered (`categoryIds`, `amountMin/Max`, `types`, `accountIds`) | C5c UI only |
+   | Upcoming, subscription, repeating; paid / not paid / skipped | — | slice E (recurring, E3/E4) |
+   | Budget chip | — | slice D (D4) |
+   | Loan chip | — | slice F |
+   | Goal chip | — | slice G |
+   | State chips (verified/unverified) | covered (`states`) | UI hidden in M1a (every manual entry is verified); shown from M1b |
+
+6. **Sequencing.** C1d → C2 → C3a → C3c → C3b proceed now (core/data). CR K1–K8 land on `main`; then **C-sync** merges `main` into `feat/m1a-transactions` (T0) before C4a, so `TransactionRow`, `DayGroup`, the tab bar and the money rules (CR D5: expenses neutral everywhere, `Net` for day totals and the banner's net) exist before any transaction screen is built.
+
+**Owner answers recorded (2026-11-25):** Cobalt default with the other palettes kept; tab bar now; Transactions tab modelled on Cashew; Home becomes a dashboard; the architect sequences; restyle vs replace by effort (CR D3).
 
 ---
 
@@ -53,7 +82,7 @@ Abbreviations: **M1a** = the M1a plan, **IT** = the itemised plan, **B** = [`202
    - a history that merges the transaction's entries and its items' entries.
 
    From the detail the user can edit, delete (with Undo) and mark an unverified transaction verified.
-7. **Search and filter** (C5b):
+7. **Search and filter** (C5b search, C5c filters, C5d sort; amended 2026-11-25, which also adds sort, a person filter and title/notes text):
    - by text over title, description and item notes;
    - by date range, account, category (a parent includes its children), tag, amount range, state and type;
    - category and tag filters total only the matching items.
@@ -64,7 +93,7 @@ Abbreviations: **M1a** = the M1a plan, **IT** = the itemised plan, **B** = [`202
 - **To other slices:** budgets and `spendingLinesBetween` (slice D, D5 and Q7); recurring and `recurring_rule_id` (slice E, Q8); loans and goals (F, G); Cashew import (I).
 - **To later milestones:** SMS and email capture (M1b); sync (M1c).
 - **Not in M1a:** discount lines and invoice-to-items (roadmap R-4); statistics (roadmap R-5); payee autocomplete; per-item loan or goal links.
-- **Deferred to a later slice:** the bottom `NavigationBar` (Q2); a time-of-day picker (Q6).
+- **Deferred to a later slice:** a time-of-day picker (Q6); the Transactions list settings sheet (roadmap R-7, amendment item 4). (Amended 2026-11-25: the tab bar is no longer deferred; it ships in CR K7.)
 
 ## 2. Current state
 
@@ -152,7 +181,7 @@ Abbreviations: **M1a** = the M1a plan, **IT** = the itemised plan, **B** = [`202
 | 9 | M1a C4 is one PR (Home, form, keypad, pickers, transfer, delete/undo, shared elements); M1a C5 is one PR (search, detail, history) | Each is several sessions' work under CLAUDE.md §8 ("one session per PR") | C4 → **C4a** (Home list) + **C4b** (plain form). IT's items editor (IT "C4b") becomes **C4c**. C5 → **C5a** (detail) + **C5b** (search). New **C6** for the keypad and motion (Q5, Q9) |
 | 10 | M1a C3 is one PR (month, filters, balances, FTS, v6) | FTS is the only schema change and the only untrusted text that reaches SQL | **C3a** (reads, no schema) + **C3b** (FTS, v6) |
 | 11 | M1a §5: the list observes a `Flow`; M1a `:130` adds coroutines to core "with the first Flow query (slice C)" | Only this UI writes transactions in M1a (recurring catch-up arrives in E4, on foreground). B's reload-on-resume pattern covers it | No `Flow`, no new core dependency (D5, Q1) |
-| 12 | Design plan: the C4 `NavigationBar` has Home · Budgets · Upcoming · More | Budgets (D4) and Upcoming (E4) do not exist in C, which leaves two tabs | Defer the bar to the first slice with a third tab; More stays in Home's header (Q2) |
+| 12 | Design plan: the C4 `NavigationBar` has Home · Budgets · Upcoming · More | Budgets (D4) and Upcoming (E4) do not exist in C, which leaves two tabs | Defer the bar to the first slice with a third tab; More stays in Home's header (Q2). **Superseded 2026-11-25:** tabs Home · Transactions · Accounts · More now (CR D8) |
 | 13 | M1a C4 test: "Delete gives an Undo snackbar" on the list | The design puts Delete on the detail screen (design plan `:548-564`, `BottomActionBar(Edit, Delete)`) | Delete and Undo arrive with the detail screen (C5a) |
 | 14 | Title "≤ 200" (M1a §3.2 decision 8) | No required/optional decision anywhere. M1b captures may have no payee | Title optional; the row falls back to the category (Q3) |
 
@@ -222,6 +251,7 @@ The model, invariant, write rules, reads, UI, limits and abstraction stance are 
   - `accountIds`, `categoryIds` (a parent expands to its children, in core via `CategoryTree`), `tagIds`;
   - `amountMin`/`amountMax: Paise?` with min ≤ max;
   - `states`, `types`, `text: String?` (C3b).
+  - (Amended 2026-11-25) `titleText: String?`, `noteText: String?` (C3b); `createdBy: Set<UserId>` (C3c). `month` and `search` take a `TransactionSort` (C3c, default `OCCURRED` descending). New reads `recent(limit)` and `entryMonthSpan(zone)` (C3c). See the amendment's gap table.
 - **Totals.** With a category or tag filter, totals are the Σ of the *matching lines* (IT §3.4). Without one, they are the Σ of transaction amounts by type. Transfers are never in totals (L-5).
 - **Time zone.**
   - Core takes a `ZoneId`. The app passes `ZoneId.systemDefault()` through a new `AppServices` parameter.
@@ -247,15 +277,18 @@ The model, invariant, write rules, reads, UI, limits and abstraction stance are 
   If either fails: a self-content FTS4 table with `notIndexed = ["transaction_id"]`, written by the repositories in the same transaction (no triggers). Record the outcome in learnings.
 - **Test support.** The shadow tables join `AuditedTables.notEntityTables` by an explicit list (no pattern), with the reason. Both FTS tables are listed there too: they are derived, unaudited indexes.
 
-**D7 — Navigation and screens.**
-- **Home** becomes the month list: a `Dashboard` header with `HeaderPeriod`, loaded on start and on resume (B's D2 pattern), one `GroupedSection` per day.
+**D7 — Navigation and screens (amended 2026-11-25).**
+- **Tabs** (CR D8): Home · Transactions · Accounts · More after C4a; each tab keeps its own back stack; the bar hides on forms, detail and search.
+- **Transactions tab** (C4a) is the month list: a `Standard` header "Transactions", the month strip, the totals banner, one `DayGroup` per day (day total as `Net`), loaded on start and on resume (B's D2 pattern). The ‹ › `HeaderPeriod` stepper is replaced by the strip; swipe still steps months.
+- **Home** (C4d) is the dashboard (CR D9): greeting, balance card, quick actions, recent 5, "See all" → Transactions tab.
 - **Row taps.** A row tap opens the edit form (C4b). From C5a, it opens the detail.
-- **More** stays a Home header action. Search (`PftSymbol.SEARCH`) joins it in C5b. No `NavigationBar` (Q2).
-- **New routes.**
-  - `TRANSACTION_EDIT = "transactions/edit?id={id}&split={split}"` (no id = create; `split=true` opens the items section).
+- **Header actions on the Transactions tab:** Search (C5b) and an overflow menu with Filters (C5c) and Sort (C5d), each added by the PR that builds it (no dead controls). More is a tab, not a Home header action.
+- **New routes** (direct children of the `MAIN` graph, so any tab can push them):
+  - `TRANSACTION_EDIT = "transactions/edit?id={id}&split={split}&type={type}"` (no id = create; `split=true` opens the items section; `type` presets EXPENSE, INCOME or TRANSFER for a create, from the quick actions; an unknown `type` reads as EXPENSE).
   - `TRANSACTION_DETAIL = "transactions/detail?id={id}"` and `SEARCH = "search"`.
-  - Ids are untrusted text, validated in the ViewModel. An unknown id gives "no longer exists" across the pop.
-- **Delete.** It lives on the detail (C5a). The detail pops with a `deleted` id in the previous entry's `savedStateHandle`, and Home offers `UndoDeleteSnackbar`. Undo calls `restore`.
+  - Ids and `type` are untrusted text, validated in the ViewModel. An unknown id gives "no longer exists" across the pop.
+- **Delete.** It lives on the detail (C5a). The detail pops with a `deleted` id in the previous entry's `savedStateHandle`, and the screen it returns to (Transactions tab, Home or search) offers `UndoDeleteSnackbar`. Undo calls `restore`.
+- **Filter and sort state** lives in `TransactionsViewModel`'s `SavedStateHandle` (survives rotation and tab switches through `saveState`, not an app restart). Not persisted, so no setting and no audit entry.
 
 **D8 — The add/edit form (C4b).**
 - **One ViewModel.** `TransactionEditViewModel` serves add, edit and itemise. One Save makes the whole write atomic (IT §3.5).
@@ -292,7 +325,7 @@ The model, invariant, write rules, reads, UI, limits and abstraction stance are 
 **D12 — Abstraction check.**
 - **New interfaces.** Only `TransactionRepository`, `TransactionLineRepository`, `TransactionQueries` and `AuditQueries`, all at the mandated core↔app persistence boundary.
 - **New shared blocks.** Each has two or more consumers named in M1a:
-  - `TransactionRow` (C4a list, C5b results, D4, F3);
+  - `TransactionRow` (C4a list, C4d Home recent, C5b results, D4, F3); built in CR K5 with `DayGroup` (amended 2026-11-25);
   - `DateField` (C4b, D, E, F, G);
   - `AuditHistoryList` (C5a, D, E, F, G);
   - `EntityRow.trailing: RowAmount?` (accounts balance now, loans and goals later).
@@ -320,14 +353,14 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
 ## 5. Flows
 
 - **Add an expense (C4b).**
-  1. Home FAB → `TransactionEditScreen` → `TransactionEditViewModel.save()`.
+  1. The Transactions tab FAB, or a Home quick action with its `type` preset (amended 2026-11-25) → `TransactionEditScreen` → `TransactionEditViewModel.save()`.
   2. Each amount goes through `checkAmount()` (`PaiseParser`).
   3. `TransactionService.create(draft)`:
      - runs `draft.validated()` and `Breakdown.of`;
      - checks the account is live, and the categories (kind) and tags are live;
      - then `runner.inTransaction { writer.create(txn); lines.createAll(NameBasedId("transaction-line", txnId, "1")…); lines.requireBalanced(txnId) }`.
   4. This runs in Room `withTransaction` on the SQLCipher `pft.db`.
-  5. Back on Home, `LifecycleResumeEffect` reloads `TransactionQueries.month(…)`.
+  5. Back on the Transactions tab (or Home), `LifecycleResumeEffect` reloads `TransactionQueries.month(…)` (and `recent(5)` on Home).
 - **Itemise later.** This is IT §5, through the detail's "Split into items" → `transactions/edit?id=…&split=true`.
 - **Transfer (C2, C4b).** `TransferService.create`:
   - writes the OUT leg on `from` and the IN leg on `to`, with one `transfer_group_id`;
@@ -335,7 +368,7 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
   - writes four CREATE audit entries in one transaction.
 - **Delete with Undo (C5a).**
   1. Detail → Delete → `TransactionService.delete` (both legs for a transfer).
-  2. The detail pops with the deleted id; Home shows Undo.
+  2. The detail pops with the deleted id; the screen it returns to shows Undo.
   3. Undo calls `restore`, which refuses with `Deleted(what)` if a reference has been deleted meanwhile (D4).
 - **Search (C5b).** Search screen → `SearchViewModel` → `TransactionQueries.search(filter with SearchText.toMatchQuery(text))` → `TransactionQueryDao`, one parameterised query per shape → results as `TransactionRow`s.
 
@@ -479,7 +512,24 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
 - **Refactor:** README (reads); `code-structure.md` (`ledger/query/`).
 - **Tier:** T3. Money totals over a new query layer; `data/` path.
 
+### Step C3c — Sort, person filter, recent, month span (new 2026-11-25). Uses D5 (amended); amendment item 5
+Kept out of C3a so C3a stays one reviewable read layer; no schema change.
+- **Red:**
+  - Core: `query/TransactionSortTest`: the default is `OCCURRED` descending; `TransactionFilterTest` gains `createdBy` (empty = everyone).
+  - `data/TransactionQueriesIntegrationTest` (Room, `Asia/Kolkata`):
+    - each sort key orders a seeded month as expected in both directions, ties broken by id (seed colliding values with chosen ids so a naive order differs; digest "Test quality");
+    - `TITLE` sorts case-insensitively with no-title entries last; `AMOUNT` sorts a transfer by its amount;
+    - `search` applies the sort before the `MAX_SEARCH_RESULTS` cap (the 500 kept are the first 500 in that order);
+    - `createdBy` returns only that user's rows, and totals follow the filter;
+    - `recent(5)` returns the newest five live entries across months, transfers folded, tombstones excluded; `recent` with no data is empty;
+    - `entryMonthSpan` is null with no live rows and spans a back-dated and a future-dated entry otherwise.
+  - Prove the sort is not concatenated: an integration test passes every enum value; a `LoggingScanTest`-style source check is not needed because the key is an enum mapped to a bound integer.
+- **Green:** `ledger/query/{TransactionSort, MonthSpan}`, `TransactionFilter.createdBy`, the `sort` parameter, `recent`, `entryMonthSpan`; DAO `ORDER BY CASE :sortKey …` with bound values; fakes.
+- **Refactor:** `core/ledger/README.md` (reads); `data-model.md` (no index added; the month window index still serves these reads at household scale, recorded).
+- **Tier:** T3. Queries on money, `data/` path.
+
 ### Step C3b — Full-text search (v6). Uses D6
+- **(Amended 2026-11-25)** Also `TransactionFilter.titleText` and `noteText`: `SearchText.toMatchQuery(raw, column)` prefixes each quoted token with a core-chosen column (`title:` on `transaction_fts`; `description:` on `transaction_fts` OR `note:` on `transaction_line_fts` for notes). Extra Red: `SearchTextTest` — a raw `title:` typed by the user is a literal token, never a column filter; `RoomFtsIntegrationTest` — `titleText "swi"` matches the title "Swiggy" but not a note "swiss"; `noteText "notebook"` matches an item note and a description, not a title.
 - **Red:**
   - `query/SearchTextTest` (pure):
     - `swi` becomes `"swi"*`;
@@ -506,40 +556,39 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
 - **Refactor:** `data-model.md` (v6, the rowid/rebuild rule); `persistence-and-security.md` (the FTS input rule).
 - **Tier:** T3. Schema, and untrusted text reaching SQL.
 
-### Step C4a — Home month list and account balances. Uses D5, D7, D12
+### Step C4a — Transactions tab: month strip, totals banner, day list (rewritten 2026-11-25). Uses D5, D7, D12; CR D8, K5
+Builds on CR's `TransactionRow`, `DayGroup`, `PftTabBar` and money rules (after C-sync). Account balances moved to C4d.
 - **Red:**
   - `ui/transactions/TransactionRowMapperTest`:
-    - one line → its category glyph and name;
+    - one line → its category glyph and name, "category · account" meta, tag mini-chips;
     - three lines → `RECEIPT_LONG` and "3 items";
     - a transfer → the transfer glyph and "HDFC → Card", with no sign;
     - a blank title falls back to the category name, then the type label (Q3);
-    - amounts are always non-negative `Paise` with the type's semantic (DS5 contract);
+    - amounts are always non-negative `Paise` with the type's semantic (DS5 contract); expenses neutral (CR D5);
     - UNVERIFIED adds the `StatusChip` label.
-  - `ui/home/HomeViewModelTest`:
-    - loads this month in the zone;
-    - previous and next change the month;
-    - the totals equal the seeded sums;
-    - next is allowed past today (a future-dated entry is valid).
-  - `ui/home/HomeFlowTest` (real in-memory Room):
-    - seeded rows appear under day headers with signed amounts;
-    - the hero shows the expense total and the caption shows income and net;
+  - `ui/transactions/MonthStripTest` (pure + Compose): the months span `min(first, now)..max(last, now)` from `entryMonthSpan`, or just this month with no data; the selected month is underlined and `selected` in semantics; January and the first month carry the year; tapping a month selects it; the selected month is scrolled into view.
+  - `ui/transactions/TransactionsViewModelTest`:
+    - loads this month in the zone; selecting a month or swiping changes it; next is allowed past today;
+    - the banner totals equal the seeded sums and net = income − expense (`Net`, may be negative);
+    - day totals are the net of each complete day.
+  - `ui/nav/TransactionsTabFlowTest` (real in-memory Room through `PftNavHost`):
+    - the bar shows Home · Transactions · Accounts · More; Transactions shows seeded rows under day headers with signed amounts and day totals;
+    - the banner shows expense ▼, income ▲ and = net with words for TalkBack;
     - the empty month shows `EmptyState`;
-    - the stepper and swipe move months.
-  - `ui/accounts/AccountRowMapperTest`: a trailing `MoneyText(Balance)`, negative for a card in use.
-  - Goldens: Home with fake data, and the accounts list with balances. Re-record only what changed (digest "Goldens").
+    - switching to Accounts and back keeps the selected month (tab `saveState`).
+  - Goldens: the Transactions tab with fake data, light and dark; `tab-bar-*` re-recorded for the fourth tab.
 - **Green:**
-  - `ui/common/TransactionRow.kt` (shared);
-  - `ui/transactions/TransactionRowMapper.kt`;
-  - `ui/home/{HomeScreen, HomeViewModel}` rebuilt on `Dashboard`;
-  - `EntityRow.trailing`;
-  - the `swap_horiz` symbol through `tools/material-symbols`;
-  - the "C4 NavigationBar" KDoc lines reworded (§2.1);
+  - `ui/transactions/{TransactionsScreen, TransactionsViewModel, TransactionRowMapper, MonthStrip, TotalsBanner}`;
+  - the `transactions_tab` graph and its `Tabs` entry at position 2;
+  - the `swap_horiz` symbol through `tools/material-symbols` if `PftSymbol.TRANSFER` is not it;
+  - the "C4 NavigationBar" KDoc lines reworded (§2.1).
   - fakes for `TransactionQueries` and `AuditQueries` (deferred from C3a), reusing the core `AccountBalances`, `SearchPage.capped` and `LedgerEntries.fold` functions;
   - **the zone decision:** `AppServices.zone` is read **once per process** (`ZoneId.systemDefault()` at construction). C4a decides whether `HomeViewModel` should read the system zone per call instead (a device zone change while the app runs); core takes a `ZoneId` per call, so either works. Note too that `month` with an extreme year throws `ArithmeticException` (not clamped); the stepper never produces one.
-- **Refactor:** `app/README.md` (`ui/home`, `TransactionRow`); `code-structure.md`. Measure the release APK.
-- **Tier:** T2. A new shared component and the money display contract.
+- **Refactor:** `app/README.md` (`ui/transactions`); `code-structure.md`; `docs/features/transactions.md` created with "The Transactions tab". Measure the release APK.
+- **Tier:** T2. First read UI on the shared row; money totals displayed.
 
 ### Step C4b — Add and edit form (plain, one item). Uses D7, D8
+- **(Amended 2026-11-25)** The FAB lives on the Transactions tab (above the tab bar's clearance). The route takes `type` (D7): extra Red in `TransactionEditViewModelTest` — `type=INCOME` opens in Income mode, `TRANSFER` in Transfer mode, an unknown or missing value in Expense mode; `type` is ignored on edit. Flow assertions below read "the Transactions tab row" for "the Home row".
 - **Red:**
   - `ui/transactions/TransactionEditViewModelTest`:
     - each field is checked with core's rule;
@@ -565,6 +614,21 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
   - strings.
 - **Refactor:** `docs/features/transactions.md`, created (add, edit, transfer, what is fixed); `app/README.md`.
 - **Tier:** T2. Untrusted input on a form, and a new shared block.
+
+### Step C4d — Home dashboard and account balances (new 2026-11-25). Uses D5, D7; CR D6, D9, K6, K8
+Lands after C4b so the quick actions open a real form; before C4c (independent of it).
+- **Red:**
+  - `ui/home/HomeViewModelTest`: loads this month's totals in the zone and `recent(5)`; reloads on resume; the identity still loads first (no flash).
+  - `ui/home/HomeFlowTest` (real in-memory Room through `PftNavHost`):
+    - the balance card shows this month's expense total as the hero and In/Out as words + amounts; no budget meter (slice D);
+    - quick actions are exactly Expense, Income, Transfer (no Budgets); each opens the form in that mode; saving returns to Home with the card and recent list updated;
+    - "Recent transactions" shows the newest five under day headers **without** day totals (CR D6), and "See all" selects the Transactions tab on this month;
+    - with no transactions, the card shows ₹0.00 and the recent list shows `EmptyState` with an Add action.
+  - `ui/accounts/AccountRowMapperTest`: a trailing `MoneyText(Balance)`, negative (red) for a card in use; `AccountsFlowTest`: the Accounts tab shows balances.
+  - Goldens: Home with fake data (light, dark); the accounts list with balances. Re-record only what changed.
+- **Green:** `ui/home/{HomeScreen, HomeViewModel}` composing CR's `GreetingHeader`, `BalanceCard`, `QuickActionRow` and `DayGroup`/`TransactionRow`; `EntityRow.trailing: RowAmount?`; `HomeUiState` with totals and recent entries.
+- **Refactor:** `app/README.md` (`ui/home`, `EntityRow.trailing`); `docs/features/transactions.md` "Home"; `docs/features/accounts.md` (balances).
+- **Tier:** T2. Money on the tinted card and a derived balance shown to the user.
 
 ### Step C4c — Items editor. Uses D9; IT C4b
 - **Red:** IT C4b's `TransactionItemsFlowTest`, `ItemsEditorStateTest` and golden, unchanged, on the C4b form. Accessibility:
@@ -604,22 +668,44 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
 - **Refactor:** "Detail and history" in the feature doc; `app/README.md`.
 - **Tier:** T2. A new shared block; read-mostly.
 
-### Step C5b — Search and filters. Uses D5, D6, D7
+### Step C5b — Search (amended 2026-11-25: filters and sort split out). Uses D5, D6, D7
 - **Red:**
   - `ui/search/SearchViewModelTest`:
     - typing debounces (300 ms on a test clock);
-    - an empty query with no filters shows nothing (not every row);
-    - the filter chips build a valid `TransactionFilter`;
-    - min > max shows an inline error and runs no query;
+    - an empty query shows nothing (not every row);
     - `truncated` shows "Showing the first 500".
   - `ui/nav/SearchFlowTest`:
-    - "notebook" finds the itemised transaction;
-    - tag + text narrows the results;
-    - a Groceries filter shows a total of ₹1,200;
-    - a result opens its detail.
-- **Green:** `ui/search/{SearchScreen, SearchViewModel, FilterSheet}`, reusing the pickers and `DateField`; a Home header search action.
+    - the Transactions tab's Search action opens search (the tab bar hides);
+    - "notebook" finds the itemised transaction; results are `DayGroup`s of `TransactionRow`s across months;
+    - a result opens its detail; Back returns to search, then to the Transactions tab.
+- **Green:** `ui/search/{SearchScreen, SearchViewModel}`; the `SEARCH` route; a `HeaderIconButton(SEARCH)` on the Transactions tab.
 - **Refactor:** the "Search" section of the feature doc.
 - **Tier:** T2. Untrusted text, sanitised in core.
+
+### Step C5c — Filters sheet and active-filter chips (new 2026-11-25). Uses D5 (amended), D7
+Modelled on Cashew's filter sheet; applies to the Transactions tab's month list **and** its banner.
+- **Red:**
+  - `ui/transactions/FilterStateTest` (pure): builds a valid `TransactionFilter` from the sheet; "All" categories clears `categoryIds`; amount range in whole rupees maps to `Paise` (`amountMin` ≤ `amountMax`); blank title/notes text → null; Clear resets everything; the chip row lists one chip per active filter, and removing one removes only it.
+  - `ui/transactions/FilterSheetTest`:
+    - category tiles row ("All" + top-level categories, `CategoryGlyph` cells, `selectable(role = Checkbox)` in one `selectableGroup`; a parent includes its children in core);
+    - amount `RangeSlider` from ₹0 to the month's largest amount rounded up to ₹100, values shown as `MoneyText` ([Verify] `RangeSlider` is stable in the pinned M3; else the one `@OptIn` lives here);
+    - type chips Expense / Income / Transfer; account chips (active accounts); person chips only when `IdentityService.users()` has ≥ 2 users (positive and negative control);
+    - "Title contains" and "Notes contains" fields (untrusted text, length-capped by `SearchText`);
+    - Clear and Apply; Apply closes the sheet (`PftBottomSheet` `close` lambda).
+  - `ui/nav/TransactionsFilterFlowTest`: a Groceries filter shows the matching rows and a banner expense of ₹1,200 for the ₹2,000 itemised transaction (category totals count matching lines); the chips row appears with an X that clears all; switching tabs and back keeps the filter.
+- **Green:** `ui/transactions/{FilterSheet, FilterState, ActiveFilterChips}`; the overflow menu (`HeaderIconButton(OVERFLOW)` + `DropdownMenu`) with "Filters".
+- **Out of M1a (Cashew chips):** upcoming/subscription/repeating and paid/not paid/skipped (slice E), budget (D), loan (F), goal (G), state (M1b) — amendment item 5.
+- **Refactor:** "Filters" in the feature doc.
+- **Tier:** T2. Untrusted text and a multi-part form state.
+
+### Step C5d — Sort sheet (new 2026-11-25). Uses D5 (amended), D7
+- **Red:**
+  - `ui/transactions/SortSheetTest`: keys Date, Date added, Date updated, Amount, Title as single-choice (`Role.RadioButton` in a `selectableGroup`); an ascending/descending segmented control; Clear restores Date ↓; Apply closes.
+  - `TransactionsViewModelTest`: a non-date sort shows a flat list without day groups (day grouping only means something under a date sort); totals are unchanged by sort.
+  - `TransactionsFilterFlowTest` (extend): Amount ↑ orders the month's rows by amount; the choice survives a tab switch.
+- **Green:** `ui/transactions/SortSheet.kt`; "Sort" in the overflow menu.
+- **Refactor:** "Sort" in the feature doc.
+- **Tier:** T1. Follows the filter sheet's pattern; the ordering is core's (C3c).
 
 ### Step C6 — Everyday polish: keypad and motion. Q5; design plan C4/C5
 - **Red:**
@@ -661,19 +747,25 @@ IT §4 is binding, renumbered (v5/v6), with D2's changes:
 | C1d | in-use refusals + list notices | base | C1c | T3 (T2 + `data/` bump) | one rule across three entities | new (§2.2 item 1) |
 | C2 | transfers | base | C1c (independent of C1d) | T3 atomic pairs | one behaviour | M1a/IT C2 |
 | C3a | reads, totals, balances, `AuditQueries` | base | C2 | T3 queries | read side, no schema | M1a/IT C3 part |
-| C3b | FTS, v6 | base | C3a | T3 schema + untrusted input | one search mechanism | M1a/IT C3 part |
-| C4a | Home month list, balances in Accounts | base | C3a | T2 shared row | first read UI | M1a C4 part |
-| C4b | add/edit form (plain), `DateField` | base | C4a, C2 | T2 forms | one form | M1a C4 part |
-| C4c | items editor | base | C4b | T2 state/a11y | one section | IT C4b |
+| C3c | sort, person filter, `recent`, month span (new 2026-11-25) | base | C3a | T3 queries | read additions, no schema | new |
+| C3b | FTS, v6; title/notes scoped text (amended) | base | C3c | T3 schema + untrusted input | one search mechanism | M1a/IT C3 part |
+| C-sync | merge `main` (Cobalt, CR K-final) into the base | base | C3b, CR K-final | T0 merge | no new code | new |
+| C4a | Transactions tab: month strip, banner, day list (rewritten) | base | C-sync | T2 shared row, money totals | first read UI | M1a C4 part |
+| C4b | add/edit form (plain), `DateField`, `type` preset | base | C4a, C2 | T2 forms | one form | M1a C4 part |
+| C4d | Home dashboard, account balances (new) | base | C4b, C3c | T2 money on the card | one screen + one row field | new |
+| C4c | items editor | base | C4b (after C4d in order) | T2 state/a11y | one section | IT C4b |
 | C5a | detail, history, delete/Undo, verify | base | C4c, C3a | T2 shared history | one screen | M1a C5 part |
-| C5b | search and filters | base | C5a, C3b | T2 untrusted text | one screen | M1a C5 part |
-| C6 | keypad and motion | base | C5b | T2 experimental API | polish only, revertable | M1a C4/C5 part |
-| C-final | slice C → `main` | `main` | C1a–C6 | T0 merge | one capability | as planned |
+| C5b | search (amended: filters, sort split out) | base | C5a, C3b | T2 untrusted text | one screen | M1a C5 part |
+| C5c | filters sheet + active chips (new) | base | C5b | T2 untrusted text, form state | one sheet | new |
+| C5d | sort sheet (new) | base | C5c | T1 follows C5c | one sheet | new |
+| C6 | keypad and motion | base | C5d | T2 experimental API | polish only, revertable | M1a C4/C5 part |
+| C-final | slice C → `main` | `main` | C1a–C6 (with C3c, C-sync, C4d, C5c, C5d) | T0 merge | one capability | as planned |
 
 **Tier for the next session.**
 - P0 is T0, so a Sonnet orchestrator suffices.
 - C1a to C3b are T3: owner, start those sessions on Opus.
 - The owner can start daily entry once C4b merges into the base. It reaches `main` at C-final.
+- (Amended 2026-11-25) C3c is T3 (Opus). C-sync is T0. C4a, C4d, C5c are T2; C5d is T1.
 
 ## 7. Test plan
 
@@ -691,7 +783,7 @@ All assert stored rows and audit entries through the fakes' reads, not mock call
 - `TransactionQueriesIntegrationTest`, `AuditQueriesIntegrationTest`, `RoomFtsIntegrationTest`;
 - `RoomAuditColumnsTest`, `AuditColumnsCheckTest`;
 - `MigrationTest.migrate4To5` and `migrate5To6`, plus the chain;
-- the ViewModel and flow tests named in C4a to C5b.
+- the ViewModel and flow tests named in C4a to C5d (C3c's integration tests run with C3a's).
 
 **Instrumented (`pft35`):** `EncryptedMigrationTest` (to v5, then v6), `EncryptedDatabaseTest`, `EncryptedFtsTest`.
 
@@ -750,13 +842,13 @@ Run `/security-review` before every PR (TECHNICAL.md §5), and in particular rec
 | This plan; M1a §6 and PR-table pointers; IT §6 pointer and the `MIGRATION_4_5` fix | new / pointers | P0 |
 | Inline KDoc | every public type and function above; reword the "C4 NavigationBar" and "until slice C" KDoc | each PR (C1d, C4a) |
 | `core/ledger/README.md` | interface, invariant, reconciliation, transfers, in-use, reads, limits | C1a, C1b, C1d, C2, C3a, C3b |
-| `app/README.md` | `data/transaction`, FTS, `ui/home`, `ui/transactions`, `ui/search`, new shared blocks | C1c, C3b, C4a–C6 |
+| `app/README.md` | `data/transaction`, FTS, `ui/home`, `ui/transactions`, `ui/search`, new shared blocks | C1c, C3b, C4a–C6 (incl. C4d, C5c, C5d) |
 | `docs/architecture/data-model.md` | v5, `keysStoredIn`, mismatch count, v6, the FTS rebuild rule | C1c, C3b |
-| `docs/architecture/code-structure.md` | `ledger/transaction`, `ledger/query`, `data/transaction`, `ui/transactions`, `ui/search`, shared blocks | C1a, C1c, C3a, C4a, C4b, C5a, C5b |
+| `docs/architecture/code-structure.md` | `ledger/transaction`, `ledger/query`, `data/transaction`, `ui/transactions`, `ui/search`, shared blocks | C1a, C1c, C3a, C3c, C4a, C4b, C4d, C5a, C5b, C5c |
 | `docs/architecture/overview.md` | classification lives on lines | C1c |
 | `docs/architecture/persistence-and-security.md` | FTS input rule | C3b |
-| `docs/features/transactions.md` | created: add/edit/transfer (C4b); Items (C4c); detail and history, delete, verify (C5a); search (C5b) | C4b–C5b |
-| `docs/features/accounts.md`, `categories-and-tags.md` | in use → archive; account balance | C1d, C4a |
+| `docs/features/transactions.md` | created: add/edit/transfer (C4b); Items (C4c); detail and history, delete, verify (C5a); search (C5b); the Transactions tab (C4a); Home (C4d); filters (C5c); sort (C5d) | C4a–C5d |
+| `docs/features/accounts.md`, `categories-and-tags.md` | in use → archive; account balance | C1d, C4d |
 | `docs/learnings/README.md` (+ `DIGEST.md` for standing rules) | each PR | all |
 | Root `README.md` | status | C-final |
 
@@ -780,7 +872,7 @@ Run `/security-review` before every PR (TECHNICAL.md §5), and in particular rec
 - C1c and C3b also run the encrypted tests on `pft35`;
 - C4a, C4b and C6 measure the release APK by entry (digest "APK size").
 
-**End to end on the emulator (`./gradlew installDebug` on `pft35`, after C5b, with fake data):**
+**End to end on the emulator (`./gradlew installDebug` on `pft35`, after C5d, with fake data). Amended 2026-11-25: read "Home" in steps 2–3 as the Transactions tab (rows, banner) and Home's balance card; after step 6 also apply Sort Amount ↑ and a Title-contains filter:**
 1. Create two accounts (HDFC bank, a credit card) on top of the seeded categories.
 2. Add a ₹540 Food › Delivery expense with two tags. Home shows −₹540.00 under Today, and the hero shows ₹540.00 spent.
 3. Add ₹1,20,000 salary income. The caption shows income and net.
@@ -807,7 +899,7 @@ Each has a recommended default that applies unless the owner says otherwise. **A
 | # | Question | Default |
 |---|---|---|
 | Q1 | Keep Home and search on load-on-demand (reload on resume and after own actions) and leave `Flow` and kotlinx-coroutines out of core in slice C? (M1a `:130` expected coroutines here; §2.2 item 11) | **Yes.** Revisit in E4 or M1b, when background inserts exist |
-| Q2 | Defer the bottom `NavigationBar` until a third tab exists (Budgets, D4), keeping More and adding Search in Home's header? | **Yes.** A two-tab bar is chrome without choice |
+| Q2 | Defer the bottom `NavigationBar` until a third tab exists (Budgets, D4), keeping More and adding Search in Home's header? | ~~**Yes.** A two-tab bar is chrome without choice~~ **Reversed 2026-11-25:** tab bar now (Home · Transactions · Accounts · More), CR D8; Search moves to the Transactions tab header |
 | Q3 | Is a transaction's title optional? (Blank is stored as none, and the row shows the category, then the type) | **Optional.** M1b captures may have no payee |
 | Q4 | Refuse deleting an account, category or tag that a live transaction or item uses ("archive it instead"), and refuse restoring a transaction whose account, category or tag was deleted since? | **Yes to both** |
 | Q5 | Ship the add form first with the existing `AmountField`, and add the `AmountKeypad` and shared-element motion in a separate polish PR (C6) after search? | **Yes.** It keeps C4b one session and lets you judge the keypad on the emulator |

@@ -53,19 +53,19 @@ class ThemeResolutionTest {
     }
 
     @Test
-    fun `dynamic off resolves the Graphite scheme in each mode`() {
+    fun `dynamic off resolves the Cobalt scheme in each mode`() {
         val light = resolveColorScheme(ThemePrefs.Default, dark = false, context = context)
         val dark = resolveColorScheme(ThemePrefs.Default, dark = true, context = context)
-        assertEquals(GraphitePalette.light.scheme.roles(), light.roles())
-        assertEquals(GraphitePalette.dark.scheme.roles(), dark.roles())
+        assertEquals(CobaltPalette.light.scheme.roles(), light.roles())
+        assertEquals(CobaltPalette.dark.scheme.roles(), dark.roles())
     }
 
     @Test
-    fun `the dynamic scheme is distinguishable from the Graphite scheme`() {
-        // Guards the tests above: if Robolectric's system palette equalled Graphite they could not
+    fun `the dynamic scheme is distinguishable from the Cobalt scheme`() {
+        // Guards the tests above: if Robolectric's system palette equalled Cobalt they could not
         // tell the two branches apart.
         assertNotEquals(
-            GraphitePalette.light.scheme.primary,
+            CobaltPalette.light.scheme.primary,
             resolveColorScheme(dynamicPrefs, dark = false, context = context).primary,
         )
     }
@@ -75,8 +75,9 @@ class ThemeResolutionTest {
         // The mockup's `primary` for Graphite (plan §3.1), pinned over the generated role.
         assertEquals(Color(0xFF3B4350), GraphitePalette.light.scheme.primary)
         assertEquals(Color(0xFFC9CED8), GraphitePalette.dark.scheme.primary)
-        assertEquals(Color(0xFF3B4350), resolveColorScheme(ThemePrefs.Default, dark = false, context = context).primary)
-        assertEquals(Color(0xFFC9CED8), resolveColorScheme(ThemePrefs.Default, dark = true, context = context).primary)
+        val graphite = ThemePrefs(lightPalette = ThemePalette.GRAPHITE, darkPalette = ThemePalette.GRAPHITE)
+        assertEquals(Color(0xFF3B4350), resolveColorScheme(graphite, dark = false, context = context).primary)
+        assertEquals(Color(0xFFC9CED8), resolveColorScheme(graphite, dark = true, context = context).primary)
     }
 
     @Test

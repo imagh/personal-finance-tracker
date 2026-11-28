@@ -127,7 +127,7 @@ class HeaderTypePairingTest {
     @Test
     fun `under EDITORIAL the subtitle stays in the sans text family`() {
         show(HeaderStyle.Standard, editorial(), subtitle = "October - 3 days left")
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.SUBTITLE).family())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.SUBTITLE).family())
     }
 
     @Test
@@ -151,9 +151,9 @@ class HeaderTypePairingTest {
     @Test
     fun `EDITORIAL with Same as text leaves every title sans`() {
         show(HeaderStyle.Standard, editorial(DisplayFont.TEXT), subtitle = "October - 3 days left")
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_LARGE).family())
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.SUBTITLE).family())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.TITLE_LARGE).family())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.SUBTITLE).family())
         swipeListUp()
-        assertEquals(sansFamily(SansFont.FIGTREE), tag(HeaderTags.TITLE_BAR).family())
+        assertEquals(sansFamily(SansFont.MANROPE), tag(HeaderTags.TITLE_BAR).family())
     }
 }

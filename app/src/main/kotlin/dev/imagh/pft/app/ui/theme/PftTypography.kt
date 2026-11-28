@@ -27,9 +27,10 @@ import dev.imagh.pft.R
  * always the sans text family.
  *
  * @property amountHero the big figure on dashboards and reports (month total, budget detail,
- *   account totals): 48/60sp, regular weight, lining + tabular figures, set slightly looser than
- *   the font's default (+0.01em, 1.25x line height; owner decision Q1). Its family follows
- *   [ThemePrefs.displayFont]. The amount component shrinks it in steps (48, 40, 34, 28sp) to fit.
+ *   account totals): 48/60sp, regular weight (bold 34/42.5sp in [DisplayFont.BUNDLED_GROTESQUE]),
+ *   lining + tabular figures, set slightly looser than the font's default (+0.01em, 1.25x line
+ *   height; owner decision Q1). Its family follows [ThemePrefs.displayFont]. The amount component
+ *   shrinks it in steps (48, 40, 34, 28sp and smaller; see [heroSizeSteps]) to fit.
  * @property amountLarge the amount on add/edit and detail screens: 32/40sp, medium weight; sans,
  *   or the display font under [TypePairing.EDITORIAL].
  * @property amountRow the amount in list rows: 16/24sp, medium weight, always sans.
@@ -44,32 +45,62 @@ data class PftTypography(
 // Hero spacing, named so it can be tuned on the debug catalogue before goldens are re-recorded
 // (design plan §3.3 "Display spacing").
 private val HeroFontSize = 48.sp
+private val GrotesqueHeroFontSize = 34.sp
 private const val HERO_LINE_HEIGHT_RATIO = 1.25f
 private val HeroLetterSpacing = 0.01.em
 private val AmountLargeSize = 32.sp
 
+/** The hero's size and weight, which depend on the display font (Cobalt plan D2). */
+private class HeroSpec(
+    val size: TextUnit,
+    val weight: FontWeight,
+)
+
 /**
- * The sizes the hero amount steps down through to fit its width: 48, 40, 34, 28sp (design plan
- * §3.3), then 24, 20, 16 and 12sp. `MoneyText` picks the largest that fits; the first is
- * [amountHero]'s own size. The plan stopped at 28sp, but its example amount (Rs 1e10) is one digit
- * group shorter than the real limit (Rs 1e11, `Paise.MAX_AMOUNT`): at 200% font scale that amount
- * needs 16sp on a 393dp window and 12sp on a 320dp one (the sp-to-dp scaling is non-linear, so
- * 12sp is still about 24dp tall there). The optical size stays at the 48sp display cut for every
- * step (DS2 deviations) and the line height scales with the size.
+ * The hero for [display]: Bricolage Grotesque is bold at 34sp (the Cobalt mockup); every other
+ * display font keeps the regular 48sp.
+ */
+private fun heroSpec(display: DisplayFont): HeroSpec =
+    when (display) {
+        DisplayFont.BUNDLED_GROTESQUE -> HeroSpec(GrotesqueHeroFontSize, FontWeight.Bold)
+        DisplayFont.BUNDLED_SERIF,
+        DisplayFont.SYSTEM_SERIF,
+        DisplayFont.TEXT,
+        -> HeroSpec(HeroFontSize, FontWeight.Normal)
+    }
+
+/**
+ * Every size the hero amount can step down through to fit its width: 48, 40, 34, 28sp (design plan
+ * §3.3), then 24, 20, 16 and 12sp. A given hero uses only the steps at or below its own size, from
+ * [heroSizeSteps]: `MoneyText` picks the largest of those that fits, and the first is
+ * [amountHero]'s own size (48sp, or 34sp for [DisplayFont.BUNDLED_GROTESQUE]). The plan stopped at
+ * 28sp, but its example amount (Rs 1e10) is one digit group shorter than the real limit (Rs 1e11,
+ * `Paise.MAX_AMOUNT`): at 200% font scale that amount needs 16sp on a 393dp window and 12sp on a
+ * 320dp one (the sp-to-dp scaling is non-linear, so 12sp is still about 24dp tall there). The
+ * optical size stays at the hero's own cut (48sp, or 34sp for
+ * Bricolage) for every step (DS2 deviations) and the line height scales with the size.
  */
 internal val HeroSizeSteps: List<TextUnit> =
     listOf(HeroFontSize, 40.sp, 34.sp, 28.sp, 24.sp, 20.sp, 16.sp, 12.sp)
 
 /**
- * The sans text family for [choice] (UI-2, UI-16): the bundled Figtree, the bundled Plus Jakarta
- * Sans, or the platform default.
+ * The steps from [HeroSizeSteps] at or below [heroSize], largest first: all eight for the 48sp
+ * hero, and 34, 28, 24, 20, 16, 12sp for the 34sp Bricolage hero, so a smaller hero never
+ * "shrinks" upward to a larger step.
+ */
+internal fun heroSizeSteps(heroSize: TextUnit): List<TextUnit> = HeroSizeSteps.filter { it.value <= heroSize.value }
+
+/**
+ * The sans text family for [choice] (UI-2, UI-16): the bundled Figtree, Plus Jakarta Sans or
+ * Manrope, or the platform default.
  *
- * Both bundled sans fonts are one variable font each. Figtree's `wght` axis defaults to 300,
- * lighter than any role asks for, and Plus Jakarta Sans defaults to 400; either way the axis is set
- * explicitly: one [Font] per weight 400, 500 and 600 (regular text, medium labels and titles,
- * semibold header titles), each pinned to its own `wght`. These are every weight a role in
- * [pftMaterialTypography] or [pftType] uses; a weight not declared here would fall to the nearest
- * one. Declare a new weight in `sansWeights` before using it in a role.
+ * Each bundled sans font is one variable font. Figtree's `wght` axis defaults to 300 and Manrope's
+ * to 200, lighter than any role asks for, and Plus Jakarta Sans defaults to 400; either way the
+ * axis is set explicitly: one [Font] per weight 400, 500 and 600 (regular text, medium labels and titles,
+ * semibold header titles), each pinned one step heavier than its weight (`wght` 500, 600 and 700, see
+ * [shiftedSansWght]; K9). The system sans, the serif and Bricolage Grotesque are not shifted. These are
+ * every weight a role in [pftMaterialTypography] or [pftType] uses; a weight not declared here would
+ * fall to the nearest one. Declare a new weight in `sansWeights` before using it in a role.
  *
  * Reference each font only as `R.font.<name>`, below: release resource shrinking removes a font
  * that no reachable code names, and a name string or `getIdentifier` would not count.
@@ -78,21 +109,52 @@ internal fun sansFamily(choice: SansFont): FontFamily =
     when (choice) {
         SansFont.FIGTREE -> FigtreeFamily
         SansFont.PLUS_JAKARTA_SANS -> PlusJakartaSansFamily
+        SansFont.MANROPE -> ManropeFamily
         SansFont.SYSTEM -> FontFamily.Default
     }
 
-private val FigtreeFamily: FontFamily = sansWeights(R.font.figtree)
+/** The heaviest `wght` each bundled sans font's axis reaches (read off its `fvar` table). */
+private const val FIGTREE_MAX_WGHT = 900
+private const val PLUS_JAKARTA_SANS_MAX_WGHT = 800
+private const val MANROPE_MAX_WGHT = 800
 
-private val PlusJakartaSansFamily: FontFamily = sansWeights(R.font.plus_jakarta_sans)
+private val FigtreeFamily: FontFamily = sansWeights(R.font.figtree, FIGTREE_MAX_WGHT)
 
-/** A family over the variable font [resId] with a [Font] pinned to each of the weights 400, 500 and 600. */
-private fun sansWeights(resId: Int): FontFamily =
+private val PlusJakartaSansFamily: FontFamily = sansWeights(R.font.plus_jakarta_sans, PLUS_JAKARTA_SANS_MAX_WGHT)
+
+private val ManropeFamily: FontFamily = sansWeights(R.font.manrope, MANROPE_MAX_WGHT)
+
+/** One step of the `wght` ladder (400, 500, 600, ...). */
+private const val WGHT_STEP = 100
+
+/**
+ * The `wght` a sans role of [weight] is drawn at: one step ([WGHT_STEP], 100) heavier than the weight it
+ * asks for (Normal as 500, Medium as 600, SemiBold as 700), never past the font's heaviest [axisMax].
+ * The bundled sans fonts read too light and narrow at their nominal weights on a phone (owner
+ * walk-through, 2026-11-26), so the whole sans scale is drawn one step heavier. Roles keep asking for
+ * their nominal weights (the M3 scale, the tests and the display fonts are unchanged); only the
+ * variation setting moves.
+ */
+internal fun shiftedSansWght(
+    weight: Int,
+    axisMax: Int,
+): Int = (weight + WGHT_STEP).coerceAtMost(axisMax)
+
+/**
+ * A family over the variable font [resId] with a [Font] for each of the weights 400, 500 and 600,
+ * each pinned to its [shiftedSansWght] (500, 600 and 700) on an axis that ends at [axisMax].
+ */
+private fun sansWeights(
+    resId: Int,
+    axisMax: Int,
+): FontFamily =
     FontFamily(
         listOf(400, 500, 600).map { w ->
+            val wght = FontWeight(shiftedSansWght(w, axisMax))
             Font(
                 resId,
                 weight = FontWeight(w),
-                variationSettings = FontVariation.Settings(FontWeight(w), FontStyle.Normal),
+                variationSettings = FontVariation.Settings(wght, FontStyle.Normal),
             )
         },
     )
@@ -129,6 +191,42 @@ internal fun newsreader(
         ),
     )
 
+/** The bundled Bricolage Grotesque's optical-size axis (`opsz`) runs from 12 to 96. */
+private const val BRICOLAGE_MIN_OPSZ = 12f
+private const val BRICOLAGE_MAX_OPSZ = 96f
+
+/** Bricolage Grotesque's width axis (`wdth`) runs from 75 to 100; the app always uses the normal width. */
+private const val BRICOLAGE_NORMAL_WIDTH = 100f
+
+/**
+ * The bundled Bricolage Grotesque (OFL-1.1, unmodified upstream variable font with `opsz`, `wdth`
+ * and `wght` axes) pinned to [weight] on `wght`, cut for [size] on `opsz` ([size] clamped to the
+ * font's 12 to 96 range) and set at the normal width (`wdth` 100). Its own defaults are the
+ * heaviest, widest, largest-optical-size instance (`wght` 800, `opsz` 96), so every axis is set
+ * explicitly.
+ *
+ * Same shape as [newsreader]: a single [Font] with one pinned `wght`; to change the weight, build a
+ * new `bricolage(weight, size)`. Reference the font only as `R.font.bricolage_grotesque`, below
+ * (release resource shrinking strips a font no reachable code names).
+ */
+internal fun bricolage(
+    weight: FontWeight,
+    size: TextUnit,
+): FontFamily =
+    FontFamily(
+        Font(
+            R.font.bricolage_grotesque,
+            weight = weight,
+            variationSettings =
+                FontVariation.Settings(
+                    weight,
+                    FontStyle.Normal,
+                    FontVariation.opticalSizing(size.value.coerceIn(BRICOLAGE_MIN_OPSZ, BRICOLAGE_MAX_OPSZ).sp),
+                    FontVariation.width(BRICOLAGE_NORMAL_WIDTH),
+                ),
+        ),
+    )
+
 /**
  * The family for a role set in the display font at [weight] and [size]: the bundled Newsreader
  * cut for that weight and size, the platform serif, or [text] ("Same as text"). Only the bundled
@@ -142,12 +240,14 @@ internal fun displayFamily(
 ): FontFamily =
     when (choice) {
         DisplayFont.BUNDLED_SERIF -> newsreader(weight, size)
+        DisplayFont.BUNDLED_GROTESQUE -> bricolage(weight, size)
         DisplayFont.SYSTEM_SERIF -> FontFamily.Serif
         DisplayFont.TEXT -> text
     }
 
 /**
- * The three amount styles. `amountHero` is always in the [display] font; `amountLarge` is too
+ * The three amount styles. `amountHero` is always in the [display] font (regular 48sp, or bold 34sp
+ * for [DisplayFont.BUNDLED_GROTESQUE]; see [heroSpec]); `amountLarge` is too
  * under [TypePairing.EDITORIAL] (medium weight, cut for 32sp); `amountRow` and, under
  * [TypePairing.HERO_ONLY], `amountLarge` are in the [text] family. All carry `tnum`.
  */
@@ -155,14 +255,15 @@ internal fun pftType(
     display: DisplayFont,
     text: FontFamily,
     pairing: TypePairing,
-): PftTypography =
-    PftTypography(
+): PftTypography {
+    val hero = heroSpec(display)
+    return PftTypography(
         amountHero =
             TextStyle(
-                fontFamily = displayFamily(display, text, FontWeight.Normal, HeroFontSize),
-                fontWeight = FontWeight.Normal,
-                fontSize = HeroFontSize,
-                lineHeight = HeroFontSize * HERO_LINE_HEIGHT_RATIO,
+                fontFamily = displayFamily(display, text, hero.weight, hero.size),
+                fontWeight = hero.weight,
+                fontSize = hero.size,
+                lineHeight = hero.size * HERO_LINE_HEIGHT_RATIO,
                 letterSpacing = HeroLetterSpacing,
                 fontFeatureSettings = "tnum, lnum",
             ),
@@ -188,6 +289,7 @@ internal fun pftType(
                 fontFeatureSettings = "tnum",
             ),
     )
+}
 
 /**
  * The M3 type scale. Sizes are the M3 defaults except the two header titles: `headlineLarge`

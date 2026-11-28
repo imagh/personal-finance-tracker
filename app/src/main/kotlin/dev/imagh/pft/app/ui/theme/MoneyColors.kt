@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
  * on-container colour clears 4.5:1 on its container; `ColorContrastTest` pins both.
  *
  * @property positive income and under-budget text.
- * @property negative expense totals, over-budget and negative-balance text.
+ * @property negative over-budget and negative-balance text (an expense is neutral, never this).
  * @property warning text for a budget at or above its alert threshold.
  */
 @Immutable

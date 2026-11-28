@@ -11,16 +11,31 @@ import dev.imagh.pft.ledger.category.CategoryKind
  * lives in `src/debug` and is not listed here.
  */
 object Routes {
+    /**
+     * The nested graph that holds every screen once an identity exists: the three tab graphs, and (from
+     * slice C) the screens several tabs reach. The root graph starts on [SETUP] or here.
+     */
+    const val MAIN = "main"
+
+    /** The Home tab's graph: [HOME] and the debug design catalogue. */
+    const val HOME_TAB = "home_tab"
+
+    /** The Accounts tab's graph: [ACCOUNTS] and the account form. */
+    const val ACCOUNTS_TAB = "accounts_tab"
+
+    /** The More tab's graph: [MORE], the categories and tags lists and their forms. */
+    const val MORE_TAB = "more_tab"
+
     /** First-run setup: shown only while no identity exists; popped off the back stack on completion. */
     const val SETUP = "setup"
 
-    /** Home: where every later launch starts, and where Back leaves the app. */
+    /** Home, the Home tab's root: where every later launch starts, and where Back leaves the app. */
     const val HOME = "home"
 
-    /** More: the entry point to the entity lists, opened from Home's header (plan D9). */
+    /** More, the More tab's root: the entry point to the lists that are not tabs of their own. */
     const val MORE = "more"
 
-    /** The accounts list, opened from More. */
+    /** The accounts list, the Accounts tab's root. */
     const val ACCOUNTS = "accounts"
 
     /** The categories list, opened from More. */

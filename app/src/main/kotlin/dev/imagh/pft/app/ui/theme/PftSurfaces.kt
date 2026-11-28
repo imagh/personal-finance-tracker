@@ -25,7 +25,8 @@ enum class BackgroundStyle {
  *
  * @property canvas the screen, header and bottom-bar background.
  * @property island the `GroupedSection` and card fill. Never white (the owner rejected white
- *   cards), so never light `surfaceContainerLowest`.
+ *   cards), so never light `surfaceContainerLowest`, with one exception: Cobalt light, where the owner
+ *   approved white islands on its cool canvas (2026-11-25, Cobalt plan D10).
  * @property islandEdge the 1 physical pixel edge around an island; [Color.Transparent] when FLAT.
  * @property islandHighlight a faint line lit along the top of an island, dark TONAL only (a card
  *   catching the light); [Color.Transparent] otherwise.
