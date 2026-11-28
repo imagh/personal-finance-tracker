@@ -1,5 +1,6 @@
 package dev.imagh.pft.app.ui.transactions
 
+import android.os.Looper
 import androidx.lifecycle.SavedStateHandle
 import dev.imagh.pft.app.data.QueryWorld
 import dev.imagh.pft.app.data.QueryWorld.Companion.ist
@@ -8,8 +9,12 @@ import dev.imagh.pft.app.testing.RoomTestKit
 import dev.imagh.pft.app.testing.TestDatabase
 import dev.imagh.pft.app.testing.awaitMain
 import dev.imagh.pft.ledger.query.LedgerEntry
+import dev.imagh.pft.ledger.query.MonthPage
 import dev.imagh.pft.ledger.query.MonthSpan
 import dev.imagh.pft.ledger.query.Totals
+import dev.imagh.pft.ledger.query.TransactionFilter
+import dev.imagh.pft.ledger.query.TransactionQueries
+import dev.imagh.pft.ledger.query.TransactionSort
 import dev.imagh.pft.ledger.transaction.TransferDraft
 import dev.imagh.pft.money.Paise
 import io.kotest.matchers.collections.shouldContainExactly
@@ -19,10 +24,12 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 
 /**
  * [TransactionsViewModel] over real in-memory Room through the production wiring (slice C C4a): which
@@ -389,5 +396,44 @@ class TransactionsViewModelTest {
         vm.await { it.days.isNotEmpty() }
 
         vm.state.value.totals.expense shouldBe Paise(rs(100))
+    }
+
+    // --- Resume
+
+    /** Counts the month reads that reach core, so a test can tell one read from two without waiting. */
+    private class CountingQueries(
+        private val real: TransactionQueries,
+    ) : TransactionQueries by real {
+        var monthReads = 0
+            private set
+
+        override suspend fun month(
+            month: YearMonth,
+            zone: ZoneId,
+            filter: TransactionFilter,
+            sort: TransactionSort,
+        ): MonthPage {
+            monthReads++
+            return real.month(month, zone, filter, sort)
+        }
+    }
+
+    @Test
+    fun `the first resume after creation does not read again, and each later resume does`() {
+        blocking { world.start() }
+        val queries = CountingQueries(kit.transactionQueries)
+        val vm = TransactionsViewModel(handle, queries, kit.accounts, kit.categories, kit.tags) { now }
+
+        vm.onResume()
+        awaitMain { vm.state.value.loaded }
+        // A read queued behind the first one starts when the main looper next runs, and is counted on entry.
+        shadowOf(Looper.getMainLooper()).idle()
+
+        queries.monthReads shouldBe 1
+
+        vm.onResume()
+        awaitMain { queries.monthReads == 2 && vm.state.value.loaded }
+
+        queries.monthReads shouldBe 2
     }
 }

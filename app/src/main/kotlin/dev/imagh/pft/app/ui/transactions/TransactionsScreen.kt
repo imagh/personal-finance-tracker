@@ -114,7 +114,8 @@ private fun rowTexts(): RowTexts {
 /**
  * The Transactions tab wired to its [TransactionsViewModel]: the only place that touches the ViewModel.
  * `LifecycleResumeEffect` reads the month again whenever the screen resumes (the same on-demand read as the
- * lists in slice B), which is how an entry written on another screen shows on return.
+ * lists in slice B), which is how an entry written on another screen shows on return; the first resume after the
+ * ViewModel is created is covered by its creation read ([TransactionsViewModel.onResume]).
  *
  * @param services the open object graph the ViewModel is built over.
  * @param clock gives the clock for each read ("now" and the user's zone).
@@ -129,7 +130,7 @@ internal fun TransactionsRoute(
     val viewModel: TransactionsViewModel = viewModel(factory = factory)
     val state by viewModel.state.collectAsStateWithLifecycle()
     LifecycleResumeEffect(viewModel) {
-        viewModel.reload()
+        viewModel.onResume()
         onPauseOrDispose {}
     }
     TransactionsScreen(state, viewModel::selectMonth, viewModel::previousMonth, viewModel::nextMonth, modifier)

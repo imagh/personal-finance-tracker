@@ -82,7 +82,8 @@ internal data class TransactionsUiState(
  * net is core's `Totals.of` over that day's entries.
  *
  * - **Read on demand (D2).** The tab reads on construction, after a month change, and when asked
- *   ([reload], when the screen resumes), so nothing observes the database. Reads run one after another
+ *   ([reload]; the screen calls [onResume], which skips only the first resume after construction), so nothing
+ *   observes the database. Reads run one after another
  *   (a [Mutex]); each reads the month selected **when it runs**, so a quick second tap is never shown as
  *   the first. A read that throws (a stored row core refuses) is not caught: it fails loudly, like
  *   `AccountsViewModel`, rather than show made-up money.
@@ -110,6 +111,9 @@ internal class TransactionsViewModel(
     private val clock: () -> Clock,
 ) : ViewModel() {
     private val serial = Mutex()
+
+    /** True until the first [onResume]: the read made on construction stands in for it. */
+    private var creationReadCoversResume = true
     private val mutableState: MutableStateFlow<TransactionsUiState>
 
     /** The screen's state; [TransactionsUiState.loaded] is false until the selected month has been read. */
@@ -127,6 +131,15 @@ internal class TransactionsViewModel(
     /** Reads the selected month again (the screen calls this when it resumes, after an edit elsewhere). */
     fun reload() {
         viewModelScope.launch { serial.withLock { refresh() } }
+    }
+
+    /**
+     * The screen resumed: reads the selected month again, **except for the first resume after creation**, which the
+     * read made on construction already covers (a second one would queue behind it and read the same rows). Every
+     * later resume reads, so a ViewModel kept across a tab switch shows what was written meanwhile. Main thread only.
+     */
+    fun onResume() {
+        if (creationReadCoversResume) creationReadCoversResume = false else reload()
     }
 
     /**
