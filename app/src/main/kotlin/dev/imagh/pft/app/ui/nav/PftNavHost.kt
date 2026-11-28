@@ -30,19 +30,23 @@ import dev.imagh.pft.app.ui.home.HomeRoute
 import dev.imagh.pft.app.ui.more.MoreRoute
 import dev.imagh.pft.app.ui.setup.SetupRoute
 import dev.imagh.pft.app.ui.theme.PftMotion
+import dev.imagh.pft.app.ui.transactions.TransactionsRoute
+import java.time.Clock
 
 /**
  * The app's navigation host and its floating tab bar (Cobalt plan D8). It starts on Setup for a fresh
  * install ([hasIdentity] false) and on the app proper otherwise, so a later launch never shows Setup.
  *
- * **The graph.** The root graph starts on `SETUP` or on `MAIN`, a nested graph holding the three tab
- * graphs: `home_tab` (Home, and the debug catalogue), `accounts_tab` (the accounts list and its form)
- * and `more_tab` (More, the categories and tags lists and their forms). Each tab graph starts on its root
- * screen. The tabs and their order are [TAB_ORDER]; later slices insert Transactions and Budgets there and
- * add the screens several tabs reach (transaction edit, search) as direct children of `MAIN`.
+ * **The graph.** The root graph starts on `SETUP` or on `MAIN`, a nested graph holding the four tab
+ * graphs: `home_tab` (Home, and the debug catalogue), `transactions_tab` (the month list), `accounts_tab`
+ * (the accounts list and its form) and `more_tab` (More, the categories and tags lists and their forms).
+ * Each tab graph starts on its root screen. The tabs and their order are [TAB_ORDER]; slice D inserts
+ * Budgets there, and later slices add the screens several tabs reach (transaction edit, search) as direct
+ * children of `MAIN`.
  *
  * **Tabs.** Tapping a tab switches to its graph with its own back stack saved and restored
- * ([selectTab]), so each tab keeps where the user was. Tapping the active tab pops it to its root. The
+ * ([selectTab]), so each tab keeps where the user was (the Transactions tab its selected month). Tapping
+ * the active tab pops it to its root. The
  * bar shows only while the current destination is a tab root: it is hidden on Setup, forms, and the
  * lists under More, which keep their Back button. The floating bar covers the bottom of a tab root, so
  * the host tells the lists how much through `LocalTabBarClearance` (read from the bar's measured size).
@@ -78,6 +82,9 @@ import dev.imagh.pft.app.ui.theme.PftMotion
  * @param hasIdentity whether setup has already happened (from `LaunchState.Ready`).
  * @param navController the controller; tests pass their own to drive a tab switch the bar does not
  *   offer (from a form, where the bar is hidden).
+ * @param clock gives the clock for each read of the Transactions tab: its instant is "now" and its zone is the
+ *   user's. Production asks the system for both every time, so a device zone change shows on the next read;
+ *   a test passes a fixed one.
  */
 @Composable
 fun PftNavHost(
@@ -85,6 +92,7 @@ fun PftNavHost(
     hasIdentity: Boolean,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    clock: () -> Clock = { Clock.systemDefaultZone() },
 ) {
     val destination = navController.currentBackStackEntryAsState().value?.destination
     val selected = TAB_ORDER.firstOrNull { tab -> destination.isIn(tab.graph) }
@@ -100,7 +108,7 @@ fun PftNavHost(
 
     Box(modifier) {
         CompositionLocalProvider(LocalTabBarClearance provides clearance) {
-            PftNavGraph(navController, services, hasIdentity)
+            PftNavGraph(navController, services, hasIdentity, clock)
         }
         if (barShown && selected != null) {
             PftTabBar(
@@ -119,6 +127,7 @@ private fun PftNavGraph(
     navController: NavHostController,
     services: AppServices,
     hasIdentity: Boolean,
+    clock: () -> Clock,
 ) {
     NavHost(
         navController = navController,
@@ -142,6 +151,9 @@ private fun PftNavGraph(
                     HomeRoute(services, actions = { DevHeaderActions(navController::navigate) })
                 }
                 devRoutes()
+            }
+            navigation(route = Tab.TRANSACTIONS.graph, startDestination = Tab.TRANSACTIONS.root) {
+                composable(Tab.TRANSACTIONS.root) { TransactionsRoute(services, clock) }
             }
             navigation(route = Tab.ACCOUNTS.graph, startDestination = Tab.ACCOUNTS.root) {
                 accountRoutes(navController, services)

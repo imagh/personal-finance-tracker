@@ -8,7 +8,7 @@ import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 
 /**
- * `PftTabBar` with each of the three tabs selected in turn: the single source for the preview and the
+ * `PftTabBar` with each of the four tabs selected in turn: the single source for the preview and the
  * goldens `tab-bar-*` (`TabBarScreenshotTest`). Release builds drop it (R8; see `verifyReleaseShrink`).
  */
 @Composable

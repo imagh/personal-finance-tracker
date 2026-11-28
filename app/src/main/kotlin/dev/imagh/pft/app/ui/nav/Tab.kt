@@ -24,6 +24,14 @@ internal enum class Tab(
     /** The dashboard; where the app starts and where Back from another tab goes. */
     HOME(Routes.HOME_TAB, Routes.HOME, PftSymbol.HOME, R.string.tab_home),
 
+    /** The month list: the month strip, the totals banner and the entries by day. */
+    TRANSACTIONS(
+        Routes.TRANSACTIONS_TAB,
+        Routes.TRANSACTIONS,
+        PftSymbol.RECEIPT_LONG,
+        R.string.tab_transactions,
+    ),
+
     /** The accounts list. */
     ACCOUNTS(Routes.ACCOUNTS_TAB, Routes.ACCOUNTS, PftSymbol.ACCOUNT_BALANCE_WALLET, R.string.tab_accounts),
 
@@ -33,8 +41,8 @@ internal enum class Tab(
 
 /**
  * The bar's tabs, left to right: the one place the order is written. The M1a end state is Home,
- * Transactions, Budgets, Accounts, More (plan D8), so slice C inserts Transactions at position 2 and
- * slice D Budgets at position 3: an insert here, never a move. [Tab.HOME] stays first, because Back from
+ * Transactions, Budgets, Accounts, More (plan D8): Transactions is at position 2 since slice C (C4a) and slice D
+ * inserts Budgets at position 3, an insert here, never a move. [Tab.HOME] stays first, because Back from
  * another tab goes to the first tab's root and the graph starts there.
  */
-internal val TAB_ORDER: List<Tab> = listOf(Tab.HOME, Tab.ACCOUNTS, Tab.MORE)
+internal val TAB_ORDER: List<Tab> = listOf(Tab.HOME, Tab.TRANSACTIONS, Tab.ACCOUNTS, Tab.MORE)

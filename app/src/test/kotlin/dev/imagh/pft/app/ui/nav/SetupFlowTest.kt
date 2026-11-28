@@ -96,7 +96,7 @@ class SetupFlowTest {
         compose.awaitHomeLoaded()
 
         // The attribution line is the More tab's subtitle now, and the tab bar is how More is reached.
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.openMore()
         awaitText("Akash · Pixel 8")
         compose.onNodeWithText("Akash · Pixel 8").assertIsDisplayed()

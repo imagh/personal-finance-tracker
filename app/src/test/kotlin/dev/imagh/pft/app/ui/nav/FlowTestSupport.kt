@@ -77,6 +77,13 @@ internal fun SemanticsNodeInteractionsProvider.tab(label: String): SemanticsNode
 /** How many tabs the bar shows right now (zero when it is hidden). */
 internal fun SemanticsNodeInteractionsProvider.tabCount(): Int = onAllNodes(isTab).fetchSemanticsNodes().size
 
+/** The labels of every tab, left to right, as TalkBack would speak them. */
+internal fun SemanticsNodeInteractionsProvider.tabLabels(): List<String> =
+    onAllNodes(isTab)
+        .fetchSemanticsNodes()
+        .sortedBy { it.boundsInRoot.left }
+        .map { it.spokenName() }
+
 /** The labels of the tabs that are selected, as TalkBack would speak them. */
 internal fun SemanticsNodeInteractionsProvider.selectedTabs(): List<String> =
     onAllNodes(isTab)

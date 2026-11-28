@@ -85,7 +85,7 @@ class PftRootTest {
         compose.awaitHomeLoaded()
 
         compose.onNodeWithText(HOME_PLACEHOLDER).assertIsDisplayed()
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.onAllNodesWithText("Welcome").fetchSemanticsNodes().size shouldBe 0
         compose.onAllNodesWithText("Your data can't be opened").fetchSemanticsNodes().size shouldBe 0
     }

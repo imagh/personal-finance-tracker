@@ -31,6 +31,7 @@ import dev.imagh.pft.app.ui.common.layout
 import dev.imagh.pft.app.ui.theme.PftTheme
 import dev.imagh.pft.app.ui.theme.ThemePrefs
 import io.kotest.matchers.shouldBe
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -56,7 +57,13 @@ class PftTabBarTest {
     private var selected by mutableStateOf(Tab.HOME)
     private val picked = mutableListOf<Tab>()
 
-    private val labels = mapOf(Tab.HOME to "Home", Tab.ACCOUNTS to "Accounts", Tab.MORE to "More")
+    private val labels =
+        mapOf(
+            Tab.HOME to "Home",
+            Tab.TRANSACTIONS to "Transactions",
+            Tab.ACCOUNTS to "Accounts",
+            Tab.MORE to "More",
+        )
 
     private fun show(
         fontScale: Float = 1f,
@@ -215,19 +222,65 @@ class PftTabBarTest {
         }
     }
 
+    /** The tabs' bounds in dp, left to right. */
+    private fun tabBounds() = tabs().sortedBy { it.boundsInRoot.left }.map { it.boundsInRoot.inDp() }
+
     @Test
-    fun `at 200 percent text on a 320dp screen the active label is whole and every tab stays inside the bar`() {
+    fun `at 200 percent text on a 320dp screen every tab stays in the bar, 48dp wide, and a shown label is whole`() {
         show(fontScale = 2f, widthDp = 320)
 
         for (tab in TAB_ORDER) {
             select(tab)
-            val label = compose.onAllNodesWithText(labels.getValue(tab)).onFirst().layout()
-            label.assertShownInFull("active $tab")
-            val bounds = tabs().sortedBy { it.boundsInRoot.left }.map { it.boundsInRoot.inDp() }
+            val shown = compose.onAllNodesWithText(labels.getValue(tab))
+            if (shown.fetchSemanticsNodes().isNotEmpty()) shown.onFirst().layout().assertShownInFull("active $tab")
+            val bounds = tabBounds()
             assertTrue("a tab leaves the 320dp screen: $bounds", bounds.all { it.left >= 0f && it.right <= 320f })
             val overlaps = bounds.zipWithNext().filter { (a, b) -> a.right > b.left + 0.5f }
             assertTrue("tabs overlap at 200%: $overlaps", overlaps.isEmpty())
             bounds.forEach { assertTrue("a tab is under 48dp wide at 200%: $bounds", it.width >= 48f) }
         }
+    }
+
+    @Test
+    fun `a label that cannot fit beside three 48dp targets is left out and the tab is named by its description`() {
+        show(fontScale = 2f, widthDp = 320)
+
+        select(Tab.TRANSACTIONS)
+
+        compose.onAllNodesWithText("Transactions").assertCountEquals(0)
+        compose.onAllNodesWithContentDescription("Transactions").assertCountEquals(1)
+        tabs().single { it.isSelected() }.spoken() shouldBe listOf("Transactions")
+        tabs().forEach { it.spoken().size shouldBe 1 }
+    }
+
+    @Test
+    fun `a label that fits is still shown at 200 percent, so the bar only gives way when it must`() {
+        show(fontScale = 2f, widthDp = 320)
+
+        select(Tab.HOME)
+
+        compose.onAllNodesWithText("Home").assertCountEquals(1)
+        compose.onAllNodesWithContentDescription("Home").assertCountEquals(0)
+    }
+
+    @Test
+    fun `every label is shown on a 360dp screen at normal text`() {
+        show(widthDp = 360)
+
+        for (tab in TAB_ORDER) {
+            select(tab)
+            compose.onAllNodesWithText(labels.getValue(tab)).assertCountEquals(1)
+            tabBounds().forEach { assertTrue("a tab is under 48dp wide: ${tabBounds()}", it.width >= 48f) }
+        }
+    }
+
+    @Test
+    fun `the label fits exactly when the pill and the other tabs at 48dp add up to the room or less`() {
+        // 24 icon + 8 gap + 100 label + 2 x 12 padding = 156 for the pill, and 3 x 48 = 144 for the others.
+        assertTrue(activeLabelFits(100.dp, tabCount = 4, room = 300.dp))
+        assertFalse(activeLabelFits(100.dp, tabCount = 4, room = 299.9.dp))
+        // One more tab needs 48dp more.
+        assertFalse(activeLabelFits(100.dp, tabCount = 5, room = 347.9.dp))
+        assertTrue(activeLabelFits(100.dp, tabCount = 5, room = 348.dp))
     }
 }

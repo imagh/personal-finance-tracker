@@ -2,7 +2,7 @@ package dev.imagh.pft.app.ui.nav
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,13 +25,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.imagh.pft.app.ui.theme.PftTheme
 
@@ -55,9 +59,15 @@ private val BAR_SHADOW = 8.dp
  * `onSurfaceVariant`. The bar is drawn at the size it needs: place it at the bottom of a `Box`, and let
  * the host read its height for `LocalTabBarClearance`.
  *
+ * **When the label does not fit.** The active label is shown only if it fits beside the other tabs at their
+ * 48dp floor ([activeLabelFits]); if it would not (a long label such as "Transactions" at a large font scale on
+ * a narrow screen) the active tab is its icon alone in the `brand` pill, like an inactive one, so no tab is
+ * ever under 48dp, overlapping, or clipped.
+ *
  * Accessibility. The tabs are one `selectableGroup`; each is `Role.Tab` with `selected` semantics and
- * a target of at least 48dp. The active tab's spoken name is its visible label; an inactive tab has no
- * text, so its content description carries the name, and its icon is decorative. Nothing is read twice.
+ * a target of at least 48dp. The active tab's spoken name is its visible label; a tab with no visible
+ * text (every inactive one, and the active one when its label does not fit) carries the name as its
+ * content description, and its icon is decorative. Nothing is read twice.
  *
  * Stateless: it does not know about navigation. Tapping the already selected tab calls [onSelect]
  * too, so the host can pop that tab to its root.
@@ -75,13 +85,27 @@ internal fun PftTabBar(
 ) {
     val spacing = PftTheme.spacing
     val canvas = PftTheme.surfaces.canvas
-    Box(
+    val measurer = rememberTextMeasurer()
+    val labelStyle = activeLabelStyle()
+    val density = LocalDensity.current
+    val activeLabel = stringResource(selected.label)
+    BoxWithConstraints(
         modifier
             .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Transparent, canvas)))
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(start = spacing.gutter, end = spacing.gutter, top = spacing.lg, bottom = spacing.md),
     ) {
+        // The space the row has once its own horizontal padding is taken off.
+        val room = maxWidth - spacing.xs * 2
+        val labelWidth =
+            with(density) {
+                measurer
+                    .measure(AnnotatedString(activeLabel), labelStyle, maxLines = 1)
+                    .size.width
+                    .toDp()
+            }
+        val showLabel = activeLabelFits(labelWidth, tabs.size, room)
         Surface(
             Modifier.fillMaxWidth(),
             shape = PftTheme.shapes.tabBar,
@@ -99,18 +123,39 @@ internal fun PftTabBar(
                 tabs.forEach { tab ->
                     // Inactive tabs share what the active one leaves; the active one is as wide as its label.
                     val width = if (tab == selected) Modifier else Modifier.weight(1f)
-                    TabItem(tab, active = tab == selected, onClick = { onSelect(tab) }, modifier = width)
+                    val active = tab == selected
+                    TabItem(tab, active, showLabel = active && showLabel, onClick = { onSelect(tab) }, modifier = width)
                 }
             }
         }
     }
 }
 
-/** One tab: an icon, and beside it the label on the active tab only. */
+/**
+ * Whether the active tab's label, [labelWidth] wide, fits in a row [room] wide that holds [tabCount] tabs: the
+ * active pill (icon, `sm` gap, the label and `md` padding each side) plus every other tab at the [TARGET] floor.
+ * Pure, so the bar's one rule is testable on its own.
+ */
+internal fun activeLabelFits(
+    labelWidth: Dp,
+    tabCount: Int,
+    room: Dp,
+): Boolean = ICON_SIZE + ACTIVE_GAP + labelWidth + ACTIVE_PADDING * 2 + TARGET * (tabCount - 1) <= room
+
+/** The gap between the active tab's icon and its label, and the active pill's padding each side. */
+private val ACTIVE_GAP = 8.dp
+private val ACTIVE_PADDING = 12.dp
+
+/** The active tab's label style: SemiBold, the heaviest weight the bundled sans declare (drawn at wght 700). */
+@Composable
+private fun activeLabelStyle() = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+
+/** One tab: an icon, and beside it the label on the active tab when [showLabel] (see [activeLabelFits]). */
 @Composable
 private fun TabItem(
     tab: Tab,
     active: Boolean,
+    showLabel: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -124,21 +169,19 @@ private fun TabItem(
             .clip(PftTheme.shapes.tabBar)
             .background(if (active) brand.brand else Color.Transparent)
             .selectable(selected = active, role = Role.Tab, onClick = onClick)
-            // The inactive tab has no text: the content description is its name. The active tab speaks its label.
-            .semantics { if (!active) contentDescription = label }
+            // A tab with no visible text is named by its content description; one with a label speaks the label.
+            .semantics { if (!showLabel) contentDescription = label }
             .padding(horizontal = if (active) PftTheme.spacing.md else PftTheme.spacing.sm),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(painterResource(tab.icon.res), contentDescription = null, modifier = Modifier.size(ICON_SIZE), tint = tint)
-        if (active) {
+        if (showLabel) {
             Spacer(Modifier.size(PftTheme.spacing.sm))
             Text(
                 label,
                 color = tint,
-                // SemiBold (600): the heaviest weight the bundled sans families declare (drawn at wght 700).
-                // The global style stays.
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                style = activeLabelStyle(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

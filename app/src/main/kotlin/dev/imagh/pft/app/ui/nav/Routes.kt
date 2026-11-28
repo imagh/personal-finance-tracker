@@ -12,13 +12,16 @@ import dev.imagh.pft.ledger.category.CategoryKind
  */
 object Routes {
     /**
-     * The nested graph that holds every screen once an identity exists: the three tab graphs, and (from
+     * The nested graph that holds every screen once an identity exists: the tab graphs, and (from
      * slice C) the screens several tabs reach. The root graph starts on [SETUP] or here.
      */
     const val MAIN = "main"
 
     /** The Home tab's graph: [HOME] and the debug design catalogue. */
     const val HOME_TAB = "home_tab"
+
+    /** The Transactions tab's graph: [TRANSACTIONS] (later the screens only this tab reaches). */
+    const val TRANSACTIONS_TAB = "transactions_tab"
 
     /** The Accounts tab's graph: [ACCOUNTS] and the account form. */
     const val ACCOUNTS_TAB = "accounts_tab"
@@ -34,6 +37,9 @@ object Routes {
 
     /** More, the More tab's root: the entry point to the lists that are not tabs of their own. */
     const val MORE = "more"
+
+    /** The month list with its month strip and totals, the Transactions tab's root. */
+    const val TRANSACTIONS = "transactions"
 
     /** The accounts list, the Accounts tab's root. */
     const val ACCOUNTS = "accounts"

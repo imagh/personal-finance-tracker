@@ -56,7 +56,7 @@ class LaunchRoutingTest {
             compose.homeLoaded()
         }
 
-        compose.tabCount() shouldBe 3
+        compose.tabCount() shouldBe 4
         compose.selectedTabs() shouldBe listOf("Home")
         // The stored identity is the More tab's subtitle.
         compose.openMore()
