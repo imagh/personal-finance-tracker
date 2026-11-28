@@ -28,6 +28,13 @@
     <string name="transaction_needs_review">Needs review</string>
     <string name="day_today">Today</string>
     <string name="day_yesterday">Yesterday</string>
+    <!-- Transaction row words that are not data (TransactionRowMapper): the item count, a line with no category, a name that is missing. -->
+    <string name="transaction_items">%1$d items</string>
+    <string name="transaction_uncategorised">Uncategorised</string>
+    <string name="transaction_unknown_account">Unknown</string>
+    <!-- Transactions tab (TransactionsScreen). -->
+    <string name="transactions_title">Transactions</string>
+    <string name="transactions_empty">No transactions this month</string>
     <!-- Home balance card (BalanceCard): the caption over the hero and the words naming the two figures. -->
     <string name="balance_card_caption">Spent this month</string>
     <string name="balance_card_in">In</string>
@@ -64,6 +71,7 @@
     <string name="home_placeholder">Manage your accounts from the Accounts tab. Transactions arrive in the next update</string>
     <!-- Tab bar (PftTabBar): the spoken name of every tab, and the active tab's label. -->
     <string name="tab_home">Home</string>
+    <string name="tab_transactions">Transactions</string>
     <string name="tab_accounts">Accounts</string>
     <string name="tab_more">More</string>
     <!-- More tab (MoreScreen): the entry point to the lists that are not tabs; the subtitle says who is using this phone. -->

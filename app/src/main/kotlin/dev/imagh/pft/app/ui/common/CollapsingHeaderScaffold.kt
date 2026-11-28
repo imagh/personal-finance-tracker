@@ -415,12 +415,13 @@ private fun LowerBand(
 }
 
 /**
- * Steps the [period] when the header is dragged sideways by more than 48dp: toward the end of the
+ * Steps the [period] when the element is dragged sideways by more than 48dp: toward the end of the
  * line reveals the previous period, toward the start the next. Vertical drags never reach it. It
- * does nothing when [period] is null.
+ * does nothing when [period] is null. The header uses it on itself; the Transactions tab uses it on the
+ * whole screen so a swipe on the list steps the month.
  */
 @Composable
-private fun Modifier.periodSwipe(period: HeaderPeriod?): Modifier {
+internal fun Modifier.periodSwipe(period: HeaderPeriod?): Modifier {
     if (period == null) return this
     val current by rememberUpdatedState(period)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
